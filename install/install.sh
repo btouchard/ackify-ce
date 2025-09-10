@@ -36,13 +36,13 @@ echo "🔑 Generating secure secrets..."
 COOKIE_SECRET=$(openssl rand -base64 32)
 ED25519_KEY=$(openssl genpkey -algorithm Ed25519 | base64 -w 0)
 
-# Replace placeholders in .env
-sed -i "s/your_base64_encoded_secret_key/$COOKIE_SECRET/" .env
-sed -i "s/your_base64_encoded_ed25519_private_key/$ED25519_KEY/" .env
+# Replace placeholders in .env (using # as delimiter to avoid issues with / and + in base64)
+sed -i "s#your_base64_encoded_secret_key#$COOKIE_SECRET#" .env
+sed -i "s#your_base64_encoded_ed25519_private_key#$ED25519_KEY#" .env
 
 # Generate random password for PostgreSQL
 DB_PASSWORD=$(openssl rand -base64 24)
-sed -i "s/your_secure_password/$DB_PASSWORD/" .env
+sed -i "s#your_secure_password#$DB_PASSWORD#" .env
 
 echo "✅ Installation completed!"
 echo ""
