@@ -55,7 +55,7 @@ func runMigrations(ctx context.Context, db *sql.DB) error {
 			UNIQUE (doc_id, user_sub)
 		);
 		
-		-- Migration: Add prev_hash_b64 column if it doesn't exist
+		-- Migration: Add prev_hash column if it doesn't exist
 		ALTER TABLE signatures ADD COLUMN IF NOT EXISTS prev_hash TEXT;
 		
 		CREATE INDEX IF NOT EXISTS idx_signatures_user ON signatures(user_sub);

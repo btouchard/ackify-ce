@@ -223,11 +223,11 @@ func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Requ
 	response := make([]map[string]interface{}, 0, len(signatures))
 	for _, sig := range signatures {
 		sigData := map[string]interface{}{
-			"id":            sig.ID,
-			"doc_id":        sig.DocID,
-			"user_sub":      sig.UserSub,
-			"user_email":    sig.UserEmail,
-			"signed_at_utc": sig.SignedAtUTC,
+			"id":         sig.ID,
+			"doc_id":     sig.DocID,
+			"user_sub":   sig.UserSub,
+			"user_email": sig.UserEmail,
+			"signed_at":  sig.SignedAtUTC,
 		}
 
 		// Add username if available

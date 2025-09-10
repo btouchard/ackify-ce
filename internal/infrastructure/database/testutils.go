@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"ackify/internal/domain/models"
+
 	_ "github.com/lib/pq"
 )
 
@@ -76,12 +77,12 @@ func (tdb *TestDB) createSchema() error {
 			user_sub TEXT NOT NULL,
 			user_email TEXT NOT NULL,
 			user_name TEXT,
-			signed_at_utc TIMESTAMPTZ NOT NULL,
-			payload_hash_b64 TEXT NOT NULL,
-			signature_b64 TEXT NOT NULL,
+			signed_at TIMESTAMPTZ NOT NULL,
+			payload_hash TEXT NOT NULL,
+			signature TEXT NOT NULL,
 			nonce TEXT NOT NULL,
 			referer TEXT,
-			prev_hash_b64 TEXT,
+			prev_hash TEXT,
 			created_at TIMESTAMPTZ DEFAULT NOW(),
 			
 			-- Constraints
@@ -139,16 +140,16 @@ func (f *SignatureFactory) CreateValidSignature() *models.Signature {
 	referer := "https://example.com/doc"
 
 	return &models.Signature{
-		DocID:          "test-doc-123",
-		UserSub:        "user-123",
-		UserEmail:      "test@example.com",
-		UserName:       &userName,
-		SignedAtUTC:    now,
-		PayloadHashB64: "dGVzdC1wYXlsb2FkLWhhc2g=", // base64("test-payload-hash")
-		SignatureB64:   "dGVzdC1zaWduYXR1cmU=",     // base64("test-signature")
-		Nonce:          "test-nonce-123",
-		Referer:        &referer,
-		PrevHashB64:    nil, // Will be set for chained signatures
+		DocID:       "test-doc-123",
+		UserSub:     "user-123",
+		UserEmail:   "test@example.com",
+		UserName:    &userName,
+		SignedAtUTC: now,
+		PayloadHash: "dGVzdC1wYXlsb2FkLWhhc2g=", // base64("test-payload-hash")
+		Signature:   "dGVzdC1zaWduYXR1cmU=",     // base64("test-signature")
+		Nonce:       "test-nonce-123",
+		Referer:     &referer,
+		PrevHash:    nil, // Will be set for chained signatures
 	}
 }
 
@@ -179,7 +180,7 @@ func (f *SignatureFactory) CreateSignatureWithDocAndUser(docID, userSub, userEma
 // CreateChainedSignature creates a signature with previous hash for chaining tests
 func (f *SignatureFactory) CreateChainedSignature(prevHashB64 string) *models.Signature {
 	sig := f.CreateValidSignature()
-	sig.PrevHashB64 = &prevHashB64
+	sig.PrevHash = &prevHashB64
 	return sig
 }
 
@@ -188,16 +189,16 @@ func (f *SignatureFactory) CreateMinimalSignature() *models.Signature {
 	now := time.Now().UTC()
 
 	return &models.Signature{
-		DocID:          "minimal-doc",
-		UserSub:        "minimal-user",
-		UserEmail:      "minimal@example.com",
-		UserName:       nil, // NULL
-		SignedAtUTC:    now,
-		PayloadHashB64: "bWluaW1hbA==", // base64("minimal")
-		SignatureB64:   "bWluaW1hbA==", // base64("minimal")
-		Nonce:          "minimal-nonce",
-		Referer:        nil, // NULL
-		PrevHashB64:    nil, // NULL
+		DocID:       "minimal-doc",
+		UserSub:     "minimal-user",
+		UserEmail:   "minimal@example.com",
+		UserName:    nil, // NULL
+		SignedAtUTC: now,
+		PayloadHash: "bWluaW1hbA==", // base64("minimal")
+		Signature:   "bWluaW1hbA==", // base64("minimal")
+		Nonce:       "minimal-nonce",
+		Referer:     nil, // NULL
+		PrevHash:    nil, // NULL
 	}
 }
 
@@ -221,12 +222,12 @@ func AssertSignatureEqual(t *testing.T, expected, actual *models.Signature) {
 		t.Errorf("UserName mismatch: got %v, want %v", actual.UserName, expected.UserName)
 	}
 
-	if actual.PayloadHashB64 != expected.PayloadHashB64 {
-		t.Errorf("PayloadHashB64 mismatch: got %s, want %s", actual.PayloadHashB64, expected.PayloadHashB64)
+	if actual.PayloadHash != expected.PayloadHash {
+		t.Errorf("PayloadHash mismatch: got %s, want %s", actual.PayloadHash, expected.PayloadHash)
 	}
 
-	if actual.SignatureB64 != expected.SignatureB64 {
-		t.Errorf("SignatureB64 mismatch: got %s, want %s", actual.SignatureB64, expected.SignatureB64)
+	if actual.Signature != expected.Signature {
+		t.Errorf("Signature mismatch: got %s, want %s", actual.Signature, expected.Signature)
 	}
 
 	if actual.Nonce != expected.Nonce {
@@ -237,8 +238,8 @@ func AssertSignatureEqual(t *testing.T, expected, actual *models.Signature) {
 		t.Errorf("Referer mismatch: got %v, want %v", actual.Referer, expected.Referer)
 	}
 
-	if !isStringPtrEqual(actual.PrevHashB64, expected.PrevHashB64) {
-		t.Errorf("PrevHashB64 mismatch: got %v, want %v", actual.PrevHashB64, expected.PrevHashB64)
+	if !isStringPtrEqual(actual.PrevHash, expected.PrevHash) {
+		t.Errorf("PrevHash mismatch: got %v, want %v", actual.PrevHash, expected.PrevHash)
 	}
 }
 

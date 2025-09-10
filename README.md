@@ -43,7 +43,7 @@ cp .env.example .env
 
 # Génération des secrets
 export OAUTH_COOKIE_SECRET=$(openssl rand -base64 32)
-export ED25519_PRIVATE_KEY_B64=$(openssl genpkey -algorithm Ed25519 | base64 -w 0)
+export ED25519_PRIVATE_KEY_B64=$(openssl rand 64 | base64 -w 0)
 
 # Démarrage
 docker compose up -d
@@ -167,15 +167,15 @@ CREATE TABLE signatures (
     id BIGSERIAL PRIMARY KEY,
     doc_id TEXT NOT NULL,                    -- ID document
     user_sub TEXT NOT NULL,                  -- ID OAuth utilisateur
-    user_email TEXT NOT NULL,               -- Email utilisateur
-    signed_at TIMESTAMPTZ NOT NULL,     -- Timestamp signature
-    payload_hash TEXT NOT NULL,         -- Hash cryptographique
-    signature TEXT NOT NULL,            -- Signature Ed25519
-    nonce TEXT NOT NULL,                    -- Anti-replay
-    created_at TIMESTAMPTZ DEFAULT now(),   -- Immutable
-    referer TEXT,                           -- Source (optionnel)
-    prev_hash TEXT,
-    UNIQUE (doc_id, user_sub)              -- Une signature par user/doc
+    user_email TEXT NOT NULL,                -- Email utilisateur
+    signed_at TIMESTAMPTZ NOT NULL,          -- Timestamp signature
+    payload_hash TEXT NOT NULL,              -- Hash cryptographique
+    signature TEXT NOT NULL,                 -- Signature Ed25519
+    nonce TEXT NOT NULL,                     -- Anti-replay
+    created_at TIMESTAMPTZ DEFAULT now(),    -- Immutable
+    referer TEXT,                            -- Source (optionnel)
+    prev_hash TEXT,                          -- Prev Hash
+    UNIQUE (doc_id, user_sub)                -- Une signature par user/doc
 );
 ```
 

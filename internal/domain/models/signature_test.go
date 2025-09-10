@@ -15,18 +15,18 @@ func TestSignature_JSONSerialization(t *testing.T) {
 	prevHash := "abcd1234efgh5678"
 
 	signature := &Signature{
-		ID:             123,
-		DocID:          "test-doc-123",
-		UserSub:        "google-oauth2|123456789",
-		UserEmail:      "test@example.com",
-		UserName:       &userName,
-		SignedAtUTC:    timestamp,
-		PayloadHashB64: "SGVsbG8gV29ybGQ=",
-		SignatureB64:   "c2lnbmF0dXJlLWRhdGE=",
-		Nonce:          "random-nonce-123",
-		CreatedAt:      createdAt,
-		Referer:        &referer,
-		PrevHashB64:    &prevHash,
+		ID:          123,
+		DocID:       "test-doc-123",
+		UserSub:     "google-oauth2|123456789",
+		UserEmail:   "test@example.com",
+		UserName:    &userName,
+		SignedAtUTC: timestamp,
+		PayloadHash: "SGVsbG8gV29ybGQ=",
+		Signature:   "c2lnbmF0dXJlLWRhdGE=",
+		Nonce:       "random-nonce-123",
+		CreatedAt:   createdAt,
+		Referer:     &referer,
+		PrevHash:    &prevHash,
 	}
 
 	// Test serialization
@@ -64,11 +64,11 @@ func TestSignature_JSONSerialization(t *testing.T) {
 	if !unmarshaled.SignedAtUTC.Equal(signature.SignedAtUTC) {
 		t.Errorf("SignedAtUTC mismatch: got %v, expected %v", unmarshaled.SignedAtUTC, signature.SignedAtUTC)
 	}
-	if unmarshaled.PayloadHashB64 != signature.PayloadHashB64 {
-		t.Errorf("PayloadHashB64 mismatch: got %v, expected %v", unmarshaled.PayloadHashB64, signature.PayloadHashB64)
+	if unmarshaled.PayloadHash != signature.PayloadHash {
+		t.Errorf("PayloadHash mismatch: got %v, expected %v", unmarshaled.PayloadHash, signature.PayloadHash)
 	}
-	if unmarshaled.SignatureB64 != signature.SignatureB64 {
-		t.Errorf("SignatureB64 mismatch: got %v, expected %v", unmarshaled.SignatureB64, signature.SignatureB64)
+	if unmarshaled.Signature != signature.Signature {
+		t.Errorf("Signature mismatch: got %v, expected %v", unmarshaled.Signature, signature.Signature)
 	}
 	if unmarshaled.Nonce != signature.Nonce {
 		t.Errorf("Nonce mismatch: got %v, expected %v", unmarshaled.Nonce, signature.Nonce)
@@ -82,11 +82,11 @@ func TestSignature_JSONSerialization(t *testing.T) {
 	if unmarshaled.Referer != nil && signature.Referer != nil && *unmarshaled.Referer != *signature.Referer {
 		t.Errorf("Referer mismatch: got %v, expected %v", *unmarshaled.Referer, *signature.Referer)
 	}
-	if (unmarshaled.PrevHashB64 == nil) != (signature.PrevHashB64 == nil) {
-		t.Errorf("PrevHashB64 nil mismatch: got %v, expected %v", unmarshaled.PrevHashB64 == nil, signature.PrevHashB64 == nil)
+	if (unmarshaled.PrevHash == nil) != (signature.PrevHash == nil) {
+		t.Errorf("PrevHash nil mismatch: got %v, expected %v", unmarshaled.PrevHash == nil, signature.PrevHash == nil)
 	}
-	if unmarshaled.PrevHashB64 != nil && signature.PrevHashB64 != nil && *unmarshaled.PrevHashB64 != *signature.PrevHashB64 {
-		t.Errorf("PrevHashB64 mismatch: got %v, expected %v", *unmarshaled.PrevHashB64, *signature.PrevHashB64)
+	if unmarshaled.PrevHash != nil && signature.PrevHash != nil && *unmarshaled.PrevHash != *signature.PrevHash {
+		t.Errorf("PrevHash mismatch: got %v, expected %v", *unmarshaled.PrevHash, *signature.PrevHash)
 	}
 }
 
@@ -95,18 +95,18 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 	createdAt := time.Date(2024, 1, 15, 10, 30, 46, 0, time.UTC)
 
 	signature := &Signature{
-		ID:             456,
-		DocID:          "minimal-doc",
-		UserSub:        "github|987654321",
-		UserEmail:      "minimal@example.com",
-		UserName:       nil,
-		SignedAtUTC:    timestamp,
-		PayloadHashB64: "bWluaW1hbA==",
-		SignatureB64:   "bWluaW1hbC1zaWc=",
-		Nonce:          "minimal-nonce",
-		CreatedAt:      createdAt,
-		Referer:        nil,
-		PrevHashB64:    nil,
+		ID:          456,
+		DocID:       "minimal-doc",
+		UserSub:     "github|987654321",
+		UserEmail:   "minimal@example.com",
+		UserName:    nil,
+		SignedAtUTC: timestamp,
+		PayloadHash: "bWluaW1hbA==",
+		Signature:   "bWluaW1hbC1zaWc=",
+		Nonce:       "minimal-nonce",
+		CreatedAt:   createdAt,
+		Referer:     nil,
+		PrevHash:    nil,
 	}
 
 	// Test serialization
@@ -123,8 +123,8 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 	if strings.Contains(jsonStr, "referer") {
 		t.Error("referer should be omitted when nil")
 	}
-	if strings.Contains(jsonStr, "prev_hash_b64") {
-		t.Error("prev_hash_b64 should be omitted when nil")
+	if strings.Contains(jsonStr, "prev_hash") {
+		t.Error("prev_hash should be omitted when nil")
 	}
 
 	// Test deserialization
@@ -141,8 +141,8 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 	if unmarshaled.Referer != nil {
 		t.Errorf("Referer should be nil, got %v", unmarshaled.Referer)
 	}
-	if unmarshaled.PrevHashB64 != nil {
-		t.Errorf("PrevHashB64 should be nil, got %v", unmarshaled.PrevHashB64)
+	if unmarshaled.PrevHash != nil {
+		t.Errorf("PrevHash should be nil, got %v", unmarshaled.PrevHash)
 	}
 }
 
@@ -252,17 +252,17 @@ func TestSignature_ComputeRecordHash(t *testing.T) {
 	referer := "https://github.com/user/repo"
 
 	signature := &Signature{
-		ID:             123,
-		DocID:          "test-doc-123",
-		UserSub:        "google-oauth2|123456789",
-		UserEmail:      "test@example.com",
-		UserName:       &userName,
-		SignedAtUTC:    timestamp,
-		PayloadHashB64: "SGVsbG8gV29ybGQ=",
-		SignatureB64:   "c2lnbmF0dXJlLWRhdGE=",
-		Nonce:          "random-nonce-123",
-		CreatedAt:      createdAt,
-		Referer:        &referer,
+		ID:          123,
+		DocID:       "test-doc-123",
+		UserSub:     "google-oauth2|123456789",
+		UserEmail:   "test@example.com",
+		UserName:    &userName,
+		SignedAtUTC: timestamp,
+		PayloadHash: "SGVsbG8gV29ybGQ=",
+		Signature:   "c2lnbmF0dXJlLWRhdGE=",
+		Nonce:       "random-nonce-123",
+		CreatedAt:   createdAt,
+		Referer:     &referer,
 	}
 
 	hash1 := signature.ComputeRecordHash()
@@ -316,31 +316,31 @@ func TestSignature_ComputeRecordHashDeterministic(t *testing.T) {
 	referer := "https://github.com/user/repo"
 
 	sig1 := &Signature{
-		ID:             123,
-		DocID:          "test-doc-123",
-		UserSub:        "google-oauth2|123456789",
-		UserEmail:      "test@example.com",
-		UserName:       &userName,
-		SignedAtUTC:    timestamp,
-		PayloadHashB64: "SGVsbG8gV29ybGQ=",
-		SignatureB64:   "c2lnbmF0dXJlLWRhdGE=",
-		Nonce:          "random-nonce-123",
-		CreatedAt:      createdAt,
-		Referer:        &referer,
+		ID:          123,
+		DocID:       "test-doc-123",
+		UserSub:     "google-oauth2|123456789",
+		UserEmail:   "test@example.com",
+		UserName:    &userName,
+		SignedAtUTC: timestamp,
+		PayloadHash: "SGVsbG8gV29ybGQ=",
+		Signature:   "c2lnbmF0dXJlLWRhdGE=",
+		Nonce:       "random-nonce-123",
+		CreatedAt:   createdAt,
+		Referer:     &referer,
 	}
 
 	sig2 := &Signature{
-		ID:             123,
-		DocID:          "test-doc-123",
-		UserSub:        "google-oauth2|123456789",
-		UserEmail:      "test@example.com",
-		UserName:       &userName,
-		SignedAtUTC:    timestamp,
-		PayloadHashB64: "SGVsbG8gV29ybGQ=",
-		SignatureB64:   "c2lnbmF0dXJlLWRhdGE=",
-		Nonce:          "random-nonce-123",
-		CreatedAt:      createdAt,
-		Referer:        &referer,
+		ID:          123,
+		DocID:       "test-doc-123",
+		UserSub:     "google-oauth2|123456789",
+		UserEmail:   "test@example.com",
+		UserName:    &userName,
+		SignedAtUTC: timestamp,
+		PayloadHash: "SGVsbG8gV29ybGQ=",
+		Signature:   "c2lnbmF0dXJlLWRhdGE=",
+		Nonce:       "random-nonce-123",
+		CreatedAt:   createdAt,
+		Referer:     &referer,
 	}
 
 	hash1 := sig1.ComputeRecordHash()

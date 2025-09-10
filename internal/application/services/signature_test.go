@@ -671,10 +671,10 @@ func TestSignatureService_VerifyChainIntegrity(t *testing.T) {
 			name: "valid chain with single signature",
 			setupSignatures: func(r *fakeRepository) {
 				sig1 := &models.Signature{
-					ID:          1,
-					DocID:       "doc1",
-					UserSub:     "user1",
-					PrevHashB64: nil, // Genesis
+					ID:       1,
+					DocID:    "doc1",
+					UserSub:  "user1",
+					PrevHash: nil, // Genesis
 				}
 				r.allSignatures = []*models.Signature{sig1}
 			},
@@ -685,17 +685,17 @@ func TestSignatureService_VerifyChainIntegrity(t *testing.T) {
 			name: "valid chain with multiple signatures",
 			setupSignatures: func(r *fakeRepository) {
 				sig1 := &models.Signature{
-					ID:          1,
-					DocID:       "doc1",
-					UserSub:     "user1",
-					PrevHashB64: nil, // Genesis
+					ID:       1,
+					DocID:    "doc1",
+					UserSub:  "user1",
+					PrevHash: nil, // Genesis
 				}
 				hash1 := sig1.ComputeRecordHash()
 				sig2 := &models.Signature{
-					ID:          2,
-					DocID:       "doc2",
-					UserSub:     "user2",
-					PrevHashB64: &hash1,
+					ID:       2,
+					DocID:    "doc2",
+					UserSub:  "user2",
+					PrevHash: &hash1,
 				}
 				r.allSignatures = []*models.Signature{sig1, sig2}
 			},
@@ -707,10 +707,10 @@ func TestSignatureService_VerifyChainIntegrity(t *testing.T) {
 			setupSignatures: func(r *fakeRepository) {
 				hash := "invalid-genesis-hash"
 				sig1 := &models.Signature{
-					ID:          1,
-					DocID:       "doc1",
-					UserSub:     "user1",
-					PrevHashB64: &hash,
+					ID:       1,
+					DocID:    "doc1",
+					UserSub:  "user1",
+					PrevHash: &hash,
 				}
 				r.allSignatures = []*models.Signature{sig1}
 			},
@@ -722,16 +722,16 @@ func TestSignatureService_VerifyChainIntegrity(t *testing.T) {
 			name: "invalid chain - missing prev hash",
 			setupSignatures: func(r *fakeRepository) {
 				sig1 := &models.Signature{
-					ID:          1,
-					DocID:       "doc1",
-					UserSub:     "user1",
-					PrevHashB64: nil, // Genesis
+					ID:       1,
+					DocID:    "doc1",
+					UserSub:  "user1",
+					PrevHash: nil, // Genesis
 				}
 				sig2 := &models.Signature{
-					ID:          2,
-					DocID:       "doc2",
-					UserSub:     "user2",
-					PrevHashB64: nil, // Should have prev hash
+					ID:       2,
+					DocID:    "doc2",
+					UserSub:  "user2",
+					PrevHash: nil, // Should have prev hash
 				}
 				r.allSignatures = []*models.Signature{sig1, sig2}
 			},
@@ -742,17 +742,17 @@ func TestSignatureService_VerifyChainIntegrity(t *testing.T) {
 			name: "invalid chain - wrong prev hash",
 			setupSignatures: func(r *fakeRepository) {
 				sig1 := &models.Signature{
-					ID:          1,
-					DocID:       "doc1",
-					UserSub:     "user1",
-					PrevHashB64: nil, // Genesis
+					ID:       1,
+					DocID:    "doc1",
+					UserSub:  "user1",
+					PrevHash: nil, // Genesis
 				}
 				wrongHash := "wrong-hash-that-is-long-enough-for-display"
 				sig2 := &models.Signature{
-					ID:          2,
-					DocID:       "doc2",
-					UserSub:     "user2",
-					PrevHashB64: &wrongHash,
+					ID:       2,
+					DocID:    "doc2",
+					UserSub:  "user2",
+					PrevHash: &wrongHash,
 				}
 				r.allSignatures = []*models.Signature{sig1, sig2}
 			},
@@ -827,16 +827,16 @@ func TestSignatureService_RebuildChain(t *testing.T) {
 		// Setup signatures that need rebuilding
 		hash := "wrong-hash"
 		sig1 := &models.Signature{
-			ID:          1,
-			DocID:       "doc1",
-			UserSub:     "user1",
-			PrevHashB64: &hash, // Should be nil for genesis
+			ID:       1,
+			DocID:    "doc1",
+			UserSub:  "user1",
+			PrevHash: &hash, // Should be nil for genesis
 		}
 		sig2 := &models.Signature{
-			ID:          2,
-			DocID:       "doc2",
-			UserSub:     "user2",
-			PrevHashB64: nil, // Should have correct hash
+			ID:       2,
+			DocID:    "doc2",
+			UserSub:  "user2",
+			PrevHash: nil, // Should have correct hash
 		}
 		repo.allSignatures = []*models.Signature{sig1, sig2}
 

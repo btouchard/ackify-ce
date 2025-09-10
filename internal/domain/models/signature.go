@@ -11,18 +11,18 @@ import (
 
 // Signature represents a document signature record
 type Signature struct {
-	ID             int64     `json:"id" db:"id"`
-	DocID          string    `json:"doc_id" db:"doc_id"`
-	UserSub        string    `json:"user_sub" db:"user_sub"`
-	UserEmail      string    `json:"user_email" db:"user_email"`
-	UserName       *string   `json:"user_name,omitempty" db:"user_name"`
-	SignedAtUTC    time.Time `json:"signed_at_utc" db:"signed_at"`
-	PayloadHashB64 string    `json:"payload_hash_b64" db:"payload_hash"`
-	SignatureB64   string    `json:"signature_b64" db:"signature"`
-	Nonce          string    `json:"nonce" db:"nonce"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	Referer        *string   `json:"referer,omitempty" db:"referer"`
-	PrevHashB64    *string   `json:"prev_hash_b64,omitempty" db:"prev_hash"`
+	ID          int64     `json:"id" db:"id"`
+	DocID       string    `json:"doc_id" db:"doc_id"`
+	UserSub     string    `json:"user_sub" db:"user_sub"`
+	UserEmail   string    `json:"user_email" db:"user_email"`
+	UserName    *string   `json:"user_name,omitempty" db:"user_name"`
+	SignedAtUTC time.Time `json:"signed_at" db:"signed_at"`
+	PayloadHash string    `json:"payload_hash" db:"payload_hash"`
+	Signature   string    `json:"signature" db:"signature"`
+	Nonce       string    `json:"nonce" db:"nonce"`
+	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	Referer     *string   `json:"referer,omitempty" db:"referer"`
+	PrevHash    *string   `json:"prev_hash,omitempty" db:"prev_hash"`
 }
 
 // GetServiceInfo returns information about the service that originated this signature
@@ -57,8 +57,8 @@ func (s *Signature) ComputeRecordHash() string {
 		s.UserEmail,
 		s.UserName,
 		s.SignedAtUTC.Format(time.RFC3339Nano),
-		s.PayloadHashB64,
-		s.SignatureB64,
+		s.PayloadHash,
+		s.Signature,
 		s.Nonce,
 		s.CreatedAt.Format(time.RFC3339Nano),
 		func() string {

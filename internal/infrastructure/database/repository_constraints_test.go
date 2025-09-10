@@ -63,7 +63,7 @@ func TestRepository_DatabaseConstraints_Integration(t *testing.T) {
 				modifyFn: func(s *models.Signature) {
 					s.UserName = nil
 					s.Referer = nil
-					s.PrevHashB64 = nil
+					s.PrevHash = nil
 				},
 				wantErr: false,
 			},
@@ -83,13 +83,13 @@ func TestRepository_DatabaseConstraints_Integration(t *testing.T) {
 				wantErr:  false, // Empty string != NULL in PostgreSQL
 			},
 			{
-				name:     "empty payload_hash_b64 is allowed by DB",
-				modifyFn: func(s *models.Signature) { s.PayloadHashB64 = "" },
+				name:     "empty payload_hash is allowed by DB",
+				modifyFn: func(s *models.Signature) { s.PayloadHash = "" },
 				wantErr:  false, // Empty string != NULL in PostgreSQL
 			},
 			{
-				name:     "empty signature_b64 is allowed by DB",
-				modifyFn: func(s *models.Signature) { s.SignatureB64 = "" },
+				name:     "empty signature is allowed by DB",
+				modifyFn: func(s *models.Signature) { s.Signature = "" },
 				wantErr:  false, // Empty string != NULL in PostgreSQL
 			},
 			{
@@ -172,7 +172,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 
 		// Execute operations within transaction context
 		// Create first signature
-		query := `INSERT INTO signatures (doc_id, user_sub, user_email, signed_at_utc, payload_hash_b64, signature_b64, nonce) 
+		query := `INSERT INTO signatures (doc_id, user_sub, user_email, signed_at, payload_hash, signature, nonce) 
 				 VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
 		_, err = tx.ExecContext(ctx, query, "test-doc", "test-user", "test@example.com",
@@ -212,7 +212,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 		}
 
 		// Execute operations within transaction context
-		query := `INSERT INTO signatures (doc_id, user_sub, user_email, signed_at_utc, payload_hash_b64, signature_b64, nonce) 
+		query := `INSERT INTO signatures (doc_id, user_sub, user_email, signed_at, payload_hash, signature, nonce) 
 				 VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
 		_, err = tx.ExecContext(ctx, query, "test-doc", "test-user", "test@example.com",
@@ -333,7 +333,7 @@ func TestRepository_DataIntegrity_Integration(t *testing.T) {
 		sig := factory.CreateValidSignature()
 		sig.DocID = "test-éñcode-中文-🎯"
 		sig.UserEmail = "tëst@éxample.com"
-		sig.PayloadHashB64 = "SGVsbG8gV29ybGQh" // "Hello World!" in base64
+		sig.PayloadHash = "SGVsbG8gV29ybGQh" // "Hello World!" in base64
 		sig.Nonce = "nonce-with-special-chars-αβγ"
 
 		referer := "https://example.com/path/with/émojis🚀?param=value"
@@ -361,8 +361,8 @@ func TestRepository_DataIntegrity_Integration(t *testing.T) {
 
 		// Large base64 strings (simulate large signatures/hashes)
 		largeData := strings.Repeat("SGVsbG8gV29ybGQh", 100) // Repeat base64 string
-		sig.PayloadHashB64 = largeData
-		sig.SignatureB64 = largeData
+		sig.PayloadHash = largeData
+		sig.Signature = largeData
 
 		longReferer := "https://example.com/very/long/path/" + strings.Repeat("segment/", 50)
 		sig.Referer = &longReferer
@@ -378,9 +378,9 @@ func TestRepository_DataIntegrity_Integration(t *testing.T) {
 			t.Fatalf("Failed to get signature: %v", err)
 		}
 
-		if len(result.PayloadHashB64) != len(sig.PayloadHashB64) {
-			t.Errorf("PayloadHashB64 length mismatch: expected %d, got %d",
-				len(sig.PayloadHashB64), len(result.PayloadHashB64))
+		if len(result.PayloadHash) != len(sig.PayloadHash) {
+			t.Errorf("PayloadHash length mismatch: expected %d, got %d",
+				len(sig.PayloadHash), len(result.PayloadHash))
 		}
 
 		if len(*result.Referer) != len(*sig.Referer) {
@@ -404,7 +404,7 @@ func TestRepository_EdgeCases_Integration(t *testing.T) {
 		emptyString := ""
 		sig.UserName = &emptyString
 		sig.Referer = &emptyString
-		sig.PrevHashB64 = &emptyString
+		sig.PrevHash = &emptyString
 
 		err := repo.Create(ctx, sig)
 		if err != nil {
@@ -423,8 +423,8 @@ func TestRepository_EdgeCases_Integration(t *testing.T) {
 		if result.Referer == nil || *result.Referer != "" {
 			t.Error("Empty string Referer not preserved")
 		}
-		if result.PrevHashB64 == nil || *result.PrevHashB64 != "" {
-			t.Error("Empty string PrevHashB64 not preserved")
+		if result.PrevHash == nil || *result.PrevHash != "" {
+			t.Error("Empty string PrevHash not preserved")
 		}
 	})
 

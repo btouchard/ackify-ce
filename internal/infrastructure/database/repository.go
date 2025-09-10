@@ -20,7 +20,7 @@ func NewSignatureRepository(db *sql.DB) *SignatureRepository {
 
 func (r *SignatureRepository) Create(ctx context.Context, signature *models.Signature) error {
 	query := `
-		INSERT INTO signatures (doc_id, user_sub, user_email, user_name, signed_at_utc, payload_hash_b64, signature_b64, nonce, referer, prev_hash_b64)
+		INSERT INTO signatures (doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, referer, prev_hash)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, created_at
 	`
@@ -32,11 +32,11 @@ func (r *SignatureRepository) Create(ctx context.Context, signature *models.Sign
 		signature.UserEmail,
 		signature.UserName,
 		signature.SignedAtUTC,
-		signature.PayloadHashB64,
-		signature.SignatureB64,
+		signature.PayloadHash,
+		signature.Signature,
 		signature.Nonce,
 		signature.Referer,
-		signature.PrevHashB64,
+		signature.PrevHash,
 	).Scan(&signature.ID, &signature.CreatedAt)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func (r *SignatureRepository) Create(ctx context.Context, signature *models.Sign
 
 func (r *SignatureRepository) GetByDocAndUser(ctx context.Context, docID, userSub string) (*models.Signature, error) {
 	query := `
-		SELECT id, doc_id, user_sub, user_email, user_name, signed_at_utc, payload_hash_b64, signature_b64, nonce, created_at, referer, prev_hash_b64
+		SELECT id, doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, created_at, referer, prev_hash
 		FROM signatures 
 		WHERE doc_id = $1 AND user_sub = $2
 	`
@@ -61,12 +61,12 @@ func (r *SignatureRepository) GetByDocAndUser(ctx context.Context, docID, userSu
 		&signature.UserEmail,
 		&signature.UserName,
 		&signature.SignedAtUTC,
-		&signature.PayloadHashB64,
-		&signature.SignatureB64,
+		&signature.PayloadHash,
+		&signature.Signature,
 		&signature.Nonce,
 		&signature.CreatedAt,
 		&signature.Referer,
-		&signature.PrevHashB64,
+		&signature.PrevHash,
 	)
 
 	if err != nil {
@@ -81,7 +81,7 @@ func (r *SignatureRepository) GetByDocAndUser(ctx context.Context, docID, userSu
 
 func (r *SignatureRepository) GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error) {
 	query := `
-		SELECT id, doc_id, user_sub, user_email, user_name, signed_at_utc, payload_hash_b64, signature_b64, nonce, created_at, referer, prev_hash_b64
+		SELECT id, doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, created_at, referer, prev_hash
 		FROM signatures 
 		WHERE doc_id = $1 
 		ORDER BY created_at DESC
@@ -105,12 +105,12 @@ func (r *SignatureRepository) GetByDoc(ctx context.Context, docID string) ([]*mo
 			&signature.UserEmail,
 			&signature.UserName,
 			&signature.SignedAtUTC,
-			&signature.PayloadHashB64,
-			&signature.SignatureB64,
+			&signature.PayloadHash,
+			&signature.Signature,
 			&signature.Nonce,
 			&signature.CreatedAt,
 			&signature.Referer,
-			&signature.PrevHashB64,
+			&signature.PrevHash,
 		)
 		if err != nil {
 			continue
@@ -123,7 +123,7 @@ func (r *SignatureRepository) GetByDoc(ctx context.Context, docID string) ([]*mo
 
 func (r *SignatureRepository) GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error) {
 	query := `
-		SELECT id, doc_id, user_sub, user_email, user_name, signed_at_utc, payload_hash_b64, signature_b64, nonce, created_at, referer, prev_hash_b64
+		SELECT id, doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, created_at, referer, prev_hash
 		FROM signatures 
 		WHERE user_sub = $1 
 		ORDER BY created_at DESC
@@ -147,12 +147,12 @@ func (r *SignatureRepository) GetByUser(ctx context.Context, userSub string) ([]
 			&signature.UserEmail,
 			&signature.UserName,
 			&signature.SignedAtUTC,
-			&signature.PayloadHashB64,
-			&signature.SignatureB64,
+			&signature.PayloadHash,
+			&signature.Signature,
 			&signature.Nonce,
 			&signature.CreatedAt,
 			&signature.Referer,
-			&signature.PrevHashB64,
+			&signature.PrevHash,
 		)
 		if err != nil {
 			continue
@@ -194,7 +194,7 @@ func (r *SignatureRepository) CheckUserSignatureStatus(ctx context.Context, docI
 
 func (r *SignatureRepository) GetLastSignature(ctx context.Context) (*models.Signature, error) {
 	query := `
-		SELECT id, doc_id, user_sub, user_email, user_name, signed_at_utc, payload_hash_b64, signature_b64, nonce, created_at, referer, prev_hash_b64
+		SELECT id, doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, created_at, referer, prev_hash
 		FROM signatures 
 		ORDER BY id DESC 
 		LIMIT 1
@@ -208,12 +208,12 @@ func (r *SignatureRepository) GetLastSignature(ctx context.Context) (*models.Sig
 		&signature.UserEmail,
 		&signature.UserName,
 		&signature.SignedAtUTC,
-		&signature.PayloadHashB64,
-		&signature.SignatureB64,
+		&signature.PayloadHash,
+		&signature.Signature,
 		&signature.Nonce,
 		&signature.CreatedAt,
 		&signature.Referer,
-		&signature.PrevHashB64,
+		&signature.PrevHash,
 	)
 
 	if err != nil {
@@ -228,7 +228,7 @@ func (r *SignatureRepository) GetLastSignature(ctx context.Context) (*models.Sig
 
 func (r *SignatureRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error) {
 	query := `
-		SELECT id, doc_id, user_sub, user_email, user_name, signed_at_utc, payload_hash_b64, signature_b64, nonce, created_at, referer, prev_hash_b64
+		SELECT id, doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, created_at, referer, prev_hash
 		FROM signatures 
 		ORDER BY id ASC`
 
@@ -250,12 +250,12 @@ func (r *SignatureRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*m
 			&signature.UserEmail,
 			&signature.UserName,
 			&signature.SignedAtUTC,
-			&signature.PayloadHashB64,
-			&signature.SignatureB64,
+			&signature.PayloadHash,
+			&signature.Signature,
 			&signature.Nonce,
 			&signature.CreatedAt,
 			&signature.Referer,
-			&signature.PrevHashB64,
+			&signature.PrevHash,
 		)
 		if err != nil {
 			continue

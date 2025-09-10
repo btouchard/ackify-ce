@@ -49,7 +49,7 @@ func (s *Ed25519Signer) GetPublicKey() string {
 // canonicalPayload creates a canonical payload for signing
 func canonicalPayload(docID string, user *models.User, timestamp time.Time, nonce string) []byte {
 	return []byte(fmt.Sprintf(
-		"doc_id=%s\nuser_sub=%s\nuser_email=%s\nsigned_at_utc=%s\nnonce=%s\n",
+		"doc_id=%s\nuser_sub=%s\nuser_email=%s\nsigned_at=%s\nnonce=%s\n",
 		docID,
 		user.Sub,
 		user.NormalizedEmail(),

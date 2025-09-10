@@ -102,7 +102,7 @@ function viewSignatures() {
       html += `<p><strong>${signatures.length}</strong> validation(s) :</p><ul>`;
       
       signatures.forEach(sig => {
-        const date = new Date(sig.signed_at_utc).toLocaleDateString('fr-FR', {
+        const date = new Date(sig.signed_at).toLocaleDateString('fr-FR', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',

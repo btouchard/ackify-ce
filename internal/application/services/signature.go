@@ -96,16 +96,16 @@ func (s *SignatureService) CreateSignature(ctx context.Context, request *models.
 		"userName", request.User.Name)
 
 	signature := &models.Signature{
-		DocID:          request.DocID,
-		UserSub:        request.User.Sub,
-		UserEmail:      request.User.NormalizedEmail(),
-		UserName:       userName,
-		SignedAtUTC:    timestamp,
-		PayloadHashB64: payloadHash,
-		SignatureB64:   signatureB64,
-		Nonce:          nonce,
-		Referer:        request.Referer,
-		PrevHashB64:    prevHashB64,
+		DocID:       request.DocID,
+		UserSub:     request.User.Sub,
+		UserEmail:   request.User.NormalizedEmail(),
+		UserName:    userName,
+		SignedAtUTC: timestamp,
+		PayloadHash: payloadHash,
+		Signature:   signatureB64,
+		Nonce:       nonce,
+		Referer:     request.Referer,
+		PrevHash:    prevHashB64,
 	}
 
 	if err := s.repo.Create(ctx, signature); err != nil {
@@ -210,7 +210,7 @@ func (s *SignatureService) VerifyChainIntegrity(ctx context.Context) (*ChainInte
 		return result, nil
 	}
 
-	if signatures[0].PrevHashB64 != nil {
+	if signatures[0].PrevHash != nil {
 		result.IsValid = false
 		result.BreakAtID = &signatures[0].ID
 		result.Details = "Genesis signature has non-null previous hash"
@@ -223,18 +223,18 @@ func (s *SignatureService) VerifyChainIntegrity(ctx context.Context) (*ChainInte
 
 		expectedHash := previous.ComputeRecordHash()
 
-		if current.PrevHashB64 == nil {
+		if current.PrevHash == nil {
 			result.IsValid = false
 			result.BreakAtID = &current.ID
 			result.Details = fmt.Sprintf("Signature %d has null previous hash, expected: %s...", current.ID, expectedHash[:16])
 			return result, nil
 		}
 
-		if *current.PrevHashB64 != expectedHash {
+		if *current.PrevHash != expectedHash {
 			result.IsValid = false
 			result.BreakAtID = &current.ID
 			result.Details = fmt.Sprintf("Hash mismatch at signature %d: expected %s..., got %s...",
-				current.ID, expectedHash[:16], (*current.PrevHashB64)[:16])
+				current.ID, expectedHash[:16], (*current.PrevHash)[:16])
 			return result, nil
 		}
 	}
@@ -259,9 +259,9 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 	logger.Logger.Info("Starting chain rebuild", "totalSignatures", len(signatures))
 
 	// First signature (genesis) should have null prev_hash
-	if signatures[0].PrevHashB64 != nil {
+	if signatures[0].PrevHash != nil {
 		// Reset genesis signature
-		signatures[0].PrevHashB64 = nil
+		signatures[0].PrevHash = nil
 		if err := s.repo.Create(ctx, signatures[0]); err != nil {
 			logger.Logger.Warn("Failed to update genesis signature", "id", signatures[0].ID, "error", err)
 		}
@@ -275,8 +275,8 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 		expectedHash := previous.ComputeRecordHash()
 
 		// Update if hash is missing or incorrect
-		if current.PrevHashB64 == nil || *current.PrevHashB64 != expectedHash {
-			current.PrevHashB64 = &expectedHash
+		if current.PrevHash == nil || *current.PrevHash != expectedHash {
+			current.PrevHash = &expectedHash
 
 			// Note: This would require an UPDATE method in the repository
 			// For now, we'll log what needs to be updated
@@ -284,8 +284,8 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 				"id", current.ID,
 				"expectedHash", expectedHash[:16]+"...",
 				"currentHash", func() string {
-					if current.PrevHashB64 != nil {
-						return (*current.PrevHashB64)[:16] + "..."
+					if current.PrevHash != nil {
+						return (*current.PrevHash)[:16] + "..."
 					}
 					return "null"
 				}())

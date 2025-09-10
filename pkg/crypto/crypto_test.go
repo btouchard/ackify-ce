@@ -186,7 +186,7 @@ func TestSHA256Hashing(t *testing.T) {
 		expectedPayload := "doc_id=" + docID + "\n" +
 			"user_sub=" + user.Sub + "\n" +
 			"user_email=" + user.NormalizedEmail() + "\n" +
-			"signed_at_utc=" + timestamp.UTC().Format(time.RFC3339Nano) + "\n" +
+			"signed_at=" + timestamp.UTC().Format(time.RFC3339Nano) + "\n" +
 			"nonce=" + nonce + "\n"
 
 		expectedHash := sha256.Sum256([]byte(expectedPayload))

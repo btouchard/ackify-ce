@@ -323,7 +323,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Manually create expected payload to verify format
-		expectedPayload := []byte("doc_id=payload-test\nuser_sub=user-123-alice\nuser_email=alice@example.com\nsigned_at_utc=2024-04-01T12:00:00Z\nnonce=payload-nonce\n")
+		expectedPayload := []byte("doc_id=payload-test\nuser_sub=user-123-alice\nuser_email=alice@example.com\nsigned_at=2024-04-01T12:00:00Z\nnonce=payload-nonce\n")
 		expectedHash := sha256.Sum256(expectedPayload)
 		expectedHashB64 := base64.StdEncoding.EncodeToString(expectedHash[:])
 
@@ -346,7 +346,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create expected payload with normalized (lowercase) email
-		expectedPayload := []byte("doc_id=email-test\nuser_sub=user-email-test\nuser_email=test.user@example.com\nsigned_at_utc=2024-05-01T10:00:00Z\nnonce=email-nonce\n")
+		expectedPayload := []byte("doc_id=email-test\nuser_sub=user-email-test\nuser_email=test.user@example.com\nsigned_at=2024-05-01T10:00:00Z\nnonce=email-nonce\n")
 		expectedHash := sha256.Sum256(expectedPayload)
 		expectedHashB64 := base64.StdEncoding.EncodeToString(expectedHash[:])
 
