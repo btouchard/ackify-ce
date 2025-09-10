@@ -67,28 +67,28 @@ OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
 
 ### 1. Demander une signature
 ```
-https://votre-domaine.com/sign?doc=procedure_securite_2024
+https://votre-domaine.com/sign?doc=procedure_securite_2025
 ```
 → L'utilisateur s'authentifie via OAuth2 et valide sa lecture
 
 ### 2. Vérifier les signatures
 ```bash
 # API JSON - Liste complète
-curl "https://votre-domaine.com/status?doc=procedure_securite_2024"
+curl "https://votre-domaine.com/status?doc=procedure_securite_2025"
 
 # Badge PNG - Statut individuel  
-curl "https://votre-domaine.com/status.png?doc=procedure_securite_2024&user=jean.dupont@entreprise.com"
+curl "https://votre-domaine.com/status.png?doc=procedure_securite_2025&user=jean.dupont@entreprise.com"
 ```
 
 ### 3. Intégrer dans vos pages
 ```html
 <!-- Widget intégrable -->
-<iframe src="https://votre-domaine.com/embed?doc=procedure_securite_2024" 
+<iframe src="https://votre-domaine.com/embed?doc=procedure_securite_2025" 
         width="500" height="300"></iframe>
 
 <!-- Via oEmbed -->
 <script>
-fetch('/oembed?url=https://votre-domaine.com/embed?doc=procedure_securite_2024')
+fetch('/oembed?url=https://votre-domaine.com/embed?doc=procedure_securite_2025')
   .then(r => r.json())
   .then(data => document.getElementById('signatures').innerHTML = data.html);
 </script>

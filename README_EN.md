@@ -59,28 +59,28 @@ OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
 
 ### 1. Request a signature
 ```
-https://your-domain.com/sign?doc=security_procedure_2024
+https://your-domain.com/sign?doc=security_procedure_2025
 ```
 → User authenticates via OAuth2 and validates their reading
 
 ### 2. Verify signatures
 ```bash
 # JSON API - Complete list
-curl "https://your-domain.com/status?doc=security_procedure_2024"
+curl "https://your-domain.com/status?doc=security_procedure_2025"
 
 # PNG Badge - Individual status  
-curl "https://your-domain.com/status.png?doc=security_procedure_2024&user=john.doe@company.com"
+curl "https://your-domain.com/status.png?doc=security_procedure_2025&user=john.doe@company.com"
 ```
 
 ### 3. Integrate into your pages
 ```html
 <!-- Embeddable widget -->
-<iframe src="https://your-domain.com/embed?doc=security_procedure_2024" 
+<iframe src="https://your-domain.com/embed?doc=security_procedure_2025" 
         width="500" height="300"></iframe>
 
 <!-- Via oEmbed -->
 <script>
-fetch('/oembed?url=https://your-domain.com/embed?doc=security_procedure_2024')
+fetch('/oembed?url=https://your-domain.com/embed?doc=security_procedure_2025')
   .then(r => r.json())
   .then(data => document.getElementById('signatures').innerHTML = data.html);
 </script>
