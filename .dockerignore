@@ -48,6 +48,7 @@ docker-compose*
 
 # Installation files (for downloads only)
 install/
+client_secret*.json
 
 # Node.js (if any frontend assets)
 node_modules/

@@ -6,4 +6,4 @@ CLAUDE.md
 
 docker-compose.local.yml
 docker-compose.prod.yml
-
+client_secret*.json

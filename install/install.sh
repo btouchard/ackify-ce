@@ -34,7 +34,7 @@ cp .env.example .env
 # Generate secure secrets
 echo "🔑 Generating secure secrets..."
 COOKIE_SECRET=$(openssl rand -base64 32)
-ED25519_KEY=$(openssl genpkey -algorithm Ed25519 | base64 -w 0)
+ED25519_KEY=$(openssl rand 64 | base64 -w 0)
 
 # Replace placeholders in .env (using # as delimiter to avoid issues with / and + in base64)
 sed -i "s#your_base64_encoded_secret_key#$COOKIE_SECRET#" .env

@@ -68,8 +68,6 @@
             Développé par 
             <a href="mailto:benjamin@kolapsis.com" class="text-primary-600 hover:text-primary-700 font-medium">Benjamin Touchard</a>
             <span class="mx-1">•</span>
-            <a href="mailto:benjamin@kolapsis.com" class="text-slate-500 hover:text-slate-600">benjamin@kolapsis.com</a>
-            <span class="mx-1">•</span>
             <span class="text-slate-400">@2025</span>
           </p>
         </div>
