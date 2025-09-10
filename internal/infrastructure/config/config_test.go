@@ -1,0 +1,814 @@
+package config
+
+import (
+	"encoding/base64"
+	"os"
+	"testing"
+)
+
+func TestConfig_Structures(t *testing.T) {
+	t.Run("Config structure", func(t *testing.T) {
+		config := &Config{
+			App: AppConfig{
+				BaseURL:       "https://example.com",
+				Organisation:  "Test Org",
+				SecureCookies: true,
+			},
+			Database: DatabaseConfig{
+				DSN: "postgres://user:pass@localhost/db",
+			},
+			OAuth: OAuthConfig{
+				ClientID:      "test-client-id",
+				ClientSecret:  "test-client-secret",
+				AuthURL:       "https://provider.com/auth",
+				TokenURL:      "https://provider.com/token",
+				UserInfoURL:   "https://provider.com/userinfo",
+				Scopes:        []string{"openid", "email"},
+				AllowedDomain: "@example.com",
+				CookieSecret:  []byte("test-secret"),
+			},
+			Server: ServerConfig{
+				ListenAddr: ":8080",
+			},
+		}
+
+		// Test that all fields are accessible
+		if config.App.BaseURL != "https://example.com" {
+			t.Errorf("App.BaseURL mismatch")
+		}
+		if config.Database.DSN != "postgres://user:pass@localhost/db" {
+			t.Errorf("Database.DSN mismatch")
+		}
+		if config.OAuth.ClientID != "test-client-id" {
+			t.Errorf("OAuth.ClientID mismatch")
+		}
+		if config.Server.ListenAddr != ":8080" {
+			t.Errorf("Server.ListenAddr mismatch")
+		}
+	})
+
+	t.Run("AppConfig structure", func(t *testing.T) {
+		app := AppConfig{
+			BaseURL:       "https://ackify.example.com",
+			Organisation:  "My Company",
+			SecureCookies: true,
+		}
+
+		if app.BaseURL == "" {
+			t.Error("BaseURL should not be empty")
+		}
+		if app.Organisation == "" {
+			t.Error("Organisation should not be empty")
+		}
+		if !app.SecureCookies {
+			t.Error("SecureCookies should be true for HTTPS")
+		}
+	})
+
+	t.Run("OAuthConfig structure", func(t *testing.T) {
+		oauth := OAuthConfig{
+			ClientID:      "oauth-client-123",
+			ClientSecret:  "oauth-secret-456",
+			AuthURL:       "https://oauth.provider.com/auth",
+			TokenURL:      "https://oauth.provider.com/token",
+			UserInfoURL:   "https://oauth.provider.com/userinfo",
+			Scopes:        []string{"openid", "email", "profile"},
+			AllowedDomain: "@company.com",
+			CookieSecret:  []byte("32-byte-secret-for-secure-cookies"),
+		}
+
+		// Test required fields
+		if oauth.ClientID == "" {
+			t.Error("ClientID should not be empty")
+		}
+		if oauth.ClientSecret == "" {
+			t.Error("ClientSecret should not be empty")
+		}
+		if len(oauth.Scopes) == 0 {
+			t.Error("Scopes should not be empty")
+		}
+		if len(oauth.CookieSecret) == 0 {
+			t.Error("CookieSecret should not be empty")
+		}
+	})
+}
+
+func TestGetEnv(t *testing.T) {
+	tests := []struct {
+		name         string
+		key          string
+		defaultValue string
+		envValue     string
+		expected     string
+	}{
+		{
+			name:         "existing environment variable",
+			key:          "TEST_ENV_VAR",
+			defaultValue: "default",
+			envValue:     "custom_value",
+			expected:     "custom_value",
+		},
+		{
+			name:         "missing environment variable uses default",
+			key:          "MISSING_ENV_VAR",
+			defaultValue: "default_value",
+			envValue:     "",
+			expected:     "default_value",
+		},
+		{
+			name:         "empty environment variable uses default",
+			key:          "EMPTY_ENV_VAR",
+			defaultValue: "default_value",
+			envValue:     "",
+			expected:     "default_value",
+		},
+		{
+			name:         "whitespace-only environment variable uses default",
+			key:          "WHITESPACE_ENV_VAR",
+			defaultValue: "default_value",
+			envValue:     "   ",
+			expected:     "default_value",
+		},
+		{
+			name:         "environment variable with leading/trailing spaces",
+			key:          "SPACES_ENV_VAR",
+			defaultValue: "default",
+			envValue:     "  value_with_spaces  ",
+			expected:     "value_with_spaces",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clean up environment variable before test
+			os.Unsetenv(tt.key)
+
+			// Set environment variable if specified
+			if tt.envValue != "" {
+				os.Setenv(tt.key, tt.envValue)
+				defer os.Unsetenv(tt.key)
+			}
+
+			result := getEnv(tt.key, tt.defaultValue)
+			if result != tt.expected {
+				t.Errorf("getEnv() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestMustGetEnv(t *testing.T) {
+	t.Run("existing environment variable", func(t *testing.T) {
+		key := "TEST_MUST_ENV_VAR"
+		expected := "test_value"
+		os.Setenv(key, expected)
+		defer os.Unsetenv(key)
+
+		result := mustGetEnv(key)
+		if result != expected {
+			t.Errorf("mustGetEnv() = %v, expected %v", result, expected)
+		}
+	})
+
+	t.Run("environment variable with spaces is trimmed", func(t *testing.T) {
+		key := "TEST_MUST_ENV_VAR_SPACES"
+		os.Setenv(key, "  trimmed_value  ")
+		defer os.Unsetenv(key)
+
+		result := mustGetEnv(key)
+		if result != "trimmed_value" {
+			t.Errorf("mustGetEnv() = %v, expected 'trimmed_value'", result)
+		}
+	})
+
+	t.Run("missing environment variable panics", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("mustGetEnv() should panic for missing environment variable")
+			}
+		}()
+
+		mustGetEnv("DEFINITELY_MISSING_ENV_VAR")
+	})
+
+	t.Run("empty environment variable panics", func(t *testing.T) {
+		key := "TEST_EMPTY_ENV_VAR"
+		os.Setenv(key, "")
+		defer os.Unsetenv(key)
+
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("mustGetEnv() should panic for empty environment variable")
+			}
+		}()
+
+		mustGetEnv(key)
+	})
+
+	t.Run("whitespace-only environment variable panics", func(t *testing.T) {
+		key := "TEST_WHITESPACE_ENV_VAR"
+		os.Setenv(key, "   ")
+		defer os.Unsetenv(key)
+
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("mustGetEnv() should panic for whitespace-only environment variable")
+			}
+		}()
+
+		mustGetEnv(key)
+	})
+}
+
+func TestParseCookieSecret(t *testing.T) {
+	tests := []struct {
+		name        string
+		envValue    string
+		expectError bool
+		minLength   int
+	}{
+		{
+			name:        "missing cookie secret generates random",
+			envValue:    "",
+			expectError: false,
+			minLength:   32,
+		},
+		{
+			name:        "valid base64 32-byte secret",
+			envValue:    base64.StdEncoding.EncodeToString(make([]byte, 32)),
+			expectError: false,
+			minLength:   32,
+		},
+		{
+			name:        "valid base64 64-byte secret",
+			envValue:    base64.StdEncoding.EncodeToString(make([]byte, 64)),
+			expectError: false,
+			minLength:   64,
+		},
+		{
+			name:        "raw string secret",
+			envValue:    "this-is-a-raw-string-secret-that-should-work",
+			expectError: false,
+			minLength:   1,
+		},
+		{
+			name:        "short raw string secret",
+			envValue:    "short",
+			expectError: false,
+			minLength:   1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clean up environment variable
+			os.Unsetenv("OAUTH_COOKIE_SECRET")
+
+			// Set environment variable if specified
+			if tt.envValue != "" {
+				os.Setenv("OAUTH_COOKIE_SECRET", tt.envValue)
+				defer os.Unsetenv("OAUTH_COOKIE_SECRET")
+			}
+
+			result, err := parseCookieSecret()
+
+			if tt.expectError && err == nil {
+				t.Error("Expected error but got none")
+				return
+			}
+			if !tt.expectError && err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if len(result) < tt.minLength {
+				t.Errorf("Cookie secret length %d is less than minimum %d", len(result), tt.minLength)
+			}
+
+			// For empty env value, should generate a random 32-byte secret
+			if tt.envValue == "" && len(result) != 32 {
+				t.Errorf("Generated secret should be 32 bytes, got %d", len(result))
+			}
+		})
+	}
+}
+
+func TestLoad_GoogleProvider(t *testing.T) {
+	// Set up environment variables for Google OAuth
+	envVars := map[string]string{
+		"APP_BASE_URL":         "https://ackify.example.com",
+		"APP_ORGANISATION":     "Test Organisation",
+		"DB_DSN":               "postgres://user:pass@localhost/test",
+		"OAUTH_CLIENT_ID":      "google-client-id",
+		"OAUTH_CLIENT_SECRET":  "google-client-secret",
+		"OAUTH_PROVIDER":       "google",
+		"OAUTH_ALLOWED_DOMAIN": "@example.com",
+		"OAUTH_COOKIE_SECRET":  base64.StdEncoding.EncodeToString(make([]byte, 32)),
+		"LISTEN_ADDR":          ":8080",
+	}
+
+	// Set environment variables
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test App config
+	if config.App.BaseURL != "https://ackify.example.com" {
+		t.Errorf("App.BaseURL = %v, expected https://ackify.example.com", config.App.BaseURL)
+	}
+	if config.App.Organisation != "Test Organisation" {
+		t.Errorf("App.Organisation = %v, expected Test Organisation", config.App.Organisation)
+	}
+	if !config.App.SecureCookies {
+		t.Error("App.SecureCookies should be true for HTTPS base URL")
+	}
+
+	// Test Database config
+	if config.Database.DSN != "postgres://user:pass@localhost/test" {
+		t.Errorf("Database.DSN = %v, expected postgres://user:pass@localhost/test", config.Database.DSN)
+	}
+
+	// Test OAuth config for Google
+	if config.OAuth.ClientID != "google-client-id" {
+		t.Errorf("OAuth.ClientID = %v, expected google-client-id", config.OAuth.ClientID)
+	}
+	if config.OAuth.AuthURL != "https://accounts.google.com/o/oauth2/auth" {
+		t.Errorf("OAuth.AuthURL = %v, expected Google auth URL", config.OAuth.AuthURL)
+	}
+	if config.OAuth.TokenURL != "https://oauth2.googleapis.com/token" {
+		t.Errorf("OAuth.TokenURL = %v, expected Google token URL", config.OAuth.TokenURL)
+	}
+	if config.OAuth.UserInfoURL != "https://openidconnect.googleapis.com/v1/userinfo" {
+		t.Errorf("OAuth.UserInfoURL = %v, expected Google userinfo URL", config.OAuth.UserInfoURL)
+	}
+	expectedScopes := []string{"openid", "email", "profile"}
+	if !equalSlices(config.OAuth.Scopes, expectedScopes) {
+		t.Errorf("OAuth.Scopes = %v, expected %v", config.OAuth.Scopes, expectedScopes)
+	}
+	if config.OAuth.AllowedDomain != "@example.com" {
+		t.Errorf("OAuth.AllowedDomain = %v, expected @example.com", config.OAuth.AllowedDomain)
+	}
+	if len(config.OAuth.CookieSecret) != 32 {
+		t.Errorf("OAuth.CookieSecret length = %d, expected 32", len(config.OAuth.CookieSecret))
+	}
+
+	// Test Server config
+	if config.Server.ListenAddr != ":8080" {
+		t.Errorf("Server.ListenAddr = %v, expected :8080", config.Server.ListenAddr)
+	}
+}
+
+func TestLoad_GitHubProvider(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "http://localhost:8080",
+		"APP_ORGANISATION":    "GitHub Test",
+		"DB_DSN":              "postgres://user:pass@localhost/github",
+		"OAUTH_CLIENT_ID":     "github-client-id",
+		"OAUTH_CLIENT_SECRET": "github-client-secret",
+		"OAUTH_PROVIDER":      "github",
+		"OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test GitHub-specific OAuth config
+	if config.OAuth.AuthURL != "https://github.com/login/oauth/authorize" {
+		t.Errorf("OAuth.AuthURL = %v, expected GitHub auth URL", config.OAuth.AuthURL)
+	}
+	if config.OAuth.TokenURL != "https://github.com/login/oauth/access_token" {
+		t.Errorf("OAuth.TokenURL = %v, expected GitHub token URL", config.OAuth.TokenURL)
+	}
+	if config.OAuth.UserInfoURL != "https://api.github.com/user" {
+		t.Errorf("OAuth.UserInfoURL = %v, expected GitHub API user URL", config.OAuth.UserInfoURL)
+	}
+	expectedScopes := []string{"user:email", "read:user"}
+	if !equalSlices(config.OAuth.Scopes, expectedScopes) {
+		t.Errorf("OAuth.Scopes = %v, expected %v", config.OAuth.Scopes, expectedScopes)
+	}
+
+	// Test that SecureCookies is false for HTTP
+	if config.App.SecureCookies {
+		t.Error("App.SecureCookies should be false for HTTP base URL")
+	}
+}
+
+func TestLoad_GitLabProvider(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "https://ackify.gitlab.com",
+		"APP_ORGANISATION":    "GitLab Test",
+		"DB_DSN":              "postgres://user:pass@localhost/gitlab",
+		"OAUTH_CLIENT_ID":     "gitlab-client-id",
+		"OAUTH_CLIENT_SECRET": "gitlab-client-secret",
+		"OAUTH_PROVIDER":      "gitlab",
+		"OAUTH_GITLAB_URL":    "https://gitlab.example.com",
+		"OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test GitLab-specific OAuth config with custom URL
+	if config.OAuth.AuthURL != "https://gitlab.example.com/oauth/authorize" {
+		t.Errorf("OAuth.AuthURL = %v, expected custom GitLab auth URL", config.OAuth.AuthURL)
+	}
+	if config.OAuth.TokenURL != "https://gitlab.example.com/oauth/token" {
+		t.Errorf("OAuth.TokenURL = %v, expected custom GitLab token URL", config.OAuth.TokenURL)
+	}
+	if config.OAuth.UserInfoURL != "https://gitlab.example.com/api/v4/user" {
+		t.Errorf("OAuth.UserInfoURL = %v, expected custom GitLab API user URL", config.OAuth.UserInfoURL)
+	}
+	expectedScopes := []string{"read_user", "profile"}
+	if !equalSlices(config.OAuth.Scopes, expectedScopes) {
+		t.Errorf("OAuth.Scopes = %v, expected %v", config.OAuth.Scopes, expectedScopes)
+	}
+}
+
+func TestLoad_GitLabDefaultURL(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "https://ackify.gitlab.com",
+		"APP_ORGANISATION":    "GitLab Test",
+		"DB_DSN":              "postgres://user:pass@localhost/gitlab",
+		"OAUTH_CLIENT_ID":     "gitlab-client-id",
+		"OAUTH_CLIENT_SECRET": "gitlab-client-secret",
+		"OAUTH_PROVIDER":      "gitlab",
+		"OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	// Ensure OAUTH_GITLAB_URL is not set to test default
+	os.Unsetenv("OAUTH_GITLAB_URL")
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test GitLab-specific OAuth config with default URL
+	if config.OAuth.AuthURL != "https://gitlab.com/oauth/authorize" {
+		t.Errorf("OAuth.AuthURL = %v, expected default GitLab auth URL", config.OAuth.AuthURL)
+	}
+	if config.OAuth.TokenURL != "https://gitlab.com/oauth/token" {
+		t.Errorf("OAuth.TokenURL = %v, expected default GitLab token URL", config.OAuth.TokenURL)
+	}
+	if config.OAuth.UserInfoURL != "https://gitlab.com/api/v4/user" {
+		t.Errorf("OAuth.UserInfoURL = %v, expected default GitLab API user URL", config.OAuth.UserInfoURL)
+	}
+}
+
+func TestLoad_CustomProvider(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "https://ackify.custom.com",
+		"APP_ORGANISATION":    "Custom Test",
+		"DB_DSN":              "postgres://user:pass@localhost/custom",
+		"OAUTH_CLIENT_ID":     "custom-client-id",
+		"OAUTH_CLIENT_SECRET": "custom-client-secret",
+		"OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
+		"OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
+		"OAUTH_USERINFO_URL":  "https://api.custom.com/user",
+		"OAUTH_SCOPES":        "read,write,admin",
+		"OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test custom OAuth config
+	if config.OAuth.AuthURL != "https://auth.custom.com/oauth/authorize" {
+		t.Errorf("OAuth.AuthURL = %v, expected custom auth URL", config.OAuth.AuthURL)
+	}
+	if config.OAuth.TokenURL != "https://auth.custom.com/oauth/token" {
+		t.Errorf("OAuth.TokenURL = %v, expected custom token URL", config.OAuth.TokenURL)
+	}
+	if config.OAuth.UserInfoURL != "https://api.custom.com/user" {
+		t.Errorf("OAuth.UserInfoURL = %v, expected custom userinfo URL", config.OAuth.UserInfoURL)
+	}
+	expectedScopes := []string{"read", "write", "admin"}
+	if !equalSlices(config.OAuth.Scopes, expectedScopes) {
+		t.Errorf("OAuth.Scopes = %v, expected %v", config.OAuth.Scopes, expectedScopes)
+	}
+}
+
+func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
+	requiredVars := []string{
+		"APP_BASE_URL",
+		"APP_ORGANISATION",
+		"DB_DSN",
+		"OAUTH_CLIENT_ID",
+		"OAUTH_CLIENT_SECRET",
+	}
+
+	for _, missingVar := range requiredVars {
+		t.Run("missing_"+missingVar, func(t *testing.T) {
+			// Set all required variables except the one being tested
+			envVars := map[string]string{
+				"APP_BASE_URL":        "https://ackify.example.com",
+				"APP_ORGANISATION":    "Test Organisation",
+				"DB_DSN":              "postgres://user:pass@localhost/test",
+				"OAUTH_CLIENT_ID":     "test-client-id",
+				"OAUTH_CLIENT_SECRET": "test-client-secret",
+				"OAUTH_PROVIDER":      "google",
+			}
+
+			// Remove the variable we're testing
+			delete(envVars, missingVar)
+
+			// Set environment variables
+			for key, value := range envVars {
+				os.Setenv(key, value)
+				defer os.Unsetenv(key)
+			}
+
+			// Ensure the missing variable is not set
+			os.Unsetenv(missingVar)
+
+			// Test that Load() panics
+			defer func() {
+				if r := recover(); r == nil {
+					t.Errorf("Load() should panic when %s is missing", missingVar)
+				}
+			}()
+
+			Load()
+		})
+	}
+}
+
+func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
+	customRequiredVars := []string{
+		"OAUTH_AUTH_URL",
+		"OAUTH_TOKEN_URL",
+		"OAUTH_USERINFO_URL",
+	}
+
+	for _, missingVar := range customRequiredVars {
+		t.Run("custom_missing_"+missingVar, func(t *testing.T) {
+			// Set basic required variables
+			envVars := map[string]string{
+				"APP_BASE_URL":        "https://ackify.example.com",
+				"APP_ORGANISATION":    "Test Organisation",
+				"DB_DSN":              "postgres://user:pass@localhost/test",
+				"OAUTH_CLIENT_ID":     "test-client-id",
+				"OAUTH_CLIENT_SECRET": "test-client-secret",
+				"OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
+				"OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
+				"OAUTH_USERINFO_URL":  "https://api.custom.com/user",
+			}
+
+			// Remove the variable we're testing
+			delete(envVars, missingVar)
+
+			// Set environment variables
+			for key, value := range envVars {
+				os.Setenv(key, value)
+				defer os.Unsetenv(key)
+			}
+
+			// Ensure the missing variable is not set
+			os.Unsetenv(missingVar)
+
+			// Test that Load() panics for custom provider missing URLs
+			defer func() {
+				if r := recover(); r == nil {
+					t.Errorf("Load() should panic when %s is missing for custom provider", missingVar)
+				}
+			}()
+
+			Load()
+		})
+	}
+}
+
+func TestLoad_DefaultValues(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "https://ackify.example.com",
+		"APP_ORGANISATION":    "Test Organisation",
+		"DB_DSN":              "postgres://user:pass@localhost/test",
+		"OAUTH_CLIENT_ID":     "test-client-id",
+		"OAUTH_CLIENT_SECRET": "test-client-secret",
+		"OAUTH_PROVIDER":      "google",
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	// Ensure optional variables are not set to test defaults
+	os.Unsetenv("OAUTH_ALLOWED_DOMAIN")
+	os.Unsetenv("OAUTH_COOKIE_SECRET")
+	os.Unsetenv("LISTEN_ADDR")
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test default values
+	if config.OAuth.AllowedDomain != "" {
+		t.Errorf("OAuth.AllowedDomain = %v, expected empty string", config.OAuth.AllowedDomain)
+	}
+	if len(config.OAuth.CookieSecret) != 32 {
+		t.Errorf("OAuth.CookieSecret should be generated as 32 bytes, got %d", len(config.OAuth.CookieSecret))
+	}
+	if config.Server.ListenAddr != ":8080" {
+		t.Errorf("Server.ListenAddr = %v, expected :8080", config.Server.ListenAddr)
+	}
+}
+
+func TestLoad_CustomProviderDefaultScopes(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "https://ackify.custom.com",
+		"APP_ORGANISATION":    "Custom Test",
+		"DB_DSN":              "postgres://user:pass@localhost/custom",
+		"OAUTH_CLIENT_ID":     "custom-client-id",
+		"OAUTH_CLIENT_SECRET": "custom-client-secret",
+		"OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
+		"OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
+		"OAUTH_USERINFO_URL":  "https://api.custom.com/user",
+		"OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	// Ensure OAUTH_SCOPES is not set to test default
+	os.Unsetenv("OAUTH_SCOPES")
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() failed: %v", err)
+	}
+
+	// Test default scopes for custom provider
+	expectedScopes := []string{"openid", "email", "profile"}
+	if !equalSlices(config.OAuth.Scopes, expectedScopes) {
+		t.Errorf("OAuth.Scopes = %v, expected default %v", config.OAuth.Scopes, expectedScopes)
+	}
+}
+
+func TestParseCookieSecret_InvalidBase64(t *testing.T) {
+	// Test invalid base64 that falls back to raw string
+	os.Setenv("OAUTH_COOKIE_SECRET", "this-is-not-valid-base64!")
+	defer os.Unsetenv("OAUTH_COOKIE_SECRET")
+
+	result, err := parseCookieSecret()
+	if err != nil {
+		t.Errorf("parseCookieSecret() should not fail for invalid base64: %v", err)
+	}
+
+	expected := "this-is-not-valid-base64!"
+	if string(result) != expected {
+		t.Errorf("parseCookieSecret() = %v, expected %v", string(result), expected)
+	}
+}
+
+func TestParseCookieSecret_ValidBase64WrongLength(t *testing.T) {
+	// Test valid base64 but wrong length (should fall back to raw string)
+	wrongLength := base64.StdEncoding.EncodeToString(make([]byte, 16)) // 16 bytes instead of 32/64
+	os.Setenv("OAUTH_COOKIE_SECRET", wrongLength)
+	defer os.Unsetenv("OAUTH_COOKIE_SECRET")
+
+	result, err := parseCookieSecret()
+	if err != nil {
+		t.Errorf("parseCookieSecret() should not fail for wrong length: %v", err)
+	}
+
+	// Should fall back to raw string
+	if string(result) != wrongLength {
+		t.Errorf("parseCookieSecret() should fall back to raw string for wrong length")
+	}
+}
+
+func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
+	envVars := map[string]string{
+		"APP_BASE_URL":        "https://ackify.example.com",
+		"APP_ORGANISATION":    "Test Organisation",
+		"DB_DSN":              "postgres://user:pass@localhost/test",
+		"OAUTH_CLIENT_ID":     "test-client-id",
+		"OAUTH_CLIENT_SECRET": "test-client-secret",
+		"OAUTH_PROVIDER":      "google",
+	}
+
+	for key, value := range envVars {
+		os.Setenv(key, value)
+		defer os.Unsetenv(key)
+	}
+
+	// Set a cookie secret that won't cause an error (parseCookieSecret doesn't actually return errors in current implementation)
+	os.Setenv("OAUTH_COOKIE_SECRET", "valid-secret")
+	defer os.Unsetenv("OAUTH_COOKIE_SECRET")
+
+	config, err := Load()
+	if err != nil {
+		t.Fatalf("Load() should not fail: %v", err)
+	}
+
+	// Verify the config was loaded successfully
+	if config == nil {
+		t.Error("Config should not be nil")
+	}
+}
+
+func TestAppConfig_SecureCookiesLogic(t *testing.T) {
+	tests := []struct {
+		name     string
+		baseURL  string
+		expected bool
+	}{
+		{
+			name:     "HTTPS URL should enable secure cookies",
+			baseURL:  "https://ackify.example.com",
+			expected: true,
+		},
+		{
+			name:     "HTTP URL should disable secure cookies",
+			baseURL:  "http://ackify.example.com",
+			expected: false,
+		},
+		{
+			name:     "Mixed case HTTPS should enable secure cookies",
+			baseURL:  "HTTPS://ackify.example.com",
+			expected: true,
+		},
+		{
+			name:     "Mixed case HTTP should disable secure cookies",
+			baseURL:  "HTTP://ackify.example.com",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envVars := map[string]string{
+				"APP_BASE_URL":        tt.baseURL,
+				"APP_ORGANISATION":    "Test Organisation",
+				"DB_DSN":              "postgres://user:pass@localhost/test",
+				"OAUTH_CLIENT_ID":     "test-client-id",
+				"OAUTH_CLIENT_SECRET": "test-client-secret",
+				"OAUTH_PROVIDER":      "google",
+			}
+
+			for key, value := range envVars {
+				os.Setenv(key, value)
+				defer os.Unsetenv(key)
+			}
+
+			config, err := Load()
+			if err != nil {
+				t.Fatalf("Load() failed: %v", err)
+			}
+
+			if config.App.SecureCookies != tt.expected {
+				t.Errorf("SecureCookies = %v, expected %v for URL %s",
+					config.App.SecureCookies, tt.expected, tt.baseURL)
+			}
+		})
+	}
+}
+
+// Helper function to compare slices
+func equalSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}

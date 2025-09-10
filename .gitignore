@@ -1,0 +1,8 @@
+CLAUDE.md
+*SETUP.md
+.claude
+.idea
+.env
+
+docker-compose.local.yml
+

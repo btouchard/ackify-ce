@@ -1,0 +1,103 @@
+Server Side Public License
+Version 1, October 16, 2018
+
+Copyright (c) 2024 Benjamin TOUCHARD
+
+The Server Side Public License (the "License") applies to the use, reproduction,
+modification and distribution of the Work and any derivatives thereof.
+
+The Work is (c) 2024 Benjamin TOUCHARD
+
+Parameters
+
+Licensor:             Benjamin TOUCHARD
+Licensed Work:        Ackify
+                      The Licensed Work is (c) 2024 Benjamin TOUCHARD
+
+Additional Use Grant: You may make use of the Licensed Work, provided that you may not use
+                      the Licensed Work for a Service.
+
+                      A "Service" is a commercial offering, product, hosted, or managed
+                      service, that allows third parties (other than your own employees
+                      and contractors acting on your behalf) to access and/or use the
+                      Licensed Work or a substantial set of the features or functionality
+                      of the Licensed Work to third parties as a software-as-a-service,
+                      platform-as-a-service, infrastructure-as-a-service or other similar
+                      services that compete with Licensor products or services.
+
+Change Date:          The earlier of the date specified in a Change License, or four
+                      years from the date the Licensed Work is published.
+
+Change License:       Apache License, Version 2.0
+
+For information about alternative licensing arrangements for the Licensed Work,
+please visit: https://github.com/btouchard/ackify
+
+Notice
+
+The Business Source License (this document) is not an Open Source license.
+However, the Licensed Work will eventually be made available under an Open Source
+License, as stated in this License.
+
+License Text
+
+Terms and Conditions
+
+1. License Grant. Subject to the terms and conditions of this License, Licensor
+   hereby grants to you a non-exclusive, royalty-free, worldwide, non-transferable
+   license during the term of this License to:
+
+   (a) use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+       of the Licensed Work; and
+   (b) permit persons to whom the Licensed Work is furnished to do so, subject to
+       the following conditions.
+
+2. Limitations. You may not use the Licensed Work:
+
+   (a) for a Service, unless you have a separate agreement with Licensor
+       permitting such use; or
+   (b) to provide a Service to third parties.
+
+3. Conditions. Your exercise of the rights granted under this License is subject to
+   the following conditions:
+
+   (a) You must give any other recipients of the Licensed Work a copy of this License;
+   (b) You must cause any modified files to carry prominent notices stating that you
+       changed the files;
+   (c) You must retain, in the source form of any derivative works that you distribute,
+       all copyright, patent, trademark, and attribution notices from the source form
+       of the Licensed Work, excluding those notices that do not pertain to any part
+       of the derivative works; and
+   (d) If the Licensed Work includes a "NOTICE" text file as part of its distribution,
+       then any derivative works that you distribute must include a readable copy of
+       the attribution notices contained within such NOTICE file.
+
+4. Termination. This License will terminate automatically upon any breach by you of
+   the terms of this License. Upon termination, you must stop all use of the Licensed
+   Work and destroy all copies of the Licensed Work in your possession or control.
+
+5. Disclaimer of Warranty. THE LICENSED WORK IS PROVIDED "AS IS" WITHOUT WARRANTY
+   OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO
+   EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+   OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER DEALINGS
+   IN THE LICENSED WORK.
+
+6. Limitation of Liability. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DIRECT,
+   INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE LICENSED WORK, EVEN IF
+   ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+7. General. This License represents the complete agreement concerning the subject
+   matter hereof. If any provision of this License is held to be unenforceable,
+   such provision shall be reformed only to the extent necessary to make it
+   enforceable. Any use of the Licensed Work in violation of this License will
+   automatically terminate your rights under this License for the current and all
+   other versions of the Licensed Work.
+
+For more information on the Server Side Public License, please see:
+https://www.mongodb.com/licensing/server-side-public-license

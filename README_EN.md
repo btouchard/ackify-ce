@@ -1,0 +1,292 @@
+# 🔐 Ackify
+
+> **Proof of Read. Compliance made simple.**
+
+Secure document reading validation service with cryptographic traceability and irrefutable proof.
+
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/btouchard/ackify)
+[![Security](https://img.shields.io/badge/crypto-Ed25519-blue.svg)](https://en.wikipedia.org/wiki/EdDSA)
+[![Go](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org/)
+[![License](https://img.shields.io/badge/license-SSPL-blue.svg)](LICENSE)
+
+> 🇫🇷 [Version française disponible ici](README.md)
+
+## 🎯 Why Ackify?
+
+**Problem**: How to prove that a collaborator has actually read and understood an important document?
+
+**Solution**: Ed25519 cryptographic signatures with immutable timestamps and complete traceability.
+
+### Real-world use cases
+- ✅ Security policy validation
+- ✅ Mandatory training attestations  
+- ✅ GDPR acknowledgment
+- ✅ Contractual acknowledgments
+- ✅ Quality and compliance procedures
+
+---
+
+## ⚡ Quick Start
+
+### With Docker (recommended)
+```bash
+git clone https://github.com/btouchard/ackify.git
+cd ackify
+
+# Minimal configuration
+cp .env.example .env
+# Edit .env with your OAuth2 settings
+
+# Start
+docker compose up -d
+
+# Test
+curl http://localhost:8080/healthz
+```
+
+### Required variables
+```bash
+APP_BASE_URL="https://your-domain.com"
+OAUTH_CLIENT_ID="your-oauth-client-id"        # Google/GitHub/GitLab
+OAUTH_CLIENT_SECRET="your-oauth-client-secret"
+DB_DSN="postgres://user:password@localhost/ackify?sslmode=disable"
+OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
+```
+
+---
+
+## 🚀 Simple Usage
+
+### 1. Request a signature
+```
+https://your-domain.com/sign?doc=security_procedure_2024
+```
+→ User authenticates via OAuth2 and validates their reading
+
+### 2. Verify signatures
+```bash
+# JSON API - Complete list
+curl "https://your-domain.com/status?doc=security_procedure_2024"
+
+# PNG Badge - Individual status  
+curl "https://your-domain.com/status.png?doc=security_procedure_2024&user=john.doe@company.com"
+```
+
+### 3. Integrate into your pages
+```html
+<!-- Embeddable widget -->
+<iframe src="https://your-domain.com/embed?doc=security_procedure_2024" 
+        width="500" height="300"></iframe>
+
+<!-- Via oEmbed -->
+<script>
+fetch('/oembed?url=https://your-domain.com/embed?doc=security_procedure_2024')
+  .then(r => r.json())
+  .then(data => document.getElementById('signatures').innerHTML = data.html);
+</script>
+```
+
+---
+
+## 🔧 OAuth2 Configuration
+
+### Supported providers
+
+| Provider | Configuration |
+|----------|---------------|
+| **Google** | `OAUTH_PROVIDER=google` |
+| **GitHub** | `OAUTH_PROVIDER=github` |
+| **GitLab** | `OAUTH_PROVIDER=gitlab` + `OAUTH_GITLAB_URL` |
+| **Custom** | Custom endpoints |
+
+### Custom provider
+```bash
+# Leave OAUTH_PROVIDER empty
+OAUTH_AUTH_URL="https://auth.company.com/oauth/authorize"
+OAUTH_TOKEN_URL="https://auth.company.com/oauth/token"  
+OAUTH_USERINFO_URL="https://auth.company.com/api/user"
+OAUTH_SCOPES="read:user,user:email"
+```
+
+### Domain restriction
+```bash
+OAUTH_ALLOWED_DOMAIN="@company.com"  # Only @company.com emails
+```
+
+---
+
+## 🛡️ Security & Architecture
+
+### Cryptographic security
+- **Ed25519**: State-of-the-art digital signatures
+- **SHA-256**: Payload hashing against tampering
+- **Immutable timestamps**: PostgreSQL triggers
+- **Encrypted sessions**: Secure cookies
+- **CSP headers**: XSS protection
+
+### Go architecture
+```
+cmd/ackapp/              # Entry point
+internal/
+  domain/                # Business logic
+    models/              # Entities
+    repositories/        # Persistence interfaces
+  application/           # Use cases  
+    services/            # Business implementations
+  infrastructure/        # Adapters
+    auth/               # OAuth2
+    database/           # PostgreSQL
+    config/             # Configuration
+  presentation/          # HTTP
+    handlers/           # Controllers + interfaces
+    templates/          # HTML views
+pkg/                    # Shared utilities
+```
+
+### Technology stack
+- **Go 1.24.5**: Performance and simplicity
+- **PostgreSQL**: Integrity constraints 
+- **OAuth2**: Multi-provider
+- **Docker**: Simplified deployment
+- **Traefik**: HTTPS reverse proxy
+
+---
+
+## 📊 Database
+
+```sql
+CREATE TABLE signatures (
+    id BIGSERIAL PRIMARY KEY,
+    doc_id TEXT NOT NULL,                    -- Document ID
+    user_sub TEXT NOT NULL,                  -- OAuth user ID
+    user_email TEXT NOT NULL,               -- User email
+    signed_at TIMESTAMPTZ NOT NULL,     -- Signature timestamp
+    payload_hash TEXT NOT NULL,         -- Cryptographic hash
+    signature TEXT NOT NULL,            -- Ed25519 signature
+    nonce TEXT NOT NULL,                    -- Anti-replay
+    created_at TIMESTAMPTZ DEFAULT now(),   -- Immutable
+    referer TEXT,                           -- Source (optional)
+    prev_hash TEXT,
+    UNIQUE (doc_id, user_sub)              -- One signature per user/doc
+);
+```
+
+**Guarantees**:
+- ✅ **Uniqueness**: One user = one signature per document
+- ✅ **Immutability**: `created_at` protected by trigger
+- ✅ **Integrity**: SHA-256 hash to detect modifications
+- ✅ **Non-repudiation**: Ed25519 signature cryptographically provable
+
+---
+
+## 🚀 Production Deployment
+
+### docker-compose.yml
+```yaml
+version: '3.8'
+services:
+  ackapp:
+    image: btouchard/ackify:latest
+    environment:
+      APP_BASE_URL: https://ackify.company.com
+      DB_DSN: postgres://user:pass@postgres:5432/ackdb?sslmode=require
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+      OAUTH_COOKIE_SECRET: ${OAUTH_COOKIE_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ackify.rule=Host(`ackify.company.com`)"
+      - "traefik.http.routers.ackify.tls.certresolver=letsencrypt"
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ackdb
+      POSTGRES_USER: ackuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+```
+
+### Production variables
+```bash
+# Enhanced security
+OAUTH_COOKIE_SECRET="$(openssl rand -base64 64)"  # AES-256
+ED25519_PRIVATE_KEY_B64="$(openssl genpkey -algorithm Ed25519 | base64 -w 0)"
+
+# HTTPS mandatory
+APP_BASE_URL="https://ackify.company.com"
+
+# Secure PostgreSQL
+DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
+```
+
+---
+
+## 📋 Complete API
+
+### Authentication
+- `GET /login?next=<url>` - OAuth2 login
+- `GET /logout` - Logout
+- `GET /oauth2/callback` - OAuth2 callback
+
+### Signatures  
+- `GET /sign?doc=<id>` - Signature interface
+- `POST /sign` - Create signature
+- `GET /signatures` - My signatures (auth required)
+
+### Consultation
+- `GET /status?doc=<id>` - JSON all signatures
+- `GET /status.png?doc=<id>&user=<email>` - PNG badge
+
+### Integration
+- `GET /oembed?url=<embed_url>` - oEmbed metadata  
+- `GET /embed?doc=<id>` - HTML widget
+
+### Monitoring
+- `GET /healthz` - Health check
+
+---
+
+## 🔍 Development & Testing
+
+### Local build
+```bash
+# Dependencies
+go mod tidy
+
+# Build
+go build ./cmd/ackify
+
+# Linting
+go fmt ./...
+go vet ./...
+
+# Tests (TODO: add tests)
+go test -v ./...
+```
+
+### Docker development
+```bash
+# Build image
+docker build -t ackify:dev .
+
+# Run with local database
+docker run -p 8080:8080 --env-file .env ackify:dev
+```
+
+---
+
+## 🤝 Support
+
+### Help & Documentation
+- 🐛 **Issues**: [GitHub Issues](https://github.com/btouchard/ackify/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/btouchard/ackify/discussions)
+
+### SSPL License
+Free usage for internal projects. Restriction for competing commercial services.
+See [LICENSE](LICENSE) for complete details.
+
+---
+
+**Developed with ❤️ by [Benjamin TOUCHARD](mailto:benjamin@kolapsis.com)**

@@ -1,0 +1,56 @@
+name: ackify
+
+services:
+  ackify:
+    image: btouchard/ackify
+    container_name: ackify
+    restart: unless-stopped
+    environment:
+      APP_BASE_URL: "https://${APP_DNS}"
+      APP_ORGANISATION: "${APP_ORGANISATION}"
+      OAUTH_PROVIDER: "${OAUTH_PROVIDER}"
+      OAUTH_CLIENT_ID: "${OAUTH_CLIENT_ID}"
+      OAUTH_CLIENT_SECRET: "${OAUTH_CLIENT_SECRET}"
+      OAUTH_ALLOWED_DOMAIN: "${OAUTH_ALLOWED_DOMAIN}"
+      OAUTH_COOKIE_SECRET: "${OAUTH_COOKIE_SECRET}"
+      DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify_db:5432/${POSTGRES_DB}?sslmode=disable"
+      ED25519_PRIVATE_KEY_B64: "${ED25519_PRIVATE_KEY_B64}"
+      LISTEN_ADDR: ":8080"
+    depends_on:
+      ackify_db:
+        condition: service_healthy
+    networks:
+      - web
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${APP_NAME}.rule=Host(`${APP_DNS}`)"
+      - "traefik.http.routers.${APP_NAME}.entrypoints=websecure"
+      - "traefik.http.routers.${APP_NAME}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.${APP_NAME}.loadbalancer.server.port=8080"
+
+  ackify_db:
+    image: postgres:16-alpine
+    container_name: ackify_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ackify_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  internal:
+  web:
+    external: true
+
+volumes:
+  ackify_data:

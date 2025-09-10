@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.idea
+
+# Documentation
+README.md
+CLAUDE.md
+*SETUP.md
+docs/
+*.md
+LICENSE
+
+# Development
+.env
+.env.local
+.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.exe
+coverage.out
+*.test
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# GitHub Actions (not needed in container)
+.github/
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Node.js (if any frontend assets)
+node_modules/
+npm-debug.log
+yarn-error.log
