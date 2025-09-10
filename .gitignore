@@ -5,4 +5,5 @@ CLAUDE.md
 .env
 
 docker-compose.local.yml
+docker-compose.prod.yml
 

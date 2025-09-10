@@ -46,6 +46,9 @@ Dockerfile*
 docker-compose*
 .dockerignore
 
+# Installation files (for downloads only)
+install/
+
 # Node.js (if any frontend assets)
 node_modules/
 npm-debug.log

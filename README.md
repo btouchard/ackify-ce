@@ -30,12 +30,20 @@ Service sécurisé de validation de lecture avec traçabilité cryptographique e
 
 ### Avec Docker (recommandé)
 ```bash
-git clone https://github.com/btouchard/ackify.git
-cd ackify
+# Installation automatique
+curl -fsSL https://raw.githubusercontent.com/btouchard/ackify/main/install/install.sh | bash
 
-# Configuration minimale
+# Ou téléchargement manuel
+curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/docker-compose.yml
+curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/.env.example
+
+# Configuration
 cp .env.example .env
 # Éditez .env avec vos paramètres OAuth2
+
+# Génération des secrets
+export OAUTH_COOKIE_SECRET=$(openssl rand -base64 32)
+export ED25519_PRIVATE_KEY_B64=$(openssl genpkey -algorithm Ed25519 | base64 -w 0)
 
 # Démarrage
 docker compose up -d

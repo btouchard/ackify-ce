@@ -2,7 +2,7 @@ name: ackify
 
 services:
   ackify:
-    image: btouchard/ackify
+    image: btouchard/ackify:latest
     container_name: ackify
     restart: unless-stopped
     environment:
