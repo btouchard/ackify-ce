@@ -2,94 +2,86 @@
 
 > **Proof of Read. Compliance made simple.**
 
-Service sécurisé de validation de lecture avec traçabilité cryptographique et preuves incontestables.
+Secure document reading validation service with cryptographic traceability and irrefutable proof.
 
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/btouchard/ackify)
 [![Security](https://img.shields.io/badge/crypto-Ed25519-blue.svg)](https://en.wikipedia.org/wiki/EdDSA)
 [![Go](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-SSPL-blue.svg)](LICENSE)
 
-> 🌍 [English version available here](README_EN.md)
+> 🇫🇷 [Version française disponible ici](README_FR.md)
 
-## 🎯 Pourquoi Ackify ?
+## 🎯 Why Ackify?
 
-**Problème** : Comment prouver qu'un collaborateur a bien lu et compris un document important ?
+**Problem**: How to prove that a collaborator has actually read and understood an important document?
 
-**Solution** : Signatures cryptographiques Ed25519 avec horodatage immutable et traçabilité complète.
+**Solution**: Ed25519 cryptographic signatures with immutable timestamps and complete traceability.
 
-### Cas d'usage concrets
-- ✅ Validation de politiques de sécurité
-- ✅ Attestations de formation obligatoire  
-- ✅ Prise de connaissance RGPD
-- ✅ Accusés de réception contractuels
-- ✅ Procédures qualité et compliance
+### Real-world use cases
+- ✅ Security policy validation
+- ✅ Mandatory training attestations  
+- ✅ GDPR acknowledgment
+- ✅ Contractual acknowledgments
+- ✅ Quality and compliance procedures
 
 ---
 
-## 📸 Captures d'écran
+## 📸 Screenshots
 
 <table>
 <tr>
 <td align="center">
-<strong>Page d'accueil</strong><br>
-<a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200" alt="Page d'accueil"></a>
+<strong>Home page</strong><br>
+<a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200" alt="Home page"></a>
 </td>
 <td align="center">
-<strong>Demande de signature</strong><br>
-<a href="screenshots/2-signing-request.png"><img src="screenshots/2-signing-request.png" width="200" alt="Demande de signature"></a>
+<strong>Signing request</strong><br>
+<a href="screenshots/2-signing-request.png"><img src="screenshots/2-signing-request.png" width="200" alt="Signing request"></a>
 </td>
 <td align="center">
-<strong>Signature confirmée</strong><br>
-<a href="screenshots/3-signing-ok.png"><img src="screenshots/3-signing-ok.png" width="200" alt="Signature confirmée"></a>
+<strong>Signature confirmed</strong><br>
+<a href="screenshots/3-signing-ok.png"><img src="screenshots/3-signing-ok.png" width="200" alt="Signature confirmed"></a>
 </td>
 </tr>
 <tr>
 <td align="center">
-<strong>Liste des signatures</strong><br>
-<a href="screenshots/4-sign-list.png"><img src="screenshots/4-sign-list.png" width="200" alt="Liste des signatures"></a>
+<strong>Signatures list</strong><br>
+<a href="screenshots/4-sign-list.png"><img src="screenshots/4-sign-list.png" width="200" alt="Signatures list"></a>
 </td>
 <td align="center">
-<strong>Intégration Outline</strong><br>
-<a href="screenshots/5-integrated-to-outline.png"><img src="screenshots/5-integrated-to-outline.png" width="200" alt="Intégration Outline"></a>
+<strong>Outline integration</strong><br>
+<a href="screenshots/5-integrated-to-outline.png"><img src="screenshots/5-integrated-to-outline.png" width="200" alt="Outline integration"></a>
 </td>
 <td align="center">
-<strong>Intégration Google Docs</strong><br>
-<a href="screenshots/6-integrated-to-google-doc.png"><img src="screenshots/6-integrated-to-google-doc.png" width="200" alt="Intégration Google Docs"></a>
+<strong>Google Docs integration</strong><br>
+<a href="screenshots/6-integrated-to-google-doc.png"><img src="screenshots/6-integrated-to-google-doc.png" width="200" alt="Google Docs integration"></a>
 </td>
 </tr>
 </table>
 
 ---
 
-## ⚡ Démarrage Rapide
+## ⚡ Quick Start
 
-### Avec Docker (recommandé)
+### With Docker (recommended)
 ```bash
-# Installation automatique
-curl -fsSL https://raw.githubusercontent.com/btouchard/ackify/main/install/install.sh | bash
+git clone https://github.com/btouchard/ackify.git
+cd ackify
 
-# Ou téléchargement manuel
-curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/docker-compose.yml
-curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/.env.example
-
-# Configuration
+# Minimal configuration
 cp .env.example .env
-# Éditez .env avec vos paramètres OAuth2
+# Edit .env with your OAuth2 settings
 
-# Génération des secrets
-export OAUTH_COOKIE_SECRET=$(openssl rand -base64 32)
-export ED25519_PRIVATE_KEY_B64=$(openssl rand 64 | base64 -w 0)
-
-# Démarrage
+# Start
 docker compose up -d
 
 # Test
 curl http://localhost:8080/healthz
 ```
 
-### Variables obligatoires
+### Required variables
 ```bash
-APP_BASE_URL="https://votre-domaine.com"
+APP_BASE_URL="https://your-domain.com"
 OAUTH_CLIENT_ID="your-oauth-client-id"        # Google/GitHub/GitLab
 OAUTH_CLIENT_SECRET="your-oauth-client-secret"
 DB_DSN="postgres://user:password@localhost/ackify?sslmode=disable"
@@ -98,32 +90,32 @@ OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
 
 ---
 
-## 🚀 Utilisation Simple
+## 🚀 Simple Usage
 
-### 1. Demander une signature
+### 1. Request a signature
 ```
-https://votre-domaine.com/sign?doc=procedure_securite_2025
+https://your-domain.com/sign?doc=security_procedure_2025
 ```
-→ L'utilisateur s'authentifie via OAuth2 et valide sa lecture
+→ User authenticates via OAuth2 and validates their reading
 
-### 2. Vérifier les signatures
+### 2. Verify signatures
 ```bash
-# API JSON - Liste complète
-curl "https://votre-domaine.com/status?doc=procedure_securite_2025"
+# JSON API - Complete list
+curl "https://your-domain.com/status?doc=security_procedure_2025"
 
-# Badge PNG - Statut individuel  
-curl "https://votre-domaine.com/status.png?doc=procedure_securite_2025&user=jean.dupont@entreprise.com"
+# PNG Badge - Individual status  
+curl "https://your-domain.com/status.png?doc=security_procedure_2025&user=john.doe@company.com"
 ```
 
-### 3. Intégrer dans vos pages
+### 3. Integrate into your pages
 ```html
-<!-- Widget intégrable -->
-<iframe src="https://votre-domaine.com/embed?doc=procedure_securite_2025" 
+<!-- Embeddable widget -->
+<iframe src="https://your-domain.com/embed?doc=security_procedure_2025" 
         width="500" height="300"></iframe>
 
 <!-- Via oEmbed -->
 <script>
-fetch('/oembed?url=https://votre-domaine.com/embed?doc=procedure_securite_2025')
+fetch('/oembed?url=https://your-domain.com/embed?doc=security_procedure_2025')
   .then(r => r.json())
   .then(data => document.getElementById('signatures').innerHTML = data.html);
 </script>
@@ -131,98 +123,98 @@ fetch('/oembed?url=https://votre-domaine.com/embed?doc=procedure_securite_2025')
 
 ---
 
-## 🔧 Configuration OAuth2
+## 🔧 OAuth2 Configuration
 
-### Providers supportés
+### Supported providers
 
 | Provider | Configuration |
 |----------|---------------|
 | **Google** | `OAUTH_PROVIDER=google` |
 | **GitHub** | `OAUTH_PROVIDER=github` |
 | **GitLab** | `OAUTH_PROVIDER=gitlab` + `OAUTH_GITLAB_URL` |
-| **Custom** | Endpoints personnalisés |
+| **Custom** | Custom endpoints |
 
-### Provider personnalisé
+### Custom provider
 ```bash
-# Laissez OAUTH_PROVIDER vide
+# Leave OAUTH_PROVIDER empty
 OAUTH_AUTH_URL="https://auth.company.com/oauth/authorize"
 OAUTH_TOKEN_URL="https://auth.company.com/oauth/token"  
 OAUTH_USERINFO_URL="https://auth.company.com/api/user"
 OAUTH_SCOPES="read:user,user:email"
 ```
 
-### Restriction par domaine
+### Domain restriction
 ```bash
-OAUTH_ALLOWED_DOMAIN="@entreprise.com"  # Seuls les emails @entreprise.com
+OAUTH_ALLOWED_DOMAIN="@company.com"  # Only @company.com emails
 ```
 
 ---
 
-## 🛡️ Sécurité & Architecture
+## 🛡️ Security & Architecture
 
-### Sécurité cryptographique
-- **Ed25519** : Signatures numériques de pointe
-- **SHA-256** : Hachage des payloads contre le tampering
-- **Horodatage immutable** : Triggers PostgreSQL
-- **Sessions chiffrées** : Cookies sécurisés
-- **CSP headers** : Protection XSS
+### Cryptographic security
+- **Ed25519**: State-of-the-art digital signatures
+- **SHA-256**: Payload hashing against tampering
+- **Immutable timestamps**: PostgreSQL triggers
+- **Encrypted sessions**: Secure cookies
+- **CSP headers**: XSS protection
 
-### Architecture Go
+### Go architecture
 ```
-cmd/ackapp/              # Point d'entrée
+cmd/ackapp/              # Entry point
 internal/
-  domain/                # Logique métier
-    models/              # Entités
-    repositories/        # Interfaces persistance
+  domain/                # Business logic
+    models/              # Entities
+    repositories/        # Persistence interfaces
   application/           # Use cases  
-    services/            # Implémentations métier
-  infrastructure/        # Adaptateurs
+    services/            # Business implementations
+  infrastructure/        # Adapters
     auth/               # OAuth2
     database/           # PostgreSQL
     config/             # Configuration
   presentation/          # HTTP
-    handlers/           # Contrôleurs + interfaces
-    templates/          # Vues HTML
-pkg/                    # Utilitaires partagés
+    handlers/           # Controllers + interfaces
+    templates/          # HTML views
+pkg/                    # Shared utilities
 ```
 
-### Stack technique
-- **Go 1.24.5** : Performance et simplicité
-- **PostgreSQL** : Contraintes d'intégrité 
-- **OAuth2** : Multi-providers
-- **Docker** : Déploiement simplifié
-- **Traefik** : Reverse proxy HTTPS
+### Technology stack
+- **Go 1.24.5**: Performance and simplicity
+- **PostgreSQL**: Integrity constraints 
+- **OAuth2**: Multi-provider
+- **Docker**: Simplified deployment
+- **Traefik**: HTTPS reverse proxy
 
 ---
 
-## 📊 Base de Données
+## 📊 Database
 
 ```sql
 CREATE TABLE signatures (
     id BIGSERIAL PRIMARY KEY,
-    doc_id TEXT NOT NULL,                    -- ID document
-    user_sub TEXT NOT NULL,                  -- ID OAuth utilisateur
-    user_email TEXT NOT NULL,                -- Email utilisateur
-    signed_at TIMESTAMPTZ NOT NULL,          -- Timestamp signature
-    payload_hash TEXT NOT NULL,              -- Hash cryptographique
-    signature TEXT NOT NULL,                 -- Signature Ed25519
-    nonce TEXT NOT NULL,                     -- Anti-replay
-    created_at TIMESTAMPTZ DEFAULT now(),    -- Immutable
-    referer TEXT,                            -- Source (optionnel)
-    prev_hash TEXT,                          -- Prev Hash
-    UNIQUE (doc_id, user_sub)                -- Une signature par user/doc
+    doc_id TEXT NOT NULL,                    -- Document ID
+    user_sub TEXT NOT NULL,                  -- OAuth user ID
+    user_email TEXT NOT NULL,               -- User email
+    signed_at TIMESTAMPTZ NOT NULL,     -- Signature timestamp
+    payload_hash TEXT NOT NULL,         -- Cryptographic hash
+    signature TEXT NOT NULL,            -- Ed25519 signature
+    nonce TEXT NOT NULL,                    -- Anti-replay
+    created_at TIMESTAMPTZ DEFAULT now(),   -- Immutable
+    referer TEXT,                           -- Source (optional)
+    prev_hash TEXT,
+    UNIQUE (doc_id, user_sub)              -- One signature per user/doc
 );
 ```
 
-**Garanties** :
-- ✅ **Unicité** : Un utilisateur = une signature par document
-- ✅ **Immutabilité** : `created_at` protégé par trigger
-- ✅ **Intégrité** : Hachage SHA-256 pour détecter modifications
-- ✅ **Non-répudiation** : Signature Ed25519 cryptographiquement prouvable
+**Guarantees**:
+- ✅ **Uniqueness**: One user = one signature per document
+- ✅ **Immutability**: `created_at` protected by trigger
+- ✅ **Integrity**: SHA-256 hash to detect modifications
+- ✅ **Non-repudiation**: Ed25519 signature cryptographically provable
 
 ---
 
-## 🚀 Déploiement Production
+## 🚀 Production Deployment
 
 ### docker-compose.yml
 ```yaml
@@ -251,51 +243,51 @@ services:
       - postgres_data:/var/lib/postgresql/data
 ```
 
-### Variables production
+### Production variables
 ```bash
-# Sécurité renforcée
+# Enhanced security
 OAUTH_COOKIE_SECRET="$(openssl rand -base64 64)"  # AES-256
 ED25519_PRIVATE_KEY_B64="$(openssl genpkey -algorithm Ed25519 | base64 -w 0)"
 
-# HTTPS obligatoire
+# HTTPS mandatory
 APP_BASE_URL="https://ackify.company.com"
 
-# PostgreSQL sécurisé
+# Secure PostgreSQL
 DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 ```
 
 ---
 
-## 📋 API Complète
+## 📋 Complete API
 
-### Authentification
-- `GET /login?next=<url>` - Connexion OAuth2
-- `GET /logout` - Déconnexion
-- `GET /oauth2/callback` - Callback OAuth2
+### Authentication
+- `GET /login?next=<url>` - OAuth2 login
+- `GET /logout` - Logout
+- `GET /oauth2/callback` - OAuth2 callback
 
 ### Signatures  
-- `GET /sign?doc=<id>` - Interface de signature
-- `POST /sign` - Créer signature
-- `GET /signatures` - Mes signatures (auth requis)
+- `GET /sign?doc=<id>` - Signature interface
+- `POST /sign` - Create signature
+- `GET /signatures` - My signatures (auth required)
 
 ### Consultation
-- `GET /status?doc=<id>` - JSON toutes signatures
-- `GET /status.png?doc=<id>&user=<email>` - Badge PNG
+- `GET /status?doc=<id>` - JSON all signatures
+- `GET /status.png?doc=<id>&user=<email>` - PNG badge
 
-### Intégration
-- `GET /oembed?url=<embed_url>` - Métadonnées oEmbed  
-- `GET /embed?doc=<id>` - Widget HTML
+### Integration
+- `GET /oembed?url=<embed_url>` - oEmbed metadata  
+- `GET /embed?doc=<id>` - HTML widget
 
-### Supervision
+### Monitoring
 - `GET /healthz` - Health check
 
 ---
 
-## 🔍 Développement & Tests
+## 🔍 Development & Testing
 
-### Build local
+### Local build
 ```bash
-# Dépendances
+# Dependencies
 go mod tidy
 
 # Build
@@ -305,7 +297,7 @@ go build ./cmd/ackify
 go fmt ./...
 go vet ./...
 
-# Tests (TODO: ajouter des tests)
+# Tests (TODO: add tests)
 go test -v ./...
 ```
 
@@ -314,7 +306,7 @@ go test -v ./...
 # Build image
 docker build -t ackify:dev .
 
-# Run avec base locale
+# Run with local database
 docker run -p 8080:8080 --env-file .env ackify:dev
 ```
 
@@ -322,14 +314,14 @@ docker run -p 8080:8080 --env-file .env ackify:dev
 
 ## 🤝 Support
 
-### Aide & Documentation
-- 🐛 **Issues** : [GitHub Issues](https://github.com/btouchard/ackify/issues)
-- 💬 **Discussions** : [GitHub Discussions](https://github.com/btouchard/ackify/discussions)
+### Help & Documentation
+- 🐛 **Issues**: [GitHub Issues](https://github.com/btouchard/ackify/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/btouchard/ackify/discussions)
 
-### Licence SSPL
-Usage libre pour projets internes. Restriction pour services commerciaux concurrents.
-Voir [LICENSE](LICENSE) pour détails complets.
+### SSPL License
+Free usage for internal projects. Restriction for competing commercial services.
+See [LICENSE](LICENSE) for complete details.
 
 ---
 
-**Développé avec ❤️ par [Benjamin TOUCHARD](mailto:benjamin@kolapsis.com)**
+**Developed with ❤️ by [Benjamin TOUCHARD](mailto:benjamin@kolapsis.com)**
