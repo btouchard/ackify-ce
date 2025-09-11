@@ -9,7 +9,7 @@ Service sécurisé de validation de lecture avec traçabilité cryptographique e
 [![Go](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-SSPL-blue.svg)](LICENSE)
 
-> 🌍 [English version available here](README_FR.md)
+> 🌍 [English version available here](README.md)
 
 ## 🎯 Pourquoi Ackify ?
 
