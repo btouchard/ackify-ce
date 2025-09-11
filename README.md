@@ -26,6 +26,41 @@ Service sécurisé de validation de lecture avec traçabilité cryptographique e
 
 ---
 
+## 📸 Captures d'écran
+
+<table>
+<tr>
+<td align="center">
+<strong>Page d'accueil</strong><br>
+<a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200" alt="Page d'accueil"></a>
+</td>
+<td align="center">
+<strong>Demande de signature</strong><br>
+<a href="screenshots/2-signing-request.png"><img src="screenshots/2-signing-request.png" width="200" alt="Demande de signature"></a>
+</td>
+<td align="center">
+<strong>Signature confirmée</strong><br>
+<a href="screenshots/3-signing-ok.png"><img src="screenshots/3-signing-ok.png" width="200" alt="Signature confirmée"></a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<strong>Liste des signatures</strong><br>
+<a href="screenshots/4-sign-list.png"><img src="screenshots/4-sign-list.png" width="200" alt="Liste des signatures"></a>
+</td>
+<td align="center">
+<strong>Intégration Outline</strong><br>
+<a href="screenshots/5-integrated-to-outline.png"><img src="screenshots/5-integrated-to-outline.png" width="200" alt="Intégration Outline"></a>
+</td>
+<td align="center">
+<strong>Intégration Google Docs</strong><br>
+<a href="screenshots/6-integrated-to-google-doc.png"><img src="screenshots/6-integrated-to-google-doc.png" width="200" alt="Intégration Google Docs"></a>
+</td>
+</tr>
+</table>
+
+---
+
 ## ⚡ Démarrage Rapide
 
 ### Avec Docker (recommandé)

@@ -26,6 +26,41 @@ Secure document reading validation service with cryptographic traceability and i
 
 ---
 
+## 📸 Screenshots
+
+<table>
+<tr>
+<td align="center">
+<strong>Home page</strong><br>
+<a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200" alt="Home page"></a>
+</td>
+<td align="center">
+<strong>Signing request</strong><br>
+<a href="screenshots/2-signing-request.png"><img src="screenshots/2-signing-request.png" width="200" alt="Signing request"></a>
+</td>
+<td align="center">
+<strong>Signature confirmed</strong><br>
+<a href="screenshots/3-signing-ok.png"><img src="screenshots/3-signing-ok.png" width="200" alt="Signature confirmed"></a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<strong>Signatures list</strong><br>
+<a href="screenshots/4-sign-list.png"><img src="screenshots/4-sign-list.png" width="200" alt="Signatures list"></a>
+</td>
+<td align="center">
+<strong>Outline integration</strong><br>
+<a href="screenshots/5-integrated-to-outline.png"><img src="screenshots/5-integrated-to-outline.png" width="200" alt="Outline integration"></a>
+</td>
+<td align="center">
+<strong>Google Docs integration</strong><br>
+<a href="screenshots/6-integrated-to-google-doc.png"><img src="screenshots/6-integrated-to-google-doc.png" width="200" alt="Google Docs integration"></a>
+</td>
+</tr>
+</table>
+
+---
+
 ## ⚡ Quick Start
 
 ### With Docker (recommended)
