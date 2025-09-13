@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"github.com/btouchard/ackify-ce/internal/domain/models"
 	"context"
 	"net/http"
+
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 type authService interface {
