@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 	"context"
 	"net/http"
 )

@@ -4,7 +4,7 @@
 
 Service sécurisé de validation de lecture avec traçabilité cryptographique et preuves incontestables.
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/btouchard/ackify)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/btouchard/ackify-ce)
 [![Security](https://img.shields.io/badge/crypto-Ed25519-blue.svg)](https://en.wikipedia.org/wiki/EdDSA)
 [![Go](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-SSPL-blue.svg)](LICENSE)
@@ -229,7 +229,7 @@ CREATE TABLE signatures (
 version: '3.8'
 services:
   ackapp:
-    image: btouchard/ackify:latest
+    image: btouchard/ackify-ce:latest
     environment:
       APP_BASE_URL: https://ackify.company.com
       DB_DSN: postgres://user:pass@postgres:5432/ackdb?sslmode=require
@@ -299,7 +299,7 @@ DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 go mod tidy
 
 # Build
-go build ./cmd/ackify
+go build ./cmd/community
 
 # Linting
 go fmt ./...
@@ -312,7 +312,7 @@ go test -v ./...
 ### Docker development
 ```bash
 # Build image
-docker build -t ackify:dev .
+docker build -t ackify-ce:dev .
 
 # Run avec base locale
 docker run -p 8080:8080 --env-file .env ackify:dev
@@ -323,8 +323,8 @@ docker run -p 8080:8080 --env-file .env ackify:dev
 ## 🤝 Support
 
 ### Aide & Documentation
-- 🐛 **Issues** : [GitHub Issues](https://github.com/btouchard/ackify/issues)
-- 💬 **Discussions** : [GitHub Discussions](https://github.com/btouchard/ackify/discussions)
+- 🐛 **Issues** : [GitHub Issues](https://github.com/btouchard/ackify-ce/issues)
+- 💬 **Discussions** : [GitHub Discussions](https://github.com/btouchard/ackify-ce/discussions)
 
 ### Licence SSPL
 Usage libre pour projets internes. Restriction pour services commerciaux concurrents.

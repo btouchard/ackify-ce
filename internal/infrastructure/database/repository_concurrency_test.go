@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestRepository_Concurrency_Integration(t *testing.T) {

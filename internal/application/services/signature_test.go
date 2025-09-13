@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 // Mock repository implementation

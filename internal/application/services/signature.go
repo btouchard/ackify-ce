@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"ackify/internal/domain/models"
-	"ackify/pkg/crypto"
-	"ackify/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/crypto"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 type repository interface {

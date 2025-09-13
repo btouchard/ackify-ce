@@ -29,7 +29,7 @@ ARG BUILD_DATE="unknown"
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -a -installsuffix cgo \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
-    -o ackify ./cmd/ackify
+    -o ackify-ce ./cmd/community
 
 # ---- Runtime stage ----
 FROM gcr.io/distroless/static-debian12:nonroot
@@ -41,7 +41,7 @@ ARG VERSION="dev"
 LABEL maintainer="Benjamin TOUCHARD"
 LABEL version="${VERSION}"
 LABEL description="Ackify - Document signature validation platform"
-LABEL org.opencontainers.image.source="https://github.com/btouchard/ackify"
+LABEL org.opencontainers.image.source="https://github.com/btouchard/ackify-ce"
 LABEL org.opencontainers.image.description="Professional solution for validating and tracking document reading"
 LABEL org.opencontainers.image.licenses="SSPL"
 
@@ -50,7 +50,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Set working directory and copy application files
 WORKDIR /app
-COPY --from=builder /app/ackify /app/ackify
+COPY --from=builder /app/ackify-ce /app/ackify-ce
 COPY --from=builder /app/web /app/web
 
 # Use non-root user (already set in distroless image)
@@ -59,4 +59,4 @@ COPY --from=builder /app/web /app/web
 EXPOSE 8080
 
 
-ENTRYPOINT ["/app/ackify"]
+ENTRYPOINT ["/app/ackify-ce"]

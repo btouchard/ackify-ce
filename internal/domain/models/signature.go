@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"ackify/pkg/services"
+	"github.com/btouchard/ackify-ce/pkg/services"
 )
 
 // Signature represents a document signature record

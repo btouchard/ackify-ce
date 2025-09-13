@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# Ackify Installation Script
+# Ackify Community Edition (CE) Installation Script
 # Quick setup for Docker deployment
 
 set -e
 
-echo "🔐 Ackify Installation"
+echo "🔐 Ackify Community Edition (CE) Installation"
 echo "========================="
 
 # Create installation directory
-INSTALL_DIR="ackify-install"
+INSTALL_DIR="ackify-ce"
 if [ -d "$INSTALL_DIR" ]; then
     echo "❌ Directory $INSTALL_DIR already exists. Please remove it first."
     exit 1
@@ -21,10 +21,10 @@ cd "$INSTALL_DIR"
 echo "📦 Downloading configuration files..."
 
 # Download docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/btouchard/ackify/main/install/docker-compose.yml -o docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/docker-compose.yml -o docker-compose.yml
 
 # Download .env.example
-curl -fsSL https://raw.githubusercontent.com/btouchard/ackify/main/install/.env.example -o .env.example
+curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/.env.example -o .env.example
 
 echo "🔧 Setting up environment..."
 

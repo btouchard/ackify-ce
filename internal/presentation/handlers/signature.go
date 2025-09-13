@@ -11,8 +11,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"ackify/internal/domain/models"
-	"ackify/pkg/services"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/services"
 )
 
 type signatureService interface {

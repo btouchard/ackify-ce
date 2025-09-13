@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 // Ed25519Signer handles Ed25519 cryptographic operations

@@ -1,40 +1,37 @@
-package main
+package web
 
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/julienschmidt/httprouter"
 
-	"ackify/internal/application/services"
-	"ackify/internal/infrastructure/auth"
-	"ackify/internal/infrastructure/config"
-	"ackify/internal/infrastructure/database"
-	"ackify/internal/presentation/handlers"
-	"ackify/internal/presentation/templates"
-	"ackify/pkg/crypto"
+	"github.com/btouchard/ackify-ce/internal/application/services"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/internal/presentation/handlers"
+	"github.com/btouchard/ackify-ce/internal/presentation/templates"
+	"github.com/btouchard/ackify-ce/pkg/crypto"
 )
 
-func main() {
-	ctx := context.Background()
+// Server represents the Ackify CE web server
+type Server struct {
+	httpServer *http.Server
+	db         *sql.DB
+}
 
-	// Initialize dependencies
+// NewServer creates a new Ackify CE server instance
+// multitenant parameter enables enterprise features when true
+func NewServer(ctx context.Context, multitenant bool) (*Server, error) {
+	// Initialize infrastructure
 	cfg, db, tmpl, signer, err := initInfrastructure(ctx)
 	if err != nil {
-		log.Fatalf("Failed to initialize infrastructure: %v", err)
+		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
-	defer func(db *sql.DB) {
-		_ = db.Close()
-	}(db)
 
 	// Initialize services
 	authService := auth.NewOAuthService(auth.Config{
@@ -63,38 +60,39 @@ func main() {
 	healthHandler := handlers.NewHealthHandler()
 
 	// Setup HTTP router
-	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler)
+	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler, multitenant)
 
 	// Create HTTP server
-	server := &http.Server{
+	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,
 		Handler: handlers.SecureHeaders(router),
 	}
 
-	// Start server in a goroutine
-	go func() {
-		log.Printf("Server starting on %s", cfg.Server.ListenAddr)
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("Server error: %v", err)
-		}
-	}()
+	return &Server{
+		httpServer: httpServer,
+		db:         db,
+	}, nil
+}
 
-	// Wait for interrupt signal for graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+// Start starts the HTTP server
+func (s *Server) Start() error {
+	return s.httpServer.ListenAndServe()
+}
 
-	log.Println("Shutting down server...")
-
-	// Graceful shutdown with timeout
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+// Shutdown gracefully shuts down the server
+func (s *Server) Shutdown(ctx context.Context) error {
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		return err
 	}
+	if s.db != nil {
+		return s.db.Close()
+	}
+	return nil
+}
 
-	log.Println("Server exited")
+// GetAddr returns the server address
+func (s *Server) GetAddr() string {
+	return s.httpServer.Addr
 }
 
 // initInfrastructure initializes the basic infrastructure components
@@ -136,6 +134,7 @@ func setupRouter(
 	badgeHandler *handlers.BadgeHandler,
 	oembedHandler *handlers.OEmbedHandler,
 	healthHandler *handlers.HealthHandler,
+	multitenant bool,
 ) *httprouter.Router {
 	router := httprouter.New()
 
@@ -154,6 +153,13 @@ func setupRouter(
 	router.GET("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
 	router.POST("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
 	router.GET("/signatures", authMiddleware.RequireAuth(signatureHandlers.HandleUserSignatures))
+
+	// Enterprise routes (only enabled if multitenant is true)
+	if multitenant {
+		// Add placeholder routes for enterprise features
+		// These will be overridden/extended by the EE edition
+		router.GET("/healthz", healthHandler.HandleHealth) // Alternative health endpoint for EE
+	}
 
 	return router
 }

@@ -1,10 +1,10 @@
-# Makefile for ackify project
+# Makefile for ackify-ce project
 
 .PHONY: build test test-unit test-integration test-short coverage lint fmt vet clean help
 
 # Variables
-BINARY_NAME=ackapp
-BUILD_DIR=./cmd/ackapp
+BINARY_NAME=ackify-ce
+BUILD_DIR=./cmd/community
 COVERAGE_DIR=coverage
 
 # Default target
@@ -108,7 +108,7 @@ generate-mocks: ## Generate mocks for interfaces
 
 # Docker targets
 docker-build: ## Build Docker image
-	docker build -t ackify:latest .
+	docker build -t ackify-ce:latest .
 
 docker-test: ## Run tests in Docker environment
 	docker compose -f docker-compose.local.yml up -d postgres

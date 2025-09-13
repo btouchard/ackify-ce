@@ -1,9 +1,9 @@
-name: ackify
+name: ackify-ce
 
 services:
-  ackify:
-    image: btouchard/ackify:latest
-    container_name: ackify
+  ackify-ce:
+    image: btouchard/ackify-ce:latest
+    container_name: ackify-ce
     restart: unless-stopped
     environment:
       APP_BASE_URL: "https://${APP_DNS}"

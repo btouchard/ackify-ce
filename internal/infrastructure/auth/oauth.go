@@ -13,8 +13,8 @@ import (
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 
-	"ackify/internal/domain/models"
-	"ackify/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 const sessionName = "ackapp_session"

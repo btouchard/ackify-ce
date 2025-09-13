@@ -1,6 +1,6 @@
 package crypto
 
-import "ackify/internal/domain/models"
+import "github.com/btouchard/ackify-ce/internal/domain/models"
 
 // Internal test fixtures to avoid external dependencies
 

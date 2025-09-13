@@ -1,9 +1,9 @@
-name: ackify
+name: ackify-ce
 
 services:
-  ackify:
-    image: btouchard/ackify
-    container_name: ackify
+  ackify-ce:
+    image: btouchard/ackify-ce
+    container_name: ackify-ce
     restart: unless-stopped
     environment:
       APP_BASE_URL: "https://${APP_DNS}"
@@ -13,20 +13,20 @@ services:
       OAUTH_CLIENT_SECRET: "${OAUTH_CLIENT_SECRET}"
       OAUTH_ALLOWED_DOMAIN: "${OAUTH_ALLOWED_DOMAIN}"
       OAUTH_COOKIE_SECRET: "${OAUTH_COOKIE_SECRET}"
-      DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify_db:5432/${POSTGRES_DB}?sslmode=disable"
+      DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
       ED25519_PRIVATE_KEY_B64: "${ED25519_PRIVATE_KEY_B64}"
       LISTEN_ADDR: ":8080"
     depends_on:
-      ackify_db:
+      ackify-db:
         condition: service_healthy
     networks:
       - internal
     ports:
       - "8080:8080"
 
-  ackify_db:
+  ackify-db:
     image: postgres:16-alpine
-    container_name: ackify_db
+    container_name: ackify-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}

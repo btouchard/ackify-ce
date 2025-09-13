@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 type SignatureRepository struct {

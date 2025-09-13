@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 
 	_ "github.com/lib/pq"
 )

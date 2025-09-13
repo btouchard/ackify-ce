@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"ackify/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestNewOAuthService(t *testing.T) {
