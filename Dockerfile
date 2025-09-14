@@ -29,7 +29,13 @@ ARG BUILD_DATE="unknown"
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -a -installsuffix cgo \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
-    -o ackify-ce ./cmd/community
+    -o ackify ./cmd/community
+
+# Build the migrate binary
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -a -installsuffix cgo \
+    -ldflags="-w -s" \
+    -o migrate ./cmd/migrate
 
 # ---- Runtime stage ----
 FROM gcr.io/distroless/static-debian12:nonroot
@@ -50,7 +56,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Set working directory and copy application files
 WORKDIR /app
-COPY --from=builder /app/ackify-ce /app/ackify-ce
+COPY --from=builder /app/ackify /app/ackify
+COPY --from=builder /app/migrate /app/migrate
 
 # Use non-root user (already set in distroless image)
 # USER 65532:65532
@@ -58,4 +65,4 @@ COPY --from=builder /app/ackify-ce /app/ackify-ce
 EXPOSE 8080
 
 
-ENTRYPOINT ["/app/ackify-ce"]
+ENTRYPOINT ["/app/ackify"]
