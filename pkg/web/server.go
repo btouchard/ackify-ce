@@ -14,8 +14,8 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/internal/presentation/handlers"
-	"github.com/btouchard/ackify-ce/internal/presentation/templates"
 	"github.com/btouchard/ackify-ce/pkg/crypto"
+	"github.com/btouchard/ackify-ce/webtemplates"
 )
 
 // Server represents the Ackify CE web server
@@ -123,7 +123,7 @@ func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template
 	}
 
 	// Initialize templates
-	tmpl, err := templates.InitTemplates()
+	tmpl, err := webtemplates.InitTemplates()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}

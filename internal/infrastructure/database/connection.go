@@ -31,4 +31,3 @@ func InitDB(ctx context.Context, config Config) (*sql.DB, error) {
 
 	return db, nil
 }
-

@@ -51,7 +51,6 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 # Set working directory and copy application files
 WORKDIR /app
 COPY --from=builder /app/ackify-ce /app/ackify-ce
-COPY --from=builder /app/web /app/web
 
 # Use non-root user (already set in distroless image)
 # USER 65532:65532
