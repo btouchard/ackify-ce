@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
-
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 	"github.com/btouchard/ackify-ce/pkg/services"
 )
@@ -61,13 +59,13 @@ type PageData struct {
 }
 
 // HandleIndex serves the main index page
-func (h *SignatureHandlers) HandleIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *SignatureHandlers) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	user, _ := h.userService.GetUser(r)
 	h.render(w, r, "index", PageData{User: user})
 }
 
 // HandleSignGET displays the signature page
-func (h *SignatureHandlers) HandleSignGET(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *SignatureHandlers) HandleSignGET(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetUser(r)
 	if err != nil {
 		HandleError(w, err)
@@ -154,7 +152,7 @@ func (h *SignatureHandlers) HandleSignGET(w http.ResponseWriter, r *http.Request
 }
 
 // HandleSignPOST processes signature creation
-func (h *SignatureHandlers) HandleSignPOST(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *SignatureHandlers) HandleSignPOST(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetUser(r)
 	if err != nil {
 		if docID := r.FormValue("doc"); docID != "" {
@@ -205,7 +203,7 @@ func (h *SignatureHandlers) HandleSignPOST(w http.ResponseWriter, r *http.Reques
 }
 
 // HandleStatusJSON returns signature status as JSON
-func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Request) {
 	docID, err := validateDocID(r)
 	if err != nil {
 		HandleError(w, models.ErrInvalidDocument)
@@ -252,7 +250,7 @@ func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Requ
 }
 
 // HandleUserSignatures displays the user's signatures page
-func (h *SignatureHandlers) HandleUserSignatures(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *SignatureHandlers) HandleUserSignatures(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetUser(r)
 	if err != nil {
 		HandleError(w, err)

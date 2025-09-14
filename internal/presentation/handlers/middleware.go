@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
-
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
@@ -24,8 +22,8 @@ func NewAuthMiddleware(userService userService, baseURL string) *AuthMiddleware 
 }
 
 // RequireAuth wraps a handler to require authentication
-func (m *AuthMiddleware) RequireAuth(next httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := m.userService.GetUser(r)
 		if err != nil {
 			nextURL := m.baseURL + r.URL.RequestURI()
@@ -33,7 +31,7 @@ func (m *AuthMiddleware) RequireAuth(next httprouter.Handle) httprouter.Handle {
 			http.Redirect(w, r, loginURL, http.StatusFound)
 			return
 		}
-		next(w, r, ps)
+		next(w, r)
 	}
 }
 

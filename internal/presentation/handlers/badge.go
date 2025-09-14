@@ -9,8 +9,6 @@ import (
 	"image/png"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
-
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
@@ -31,7 +29,7 @@ func NewBadgeHandler(checkService checkService) *BadgeHandler {
 }
 
 // HandleStatusPNG generates a PNG badge showing signature status
-func (h *BadgeHandler) HandleStatusPNG(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *BadgeHandler) HandleStatusPNG(w http.ResponseWriter, r *http.Request) {
 	docID, err := validateDocID(r)
 	if err != nil {
 		HandleError(w, models.ErrInvalidDocument)

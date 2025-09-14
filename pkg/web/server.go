@@ -7,7 +7,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/go-chi/chi/v5"
 
 	"github.com/btouchard/ackify-ce/internal/application/services"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
@@ -22,11 +22,11 @@ import (
 type Server struct {
 	httpServer *http.Server
 	db         *sql.DB
+	router     *chi.Mux
 }
 
 // NewServer creates a new Ackify CE server instance
-// multitenant parameter enables enterprise features when true
-func NewServer(ctx context.Context, multitenant bool) (*Server, error) {
+func NewServer(ctx context.Context) (*Server, error) {
 	// Initialize infrastructure
 	cfg, db, tmpl, signer, err := initInfrastructure(ctx)
 	if err != nil {
@@ -60,7 +60,7 @@ func NewServer(ctx context.Context, multitenant bool) (*Server, error) {
 	healthHandler := handlers.NewHealthHandler()
 
 	// Setup HTTP router
-	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler, multitenant)
+	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler)
 
 	// Create HTTP server
 	httpServer := &http.Server{
@@ -71,6 +71,7 @@ func NewServer(ctx context.Context, multitenant bool) (*Server, error) {
 	return &Server{
 		httpServer: httpServer,
 		db:         db,
+		router:     router,
 	}, nil
 }
 
@@ -93,6 +94,16 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // GetAddr returns the server address
 func (s *Server) GetAddr() string {
 	return s.httpServer.Addr
+}
+
+// Router returns the underlying Chi router for composition
+func (s *Server) Router() *chi.Mux {
+	return s.router
+}
+
+// RegisterRoutes allows external packages to register additional routes
+func (s *Server) RegisterRoutes(fn func(r *chi.Mux)) {
+	fn(s.router)
 }
 
 // initInfrastructure initializes the basic infrastructure components
@@ -134,32 +145,26 @@ func setupRouter(
 	badgeHandler *handlers.BadgeHandler,
 	oembedHandler *handlers.OEmbedHandler,
 	healthHandler *handlers.HealthHandler,
-	multitenant bool,
-) *httprouter.Router {
-	router := httprouter.New()
+) *chi.Mux {
+	router := chi.NewRouter()
 
 	// Public routes
-	router.GET("/", signatureHandlers.HandleIndex)
-	router.GET("/login", authHandlers.HandleLogin)
-	router.GET("/logout", authHandlers.HandleLogout)
-	router.GET("/oauth2/callback", authHandlers.HandleOAuthCallback)
-	router.GET("/status", signatureHandlers.HandleStatusJSON)
-	router.GET("/status.png", badgeHandler.HandleStatusPNG)
-	router.GET("/oembed", oembedHandler.HandleOEmbed)
-	router.GET("/embed", oembedHandler.HandleEmbedView)
-	router.GET("/health", healthHandler.HandleHealth)
+	router.Get("/", signatureHandlers.HandleIndex)
+	router.Get("/login", authHandlers.HandleLogin)
+	router.Get("/logout", authHandlers.HandleLogout)
+	router.Get("/oauth2/callback", authHandlers.HandleOAuthCallback)
+	router.Get("/status", signatureHandlers.HandleStatusJSON)
+	router.Get("/status.png", badgeHandler.HandleStatusPNG)
+	router.Get("/oembed", oembedHandler.HandleOEmbed)
+	router.Get("/embed", oembedHandler.HandleEmbedView)
+	router.Get("/health", healthHandler.HandleHealth)
 
 	// Protected routes (require authentication)
-	router.GET("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
-	router.POST("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
-	router.GET("/signatures", authMiddleware.RequireAuth(signatureHandlers.HandleUserSignatures))
+	router.Get("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
+	router.Post("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
+	router.Get("/signatures", authMiddleware.RequireAuth(signatureHandlers.HandleUserSignatures))
 
-	// Enterprise routes (only enabled if multitenant is true)
-	if multitenant {
-		// Add placeholder routes for enterprise features
-		// These will be overridden/extended by the EE edition
-		router.GET("/healthz", healthHandler.HandleHealth) // Alternative health endpoint for EE
-	}
+	// Note: Enterprise routes can be added via RegisterRoutes method
 
 	return router
 }

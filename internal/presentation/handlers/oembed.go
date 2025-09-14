@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/julienschmidt/httprouter"
-
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
@@ -65,7 +63,7 @@ type SignatoryInfo struct {
 }
 
 // HandleOEmbed handles oEmbed requests for signature lists
-func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 	// Parse query parameters
 	targetURL := r.URL.Query().Get("url")
 	format := r.URL.Query().Get("format")
@@ -171,7 +169,7 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request, _ h
 }
 
 // HandleEmbedView handles direct embed view requests
-func (h *OEmbedHandler) HandleEmbedView(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *OEmbedHandler) HandleEmbedView(w http.ResponseWriter, r *http.Request) {
 	docID := strings.TrimSpace(r.URL.Query().Get("doc"))
 	if docID == "" {
 		http.Error(w, "Missing document ID", http.StatusBadRequest)

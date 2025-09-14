@@ -16,8 +16,8 @@ import (
 func main() {
 	ctx := context.Background()
 
-	// Create server instance with multitenant disabled (Community Edition)
-	server, err := web.NewServer(ctx, false)
+	// Create server instance (Community Edition)
+	server, err := web.NewServer(ctx)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}

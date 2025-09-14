@@ -229,7 +229,7 @@ func TestAuthHandlers_HandleLogin(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			handlers.HandleLogin(w, req, nil)
+			handlers.HandleLogin(w, req)
 
 			if w.Code != http.StatusFound {
 				t.Errorf("Expected status %d, got %d", http.StatusFound, w.Code)
@@ -250,7 +250,7 @@ func TestAuthHandlers_HandleLogout(t *testing.T) {
 	req := httptest.NewRequest("GET", "/logout", nil)
 	w := httptest.NewRecorder()
 
-	handlers.HandleLogout(w, req, nil)
+	handlers.HandleLogout(w, req)
 
 	if w.Code != http.StatusFound {
 		t.Errorf("Expected status %d, got %d", http.StatusFound, w.Code)
@@ -329,7 +329,7 @@ func TestAuthHandlers_HandleOAuthCallback(t *testing.T) {
 			req.URL.RawQuery = q.Encode()
 
 			w := httptest.NewRecorder()
-			handlers.HandleOAuthCallback(w, req, nil)
+			handlers.HandleOAuthCallback(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -375,7 +375,7 @@ func TestSignatureHandlers_HandleIndex(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 
-	handlers.HandleIndex(w, req, nil)
+	handlers.HandleIndex(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
@@ -469,7 +469,7 @@ func TestSignatureHandlers_HandleSignGET(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			handlers.HandleSignGET(w, req, nil)
+			handlers.HandleSignGET(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -571,7 +571,7 @@ func TestSignatureHandlers_HandleSignPOST(t *testing.T) {
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 			w := httptest.NewRecorder()
-			handlers.HandleSignPOST(w, req, nil)
+			handlers.HandleSignPOST(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -634,7 +634,7 @@ func TestSignatureHandlers_HandleStatusJSON(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			handlers.HandleStatusJSON(w, req, nil)
+			handlers.HandleStatusJSON(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -696,7 +696,7 @@ func TestSignatureHandlers_HandleUserSignatures(t *testing.T) {
 			req := httptest.NewRequest("GET", "/signatures", nil)
 			w := httptest.NewRecorder()
 
-			handlers.HandleUserSignatures(w, req, nil)
+			handlers.HandleUserSignatures(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)

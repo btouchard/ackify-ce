@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 // HealthHandler handles health check requests
@@ -23,7 +21,7 @@ type HealthResponse struct {
 }
 
 // HandleHealth returns the application health status
-func (h *HealthHandler) HandleHealth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *HealthHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
 	response := HealthResponse{
 		OK:   true,
 		Time: time.Now().UTC(),

@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/julienschmidt/httprouter"
-
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
@@ -95,7 +93,7 @@ func TestBadgeHandler_HandleStatusPNG(t *testing.T) {
 			req.URL.RawQuery = q.Encode()
 
 			w := httptest.NewRecorder()
-			handler.HandleStatusPNG(w, req, nil)
+			handler.HandleStatusPNG(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -131,7 +129,7 @@ func TestHealthHandler_HandleHealth(t *testing.T) {
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
 
-	handler.HandleHealth(w, req, nil)
+	handler.HandleHealth(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
@@ -252,7 +250,7 @@ func TestOEmbedHandler_HandleOEmbed(t *testing.T) {
 			req.URL.RawQuery = q.Encode()
 
 			w := httptest.NewRecorder()
-			handler.HandleOEmbed(w, req, nil)
+			handler.HandleOEmbed(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -318,7 +316,7 @@ func TestOEmbedHandler_HandleEmbedView(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			handler.HandleEmbedView(w, req, nil)
+			handler.HandleEmbedView(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -447,7 +445,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 			middleware := NewAuthMiddleware(userService, "https://example.com")
 
 			// Create a test handler that returns 200 OK
-			testHandler := func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+			testHandler := func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("OK"))
 			}
@@ -457,7 +455,7 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 			req := httptest.NewRequest("GET", "/protected", nil)
 			w := httptest.NewRecorder()
 
-			wrappedHandler(w, req, nil)
+			wrappedHandler(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)

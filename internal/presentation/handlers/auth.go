@@ -3,8 +3,6 @@ package handlers
 import (
 	"net/http"
 	"net/url"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 // AuthHandlers handles authentication-related HTTP requests
@@ -22,7 +20,7 @@ func NewAuthHandlers(authService authService, baseURL string) *AuthHandlers {
 }
 
 // HandleLogin handles login requests
-func (h *AuthHandlers) HandleLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *AuthHandlers) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	next := r.URL.Query().Get("next")
 	if next == "" {
 		next = h.baseURL + "/"
@@ -33,13 +31,13 @@ func (h *AuthHandlers) HandleLogin(w http.ResponseWriter, r *http.Request, _ htt
 }
 
 // HandleLogout handles logout requests
-func (h *AuthHandlers) HandleLogout(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *AuthHandlers) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	h.authService.Logout(w, r)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // HandleOAuthCallback handles OAuth callback from the configured provider
-func (h *AuthHandlers) HandleOAuthCallback(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (h *AuthHandlers) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
 
