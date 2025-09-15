@@ -58,6 +58,7 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 WORKDIR /app
 COPY --from=builder /app/ackify /app/ackify
 COPY --from=builder /app/migrate /app/migrate
+COPY --from=builder /app/migrations /app/migrations
 
 # Use non-root user (already set in distroless image)
 # USER 65532:65532

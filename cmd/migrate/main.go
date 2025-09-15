@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 
 	"database/sql"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -35,7 +37,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Cannot connect to database:", err)
 	}
-	defer db.Close()
+	defer func(db *sql.DB) {
+		_ = db.Close()
+	}(db)
 
 	// Create postgres driver
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
@@ -52,17 +56,17 @@ func main() {
 	switch command {
 	case "up":
 		err = m.Up()
-		if err != nil && err != migrate.ErrNoChange {
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			log.Fatal("Migration up failed:", err)
 		}
 		fmt.Println("CE migrations applied successfully")
 	case "down":
 		steps := 1
 		if len(args) > 1 {
-			fmt.Sscanf(args[1], "%d", &steps)
+			_, _ = fmt.Sscanf(args[1], "%d", &steps)
 		}
 		err = m.Steps(-steps)
-		if err != nil && err != migrate.ErrNoChange {
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			log.Fatal("Migration down failed:", err)
 		}
 		fmt.Printf("CE migrations rolled back %d steps\n", steps)
@@ -98,7 +102,7 @@ func printUsage() {
 	fmt.Println("  -migrations-path string Path to migrations (default: file://migrations)")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  go run cmd/migrate/main.go up")
-	fmt.Println("  go run cmd/migrate/main.go down 2")
-	fmt.Println("  go run cmd/migrate/main.go version")
+	fmt.Println("  migrate up")
+	fmt.Println("  migrate down 2")
+	fmt.Println("  migrate version")
 }
