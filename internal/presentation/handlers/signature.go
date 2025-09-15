@@ -118,7 +118,6 @@ func (h *SignatureHandlers) HandleSignGET(w http.ResponseWriter, r *http.Request
 				signedAt = signature.SignedAtUTC.Format("02/01/2006 à 15:04:05")
 			}
 
-			// If no service info from URL, try to get it from stored signature
 			if serviceInfo == nil && signature.Referer != nil {
 				if sigServiceInfo := signature.GetServiceInfo(); sigServiceInfo != nil {
 					serviceInfo = &struct {
@@ -190,7 +189,6 @@ func (h *SignatureHandlers) HandleSignPOST(w http.ResponseWriter, r *http.Reques
 	err = h.signatureService.CreateSignature(ctx, request)
 	if err != nil {
 		if errors.Is(err, models.ErrSignatureAlreadyExists) {
-			// Redirect to view existing signature
 			http.Redirect(w, r, buildSignURL(h.baseURL, docID), http.StatusFound)
 			return
 		}
@@ -198,7 +196,6 @@ func (h *SignatureHandlers) HandleSignPOST(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Redirect to view the created signature
 	http.Redirect(w, r, buildSignURL(h.baseURL, docID), http.StatusFound)
 }
 
@@ -228,12 +225,10 @@ func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Requ
 			"signed_at":  sig.SignedAtUTC,
 		}
 
-		// Add username if available
 		if sig.UserName != nil && *sig.UserName != "" {
 			sigData["user_name"] = *sig.UserName
 		}
 
-		// Add service information if available
 		if serviceInfo := sig.GetServiceInfo(); serviceInfo != nil {
 			sigData["service"] = map[string]interface{}{
 				"name": serviceInfo.Name,

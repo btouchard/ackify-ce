@@ -25,7 +25,6 @@ type TestDB struct {
 func SetupTestDB(t *testing.T) *TestDB {
 	t.Helper()
 
-	// Skip if not in integrations test mode
 	if os.Getenv("INTEGRATION_TESTS") == "" {
 		t.Skip("Skipping integrations test (INTEGRATION_TESTS not set)")
 	}
@@ -40,7 +39,6 @@ func SetupTestDB(t *testing.T) *TestDB {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
 
-	// Verify connection
 	if err := db.Ping(); err != nil {
 		t.Fatalf("Failed to ping test database: %v", err)
 	}
@@ -51,12 +49,10 @@ func SetupTestDB(t *testing.T) *TestDB {
 		dbName: fmt.Sprintf("test_%d_%d", time.Now().UnixNano(), os.Getpid()),
 	}
 
-	// Create test schema
 	if err := testDB.createSchema(); err != nil {
 		t.Fatalf("Failed to create test schema: %v", err)
 	}
 
-	// Clean up on test completion
 	t.Cleanup(func() {
 		testDB.Cleanup()
 	})

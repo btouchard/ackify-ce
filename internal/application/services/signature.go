@@ -258,28 +258,22 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 
 	logger.Logger.Info("Starting chain rebuild", "totalSignatures", len(signatures))
 
-	// First signature (genesis) should have null prev_hash
 	if signatures[0].PrevHash != nil {
-		// Reset genesis signature
 		signatures[0].PrevHash = nil
 		if err := s.repo.Create(ctx, signatures[0]); err != nil {
 			logger.Logger.Warn("Failed to update genesis signature", "id", signatures[0].ID, "error", err)
 		}
 	}
 
-	// Process subsequent signatures
 	for i := 1; i < len(signatures); i++ {
 		current := signatures[i]
 		previous := signatures[i-1]
 
 		expectedHash := previous.ComputeRecordHash()
 
-		// Update if hash is missing or incorrect
 		if current.PrevHash == nil || *current.PrevHash != expectedHash {
 			current.PrevHash = &expectedHash
 
-			// Note: This would require an UPDATE method in the repository
-			// For now, we'll log what needs to be updated
 			logger.Logger.Info("Chain rebuild needed for signature",
 				"id", current.ID,
 				"expectedHash", expectedHash[:16]+"...",

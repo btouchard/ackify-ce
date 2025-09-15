@@ -32,7 +32,6 @@ func main() {
 
 	command := args[0]
 
-	// Open database connection
 	db, err := sql.Open("postgres", *dbDSN)
 	if err != nil {
 		log.Fatal("Cannot connect to database:", err)
@@ -41,13 +40,11 @@ func main() {
 		_ = db.Close()
 	}(db)
 
-	// Create postgres driver
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		log.Fatal("Cannot create database driver:", err)
 	}
 
-	// Create migrator
 	m, err := migrate.NewWithDatabaseInstance(*migrationsPath, "postgres", driver)
 	if err != nil {
 		log.Fatal("Cannot create migrator:", err)

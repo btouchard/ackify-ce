@@ -121,7 +121,6 @@ func (s *OauthService) GetAuthURL(nextURL string) string {
 }
 
 func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (*models.User, string, error) {
-	// Parse state to get next URL
 	parts := strings.SplitN(state, ":", 2)
 	nextURL := "/"
 	if len(parts) == 2 {
@@ -130,13 +129,11 @@ func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (
 		}
 	}
 
-	// Exchange code for token
 	token, err := s.oauthConfig.Exchange(ctx, code)
 	if err != nil {
 		return nil, nextURL, fmt.Errorf("oauth exchange failed: %w", err)
 	}
 
-	// Get user info
 	client := s.oauthConfig.Client(ctx, token)
 	resp, err := client.Get(s.userInfoURL)
 	if err != nil || resp.StatusCode != 200 {
@@ -151,7 +148,6 @@ func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (
 		return nil, nextURL, fmt.Errorf("failed to parse user info: %w", err)
 	}
 
-	// Check domain restriction
 	if !s.IsAllowedDomain(user.Email) {
 		return nil, nextURL, models.ErrDomainNotAllowed
 	}
@@ -170,7 +166,6 @@ func (s *OauthService) IsAllowedDomain(email string) bool {
 	)
 }
 
-// parseUserInfo extracts user information from different OAuth2 providers
 func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) {
 	var rawUser map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&rawUser); err != nil {
@@ -181,7 +176,6 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 
 	user := &models.User{}
 
-	// Extract user ID (sub field or id field depending on provider)
 	if sub, ok := rawUser["sub"].(string); ok {
 		user.Sub = sub
 	} else if id, ok := rawUser["id"]; ok {
@@ -190,15 +184,12 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 		return nil, fmt.Errorf("missing user ID in response")
 	}
 
-	// Extract email
 	if email, ok := rawUser["email"].(string); ok {
 		user.Email = email
 	} else {
-		// Some providers might have email in a different field or structure
 		return nil, fmt.Errorf("missing email in user info response")
 	}
 
-	// Extract user name with fallback strategy
 	var name string
 	if preferredName, ok := rawUser["preferred_username"].(string); ok && preferredName != "" {
 		name = preferredName
@@ -223,7 +214,6 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 		"email", user.Email,
 		"name", user.Name)
 
-	// Validate extracted data
 	if !user.IsValid() {
 		return nil, fmt.Errorf("invalid user data extracted: sub=%s, email=%s", user.Sub, user.Email)
 	}

@@ -46,7 +46,6 @@ func (s *Ed25519Signer) GetPublicKey() string {
 	return base64.StdEncoding.EncodeToString(s.publicKey)
 }
 
-// canonicalPayload creates a canonical payload for signing
 func canonicalPayload(docID string, user *models.User, timestamp time.Time, nonce string) []byte {
 	return []byte(fmt.Sprintf(
 		"doc_id=%s\nuser_sub=%s\nuser_email=%s\nsigned_at=%s\nnonce=%s\n",
@@ -58,7 +57,6 @@ func canonicalPayload(docID string, user *models.User, timestamp time.Time, nonc
 	))
 }
 
-// loadOrGenerateKeys loads existing keys or generates new ones
 func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	b64Key := strings.TrimSpace(os.Getenv("ACKIFY_ED25519_PRIVATE_KEY"))
 
@@ -74,7 +72,6 @@ func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 		return privateKey, publicKey, nil
 	}
 
-	// Generate new keys
 	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate keys: %w", err)

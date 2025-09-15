@@ -82,7 +82,6 @@ var BadgeThemes = struct {
 	},
 }
 
-// generateBadge creates a PNG badge
 func (h *BadgeHandler) generateBadge(isSigned bool) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, badgeSize, badgeSize))
 
@@ -94,7 +93,6 @@ func (h *BadgeHandler) generateBadge(isSigned bool) []byte {
 	return h.encodeToPNG(img)
 }
 
-// getBadgeColors returns appropriate colors based on signing status
 func (h *BadgeHandler) getBadgeColors(isSigned bool) BadgeColors {
 	if isSigned {
 		return BadgeThemes.Success
@@ -102,12 +100,10 @@ func (h *BadgeHandler) getBadgeColors(isSigned bool) BadgeColors {
 	return BadgeThemes.Error
 }
 
-// drawBackground fills the image with background color
 func (h *BadgeHandler) drawBackground(img *image.RGBA, bgColor color.RGBA) {
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: bgColor}, image.Point{}, draw.Src)
 }
 
-// drawBorder draws a circular border around the badge
 func (h *BadgeHandler) drawBorder(img *image.RGBA, borderColor color.RGBA) {
 	cx, cy, r := badgeSize/2, badgeSize/2, badgeSize/2-3
 	for y := 0; y < badgeSize; y++ {
@@ -121,7 +117,6 @@ func (h *BadgeHandler) drawBorder(img *image.RGBA, borderColor color.RGBA) {
 	}
 }
 
-// drawIcon draws the appropriate icon based on signing status
 func (h *BadgeHandler) drawIcon(img *image.RGBA, isSigned bool, iconColor color.RGBA) {
 	if isSigned {
 		h.drawCheckmark(img, badgeSize, iconColor)
@@ -130,7 +125,6 @@ func (h *BadgeHandler) drawIcon(img *image.RGBA, isSigned bool, iconColor color.
 	}
 }
 
-// encodeToPNG encodes the image to PNG format
 func (h *BadgeHandler) encodeToPNG(img *image.RGBA) []byte {
 	buf := bytes.NewBuffer(nil)
 	_ = png.Encode(buf, img)
@@ -142,7 +136,6 @@ func (h *BadgeHandler) drawCheckmark(img *image.RGBA, size int, col color.RGBA) 
 	cx, cy := size/2, size/2
 	scale := float64(size) / 64.0
 
-	// Checkmark path points (scaled)
 	points := [][2]int{
 		{int(18 * scale), int(32 * scale)},
 		{int(28 * scale), int(42 * scale)},
@@ -154,11 +147,9 @@ func (h *BadgeHandler) drawCheckmark(img *image.RGBA, size int, col color.RGBA) 
 		thickness = 2
 	}
 
-	// Draw first stroke (left part of check)
 	h.drawThickLine(img, cx+points[0][0]-cx, cy+points[0][1]-cy,
 		cx+points[1][0]-cx, cy+points[1][1]-cy, thickness, col)
 
-	// Draw second stroke (right part of check)
 	h.drawThickLine(img, cx+points[1][0]-cx, cy+points[1][1]-cy,
 		cx+points[2][0]-cx, cy+points[2][1]-cy, thickness, col)
 }

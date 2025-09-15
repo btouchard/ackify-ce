@@ -58,12 +58,10 @@ func (h *AuthHandlers) HandleOAuthCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Parse and validate next URL
 	if nextURL == "" {
 		nextURL = "/"
 	}
 
-	// Basic URL validation to prevent open redirects
 	if parsedURL, err := url.Parse(nextURL); err != nil ||
 		(parsedURL.Host != "" && parsedURL.Host != r.Host) {
 		nextURL = "/"

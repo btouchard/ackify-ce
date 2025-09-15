@@ -64,7 +64,6 @@ type SignatoryInfo struct {
 
 // HandleOEmbed handles oEmbed requests for signature lists
 func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
-	// Parse query parameters
 	targetURL := r.URL.Query().Get("url")
 	format := r.URL.Query().Get("format")
 	maxWidth := r.URL.Query().Get("maxwidth")
@@ -75,25 +74,21 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Default format is JSON
 	if format == "" {
 		format = "json"
 	}
 
-	// Only support JSON format for now
 	if format != "json" {
 		http.Error(w, "Only JSON format is supported", http.StatusNotImplemented)
 		return
 	}
 
-	// Extract document ID from URL
 	docID, err := h.extractDocIDFromURL(targetURL)
 	if err != nil {
 		http.Error(w, "Invalid URL format", http.StatusBadRequest)
 		return
 	}
 
-	// Get signatures for the document
 	ctx := r.Context()
 	signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID)
 	if err != nil {
@@ -119,7 +114,6 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Render embedded HTML
 	embedHTML, err := h.renderEmbeddedHTML(SignatoryData{
 		DocID:        docID,
 		Signatures:   signatories,
@@ -133,7 +127,6 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse dimensions
 	width := 480  // Default width
 	height := 320 // Default height
 
@@ -176,7 +169,6 @@ func (h *OEmbedHandler) HandleEmbedView(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Get signatures for the document
 	ctx := r.Context()
 	signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID)
 	if err != nil {
@@ -226,12 +218,10 @@ func (h *OEmbedHandler) extractDocIDFromURL(targetURL string) (string, error) {
 		return "", err
 	}
 
-	// Try to extract from query parameter
 	if docID := parsedURL.Query().Get("doc"); docID != "" {
 		return docID, nil
 	}
 
-	// Try to extract from path (e.g., /embed/doc_123 or /status/doc_123)
 	pathParts := strings.Split(strings.Trim(parsedURL.Path, "/"), "/")
 	if len(pathParts) >= 2 && (pathParts[0] == "embed" || pathParts[0] == "status" || pathParts[0] == "sign") {
 		return pathParts[1], nil

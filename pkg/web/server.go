@@ -28,13 +28,11 @@ type Server struct {
 
 // NewServer creates a new Ackify server instance
 func NewServer(ctx context.Context) (*Server, error) {
-	// Initialize infrastructure
 	cfg, db, tmpl, signer, err := initInfrastructure(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
 
-	// Initialize services
 	authService := auth.NewOAuthService(auth.Config{
 		BaseURL:       cfg.App.BaseURL,
 		ClientID:      cfg.OAuth.ClientID,
@@ -48,11 +46,9 @@ func NewServer(ctx context.Context) (*Server, error) {
 		SecureCookies: cfg.App.SecureCookies,
 	})
 
-	// Initialize signatures
 	signatureRepo := database.NewSignatureRepository(db)
 	signatureService := services.NewSignatureService(signatureRepo, signer)
 
-	// Initialize handlers
 	authHandlers := handlers.NewAuthHandlers(authService, cfg.App.BaseURL)
 	authMiddleware := handlers.NewAuthMiddleware(authService, cfg.App.BaseURL)
 	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL)
@@ -60,10 +56,8 @@ func NewServer(ctx context.Context) (*Server, error) {
 	oembedHandler := handlers.NewOEmbedHandler(signatureService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
 	healthHandler := handlers.NewHealthHandler()
 
-	// Setup HTTP router
 	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler)
 
-	// Create HTTP server
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,
 		Handler: handlers.SecureHeaders(router),
@@ -107,15 +101,12 @@ func (s *Server) RegisterRoutes(fn func(r *chi.Mux)) {
 	fn(s.router)
 }
 
-// initInfrastructure initializes the basic infrastructure components
 func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template.Template, *crypto.Ed25519Signer, error) {
-	// Load configuration
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Initialize database
 	db, err := database.InitDB(ctx, database.Config{
 		DSN: cfg.Database.DSN,
 	})
@@ -123,13 +114,11 @@ func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template
 		return nil, nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	// Initialize templates
 	tmpl, err := initTemplates()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}
 
-	// Initialize cryptographic signer
 	signer, err := crypto.NewEd25519Signer()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
@@ -138,7 +127,6 @@ func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template
 	return cfg, db, tmpl, signer, nil
 }
 
-// setupRouter configures all HTTP routes
 func setupRouter(
 	authHandlers *handlers.AuthHandlers,
 	authMiddleware *handlers.AuthMiddleware,
@@ -149,7 +137,6 @@ func setupRouter(
 ) *chi.Mux {
 	router := chi.NewRouter()
 
-	// Public routes
 	router.Get("/", signatureHandlers.HandleIndex)
 	router.Get("/login", authHandlers.HandleLogin)
 	router.Get("/logout", authHandlers.HandleLogout)
@@ -160,28 +147,23 @@ func setupRouter(
 	router.Get("/embed", oembedHandler.HandleEmbedView)
 	router.Get("/health", healthHandler.HandleHealth)
 
-	// Protected routes (require authentication)
 	router.Get("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
 	router.Post("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
 	router.Get("/signatures", authMiddleware.RequireAuth(signatureHandlers.HandleUserSignatures))
 
-	// Note: Enterprise routes can be added via RegisterRoutes method
 
 	return router
 }
 
-// initTemplates initializes HTML templates from filesystem
 func initTemplates() (*template.Template, error) {
 	templatesDir := getTemplatesDir()
 
-	// Parse the base template first
 	baseTemplatePath := filepath.Join(templatesDir, "base.html.tpl")
 	tmpl, err := template.New("base").ParseFiles(baseTemplatePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base template: %w", err)
 	}
 
-	// Parse the additional templates
 	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl"}
 	for _, templateFile := range additionalTemplates {
 		templatePath := filepath.Join(templatesDir, templateFile)
@@ -194,14 +176,11 @@ func initTemplates() (*template.Template, error) {
 	return tmpl, nil
 }
 
-// getTemplatesDir resolves the templates directory path
 func getTemplatesDir() string {
-	// Check environment variable
 	if envDir := os.Getenv("ACKIFY_TEMPLATES_DIR"); envDir != "" {
 		return envDir
 	}
 
-	// Default behavior: try to resolve from executable location
 	if execPath, err := os.Executable(); err == nil {
 		execDir := filepath.Dir(execPath)
 		defaultDir := filepath.Join(execDir, "templates")
@@ -210,7 +189,6 @@ func getTemplatesDir() string {
 		}
 	}
 
-	// Fallback for development: check multiple possible paths
 	possiblePaths := []string{
 		"templates",   // When running from project root
 		"./templates", // Alternative relative path
@@ -222,6 +200,5 @@ func getTemplatesDir() string {
 		}
 	}
 
-	// Final fallback - let the error happen in template loading
 	return "templates"
 }

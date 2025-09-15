@@ -50,21 +50,17 @@ type ServerConfig struct {
 func Load() (*Config, error) {
 	config := &Config{}
 
-	// App config
 	baseURL := mustGetEnv("ACKIFY_BASE_URL")
 	config.App.BaseURL = baseURL
 	config.App.Organisation = mustGetEnv("ACKIFY_ORGANISATION")
 	config.App.SecureCookies = strings.HasPrefix(strings.ToLower(baseURL), "https://")
 
-	// Database config
 	config.Database.DSN = mustGetEnv("ACKIFY_DB_DSN")
 
-	// OAuth config
 	config.OAuth.ClientID = mustGetEnv("ACKIFY_OAUTH_CLIENT_ID")
 	config.OAuth.ClientSecret = mustGetEnv("ACKIFY_OAUTH_CLIENT_SECRET")
 	config.OAuth.AllowedDomain = os.Getenv("ACKIFY_OAUTH_ALLOWED_DOMAIN")
 
-	// Configure OAuth endpoints based on provider or use custom URLs
 	provider := strings.ToLower(getEnv("ACKIFY_OAUTH_PROVIDER", ""))
 	switch provider {
 	case "google":
@@ -84,7 +80,6 @@ func Load() (*Config, error) {
 		config.OAuth.UserInfoURL = fmt.Sprintf("%s/api/v4/user", gitlabURL)
 		config.OAuth.Scopes = []string{"read_user", "profile"}
 	default:
-		// Custom OAuth provider - all URLs must be explicitly set
 		config.OAuth.AuthURL = mustGetEnv("ACKIFY_OAUTH_AUTH_URL")
 		config.OAuth.TokenURL = mustGetEnv("ACKIFY_OAUTH_TOKEN_URL")
 		config.OAuth.UserInfoURL = mustGetEnv("ACKIFY_OAUTH_USERINFO_URL")
@@ -98,7 +93,6 @@ func Load() (*Config, error) {
 	}
 	config.OAuth.CookieSecret = cookieSecret
 
-	// Server config
 	config.Server.ListenAddr = getEnv("ACKIFY_LISTEN_ADDR", ":8080")
 
 	return config, nil
@@ -126,17 +120,14 @@ func getEnv(key, defaultValue string) string {
 func parseCookieSecret() ([]byte, error) {
 	raw := os.Getenv("ACKIFY_OAUTH_COOKIE_SECRET")
 	if raw == "" {
-		// Generate random 32 bytes for development
 		secret := securecookie.GenerateRandomKey(32)
 		fmt.Println("[WARN] ACKIFY_OAUTH_COOKIE_SECRET not set, generated volatile secret (sessions reset on restart)")
 		return secret, nil
 	}
 
-	// Try base64 decoding first
 	if decoded, err := base64.StdEncoding.DecodeString(raw); err == nil && (len(decoded) == 32 || len(decoded) == 64) {
 		return decoded, nil
 	}
 
-	// Fallback to raw bytes
 	return []byte(raw), nil
 }
