@@ -28,21 +28,24 @@ type SignatureHandlers struct {
 	userService      userService
 	template         *template.Template
 	baseURL          string
+	organisation     string
 }
 
 // NewSignatureHandlers creates new signature handlers
-func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL string) *SignatureHandlers {
+func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL, organisation string) *SignatureHandlers {
 	return &SignatureHandlers{
 		signatureService: signatureService,
 		userService:      userService,
 		template:         tmpl,
 		baseURL:          baseURL,
+		organisation:     organisation,
 	}
 }
 
 // PageData represents data passed to templates
 type PageData struct {
 	User         *models.User
+	Organisation string
 	Year         int
 	DocID        string
 	Already      bool
@@ -61,7 +64,7 @@ type PageData struct {
 // HandleIndex serves the main index page
 func (h *SignatureHandlers) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	user, _ := h.userService.GetUser(r)
-	h.render(w, r, "index", PageData{User: user})
+	h.render(w, r, "index", PageData{User: user, Organisation: h.organisation})
 }
 
 // HandleSignGET displays the signature page

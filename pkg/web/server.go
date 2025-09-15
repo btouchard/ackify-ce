@@ -51,7 +51,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 
 	authHandlers := handlers.NewAuthHandlers(authService, cfg.App.BaseURL)
 	authMiddleware := handlers.NewAuthMiddleware(authService, cfg.App.BaseURL)
-	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL)
+	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
 	badgeHandler := handlers.NewBadgeHandler(signatureService)
 	oembedHandler := handlers.NewOEmbedHandler(signatureService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
 	healthHandler := handlers.NewHealthHandler()
@@ -150,7 +150,6 @@ func setupRouter(
 	router.Get("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
 	router.Post("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
 	router.Get("/signatures", authMiddleware.RequireAuth(signatureHandlers.HandleUserSignatures))
-
 
 	return router
 }
