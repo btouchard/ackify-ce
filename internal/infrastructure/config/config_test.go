@@ -296,15 +296,15 @@ func TestParseCookieSecret(t *testing.T) {
 func TestLoad_GoogleProvider(t *testing.T) {
 	// Set up environment variables for Google OAuth
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":         "https://ackify.example.com",
-		"ACKIFY_ORGANISATION":     "Test Organisation",
-		"ACKIFY_DB_DSN":           "postgres://user:pass@localhost/test",
-		"ACKIFY_OAUTH_CLIENT_ID":  "google-client-id",
-		"ACKIFY_OAUTH_CLIENT_SECRET": "google-client-secret",
-		"ACKIFY_OAUTH_PROVIDER":   "google",
+		"ACKIFY_BASE_URL":             "https://ackify.example.com",
+		"ACKIFY_ORGANISATION":         "Test Organisation",
+		"ACKIFY_DB_DSN":               "postgres://user:pass@localhost/test",
+		"ACKIFY_OAUTH_CLIENT_ID":      "google-client-id",
+		"ACKIFY_OAUTH_CLIENT_SECRET":  "google-client-secret",
+		"ACKIFY_OAUTH_PROVIDER":       "google",
 		"ACKIFY_OAUTH_ALLOWED_DOMAIN": "@example.com",
-		"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
-		"ACKIFY_LISTEN_ADDR":      ":8080",
+		"ACKIFY_OAUTH_COOKIE_SECRET":  base64.StdEncoding.EncodeToString(make([]byte, 32)),
+		"ACKIFY_LISTEN_ADDR":          ":8080",
 	}
 
 	// Set environment variables
@@ -366,12 +366,12 @@ func TestLoad_GoogleProvider(t *testing.T) {
 
 func TestLoad_GitHubProvider(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "http://localhost:8080",
-		"ACKIFY_ORGANISATION":    "GitHub Test",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/github",
-		"ACKIFY_OAUTH_CLIENT_ID": "github-client-id",
+		"ACKIFY_BASE_URL":            "http://localhost:8080",
+		"ACKIFY_ORGANISATION":        "GitHub Test",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/github",
+		"ACKIFY_OAUTH_CLIENT_ID":     "github-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "github-client-secret",
-		"ACKIFY_OAUTH_PROVIDER": "github",
+		"ACKIFY_OAUTH_PROVIDER":      "github",
 		"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 	}
 
@@ -408,13 +408,13 @@ func TestLoad_GitHubProvider(t *testing.T) {
 
 func TestLoad_GitLabProvider(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "https://ackify.gitlab.com",
-		"ACKIFY_ORGANISATION":    "GitLab Test",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/gitlab",
-		"ACKIFY_OAUTH_CLIENT_ID": "gitlab-client-id",
+		"ACKIFY_BASE_URL":            "https://ackify.gitlab.com",
+		"ACKIFY_ORGANISATION":        "GitLab Test",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/gitlab",
+		"ACKIFY_OAUTH_CLIENT_ID":     "gitlab-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "gitlab-client-secret",
-		"ACKIFY_OAUTH_PROVIDER": "gitlab",
-		"ACKIFY_OAUTH_GITLAB_URL": "https://gitlab.example.com",
+		"ACKIFY_OAUTH_PROVIDER":      "gitlab",
+		"ACKIFY_OAUTH_GITLAB_URL":    "https://gitlab.example.com",
 		"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 	}
 
@@ -446,12 +446,12 @@ func TestLoad_GitLabProvider(t *testing.T) {
 
 func TestLoad_GitLabDefaultURL(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "https://ackify.gitlab.com",
-		"ACKIFY_ORGANISATION":    "GitLab Test",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/gitlab",
-		"ACKIFY_OAUTH_CLIENT_ID": "gitlab-client-id",
+		"ACKIFY_BASE_URL":            "https://ackify.gitlab.com",
+		"ACKIFY_ORGANISATION":        "GitLab Test",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/gitlab",
+		"ACKIFY_OAUTH_CLIENT_ID":     "gitlab-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "gitlab-client-secret",
-		"ACKIFY_OAUTH_PROVIDER": "gitlab",
+		"ACKIFY_OAUTH_PROVIDER":      "gitlab",
 		"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 	}
 
@@ -482,15 +482,15 @@ func TestLoad_GitLabDefaultURL(t *testing.T) {
 
 func TestLoad_CustomProvider(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "https://ackify.custom.com",
-		"ACKIFY_ORGANISATION":    "Custom Test",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/custom",
-		"ACKIFY_OAUTH_CLIENT_ID": "custom-client-id",
+		"ACKIFY_BASE_URL":            "https://ackify.custom.com",
+		"ACKIFY_ORGANISATION":        "Custom Test",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/custom",
+		"ACKIFY_OAUTH_CLIENT_ID":     "custom-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "custom-client-secret",
-		"ACKIFY_OAUTH_AUTH_URL": "https://auth.custom.com/oauth/authorize",
-		"ACKIFY_OAUTH_TOKEN_URL": "https://auth.custom.com/oauth/token",
-		"ACKIFY_OAUTH_USERINFO_URL": "https://api.custom.com/user",
-		"ACKIFY_OAUTH_SCOPES": "read,write,admin",
+		"ACKIFY_OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
+		"ACKIFY_OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
+		"ACKIFY_OAUTH_USERINFO_URL":  "https://api.custom.com/user",
+		"ACKIFY_OAUTH_SCOPES":        "read,write,admin",
 		"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 	}
 
@@ -533,12 +533,12 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 		t.Run("missing_"+missingVar, func(t *testing.T) {
 			// Set all required variables except the one being tested
 			envVars := map[string]string{
-				"ACKIFY_BASE_URL":        "https://ackify.example.com",
-				"ACKIFY_ORGANISATION":    "Test Organisation",
-				"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/test",
-				"ACKIFY_OAUTH_CLIENT_ID": "test-client-id",
+				"ACKIFY_BASE_URL":            "https://ackify.example.com",
+				"ACKIFY_ORGANISATION":        "Test Organisation",
+				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 				"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
-				"ACKIFY_OAUTH_PROVIDER": "google",
+				"ACKIFY_OAUTH_PROVIDER":      "google",
 			}
 
 			// Remove the variable we're testing
@@ -576,14 +576,14 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 		t.Run("custom_missing_"+missingVar, func(t *testing.T) {
 			// Set basic required variables
 			envVars := map[string]string{
-				"ACKIFY_BASE_URL":        "https://ackify.example.com",
-				"ACKIFY_ORGANISATION":    "Test Organisation",
-				"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/test",
-				"ACKIFY_OAUTH_CLIENT_ID": "test-client-id",
+				"ACKIFY_BASE_URL":            "https://ackify.example.com",
+				"ACKIFY_ORGANISATION":        "Test Organisation",
+				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 				"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
-				"ACKIFY_OAUTH_AUTH_URL": "https://auth.custom.com/oauth/authorize",
-				"ACKIFY_OAUTH_TOKEN_URL": "https://auth.custom.com/oauth/token",
-				"ACKIFY_OAUTH_USERINFO_URL": "https://api.custom.com/user",
+				"ACKIFY_OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
+				"ACKIFY_OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
+				"ACKIFY_OAUTH_USERINFO_URL":  "https://api.custom.com/user",
 			}
 
 			// Remove the variable we're testing
@@ -612,12 +612,12 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 
 func TestLoad_DefaultValues(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "https://ackify.example.com",
-		"ACKIFY_ORGANISATION":    "Test Organisation",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/test",
-		"ACKIFY_OAUTH_CLIENT_ID": "test-client-id",
+		"ACKIFY_BASE_URL":            "https://ackify.example.com",
+		"ACKIFY_ORGANISATION":        "Test Organisation",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+		"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
-		"ACKIFY_OAUTH_PROVIDER": "google",
+		"ACKIFY_OAUTH_PROVIDER":      "google",
 	}
 
 	for key, value := range envVars {
@@ -649,14 +649,14 @@ func TestLoad_DefaultValues(t *testing.T) {
 
 func TestLoad_CustomProviderDefaultScopes(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "https://ackify.custom.com",
-		"ACKIFY_ORGANISATION":    "Custom Test",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/custom",
-		"ACKIFY_OAUTH_CLIENT_ID": "custom-client-id",
+		"ACKIFY_BASE_URL":            "https://ackify.custom.com",
+		"ACKIFY_ORGANISATION":        "Custom Test",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/custom",
+		"ACKIFY_OAUTH_CLIENT_ID":     "custom-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "custom-client-secret",
-		"ACKIFY_OAUTH_AUTH_URL": "https://auth.custom.com/oauth/authorize",
-		"ACKIFY_OAUTH_TOKEN_URL": "https://auth.custom.com/oauth/token",
-		"ACKIFY_OAUTH_USERINFO_URL": "https://api.custom.com/user",
+		"ACKIFY_OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
+		"ACKIFY_OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
+		"ACKIFY_OAUTH_USERINFO_URL":  "https://api.custom.com/user",
 		"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 	}
 
@@ -715,12 +715,12 @@ func TestParseCookieSecret_ValidBase64WrongLength(t *testing.T) {
 
 func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
 	envVars := map[string]string{
-		"ACKIFY_BASE_URL":        "https://ackify.example.com",
-		"ACKIFY_ORGANISATION":    "Test Organisation",
-		"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/test",
-		"ACKIFY_OAUTH_CLIENT_ID": "test-client-id",
+		"ACKIFY_BASE_URL":            "https://ackify.example.com",
+		"ACKIFY_ORGANISATION":        "Test Organisation",
+		"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+		"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 		"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
-		"ACKIFY_OAUTH_PROVIDER": "google",
+		"ACKIFY_OAUTH_PROVIDER":      "google",
 	}
 
 	for key, value := range envVars {
@@ -774,12 +774,12 @@ func TestAppConfig_SecureCookiesLogic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			envVars := map[string]string{
-				"ACKIFY_BASE_URL":        tt.baseURL,
-				"ACKIFY_ORGANISATION":    "Test Organisation",
-				"ACKIFY_DB_DSN":          "postgres://user:pass@localhost/test",
-				"ACKIFY_OAUTH_CLIENT_ID": "test-client-id",
+				"ACKIFY_BASE_URL":            tt.baseURL,
+				"ACKIFY_ORGANISATION":        "Test Organisation",
+				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 				"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
-				"ACKIFY_OAUTH_PROVIDER": "google",
+				"ACKIFY_OAUTH_PROVIDER":      "google",
 			}
 
 			for key, value := range envVars {
