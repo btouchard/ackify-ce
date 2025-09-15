@@ -60,10 +60,15 @@ COPY --from=builder /app/ackify /app/ackify
 COPY --from=builder /app/migrate /app/migrate
 COPY --from=builder /app/migrations /app/migrations
 
+# Copy templates for filesystem loading
+COPY --from=builder /app/templates /app/templates
+
+# Set default environment variable for templates directory
+ENV ACKIFY_TEMPLATES_DIR=/app/templates
+
 # Use non-root user (already set in distroless image)
 # USER 65532:65532
 
 EXPOSE 8080
-
 
 ENTRYPOINT ["/app/ackify"]

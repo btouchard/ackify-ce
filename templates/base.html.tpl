@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Service de validation de lecture</title>
+<title>Ackify - Proof of Read</title>
 {{if .DocID}}
 <link rel="alternate" type="application/json+oembed" href="/oembed?url={{.BaseURL}}/sign?doc={{.DocID}}&format=json" title="Signataires du document {{.DocID}}" />
 {{end}}
@@ -34,7 +34,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
-            <h1 class="text-xl font-bold text-slate-900">Service de validation de lecture</h1>
+            <h1 class="text-xl font-bold text-slate-900">Ackify - Proof of Read</h1>
           </div>
           {{if .User}}
             <div class="flex items-center space-x-4">

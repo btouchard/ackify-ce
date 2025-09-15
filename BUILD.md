@@ -57,6 +57,9 @@ Required environment variables:
 - `DB_DSN`: PostgreSQL connection string
 - `OAUTH_COOKIE_SECRET`: Base64-encoded secret for session cookies
 
+Optional template configuration:
+- `ACKIFY_TEMPLATES_DIR`: Custom path to HTML templates directory (defaults to relative path for development, `/app/templates` in Docker)
+
 ### OAuth2 Providers
 
 Supported providers:

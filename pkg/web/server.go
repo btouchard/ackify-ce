@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 
@@ -15,7 +17,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/pkg/crypto"
-	"github.com/btouchard/ackify-ce/webtemplates"
 )
 
 // Server represents the Ackify CE web server
@@ -123,7 +124,7 @@ func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template
 	}
 
 	// Initialize templates
-	tmpl, err := webtemplates.InitTemplates()
+	tmpl, err := initTemplates()
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}
@@ -167,4 +168,60 @@ func setupRouter(
 	// Note: Enterprise routes can be added via RegisterRoutes method
 
 	return router
+}
+
+// initTemplates initializes HTML templates from filesystem
+func initTemplates() (*template.Template, error) {
+	templatesDir := getTemplatesDir()
+
+	// Parse the base template first
+	baseTemplatePath := filepath.Join(templatesDir, "base.html.tpl")
+	tmpl, err := template.New("base").ParseFiles(baseTemplatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse base template: %w", err)
+	}
+
+	// Parse the additional templates
+	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl"}
+	for _, templateFile := range additionalTemplates {
+		templatePath := filepath.Join(templatesDir, templateFile)
+		_, err = tmpl.ParseFiles(templatePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse template %s: %w", templateFile, err)
+		}
+	}
+
+	return tmpl, nil
+}
+
+// getTemplatesDir resolves the templates directory path
+func getTemplatesDir() string {
+	// Check environment variable
+	if envDir := os.Getenv("ACKIFY_TEMPLATES_DIR"); envDir != "" {
+		return envDir
+	}
+
+	// Default behavior: try to resolve from executable location
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		defaultDir := filepath.Join(execDir, "templates")
+		if _, err := os.Stat(defaultDir); err == nil {
+			return defaultDir
+		}
+	}
+
+	// Fallback for development: check multiple possible paths
+	possiblePaths := []string{
+		"templates",           // When running from project root
+		"./templates",         // Alternative relative path
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	// Final fallback - let the error happen in template loading
+	return "templates"
 }
