@@ -17,7 +17,7 @@ import (
 func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 	t.Run("creates new signer successfully", func(t *testing.T) {
 		// Clear environment variable to force generation
-		originalKey := os.Getenv("ED25519_PRIVATE_KEY_B64")
+		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
 		os.Unsetenv("ED25519_PRIVATE_KEY_B64")
 		defer func() {
 			if originalKey != "" {
@@ -398,7 +398,7 @@ func TestEd25519Signer_GetPublicKey(t *testing.T) {
 
 	t.Run("different signers have different public keys", func(t *testing.T) {
 		// Clear environment to force generation of different keys
-		originalKey := os.Getenv("ED25519_PRIVATE_KEY_B64")
+		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
 		os.Unsetenv("ED25519_PRIVATE_KEY_B64")
 		defer func() {
 			if originalKey != "" {

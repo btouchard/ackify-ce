@@ -30,7 +30,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 		t.Skip("Skipping integrations test (INTEGRATION_TESTS not set)")
 	}
 
-	dsn := os.Getenv("DB_DSN")
+	dsn := os.Getenv("ACKIFY_DB_DSN")
 	if dsn == "" {
 		dsn = "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
 	}

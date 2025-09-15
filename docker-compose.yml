@@ -5,12 +5,12 @@ services:
     image: btouchard/ackify-ce
     container_name: ackify-ce-migrate
     environment:
-      APP_BASE_URL: "${APP_BASE_URL}"
-      APP_ORGANISATION: "${APP_ORGANISATION}"
-      OAUTH_PROVIDER: "${OAUTH_PROVIDER}"
-      OAUTH_CLIENT_ID: "${OAUTH_CLIENT_ID}"
-      OAUTH_CLIENT_SECRET: "${OAUTH_CLIENT_SECRET}"
-      DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
+      ACKIFY_BASE_URL: "${ACKIFY_BASE_URL}"
+      ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
+      ACKIFY_OAUTH_PROVIDER: "${ACKIFY_OAUTH_PROVIDER}"
+      ACKIFY_OAUTH_CLIENT_ID: "${ACKIFY_OAUTH_CLIENT_ID}"
+      ACKIFY_OAUTH_CLIENT_SECRET: "${ACKIFY_OAUTH_CLIENT_SECRET}"
+      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
     depends_on:
       ackify-db:
         condition: service_healthy
@@ -25,16 +25,16 @@ services:
     container_name: ackify-ce
     restart: unless-stopped
     environment:
-      APP_BASE_URL: "https://${APP_DNS}"
-      APP_ORGANISATION: "${APP_ORGANISATION}"
-      OAUTH_PROVIDER: "${OAUTH_PROVIDER}"
-      OAUTH_CLIENT_ID: "${OAUTH_CLIENT_ID}"
-      OAUTH_CLIENT_SECRET: "${OAUTH_CLIENT_SECRET}"
-      OAUTH_ALLOWED_DOMAIN: "${OAUTH_ALLOWED_DOMAIN}"
-      OAUTH_COOKIE_SECRET: "${OAUTH_COOKIE_SECRET}"
-      DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
-      ED25519_PRIVATE_KEY_B64: "${ED25519_PRIVATE_KEY_B64}"
-      LISTEN_ADDR: ":8080"
+      ACKIFY_BASE_URL: "https://${APP_DNS}"
+      ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
+      ACKIFY_OAUTH_PROVIDER: "${ACKIFY_OAUTH_PROVIDER}"
+      ACKIFY_OAUTH_CLIENT_ID: "${ACKIFY_OAUTH_CLIENT_ID}"
+      ACKIFY_OAUTH_CLIENT_SECRET: "${ACKIFY_OAUTH_CLIENT_SECRET}"
+      ACKIFY_OAUTH_ALLOWED_DOMAIN: "${ACKIFY_OAUTH_ALLOWED_DOMAIN}"
+      ACKIFY_OAUTH_COOKIE_SECRET: "${ACKIFY_OAUTH_COOKIE_SECRET}"
+      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
+      ACKIFY_ED25519_PRIVATE_KEY: "${ACKIFY_ED25519_PRIVATE_KEY}"
+      ACKIFY_LISTEN_ADDR: ":8080"
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully

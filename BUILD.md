@@ -51,14 +51,18 @@ cp .env.example .env
 
 Required environment variables:
 
-- `APP_BASE_URL`: Public URL of your application
-- `OAUTH_CLIENT_ID`: OAuth2 client ID
-- `OAUTH_CLIENT_SECRET`: OAuth2 client secret
-- `DB_DSN`: PostgreSQL connection string
-- `OAUTH_COOKIE_SECRET`: Base64-encoded secret for session cookies
+- `ACKIFY_BASE_URL`: Public URL of your application
+- `ACKIFY_OAUTH_CLIENT_ID`: OAuth2 client ID
+- `ACKIFY_OAUTH_CLIENT_SECRET`: OAuth2 client secret
+- `ACKIFY_DB_DSN`: PostgreSQL connection string
+- `ACKIFY_OAUTH_COOKIE_SECRET`: Base64-encoded secret for session cookies
 
-Optional template configuration:
+Optional configuration:
 - `ACKIFY_TEMPLATES_DIR`: Custom path to HTML templates directory (defaults to relative path for development, `/app/templates` in Docker)
+- `ACKIFY_LISTEN_ADDR`: Server listen address (default: `:8080`)
+- `ACKIFY_ED25519_PRIVATE_KEY`: Base64-encoded Ed25519 private key for signatures
+- `ACKIFY_OAUTH_PROVIDER`: OAuth provider (`google`, `github`, `gitlab` or empty for custom)
+- `ACKIFY_OAUTH_ALLOWED_DOMAIN`: Domain restriction for OAuth users
 
 ### OAuth2 Providers
 

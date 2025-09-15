@@ -19,14 +19,14 @@ import (
 	"github.com/btouchard/ackify-ce/pkg/crypto"
 )
 
-// Server represents the Ackify CE web server
+// Server represents the Ackify web server
 type Server struct {
 	httpServer *http.Server
 	db         *sql.DB
 	router     *chi.Mux
 }
 
-// NewServer creates a new Ackify CE server instance
+// NewServer creates a new Ackify server instance
 func NewServer(ctx context.Context) (*Server, error) {
 	// Initialize infrastructure
 	cfg, db, tmpl, signer, err := initInfrastructure(ctx)
@@ -212,8 +212,8 @@ func getTemplatesDir() string {
 
 	// Fallback for development: check multiple possible paths
 	possiblePaths := []string{
-		"templates",           // When running from project root
-		"./templates",         // Alternative relative path
+		"templates",   // When running from project root
+		"./templates", // Alternative relative path
 	}
 
 	for _, path := range possiblePaths {

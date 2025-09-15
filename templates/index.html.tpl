@@ -10,7 +10,7 @@
             </svg>
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-white">Ackify CE</h2>
+            <h2 class="text-2xl font-bold text-white">Ackify</h2>
             <p class="text-primary-100">La solution professionnelle pour valider la lecture de vos documents</p>
           </div>
         </div>

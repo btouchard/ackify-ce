@@ -51,21 +51,21 @@ func Load() (*Config, error) {
 	config := &Config{}
 
 	// App config
-	baseURL := mustGetEnv("APP_BASE_URL")
+	baseURL := mustGetEnv("ACKIFY_BASE_URL")
 	config.App.BaseURL = baseURL
-	config.App.Organisation = mustGetEnv("APP_ORGANISATION")
+	config.App.Organisation = mustGetEnv("ACKIFY_ORGANISATION")
 	config.App.SecureCookies = strings.HasPrefix(strings.ToLower(baseURL), "https://")
 
 	// Database config
-	config.Database.DSN = mustGetEnv("DB_DSN")
+	config.Database.DSN = mustGetEnv("ACKIFY_DB_DSN")
 
 	// OAuth config
-	config.OAuth.ClientID = mustGetEnv("OAUTH_CLIENT_ID")
-	config.OAuth.ClientSecret = mustGetEnv("OAUTH_CLIENT_SECRET")
-	config.OAuth.AllowedDomain = os.Getenv("OAUTH_ALLOWED_DOMAIN")
+	config.OAuth.ClientID = mustGetEnv("ACKIFY_OAUTH_CLIENT_ID")
+	config.OAuth.ClientSecret = mustGetEnv("ACKIFY_OAUTH_CLIENT_SECRET")
+	config.OAuth.AllowedDomain = os.Getenv("ACKIFY_OAUTH_ALLOWED_DOMAIN")
 
 	// Configure OAuth endpoints based on provider or use custom URLs
-	provider := strings.ToLower(getEnv("OAUTH_PROVIDER", ""))
+	provider := strings.ToLower(getEnv("ACKIFY_OAUTH_PROVIDER", ""))
 	switch provider {
 	case "google":
 		config.OAuth.AuthURL = "https://accounts.google.com/o/oauth2/auth"
@@ -78,17 +78,17 @@ func Load() (*Config, error) {
 		config.OAuth.UserInfoURL = "https://api.github.com/user"
 		config.OAuth.Scopes = []string{"user:email", "read:user"}
 	case "gitlab":
-		gitlabURL := getEnv("OAUTH_GITLAB_URL", "https://gitlab.com")
+		gitlabURL := getEnv("ACKIFY_OAUTH_GITLAB_URL", "https://gitlab.com")
 		config.OAuth.AuthURL = fmt.Sprintf("%s/oauth/authorize", gitlabURL)
 		config.OAuth.TokenURL = fmt.Sprintf("%s/oauth/token", gitlabURL)
 		config.OAuth.UserInfoURL = fmt.Sprintf("%s/api/v4/user", gitlabURL)
 		config.OAuth.Scopes = []string{"read_user", "profile"}
 	default:
 		// Custom OAuth provider - all URLs must be explicitly set
-		config.OAuth.AuthURL = mustGetEnv("OAUTH_AUTH_URL")
-		config.OAuth.TokenURL = mustGetEnv("OAUTH_TOKEN_URL")
-		config.OAuth.UserInfoURL = mustGetEnv("OAUTH_USERINFO_URL")
-		scopesStr := getEnv("OAUTH_SCOPES", "openid,email,profile")
+		config.OAuth.AuthURL = mustGetEnv("ACKIFY_OAUTH_AUTH_URL")
+		config.OAuth.TokenURL = mustGetEnv("ACKIFY_OAUTH_TOKEN_URL")
+		config.OAuth.UserInfoURL = mustGetEnv("ACKIFY_OAUTH_USERINFO_URL")
+		scopesStr := getEnv("ACKIFY_OAUTH_SCOPES", "openid,email,profile")
 		config.OAuth.Scopes = strings.Split(scopesStr, ",")
 	}
 
@@ -99,7 +99,7 @@ func Load() (*Config, error) {
 	config.OAuth.CookieSecret = cookieSecret
 
 	// Server config
-	config.Server.ListenAddr = getEnv("LISTEN_ADDR", ":8080")
+	config.Server.ListenAddr = getEnv("ACKIFY_LISTEN_ADDR", ":8080")
 
 	return config, nil
 }
@@ -124,11 +124,11 @@ func getEnv(key, defaultValue string) string {
 
 // parseCookieSecret parses the cookie secret from environment
 func parseCookieSecret() ([]byte, error) {
-	raw := os.Getenv("OAUTH_COOKIE_SECRET")
+	raw := os.Getenv("ACKIFY_OAUTH_COOKIE_SECRET")
 	if raw == "" {
 		// Generate random 32 bytes for development
 		secret := securecookie.GenerateRandomKey(32)
-		fmt.Println("[WARN] OAUTH_COOKIE_SECRET not set, generated volatile secret (sessions reset on restart)")
+		fmt.Println("[WARN] ACKIFY_OAUTH_COOKIE_SECRET not set, generated volatile secret (sessions reset on restart)")
 		return secret, nil
 	}
 

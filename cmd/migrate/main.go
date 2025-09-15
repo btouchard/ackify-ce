@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	var dbDSN = flag.String("db-dsn", os.Getenv("DB_DSN"), "Database DSN")
+	var dbDSN = flag.String("db-dsn", os.Getenv("ACKIFY_DB_DSN"), "Database DSN")
 	var migrationsPath = flag.String("migrations-path", "file://migrations", "Path to migrations directory")
 	flag.Parse()
 

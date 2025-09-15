@@ -60,7 +60,7 @@ func canonicalPayload(docID string, user *models.User, timestamp time.Time, nonc
 
 // loadOrGenerateKeys loads existing keys or generates new ones
 func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
-	b64Key := strings.TrimSpace(os.Getenv("ED25519_PRIVATE_KEY_B64"))
+	b64Key := strings.TrimSpace(os.Getenv("ACKIFY_ED25519_PRIVATE_KEY"))
 
 	if b64Key != "" {
 		keyBytes, err := base64.StdEncoding.DecodeString(b64Key)
