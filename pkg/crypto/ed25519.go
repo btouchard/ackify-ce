@@ -63,7 +63,7 @@ func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 	if b64Key != "" {
 		keyBytes, err := base64.StdEncoding.DecodeString(b64Key)
 		if err != nil || len(keyBytes) != ed25519.PrivateKeySize {
-			return nil, nil, fmt.Errorf("invalid ED25519_PRIVATE_KEY_B64: %v", err)
+			return nil, nil, fmt.Errorf("invalid ACKIFY_ED25519_PRIVATE_KEY: %v", err)
 		}
 
 		privateKey := ed25519.PrivateKey(keyBytes)
@@ -77,7 +77,7 @@ func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 		return nil, nil, fmt.Errorf("failed to generate keys: %w", err)
 	}
 
-	fmt.Printf("[WARN] Generated ephemeral Ed25519 keypair. Set ED25519_PRIVATE_KEY_B64 to persist: %s\n",
+	fmt.Printf("[WARN] Generated ephemeral Ed25519 keypair. Set ACKIFY_ED25519_PRIVATE_KEY to persist: %s\n",
 		base64.StdEncoding.EncodeToString(privateKey))
 
 	return privateKey, publicKey, nil

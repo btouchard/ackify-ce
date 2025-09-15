@@ -18,10 +18,10 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 	t.Run("creates new signer successfully", func(t *testing.T) {
 		// Clear environment variable to force generation
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
-		os.Unsetenv("ED25519_PRIVATE_KEY_B64")
+		os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 		defer func() {
 			if originalKey != "" {
-				os.Setenv("ED25519_PRIVATE_KEY_B64", originalKey)
+				os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", originalKey)
 			}
 		}()
 
@@ -45,8 +45,8 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 
 		// Set environment variable
 		b64Key := base64.StdEncoding.EncodeToString(privKey)
-		os.Setenv("ED25519_PRIVATE_KEY_B64", b64Key)
-		defer os.Unsetenv("ED25519_PRIVATE_KEY_B64")
+		os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", b64Key)
+		defer os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 
 		signer, err := NewEd25519Signer()
 		require.NoError(t, err)
@@ -71,8 +71,8 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				os.Setenv("ED25519_PRIVATE_KEY_B64", tc.value)
-				defer os.Unsetenv("ED25519_PRIVATE_KEY_B64")
+				os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", tc.value)
+				defer os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 
 				if tc.value == "" || tc.value == "   " {
 					// Empty or whitespace should generate new keys
@@ -84,7 +84,7 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 					signer, err := NewEd25519Signer()
 					assert.Error(t, err)
 					assert.Nil(t, signer)
-					assert.Contains(t, err.Error(), "invalid ED25519_PRIVATE_KEY_B64")
+					assert.Contains(t, err.Error(), "invalid ACKIFY_ED25519_PRIVATE_KEY")
 				}
 			})
 		}
@@ -399,10 +399,10 @@ func TestEd25519Signer_GetPublicKey(t *testing.T) {
 	t.Run("different signers have different public keys", func(t *testing.T) {
 		// Clear environment to force generation of different keys
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
-		os.Unsetenv("ED25519_PRIVATE_KEY_B64")
+		os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 		defer func() {
 			if originalKey != "" {
-				os.Setenv("ED25519_PRIVATE_KEY_B64", originalKey)
+				os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", originalKey)
 			}
 		}()
 

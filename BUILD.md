@@ -70,7 +70,7 @@ Supported providers:
 - `google` (default)
 - `github`
 - `gitlab`
-- Custom (specify `OAUTH_AUTH_URL`, `OAUTH_TOKEN_URL`, `OAUTH_USERINFO_URL`)
+- Custom (specify `ACKIFY_OAUTH_AUTH_URL`, `ACKIFY_OAUTH_TOKEN_URL`, `ACKIFY_OAUTH_USERINFO_URL`)
 
 ## Deployment Options
 
@@ -123,7 +123,7 @@ For manual setup:
 
 1. Create a PostgreSQL database
 2. The application will automatically create required tables on first run
-3. Set the `DB_DSN` environment variable to your database connection string
+3. Set the `ACKIFY_DB_DSN` environment variable to your database connection string
 
 ## Health Checks
 
@@ -135,8 +135,8 @@ curl http://localhost:8080/health
 
 ## Production Considerations
 
-1. **HTTPS**: Always use HTTPS in production (set `APP_BASE_URL` with https://)
-2. **Secrets**: Use strong, randomly generated secrets for `OAUTH_COOKIE_SECRET`
+1. **HTTPS**: Always use HTTPS in production (set `ACKIFY_BASE_URL` with https://)
+2. **Secrets**: Use strong, randomly generated secrets for `ACKIFY_OAUTH_COOKIE_SECRET`
 3. **Database**: Use a dedicated PostgreSQL instance with proper backups
 4. **Monitoring**: Monitor the `/health` endpoint for application status
 5. **Logs**: Configure proper log aggregation and monitoring
@@ -154,9 +154,9 @@ curl http://localhost:8080/health
 
 ### Common Issues
 
-1. **Port already in use**: Change `LISTEN_ADDR` in environment variables
-2. **Database connection failed**: Check `DB_DSN` and ensure PostgreSQL is running
-3. **OAuth2 errors**: Verify `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET`
+1. **Port already in use**: Change `ACKIFY_LISTEN_ADDR` in environment variables
+2. **Database connection failed**: Check `ACKIFY_DB_DSN` and ensure PostgreSQL is running
+3. **OAuth2 errors**: Verify `ACKIFY_OAUTH_CLIENT_ID` and `ACKIFY_OAUTH_CLIENT_SECRET`
 
 ### Logs
 

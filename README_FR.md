@@ -77,8 +77,8 @@ cp .env.example .env
 # Éditez .env avec vos paramètres OAuth2
 
 # Génération des secrets
-export OAUTH_COOKIE_SECRET=$(openssl rand -base64 32)
-export ED25519_PRIVATE_KEY_B64=$(openssl rand 64 | base64 -w 0)
+export ACKIFY_OAUTH_COOKIE_SECRET=$(openssl rand -base64 32)
+export ACKIFY_ED25519_PRIVATE_KEY=$(openssl rand 64 | base64 -w 0)
 
 # Démarrage
 docker compose up -d
@@ -89,11 +89,11 @@ curl http://localhost:8080/healthz
 
 ### Variables obligatoires
 ```bash
-APP_BASE_URL="https://votre-domaine.com"
-OAUTH_CLIENT_ID="your-oauth-client-id"        # Google/GitHub/GitLab
-OAUTH_CLIENT_SECRET="your-oauth-client-secret"
-DB_DSN="postgres://user:password@localhost/ackify?sslmode=disable"
-OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
+ACKIFY_BASE_URL="https://votre-domaine.com"
+ACKIFY_OAUTH_CLIENT_ID="your-oauth-client-id"        # Google/GitHub/GitLab
+ACKIFY_OAUTH_CLIENT_SECRET="your-oauth-client-secret"
+ACKIFY_DB_DSN="postgres://user:password@localhost/ackify?sslmode=disable"
+ACKIFY_OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
 ```
 
 ---
@@ -137,23 +137,23 @@ fetch('/oembed?url=https://votre-domaine.com/embed?doc=procedure_securite_2025')
 
 | Provider | Configuration |
 |----------|---------------|
-| **Google** | `OAUTH_PROVIDER=google` |
-| **GitHub** | `OAUTH_PROVIDER=github` |
-| **GitLab** | `OAUTH_PROVIDER=gitlab` + `OAUTH_GITLAB_URL` |
+| **Google** | `ACKIFY_OAUTH_PROVIDER=google` |
+| **GitHub** | `ACKIFY_OAUTH_PROVIDER=github` |
+| **GitLab** | `ACKIFY_OAUTH_PROVIDER=gitlab` + `ACKIFY_OAUTH_GITLAB_URL` |
 | **Custom** | Endpoints personnalisés |
 
 ### Provider personnalisé
 ```bash
-# Laissez OAUTH_PROVIDER vide
-OAUTH_AUTH_URL="https://auth.company.com/oauth/authorize"
-OAUTH_TOKEN_URL="https://auth.company.com/oauth/token"  
-OAUTH_USERINFO_URL="https://auth.company.com/api/user"
-OAUTH_SCOPES="read:user,user:email"
+# Laissez ACKIFY_OAUTH_PROVIDER vide
+ACKIFY_OAUTH_AUTH_URL="https://auth.company.com/oauth/authorize"
+ACKIFY_OAUTH_TOKEN_URL="https://auth.company.com/oauth/token"
+ACKIFY_OAUTH_USERINFO_URL="https://auth.company.com/api/user"
+ACKIFY_OAUTH_SCOPES="read:user,user:email"
 ```
 
 ### Restriction par domaine
 ```bash
-OAUTH_ALLOWED_DOMAIN="@entreprise.com"  # Seuls les emails @entreprise.com
+ACKIFY_OAUTH_ALLOWED_DOMAIN="@entreprise.com"  # Seuls les emails @entreprise.com
 ```
 
 ---
@@ -231,11 +231,11 @@ services:
   ackapp:
     image: btouchard/ackify-ce:latest
     environment:
-      APP_BASE_URL: https://ackify.company.com
-      DB_DSN: postgres://user:pass@postgres:5432/ackdb?sslmode=require
-      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
-      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
-      OAUTH_COOKIE_SECRET: ${OAUTH_COOKIE_SECRET}
+      ACKIFY_BASE_URL: https://ackify.company.com
+      ACKIFY_DB_DSN: postgres://user:pass@postgres:5432/ackdb?sslmode=require
+      ACKIFY_OAUTH_CLIENT_ID: ${ACKIFY_OAUTH_CLIENT_ID}
+      ACKIFY_OAUTH_CLIENT_SECRET: ${ACKIFY_OAUTH_CLIENT_SECRET}
+      ACKIFY_OAUTH_COOKIE_SECRET: ${ACKIFY_OAUTH_COOKIE_SECRET}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ackify.rule=Host(`ackify.company.com`)"
@@ -254,14 +254,14 @@ services:
 ### Variables production
 ```bash
 # Sécurité renforcée
-OAUTH_COOKIE_SECRET="$(openssl rand -base64 64)"  # AES-256
-ED25519_PRIVATE_KEY_B64="$(openssl genpkey -algorithm Ed25519 | base64 -w 0)"
+ACKIFY_OAUTH_COOKIE_SECRET="$(openssl rand -base64 64)"  # AES-256
+ACKIFY_ED25519_PRIVATE_KEY="$(openssl genpkey -algorithm Ed25519 | base64 -w 0)"
 
 # HTTPS obligatoire
-APP_BASE_URL="https://ackify.company.com"
+ACKIFY_BASE_URL="https://ackify.company.com"
 
 # PostgreSQL sécurisé
-DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
+ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 ```
 
 ---
