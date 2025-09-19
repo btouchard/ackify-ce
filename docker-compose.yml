@@ -7,10 +7,10 @@ services:
     environment:
       ACKIFY_BASE_URL: "${ACKIFY_BASE_URL}"
       ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
+      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
       ACKIFY_OAUTH_PROVIDER: "${ACKIFY_OAUTH_PROVIDER}"
       ACKIFY_OAUTH_CLIENT_ID: "${ACKIFY_OAUTH_CLIENT_ID}"
       ACKIFY_OAUTH_CLIENT_SECRET: "${ACKIFY_OAUTH_CLIENT_SECRET}"
-      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
     depends_on:
       ackify-db:
         condition: service_healthy
@@ -27,7 +27,7 @@ services:
     environment:
       ACKIFY_BASE_URL: "https://${APP_DNS}"
       ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
-      ACKIFY_DB_DSN: "${ACKIFY_DB_DSN}"
+      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
       ACKIFY_OAUTH_PROVIDER: "${ACKIFY_OAUTH_PROVIDER}"
       ACKIFY_OAUTH_CLIENT_ID: "${ACKIFY_OAUTH_CLIENT_ID}"
       ACKIFY_OAUTH_CLIENT_SECRET: "${ACKIFY_OAUTH_CLIENT_SECRET}"
