@@ -100,6 +100,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Compute IMAGE_TAG
+      run: |
+        # Strip leading 'v' from tag refs; leave branches unchanged
+        echo "IMAGE_TAG=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
@@ -132,7 +137,9 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -151,10 +158,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Compute IMAGE_TAG
+      run: |
+        # Strip leading 'v' from tag refs; leave branches unchanged
+        echo "IMAGE_TAG=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}'
+        image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}'
         format: 'sarif'
         output: 'trivy-results.sarif'
 
@@ -175,7 +187,7 @@ jobs:
       if: needs.test.result == 'success' && needs.build.result == 'success'
       run: |
         echo "✅ CI/CD Pipeline completed successfully!"
-        echo "🚀 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+        echo "🚀 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
         
     - name: Notify failure
       if: needs.test.result == 'failure' || needs.build.result == 'failure'
