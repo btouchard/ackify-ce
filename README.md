@@ -36,13 +36,13 @@ Click to GIFs for open videos WebM in your browser.
   <td align="center">
     <strong>1) Create sign</strong><br>
     <a href="screenshots/videos/1-initialize-sign.webm" target="_blank">
-      <img src="screenshots/videos/1-initialize-sign.gif" width="420" alt="Initialisation d’une signature">
+      <img src="screenshots/videos/1-initialize-sign.gif" width="380" alt="Initialisation d’une signature">
     </a>
   </td>
   <td align="center">
     <strong>2) User sign flow</strong><br>
     <a href="screenshots/videos/2-user-sign-flow.webm" target="_blank">
-      <img src="screenshots/videos/2-user-sign-flow.gif" width="420" alt="Parcours de signature utilisateur">
+      <img src="screenshots/videos/2-user-sign-flow.gif" width="380" alt="Parcours de signature utilisateur">
     </a>
   </td>
   
