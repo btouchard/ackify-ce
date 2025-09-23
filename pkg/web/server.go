@@ -24,6 +24,8 @@ type Server struct {
 	httpServer *http.Server
 	db         *sql.DB
 	router     *chi.Mux
+	templates  *template.Template
+	baseURL    string
 }
 
 // NewServer creates a new Ackify server instance
@@ -67,6 +69,8 @@ func NewServer(ctx context.Context) (*Server, error) {
 		httpServer: httpServer,
 		db:         db,
 		router:     router,
+		templates:  tmpl,
+		baseURL:    cfg.App.BaseURL,
 	}, nil
 }
 
@@ -99,6 +103,16 @@ func (s *Server) Router() *chi.Mux {
 // RegisterRoutes allows external packages to register additional routes
 func (s *Server) RegisterRoutes(fn func(r *chi.Mux)) {
 	fn(s.router)
+}
+
+// GetTemplates returns the server templates
+func (s *Server) GetTemplates() *template.Template {
+	return s.templates
+}
+
+// GetBaseURL returns the server base URL
+func (s *Server) GetBaseURL() string {
+	return s.baseURL
 }
 
 func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template.Template, *crypto.Ed25519Signer, error) {
@@ -163,7 +177,7 @@ func initTemplates() (*template.Template, error) {
 		return nil, fmt.Errorf("failed to parse base template: %w", err)
 	}
 
-	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl"}
+	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl", "admin_dashboard.html.tpl", "admin_doc_details.html.tpl"}
 	for _, templateFile := range additionalTemplates {
 		templatePath := filepath.Join(templatesDir, templateFile)
 		_, err = tmpl.ParseFiles(templatePath)

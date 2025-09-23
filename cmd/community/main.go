@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btouchard/ackify-ce/internal/presentation/admin"
 	"github.com/btouchard/ackify-ce/pkg/web"
 )
 
@@ -20,6 +21,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
+
+	// Register admin routes
+	server.RegisterRoutes(admin.RegisterAdminRoutes(server.GetBaseURL(), server.GetTemplates()))
 
 	go func() {
 		log.Printf("Community Edition server starting on %s", server.GetAddr())
