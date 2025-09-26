@@ -65,13 +65,13 @@ jobs:
         OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
       run: go test -v -race -short ./...
 
-    - name: Run integrations tests
+    - name: Run integration tests
       env:
         DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
         INTEGRATION_TESTS: "true"
-      run: go test -v -race -tags=integrations ./internal/infrastructure/database/...
+      run: go test -v -race -tags=integration ./internal/infrastructure/database/...
 
-    - name: Generate coverage report
+    - name: Generate coverage report (unit+integration)
       env:
         DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
         INTEGRATION_TESTS: "true"
@@ -80,7 +80,7 @@ jobs:
         OAUTH_CLIENT_ID: "test-client-id"
         OAUTH_CLIENT_SECRET: "test-client-secret"
         OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
-      run: go test -v -race -tags=integrations -coverprofile=coverage.out ./...
+      run: go test -v -race -tags=integration -coverprofile=coverage.out ./...
 
     - name: Upload coverage to Codecov
       if: success()
