@@ -97,21 +97,16 @@ deps: ## Download and tidy dependencies
 	go mod download
 	go mod tidy
 
-# Mock generation
-generate-mocks: ## Generate mocks for interfaces
-	@echo "Generating mocks..."
-	@command -v mockgen >/dev/null 2>&1 || { echo "Installing mockgen..."; go install go.uber.org/mock/mockgen@latest; }
-	@mkdir -p test/mocks
-	mockgen -source=internal/presentation/handlers/signature_handlers.go -destination=test/mocks/mock_signature_service.go -package=mocks SignatureService
-	mockgen -source=internal/presentation/handlers/auth_handlers.go -destination=test/mocks/mock_auth_service.go -package=mocks AuthService  
-	mockgen -source=internal/domain/repositories/signature_repository.go -destination=test/mocks/mock_signature_repository.go -package=mocks SignatureRepository
+# Mock generation (none at the moment)
+generate-mocks: ## No exported interfaces to mock (skipped)
+	@echo "Skipping mock generation: no exported interfaces to mock."
 
 # Docker targets
 docker-build: ## Build Docker image
 	docker build -t ackify-ce:latest .
 
 docker-test: ## Run tests in Docker environment
-	docker compose -f docker-compose.local.yml up -d postgres
+	docker compose -f docker-compose.local.yml up -d ackify-db
 	@sleep 5
 	$(MAKE) test
 	docker compose -f docker-compose.local.yml down
