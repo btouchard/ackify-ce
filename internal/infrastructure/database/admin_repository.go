@@ -17,7 +17,7 @@ type DocumentAgg struct {
 
 // AdminRepository provides read-only access for admin operations
 type AdminRepository struct {
-	db *sql.DB
+    db *sql.DB
 }
 
 // NewAdminRepository creates a new admin repository with its own database connection
@@ -33,6 +33,11 @@ func NewAdminRepository(ctx context.Context) (*AdminRepository, error) {
 	}
 
 	return &AdminRepository{db: db}, nil
+}
+
+// NewAdminRepositoryFromDB reuses an existing *sql.DB connection
+func NewAdminRepositoryFromDB(db *sql.DB) *AdminRepository {
+    return &AdminRepository{db: db}
 }
 
 // ListDocumentsWithCounts returns all documents with their signature counts

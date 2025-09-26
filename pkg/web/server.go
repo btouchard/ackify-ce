@@ -62,7 +62,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,
-		Handler: handlers.SecureHeaders(router),
+		Handler: handlers.RequestLogger(handlers.SecureHeaders(router)),
 	}
 
 	return &Server{
@@ -112,7 +112,12 @@ func (s *Server) GetTemplates() *template.Template {
 
 // GetBaseURL returns the server base URL
 func (s *Server) GetBaseURL() string {
-	return s.baseURL
+    return s.baseURL
+}
+
+// GetDB returns the database connection (read-only access for route wiring)
+func (s *Server) GetDB() *sql.DB {
+    return s.db
 }
 
 func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template.Template, *crypto.Ed25519Signer, error) {

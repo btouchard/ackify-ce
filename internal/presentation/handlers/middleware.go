@@ -1,10 +1,12 @@
 package handlers
 
 import (
-	"errors"
-	"net/http"
+    "errors"
+    "net/http"
+    "time"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
+    "github.com/btouchard/ackify-ce/internal/domain/models"
+    "github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // AuthMiddleware provides authentication middleware
@@ -37,16 +39,43 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // SecureHeaders middleware adds security headers with default configuration
 func SecureHeaders(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Referrer-Policy", "no-referrer")
-		w.Header().Set("Content-Security-Policy",
-			"default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
-				"script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
-				"img-src 'self' data: https://cdn.simpleicons.org; connect-src 'self'")
-		next.ServeHTTP(w, r)
-	})
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("X-Content-Type-Options", "nosniff")
+        w.Header().Set("X-Frame-Options", "DENY")
+        w.Header().Set("Referrer-Policy", "no-referrer")
+        w.Header().Set("Content-Security-Policy",
+            "default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
+                "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
+                "img-src 'self' data: https://cdn.simpleicons.org; connect-src 'self'; "+
+                "frame-ancestors 'self'")
+        next.ServeHTTP(w, r)
+    })
+}
+
+// RequestLogger logs basic request info with latency and status code
+func RequestLogger(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+        start := time.Now()
+        next.ServeHTTP(sr, r)
+        duration := time.Since(start)
+        // Minimal structured log to avoid PII
+        logger.Logger.Info("http_request",
+            "method", r.Method,
+            "path", r.URL.Path,
+            "status", sr.status,
+            "duration_ms", duration.Milliseconds())
+    })
+}
+
+type statusRecorder struct {
+    http.ResponseWriter
+    status int
+}
+
+func (sr *statusRecorder) WriteHeader(code int) {
+    sr.status = code
+    sr.ResponseWriter.WriteHeader(code)
 }
 
 // ErrorResponse represents an error response

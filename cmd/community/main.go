@@ -22,8 +22,8 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	// Register admin routes
-	server.RegisterRoutes(admin.RegisterAdminRoutes(server.GetBaseURL(), server.GetTemplates()))
+    // Register admin routes (reuse server DB connection)
+    server.RegisterRoutes(admin.RegisterAdminRoutes(server.GetBaseURL(), server.GetTemplates(), server.GetDB()))
 
 	go func() {
 		log.Printf("Community Edition server starting on %s", server.GetAddr())
