@@ -77,8 +77,8 @@ func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 		return nil, nil, fmt.Errorf("failed to generate keys: %w", err)
 	}
 
-	fmt.Printf("[WARN] Generated ephemeral Ed25519 keypair. Set ACKIFY_ED25519_PRIVATE_KEY to persist: %s\n",
-		base64.StdEncoding.EncodeToString(privateKey))
+    // Do not print private keys. Warn about ephemeral key usage only.
+    fmt.Println("[WARN] Generated ephemeral Ed25519 keypair. Set ACKIFY_ED25519_PRIVATE_KEY to persist across restarts.")
 
 	return privateKey, publicKey, nil
 }

@@ -172,7 +172,12 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 		return nil, fmt.Errorf("failed to decode user info: %w", err)
 	}
 
-	logger.Logger.Info("Raw OAuth user info received", "data", rawUser)
+    // Reduce PII in standard logs; log only keys at debug level
+    if rawUser != nil {
+        keys := make([]string, 0, len(rawUser))
+        for k := range rawUser { keys = append(keys, k) }
+        logger.Logger.Debug("OAuth user info received", "keys", keys)
+    }
 
 	user := &models.User{}
 
@@ -209,10 +214,10 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 
 	user.Name = name
 
-	logger.Logger.Info("Extracted user data",
-		"sub", user.Sub,
-		"email", user.Email,
-		"name", user.Name)
+    logger.Logger.Debug("Extracted OAuth user identifiers",
+        "sub", user.Sub,
+        "email_present", user.Email != "",
+        "name_present", user.Name != "")
 
 	if !user.IsValid() {
 		return nil, fmt.Errorf("invalid user data extracted: sub=%s, email=%s", user.Sub, user.Email)
