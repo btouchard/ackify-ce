@@ -83,7 +83,11 @@ vet: ## Run go vet
 	@echo "Running go vet..."
 	go vet ./...
 
-lint: fmt vet ## Run all linting tools
+lint: fmt vet ## Run basic linting tools
+
+lint-extra: ## Run staticcheck if available (installs if missing)
+	@command -v staticcheck >/dev/null 2>&1 || { echo "Installing staticcheck..."; go install honnef.co/go/tools/cmd/staticcheck@latest; }
+	staticcheck ./...
 
 # Development targets
 clean: ## Clean build artifacts and test coverage

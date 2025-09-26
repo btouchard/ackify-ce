@@ -99,7 +99,7 @@ cp .env.example .env
 docker compose up -d
 
 # Test
-curl http://localhost:8080/healthz
+curl http://localhost:8080/health   # alias: /healthz
 ```
 
 ### Required variables
@@ -302,7 +302,17 @@ ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 - `GET /embed?doc=<id>` - HTML widget
 
 ### Monitoring
-- `GET /healthz` - Health check
+- `GET /health` - Health check (alias: `/healthz`)
+
+### Admin
+- `GET /admin` - Dashboard (restricted)
+- `GET /admin/docs/{docID}` - Signatures for a document
+- `GET /admin/api/chain-integrity/{docID}` - Chain integrity JSON
+
+Access control: set `ACKIFY_ADMIN_EMAILS` with a comma-separated list of admin emails (exact match, case-insensitive). Example:
+```bash
+ACKIFY_ADMIN_EMAILS="alice@company.com,bob@company.com"
+```
 
 ---
 
@@ -331,6 +341,10 @@ docker build -t ackify-ce:dev .
 
 # Run with local database
 docker run -p 8080:8080 --env-file .env ackify-ce:dev
+
+# Optional: static analysis
+go install honnef.co/go/tools/cmd/staticcheck@latest
+staticcheck ./...
 ```
 
 ---

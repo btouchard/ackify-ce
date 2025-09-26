@@ -107,7 +107,7 @@ export ACKIFY_ED25519_PRIVATE_KEY=$(openssl rand 64 | base64 -w 0)
 docker compose up -d
 
 # Test
-curl http://localhost:8080/healthz
+curl http://localhost:8080/health   # alias: /healthz
 ```
 
 ### Variables obligatoires
@@ -310,7 +310,17 @@ ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 - `GET /embed?doc=<id>` - Widget HTML
 
 ### Supervision
-- `GET /healthz` - Health check
+- `GET /health` - Health check (alias: `/healthz`)
+
+### Administration
+- `GET /admin` - Tableau de bord (restreint)
+- `GET /admin/docs/{docID}` - Signataires d’un document
+- `GET /admin/api/chain-integrity/{docID}` - Intégrité de chaîne (JSON)
+
+Contrôle d’accès: définir `ACKIFY_ADMIN_EMAILS` avec des emails admins, séparés par des virgules (correspondance exacte, insensible à la casse). Exemple:
+```bash
+ACKIFY_ADMIN_EMAILS="alice@entreprise.com,bob@entreprise.com"
+```
 
 ---
 
