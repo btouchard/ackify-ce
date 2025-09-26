@@ -5,6 +5,9 @@ AGENTS.md
 .idea
 .env
 
+# Local Go build cache
+.gocache/
+
 docker-compose.local.yml
 docker-compose.prod.yml
 client_secret*.json

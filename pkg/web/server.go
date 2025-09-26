@@ -160,6 +160,8 @@ func setupRouter(
 	router.Get("/oembed", oembedHandler.HandleOEmbed)
 	router.Get("/embed", oembedHandler.HandleEmbedView)
 	router.Get("/health", healthHandler.HandleHealth)
+	// Alias to match documentation and install script
+	router.Get("/healthz", healthHandler.HandleHealth)
 
 	router.Get("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
 	router.Post("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
