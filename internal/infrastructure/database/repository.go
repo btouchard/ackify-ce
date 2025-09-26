@@ -265,3 +265,12 @@ func (r *SignatureRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*m
 
 	return signatures, nil
 }
+
+// UpdatePrevHash updates the prev_hash field for a signature record by ID
+func (r *SignatureRepository) UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error {
+    query := `UPDATE signatures SET prev_hash = $2 WHERE id = $1`
+    if _, err := r.db.ExecContext(ctx, query, id, prevHash); err != nil {
+        return fmt.Errorf("failed to update prev_hash: %w", err)
+    }
+    return nil
+}

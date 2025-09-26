@@ -124,11 +124,25 @@ func (f *fakeRepository) GetLastSignature(ctx context.Context) (*models.Signatur
 }
 
 func (f *fakeRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error) {
-	if f.shouldFailGetAll {
-		return nil, errors.New("repository get all failed")
-	}
+    if f.shouldFailGetAll {
+        return nil, errors.New("repository get all failed")
+    }
 
-	return f.allSignatures, nil
+    return f.allSignatures, nil
+}
+
+func (f *fakeRepository) UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error {
+    for _, s := range f.allSignatures {
+        if s.ID == id {
+            s.PrevHash = prevHash
+        }
+    }
+    for _, s := range f.signatures {
+        if s.ID == id {
+            s.PrevHash = prevHash
+        }
+    }
+    return nil
 }
 
 // Mock crypto signer implementation

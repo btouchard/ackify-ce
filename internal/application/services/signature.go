@@ -12,14 +12,15 @@ import (
 )
 
 type repository interface {
-	Create(ctx context.Context, signature *models.Signature) error
-	GetByDocAndUser(ctx context.Context, docID, userSub string) (*models.Signature, error)
-	GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error)
-	GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error)
-	ExistsByDocAndUser(ctx context.Context, docID, userSub string) (bool, error)
-	CheckUserSignatureStatus(ctx context.Context, docID, userIdentifier string) (bool, error)
-	GetLastSignature(ctx context.Context) (*models.Signature, error)
-	GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error)
+    Create(ctx context.Context, signature *models.Signature) error
+    GetByDocAndUser(ctx context.Context, docID, userSub string) (*models.Signature, error)
+    GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error)
+    GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error)
+    ExistsByDocAndUser(ctx context.Context, docID, userSub string) (bool, error)
+    CheckUserSignatureStatus(ctx context.Context, docID, userIdentifier string) (bool, error)
+    GetLastSignature(ctx context.Context) (*models.Signature, error)
+    GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error)
+    UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error
 }
 
 type cryptoSigner interface {
@@ -258,12 +259,11 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 
 	logger.Logger.Info("Starting chain rebuild", "totalSignatures", len(signatures))
 
-	if signatures[0].PrevHash != nil {
-		signatures[0].PrevHash = nil
-		if err := s.repo.Create(ctx, signatures[0]); err != nil {
-			logger.Logger.Warn("Failed to update genesis signature", "id", signatures[0].ID, "error", err)
-		}
-	}
+    if signatures[0].PrevHash != nil {
+        if err := s.repo.UpdatePrevHash(ctx, signatures[0].ID, nil); err != nil {
+            logger.Logger.Warn("Failed to nullify genesis prev_hash", "id", signatures[0].ID, "error", err)
+        }
+    }
 
 	for i := 1; i < len(signatures); i++ {
 		current := signatures[i]
@@ -271,20 +271,16 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 
 		expectedHash := previous.ComputeRecordHash()
 
-		if current.PrevHash == nil || *current.PrevHash != expectedHash {
-			current.PrevHash = &expectedHash
-
-			logger.Logger.Info("Chain rebuild needed for signature",
-				"id", current.ID,
-				"expectedHash", expectedHash[:16]+"...",
-				"currentHash", func() string {
-					if current.PrevHash != nil {
-						return (*current.PrevHash)[:16] + "..."
-					}
-					return "null"
-				}())
-		}
-	}
+        if current.PrevHash == nil || *current.PrevHash != expectedHash {
+            logger.Logger.Info("Chain rebuild: updating prev_hash",
+                "id", current.ID,
+                "expectedHash", expectedHash[:16]+"...",
+                "hadPrevHash", current.PrevHash != nil)
+            if err := s.repo.UpdatePrevHash(ctx, current.ID, &expectedHash); err != nil {
+                logger.Logger.Warn("Failed to update prev_hash", "id", current.ID, "error", err)
+            }
+        }
+    }
 
 	logger.Logger.Info("Chain rebuild completed", "processedSignatures", len(signatures))
 	return nil
