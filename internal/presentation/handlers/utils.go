@@ -1,23 +1,35 @@
 package handlers
 
 import (
-	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
+    "fmt"
+    "net/http"
+    "net/url"
+    "regexp"
+    "strings"
+)
+
+var (
+    // Allow safe doc identifiers: letters, digits, dot, underscore, colon, hyphen; max 128
+    reDocID = regexp.MustCompile(`^[A-Za-z0-9._:-]{1,128}$`)
+    // User identifier (sub or email): any non-whitespace chars, 1..254
+    reUserIdentifier = regexp.MustCompile(`^[^\s]{1,254}$`)
 )
 
 func validateDocID(r *http.Request) (string, error) {
-	var docID string
+    var docID string
 
 	docID = strings.TrimSpace(r.URL.Query().Get("doc"))
 	if docID == "" {
 		docID = strings.TrimSpace(r.FormValue("doc"))
 	}
 
-	if docID == "" {
-		return "", fmt.Errorf("missing document ID")
-	}
+    if docID == "" {
+        return "", fmt.Errorf("missing document ID")
+    }
+
+    if !reDocID.MatchString(docID) {
+        return "", fmt.Errorf("invalid document ID format")
+    }
 
 	return docID, nil
 }
@@ -31,9 +43,12 @@ func buildLoginURL(nextURL string) string {
 }
 
 func validateUserIdentifier(r *http.Request) (string, error) {
-	userIdentifier := strings.TrimSpace(r.URL.Query().Get("user"))
-	if userIdentifier == "" {
-		return "", fmt.Errorf("missing user parameter")
-	}
-	return userIdentifier, nil
+    userIdentifier := strings.TrimSpace(r.URL.Query().Get("user"))
+    if userIdentifier == "" {
+        return "", fmt.Errorf("missing user parameter")
+    }
+    if !reUserIdentifier.MatchString(userIdentifier) {
+        return "", fmt.Errorf("invalid user parameter")
+    }
+    return userIdentifier, nil
 }
