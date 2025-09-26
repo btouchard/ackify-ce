@@ -51,5 +51,6 @@ func RegisterAdminRoutes(baseURL string, templates *template.Template) func(r *c
 		// Register admin routes
 		r.Get("/admin", adminMiddleware.RequireAdmin(adminHandlers.HandleDashboard))
 		r.Get("/admin/docs/{docID}", adminMiddleware.RequireAdmin(adminHandlers.HandleDocumentDetails))
+		r.Get("/admin/api/chain-integrity/{docID}", adminMiddleware.RequireAdmin(adminHandlers.HandleChainIntegrityAPI))
 	}
 }

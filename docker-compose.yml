@@ -35,6 +35,7 @@ services:
       ACKIFY_OAUTH_COOKIE_SECRET: "${ACKIFY_OAUTH_COOKIE_SECRET}"
       ACKIFY_ED25519_PRIVATE_KEY: "${ACKIFY_ED25519_PRIVATE_KEY}"
       ACKIFY_LISTEN_ADDR: ":8080"
+      ACKIFY_ADMIN_EMAILS: "${ACKIFY_ADMIN_EMAILS}"
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully

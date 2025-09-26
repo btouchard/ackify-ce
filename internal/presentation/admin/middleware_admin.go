@@ -65,3 +65,27 @@ func (m *AdminMiddleware) isAdminUser(user *models.User) bool {
 
 	return false
 }
+
+// IsAdminUser is a public function to check if a user is admin (for templates)
+func IsAdminUser(user *models.User) bool {
+	if user == nil {
+		return false
+	}
+
+	adminEmails := os.Getenv("ACKIFY_ADMIN_EMAILS")
+	if adminEmails == "" {
+		return false
+	}
+
+	userEmail := strings.ToLower(strings.TrimSpace(user.Email))
+	emails := strings.Split(adminEmails, ",")
+
+	for _, email := range emails {
+		adminEmail := strings.ToLower(strings.TrimSpace(email))
+		if userEmail == adminEmail {
+			return true
+		}
+	}
+
+	return false
+}

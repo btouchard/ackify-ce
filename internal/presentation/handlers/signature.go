@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/admin"
 	"github.com/btouchard/ackify-ce/pkg/services"
 )
 
@@ -53,6 +54,7 @@ type PageData struct {
 	TemplateName string
 	BaseURL      string
 	Signatures   []*models.Signature
+	IsAdmin      bool
 	ServiceInfo  *struct {
 		Name     string
 		Icon     string
@@ -275,6 +277,9 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templ
 	if data.TemplateName == "" {
 		data.TemplateName = templateName
 	}
+	if !data.IsAdmin {
+		data.IsAdmin = admin.IsAdminUser(data.User)
+	}
 
 	templateData := map[string]interface{}{
 		"User":         data.User,
@@ -286,6 +291,7 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templ
 		"BaseURL":      data.BaseURL,
 		"Signatures":   data.Signatures,
 		"ServiceInfo":  data.ServiceInfo,
+		"IsAdmin":      data.IsAdmin,
 	}
 
 	if err := h.template.ExecuteTemplate(w, "base", templateData); err != nil {

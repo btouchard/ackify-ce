@@ -108,6 +108,89 @@ func (r *AdminRepository) ListSignaturesByDoc(ctx context.Context, docID string)
 	return signatures, nil
 }
 
+// VerifyDocumentChainIntegrity vérifie l'intégrité de la chaîne pour un document donné
+func (r *AdminRepository) VerifyDocumentChainIntegrity(ctx context.Context, docID string) (*ChainIntegrityResult, error) {
+	signatures, err := r.ListSignaturesByDoc(ctx, docID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get signatures for document %s: %w", docID, err)
+	}
+
+	return r.verifyChainIntegrity(signatures), nil
+}
+
+// ChainIntegrityResult contient le résultat de la vérification d'intégrité
+type ChainIntegrityResult struct {
+	IsValid      bool     `json:"is_valid"`
+	TotalSigs    int      `json:"total_signatures"`
+	ValidSigs    int      `json:"valid_signatures"`
+	InvalidSigs  int      `json:"invalid_signatures"`
+	Errors       []string `json:"errors,omitempty"`
+	DocID        string   `json:"doc_id"`
+}
+
+// verifyChainIntegrity vérifie l'intégrité de la chaîne de signatures
+func (r *AdminRepository) verifyChainIntegrity(signatures []*models.Signature) *ChainIntegrityResult {
+	result := &ChainIntegrityResult{
+		IsValid:     true,
+		TotalSigs:   len(signatures),
+		ValidSigs:   0,
+		InvalidSigs: 0,
+		Errors:      []string{},
+	}
+
+	if len(signatures) == 0 {
+		return result
+	}
+
+	// Trier par ID pour vérifier dans l'ordre chronologique
+	sortedSigs := make([]*models.Signature, len(signatures))
+	copy(sortedSigs, signatures)
+
+	// Tri manuel par ID (ordre croissant)
+	for i := 0; i < len(sortedSigs)-1; i++ {
+		for j := i + 1; j < len(sortedSigs); j++ {
+			if sortedSigs[i].ID > sortedSigs[j].ID {
+				sortedSigs[i], sortedSigs[j] = sortedSigs[j], sortedSigs[i]
+			}
+		}
+	}
+
+	result.DocID = sortedSigs[0].DocID
+
+	// Vérification de la première signature (genesis)
+	firstSig := sortedSigs[0]
+	if firstSig.PrevHash != nil && *firstSig.PrevHash != "" {
+		result.IsValid = false
+		result.InvalidSigs++
+		result.Errors = append(result.Errors, fmt.Sprintf("Genesis signature ID:%d has prev_hash (should be null)", firstSig.ID))
+	} else {
+		result.ValidSigs++
+	}
+
+	// Vérification des signatures suivantes
+	for i := 1; i < len(sortedSigs); i++ {
+		currentSig := sortedSigs[i]
+		prevSig := sortedSigs[i-1]
+
+		expectedPrevHash := prevSig.ComputeRecordHash()
+
+		if currentSig.PrevHash == nil {
+			result.IsValid = false
+			result.InvalidSigs++
+			result.Errors = append(result.Errors, fmt.Sprintf("Signature ID:%d missing prev_hash", currentSig.ID))
+		} else if *currentSig.PrevHash != expectedPrevHash {
+			result.IsValid = false
+			result.InvalidSigs++
+			result.Errors = append(result.Errors, fmt.Sprintf("Signature ID:%d has invalid prev_hash: expected %s, got %s",
+				currentSig.ID, expectedPrevHash[:12]+"...", (*currentSig.PrevHash)[:12]+"..."))
+		} else {
+			result.ValidSigs++
+		}
+	}
+
+	return result
+}
+
 // Close closes the database connection
 func (r *AdminRepository) Close() error {
 	if r.db != nil {

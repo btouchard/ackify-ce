@@ -4,9 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ackify - Proof of Read</title>
-{{if .DocID}}
+{{if and (ne .TemplateName "admin_dashboard") (ne .TemplateName "admin_doc_details")}}{{if .DocID}}
 <link rel="alternate" type="application/json+oembed" href="/oembed?url={{.BaseURL}}/sign?doc={{.DocID}}&format=json" title="Signataires du document {{.DocID}}" />
-{{end}}
+{{end}}{{end}}
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -28,14 +28,16 @@
     <header class="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
       <div class="max-w-4xl mx-auto px-6 py-4">
         <div class="flex items-center justify-between">
-          <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
+          <a href="/" class="text-slate-400 hover:text-slate-600">
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+              <h1 class="text-xl font-bold text-slate-900">Ackify - Proof of Read</h1>
             </div>
-            <h1 class="text-xl font-bold text-slate-900">Ackify - Proof of Read</h1>
-          </div>
+          </a>
           {{if .User}}
             <div class="flex items-center space-x-4">
               <div class="text-sm text-slate-600">
@@ -57,7 +59,7 @@
     
     <main class="flex-1 py-8">
       <div class="max-w-4xl mx-auto px-6">
-        {{if eq .TemplateName "sign"}}{{template "sign" .}}{{else if eq .TemplateName "signatures"}}{{template "signatures" .}}{{else}}{{template "index" .}}{{end}}
+        {{if eq .TemplateName "sign"}}{{template "sign" .}}{{else if eq .TemplateName "signatures"}}{{template "signatures" .}}{{else if eq .TemplateName "admin_dashboard"}}{{template "admin_dashboard" .}}{{else if eq .TemplateName "admin_doc_details"}}{{template "admin_doc_details" .}}{{else}}{{template "index" .}}{{end}}
       </div>
     </main>
     

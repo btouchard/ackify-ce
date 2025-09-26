@@ -93,6 +93,9 @@
   </div>
 
   {{if .Signatures}}
+  <!-- Vérification de l'intégrité de la chaîne -->
+  {{if .ChainIntegrity}}
+  {{if .ChainIntegrity.IsValid}}
   <div class="bg-green-50 border border-green-200 rounded-lg p-4">
     <div class="flex">
       <div class="flex-shrink-0">
@@ -102,11 +105,38 @@
       </div>
       <div class="ml-3">
         <p class="text-sm text-green-700">
-          <strong>Document vérifié :</strong> Toutes les signatures utilisent la cryptographie Ed25519 pour garantir l'authenticité et la non-répudiation.
+          <strong>Chaîne de blocs intègre :</strong> {{.ChainIntegrity.ValidSigs}}/{{.ChainIntegrity.TotalSigs}} signatures valides
         </p>
       </div>
     </div>
   </div>
+  {{else}}
+  <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-red-700">
+          <strong>Problème d'intégrité détecté :</strong> {{.ChainIntegrity.InvalidSigs}} signature(s) invalide(s)
+        </p>
+        {{if .ChainIntegrity.Errors}}
+        <div class="mt-2">
+          <p class="text-xs text-red-600 font-medium">Erreurs détectées :</p>
+          <ul class="mt-1 text-xs text-red-600 list-disc list-inside">
+            {{range .ChainIntegrity.Errors}}
+            <li>{{.}}</li>
+            {{end}}
+          </ul>
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  {{end}}
+  {{end}}
   {{end}}
 </div>
 {{end}}
