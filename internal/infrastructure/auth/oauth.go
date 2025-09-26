@@ -20,11 +20,11 @@ import (
 const sessionName = "ackapp_session"
 
 type OauthService struct {
-	oauthConfig   *oauth2.Config
-	sessionStore  *sessions.CookieStore
-	userInfoURL   string
-	allowedDomain string
-	secureCookies bool
+    oauthConfig   *oauth2.Config
+    sessionStore  *sessions.CookieStore
+    userInfoURL   string
+    allowedDomain string
+    secureCookies bool
 }
 
 // Config holds OAuth service configuration
@@ -114,10 +114,50 @@ func (s *OauthService) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *OauthService) GetAuthURL(nextURL string) string {
-	state := base64.RawURLEncoding.EncodeToString(securecookie.GenerateRandomKey(20)) +
-		":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
+    state := base64.RawURLEncoding.EncodeToString(securecookie.GenerateRandomKey(20)) +
+        ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
 
-	return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
+    return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
+}
+
+// CreateAuthURL generates the OAuth URL and stores the random state token in session for later verification
+func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nextURL string) string {
+    randPart := securecookie.GenerateRandomKey(20)
+    token := base64.RawURLEncoding.EncodeToString(randPart)
+    state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
+
+    session, _ := s.sessionStore.Get(r, sessionName)
+    session.Values["oauth_state"] = token
+    session.Options = &sessions.Options{Path: "/", HttpOnly: true, Secure: s.secureCookies, SameSite: http.SameSiteLaxMode}
+    _ = session.Save(r, w)
+
+    return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
+}
+
+// VerifyState checks the provided state token against the session and clears it on success
+func (s *OauthService) VerifyState(w http.ResponseWriter, r *http.Request, stateToken string) bool {
+    session, _ := s.sessionStore.Get(r, sessionName)
+    stored, _ := session.Values["oauth_state"].(string)
+    if stored == "" || stateToken == "" {
+        return false
+    }
+    if subtleConstantTimeCompare(stored, stateToken) {
+        delete(session.Values, "oauth_state")
+        _ = session.Save(r, w)
+        return true
+    }
+    return false
+}
+
+func subtleConstantTimeCompare(a, b string) bool {
+    if len(a) != len(b) {
+        return false
+    }
+    var v byte
+    for i := 0; i < len(a); i++ {
+        v |= a[i] ^ b[i]
+    }
+    return v == 0
 }
 
 func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (*models.User, string, error) {
