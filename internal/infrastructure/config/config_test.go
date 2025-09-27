@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package config
 
 import (
@@ -504,10 +505,9 @@ func TestLoad_CustomProvider(t *testing.T) {
 		t.Fatalf("Load() failed: %v", err)
 	}
 
-	// Test custom OAuth config
-	if config.OAuth.AuthURL != "https://auth.custom.com/oauth/authorize" {
-		t.Errorf("OAuth.AuthURL = %v, expected custom auth URL", config.OAuth.AuthURL)
-	}
+    if config.OAuth.AuthURL != "https://auth.custom.com/oauth/authorize" {
+        t.Errorf("OAuth.AuthURL = %v, expected custom auth URL", config.OAuth.AuthURL)
+    }
 	if config.OAuth.TokenURL != "https://auth.custom.com/oauth/token" {
 		t.Errorf("OAuth.TokenURL = %v, expected custom token URL", config.OAuth.TokenURL)
 	}
@@ -531,8 +531,7 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 
 	for _, missingVar := range requiredVars {
 		t.Run("missing_"+missingVar, func(t *testing.T) {
-			// Set all required variables except the one being tested
-			envVars := map[string]string{
+        envVars := map[string]string{
 				"ACKIFY_BASE_URL":            "https://ackify.example.com",
 				"ACKIFY_ORGANISATION":        "Test Organisation",
 				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
@@ -541,24 +540,20 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 				"ACKIFY_OAUTH_PROVIDER":      "google",
 			}
 
-			// Remove the variable we're testing
-			delete(envVars, missingVar)
+            delete(envVars, missingVar)
 
-			// Set environment variables
-			for key, value := range envVars {
+            for key, value := range envVars {
 				os.Setenv(key, value)
 				defer os.Unsetenv(key)
 			}
 
-			// Ensure the missing variable is not set
-			os.Unsetenv(missingVar)
+            os.Unsetenv(missingVar)
 
-			// Test that Load() panics
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("Load() should panic when %s is missing", missingVar)
-				}
-			}()
+            defer func() {
+                if r := recover(); r == nil {
+                    t.Errorf("Load() should panic when %s is missing", missingVar)
+                }
+            }()
 
 			Load()
 		})
@@ -574,8 +569,7 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 
 	for _, missingVar := range customRequiredVars {
 		t.Run("custom_missing_"+missingVar, func(t *testing.T) {
-			// Set basic required variables
-			envVars := map[string]string{
+        envVars := map[string]string{
 				"ACKIFY_BASE_URL":            "https://ackify.example.com",
 				"ACKIFY_ORGANISATION":        "Test Organisation",
 				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
@@ -586,24 +580,20 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 				"ACKIFY_OAUTH_USERINFO_URL":  "https://api.custom.com/user",
 			}
 
-			// Remove the variable we're testing
-			delete(envVars, missingVar)
+            delete(envVars, missingVar)
 
-			// Set environment variables
-			for key, value := range envVars {
+            for key, value := range envVars {
 				os.Setenv(key, value)
 				defer os.Unsetenv(key)
 			}
 
-			// Ensure the missing variable is not set
-			os.Unsetenv(missingVar)
+            os.Unsetenv(missingVar)
 
-			// Test that Load() panics for custom provider missing URLs
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("Load() should panic when %s is missing for custom provider", missingVar)
-				}
-			}()
+            defer func() {
+                if r := recover(); r == nil {
+                    t.Errorf("Load() should panic when %s is missing for custom provider", missingVar)
+                }
+            }()
 
 			Load()
 		})
@@ -697,8 +687,7 @@ func TestParseCookieSecret_InvalidBase64(t *testing.T) {
 }
 
 func TestParseCookieSecret_ValidBase64WrongLength(t *testing.T) {
-	// Test valid base64 but wrong length (should fall back to raw string)
-	wrongLength := base64.StdEncoding.EncodeToString(make([]byte, 16)) // 16 bytes instead of 32/64
+    wrongLength := base64.StdEncoding.EncodeToString(make([]byte, 16)) // 16 bytes instead of 32/64
 	os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", wrongLength)
 	defer os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
 
@@ -707,10 +696,9 @@ func TestParseCookieSecret_ValidBase64WrongLength(t *testing.T) {
 		t.Errorf("parseCookieSecret() should not fail for wrong length: %v", err)
 	}
 
-	// Should fall back to raw string
-	if string(result) != wrongLength {
-		t.Errorf("parseCookieSecret() should fall back to raw string for wrong length")
-	}
+    if string(result) != wrongLength {
+        t.Errorf("parseCookieSecret() should fall back to raw string for wrong length")
+    }
 }
 
 func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
@@ -728,8 +716,7 @@ func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
 		defer os.Unsetenv(key)
 	}
 
-	// Set a cookie secret that won't cause an error (parseCookieSecret doesn't actually return errors in current implementation)
-	os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", "valid-secret")
+    os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", "valid-secret")
 	defer os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
 
 	config, err := Load()
@@ -737,10 +724,9 @@ func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
 		t.Fatalf("Load() should not fail: %v", err)
 	}
 
-	// Verify the config was loaded successfully
-	if config == nil {
-		t.Error("Config should not be nil")
-	}
+    if config == nil {
+        t.Error("Config should not be nil")
+    }
 }
 
 func TestAppConfig_SecureCookiesLogic(t *testing.T) {
@@ -800,7 +786,6 @@ func TestAppConfig_SecureCookiesLogic(t *testing.T) {
 	}
 }
 
-// Helper function to compare slices
 func equalSlices(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

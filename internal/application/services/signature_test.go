@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package services
 
 import (
@@ -9,7 +10,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
-// Mock repository implementation
 type fakeRepository struct {
 	signatures        map[string]*models.Signature // key: docID_userSub
 	allSignatures     []*models.Signature
@@ -145,7 +145,6 @@ func (f *fakeRepository) UpdatePrevHash(ctx context.Context, id int64, prevHash 
     return nil
 }
 
-// Mock crypto signer implementation
 type fakeCryptoSigner struct {
 	shouldFail bool
 }
@@ -164,7 +163,6 @@ func (f *fakeCryptoSigner) CreateSignature(docID string, user *models.User, time
 	return payloadHash, signature, nil
 }
 
-// Test NewSignatureService
 func TestNewSignatureService(t *testing.T) {
 	repo := newFakeRepository()
 	signer := newFakeCryptoSigner()
@@ -247,7 +245,6 @@ func TestSignatureService_CreateSignature(t *testing.T) {
 				},
 			},
 			setupRepo: func(r *fakeRepository) {
-				// Pre-populate with existing signature
 				r.signatures["existing-doc_existing-user"] = &models.Signature{
 					ID:      1,
 					DocID:   "existing-doc",
@@ -366,13 +363,12 @@ func TestSignatureService_CreateSignature(t *testing.T) {
 				return
 			}
 
-			// Verify signature was created
-			key := tt.request.DocID + "_" + tt.request.User.Sub
-			signature, exists := repo.signatures[key]
-			if !exists {
-				t.Error("Signature should have been created")
-				return
-			}
+            key := tt.request.DocID + "_" + tt.request.User.Sub
+            signature, exists := repo.signatures[key]
+            if !exists {
+                t.Error("Signature should have been created")
+                return
+            }
 
 			if signature.DocID != tt.request.DocID {
 				t.Errorf("DocID = %v, expected %v", signature.DocID, tt.request.DocID)
@@ -509,7 +505,6 @@ func TestSignatureService_GetDocumentSignatures(t *testing.T) {
 	signer := newFakeCryptoSigner()
 	service := NewSignatureService(repo, signer)
 
-	// Setup test data
 	sig1 := &models.Signature{ID: 1, DocID: "doc1", UserSub: "user1"}
 	sig2 := &models.Signature{ID: 2, DocID: "doc1", UserSub: "user2"}
 	sig3 := &models.Signature{ID: 3, DocID: "doc2", UserSub: "user1"}
@@ -543,7 +538,6 @@ func TestSignatureService_GetUserSignatures(t *testing.T) {
 	signer := newFakeCryptoSigner()
 	service := NewSignatureService(repo, signer)
 
-	// Setup test data
 	sig1 := &models.Signature{ID: 1, DocID: "doc1", UserSub: "user1"}
 	sig2 := &models.Signature{ID: 2, DocID: "doc2", UserSub: "user1"}
 	sig3 := &models.Signature{ID: 3, DocID: "doc1", UserSub: "user2"}
@@ -586,7 +580,6 @@ func TestSignatureService_GetSignatureByDocAndUser(t *testing.T) {
 	signer := newFakeCryptoSigner()
 	service := NewSignatureService(repo, signer)
 
-	// Setup test data
 	sig := &models.Signature{ID: 1, DocID: "doc1", UserSub: "user1"}
 	repo.signatures["doc1_user1"] = sig
 
@@ -624,7 +617,6 @@ func TestSignatureService_CheckUserSignature(t *testing.T) {
 	signer := newFakeCryptoSigner()
 	service := NewSignatureService(repo, signer)
 
-	// Setup test data
 	sig := &models.Signature{ID: 1, DocID: "doc1", UserSub: "user1", UserEmail: "user1@example.com"}
 	repo.signatures["doc1_user1"] = sig
 
@@ -838,7 +830,6 @@ func TestSignatureService_RebuildChain(t *testing.T) {
 		signer := newFakeCryptoSigner()
 		service := NewSignatureService(repo, signer)
 
-		// Setup signatures that need rebuilding
 		hash := "wrong-hash"
 		sig1 := &models.Signature{
 			ID:       1,
@@ -896,7 +887,6 @@ func TestChainIntegrityResult_Structure(t *testing.T) {
 	}
 }
 
-// Helper functions
 func stringPtr(s string) *string {
 	return &s
 }

@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Ackify Community Edition (CE) Installation Script
 # Quick setup for Docker deployment

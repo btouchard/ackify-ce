@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package crypto
 
 import (
@@ -16,7 +17,7 @@ import (
 
 func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 	t.Run("creates new signer successfully", func(t *testing.T) {
-		// Clear environment variable to force generation
+    
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
 		os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 		defer func() {
@@ -29,21 +30,21 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, signer)
 
-		// Test that public key is accessible
+
 		pubKey := signer.GetPublicKey()
 		assert.NotEmpty(t, pubKey)
 
-		// Test that public key is valid base64
+
 		_, err = base64.StdEncoding.DecodeString(pubKey)
 		assert.NoError(t, err)
 	})
 
 	t.Run("loads signer from environment variable", func(t *testing.T) {
-		// Generate a test key pair
+
 		pubKey, privKey, err := ed25519.GenerateKey(nil)
 		require.NoError(t, err)
 
-		// Set environment variable
+
 		b64Key := base64.StdEncoding.EncodeToString(privKey)
 		os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", b64Key)
 		defer os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
@@ -52,7 +53,7 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, signer)
 
-		// Verify the public key matches
+
 		expectedPubKey := base64.StdEncoding.EncodeToString(pubKey)
 		actualPubKey := signer.GetPublicKey()
 		assert.Equal(t, expectedPubKey, actualPubKey)
@@ -75,12 +76,12 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 				defer os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 
 				if tc.value == "" || tc.value == "   " {
-					// Empty or whitespace should generate new keys
+				
 					signer, err := NewEd25519Signer()
 					require.NoError(t, err)
 					assert.NotNil(t, signer)
 				} else {
-					// Invalid keys should return error
+
 					signer, err := NewEd25519Signer()
 					assert.Error(t, err)
 					assert.Nil(t, signer)
@@ -92,7 +93,7 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 }
 
 func TestEd25519Signer_CreateSignature(t *testing.T) {
-	// Create signer for tests
+
 	signer, err := NewEd25519Signer()
 	require.NoError(t, err)
 
@@ -108,12 +109,12 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 		assert.NotEmpty(t, hashB64)
 		assert.NotEmpty(t, sigB64)
 
-		// Verify hash is valid base64
+
 		hashBytes, err := base64.StdEncoding.DecodeString(hashB64)
 		require.NoError(t, err)
 		assert.Len(t, hashBytes, 32) // SHA-256 hash length
 
-		// Verify signature is valid base64
+
 		sigBytes, err := base64.StdEncoding.DecodeString(sigB64)
 		require.NoError(t, err)
 		assert.Len(t, sigBytes, ed25519.SignatureSize) // Ed25519 signature length
@@ -322,7 +323,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		hash1, _, err := signer.CreateSignature(docID, user, timestamp, nonce)
 		require.NoError(t, err)
 
-		// Manually create expected payload to verify format
+
 		expectedPayload := []byte("doc_id=payload-test\nuser_sub=user-123-alice\nuser_email=alice@example.com\nsigned_at=2024-04-01T12:00:00Z\nnonce=payload-nonce\n")
 		expectedHash := sha256.Sum256(expectedPayload)
 		expectedHashB64 := base64.StdEncoding.EncodeToString(expectedHash[:])
@@ -331,7 +332,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 	})
 
 	t.Run("email normalization in payload", func(t *testing.T) {
-		// Create user with mixed case email
+
 		user := &models.User{
 			Sub:   "user-email-test",
 			Email: "Test.User@EXAMPLE.COM",
@@ -345,7 +346,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		hash, _, err := signer.CreateSignature(docID, user, timestamp, nonce)
 		require.NoError(t, err)
 
-		// Create expected payload with normalized (lowercase) email
+
 		expectedPayload := []byte("doc_id=email-test\nuser_sub=user-email-test\nuser_email=test.user@example.com\nsigned_at=2024-05-01T10:00:00Z\nnonce=email-nonce\n")
 		expectedHash := sha256.Sum256(expectedPayload)
 		expectedHashB64 := base64.StdEncoding.EncodeToString(expectedHash[:])
@@ -358,7 +359,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		docID := "time-format-test"
 		nonce := "time-nonce"
 
-		// Test different timezone inputs but same UTC moment
+
 		utcTime := time.Date(2024, 6, 1, 15, 30, 45, 123456789, time.UTC)
 		localTime := utcTime.In(time.Local)
 
@@ -368,7 +369,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		hash2, _, err := signer.CreateSignature(docID, user, localTime, nonce)
 		require.NoError(t, err)
 
-		// Should produce same hash as both represent same UTC moment
+
 		assert.Equal(t, hash1, hash2, "Different timezone representations of same moment should produce same hash")
 	})
 }
@@ -397,7 +398,7 @@ func TestEd25519Signer_GetPublicKey(t *testing.T) {
 	})
 
 	t.Run("different signers have different public keys", func(t *testing.T) {
-		// Clear environment to force generation of different keys
+
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
 		os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 		defer func() {

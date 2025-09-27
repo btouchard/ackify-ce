@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
@@ -12,7 +13,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
-// Badge Handler Tests
 
 func TestBadgeHandler_NewBadgeHandler(t *testing.T) {
 	checkService := newFakeSignatureService()
@@ -114,7 +114,6 @@ func TestBadgeHandler_HandleStatusPNG(t *testing.T) {
 	}
 }
 
-// Health Handler Tests
 
 func TestHealthHandler_NewHealthHandler(t *testing.T) {
 	handler := NewHealthHandler()
@@ -149,7 +148,6 @@ func TestHealthHandler_HandleHealth(t *testing.T) {
 	}
 }
 
-// OEmbed Handler Tests
 
 func TestOEmbedHandler_NewOEmbedHandler(t *testing.T) {
 	service := newFakeSignatureService()
@@ -235,7 +233,6 @@ func TestOEmbedHandler_HandleOEmbed(t *testing.T) {
 			service := newFakeSignatureService()
 			tt.setupService(service)
 			tmpl := createTestTemplate()
-			// Add embed template for OEmbed tests
 			template.Must(tmpl.New("embed").Parse(`<div>{{.DocID}} - {{.Count}} signatures</div>`))
 			handler := NewOEmbedHandler(service, tmpl, "https://example.com", "Test Org")
 
@@ -303,7 +300,6 @@ func TestOEmbedHandler_HandleEmbedView(t *testing.T) {
 			service := newFakeSignatureService()
 			tt.setupService(service)
 			tmpl := createTestTemplate()
-			// Add embed template
 			template.Must(tmpl.New("embed").Parse(`<div>{{.DocID}} - {{.Count}} signatures</div>`))
 
 			handler := NewOEmbedHandler(service, tmpl, "https://example.com", "Test Org")
@@ -398,7 +394,6 @@ func TestOEmbedHandler_extractDocIDFromURL(t *testing.T) {
 	}
 }
 
-// Middleware Tests
 
 func TestAuthMiddleware_NewAuthMiddleware(t *testing.T) {
 	userService := newFakeUserService()
@@ -444,7 +439,6 @@ func TestAuthMiddleware_RequireAuth(t *testing.T) {
 			tt.setupUser(userService)
 			middleware := NewAuthMiddleware(userService, "https://example.com")
 
-			// Create a test handler that returns 200 OK
 			testHandler := func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("OK"))
@@ -491,7 +485,6 @@ func TestSecureHeaders(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
 	}
 
-	// Check security headers
 	headers := map[string]string{
 		"X-Content-Type-Options":  "nosniff",
 		"X-Frame-Options":         "DENY",
@@ -581,7 +574,6 @@ func TestHandleError(t *testing.T) {
 	}
 }
 
-// Utility function tests
 
 func TestValidateDocID(t *testing.T) {
 	tests := []struct {

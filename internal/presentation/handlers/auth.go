@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
@@ -6,13 +7,11 @@ import (
     "strings"
 )
 
-// AuthHandlers handles authentication-related HTTP requests
 type AuthHandlers struct {
-	authService authService
-	baseURL     string
+    authService authService
+    baseURL     string
 }
 
-// NewAuthHandlers creates new authentication handlers
 func NewAuthHandlers(authService authService, baseURL string) *AuthHandlers {
 	return &AuthHandlers{
 		authService: authService,
@@ -20,7 +19,6 @@ func NewAuthHandlers(authService authService, baseURL string) *AuthHandlers {
 	}
 }
 
-// HandleLogin handles login requests
 func (h *AuthHandlers) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	next := r.URL.Query().Get("next")
 	if next == "" {
@@ -32,13 +30,11 @@ func (h *AuthHandlers) HandleLogin(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, authURL, http.StatusFound)
 }
 
-// HandleLogout handles logout requests
 func (h *AuthHandlers) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	h.authService.Logout(w, r)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// HandleOAuthCallback handles OAuth callback from the configured provider
 func (h *AuthHandlers) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
     code := r.URL.Query().Get("code")
     state := r.URL.Query().Get("state")

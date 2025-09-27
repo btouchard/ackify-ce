@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
@@ -23,7 +24,6 @@ type signatureService interface {
 	CheckUserSignature(ctx context.Context, docID, userIdentifier string) (bool, error)
 }
 
-// SignatureHandlers handles signature-related HTTP requests
 type SignatureHandlers struct {
 	signatureService signatureService
 	userService      userService
@@ -32,7 +32,6 @@ type SignatureHandlers struct {
 	organisation     string
 }
 
-// NewSignatureHandlers creates new signature handlers
 func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL, organisation string) *SignatureHandlers {
 	return &SignatureHandlers{
 		signatureService: signatureService,

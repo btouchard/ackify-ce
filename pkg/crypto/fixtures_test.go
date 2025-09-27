@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package crypto
 
 import "github.com/btouchard/ackify-ce/internal/domain/models"
 
-// Internal test fixtures to avoid external dependencies
 
 var (
 	testUserAlice = &models.User{

@@ -34,7 +34,7 @@ LABEL version="${VERSION}"
 LABEL description="Ackify - Document signature validation platform"
 LABEL org.opencontainers.image.source="https://github.com/btouchard/ackify-ce"
 LABEL org.opencontainers.image.description="Professional solution for validating and tracking document reading"
-LABEL org.opencontainers.image.licenses="SSPL"
+LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
@@ -50,3 +50,4 @@ ENV ACKIFY_TEMPLATES_DIR=/app/templates
 EXPOSE 8080
 
 ENTRYPOINT ["/app/ackify"]
+## SPDX-License-Identifier: AGPL-3.0-or-later

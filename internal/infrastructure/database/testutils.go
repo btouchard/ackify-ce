@@ -1,5 +1,6 @@
 //go:build integration
 
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package database
 
 import (
@@ -14,14 +15,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TestDB holds test database configuration
 type TestDB struct {
 	DB     *sql.DB
 	DSN    string
 	dbName string
 }
 
-// SetupTestDB creates a test database connection and runs migrations
 func SetupTestDB(t *testing.T) *TestDB {
 	t.Helper()
 
@@ -60,7 +59,6 @@ func SetupTestDB(t *testing.T) *TestDB {
 	return testDB
 }
 
-// createSchema creates the signatures table for testing
 func (tdb *TestDB) createSchema() error {
 	schema := `
 		-- Drop table if exists (for cleanup)
@@ -97,7 +95,6 @@ func (tdb *TestDB) createSchema() error {
 	return err
 }
 
-// Cleanup closes the database connection and cleans up
 func (tdb *TestDB) Cleanup() {
 	if tdb.DB != nil {
 		// Drop all tables for cleanup
@@ -106,7 +103,6 @@ func (tdb *TestDB) Cleanup() {
 	}
 }
 
-// ClearTable removes all data from the signatures table
 func (tdb *TestDB) ClearTable(t *testing.T) {
 	t.Helper()
 	_, err := tdb.DB.Exec("TRUNCATE TABLE signatures RESTART IDENTITY")
@@ -115,7 +111,6 @@ func (tdb *TestDB) ClearTable(t *testing.T) {
 	}
 }
 
-// GetTableCount returns the number of rows in signatures table
 func (tdb *TestDB) GetTableCount(t *testing.T) int {
 	t.Helper()
 	var count int
@@ -126,10 +121,8 @@ func (tdb *TestDB) GetTableCount(t *testing.T) int {
 	return count
 }
 
-// SignatureFactory creates test signature objects
 type SignatureFactory struct{}
 
-// CreateValidSignature creates a valid signature for testing
 func (f *SignatureFactory) CreateValidSignature() *models.Signature {
 	now := time.Now().UTC()
 	userName := "Test User"
@@ -149,14 +142,12 @@ func (f *SignatureFactory) CreateValidSignature() *models.Signature {
 	}
 }
 
-// CreateSignatureWithDoc creates a signature for a specific document
 func (f *SignatureFactory) CreateSignatureWithDoc(docID string) *models.Signature {
 	sig := f.CreateValidSignature()
 	sig.DocID = docID
 	return sig
 }
 
-// CreateSignatureWithUser creates a signature for a specific user
 func (f *SignatureFactory) CreateSignatureWithUser(userSub, userEmail string) *models.Signature {
 	sig := f.CreateValidSignature()
 	sig.UserSub = userSub
@@ -164,7 +155,6 @@ func (f *SignatureFactory) CreateSignatureWithUser(userSub, userEmail string) *m
 	return sig
 }
 
-// CreateSignatureWithDocAndUser creates a signature for specific doc and user
 func (f *SignatureFactory) CreateSignatureWithDocAndUser(docID, userSub, userEmail string) *models.Signature {
 	sig := f.CreateValidSignature()
 	sig.DocID = docID
@@ -173,14 +163,12 @@ func (f *SignatureFactory) CreateSignatureWithDocAndUser(docID, userSub, userEma
 	return sig
 }
 
-// CreateChainedSignature creates a signature with previous hash for chaining tests
 func (f *SignatureFactory) CreateChainedSignature(prevHashB64 string) *models.Signature {
 	sig := f.CreateValidSignature()
 	sig.PrevHash = &prevHashB64
 	return sig
 }
 
-// CreateMinimalSignature creates signature with only required fields
 func (f *SignatureFactory) CreateMinimalSignature() *models.Signature {
 	now := time.Now().UTC()
 
@@ -239,7 +227,6 @@ func AssertSignatureEqual(t *testing.T, expected, actual *models.Signature) {
 	}
 }
 
-// isStringPtrEqual compares two string pointers
 func isStringPtrEqual(a, b *string) bool {
 	if a == nil && b == nil {
 		return true
@@ -250,7 +237,6 @@ func isStringPtrEqual(a, b *string) bool {
 	return *a == *b
 }
 
-// NewSignatureFactory creates a new signature factory
 func NewSignatureFactory() *SignatureFactory {
 	return &SignatureFactory{}
 }

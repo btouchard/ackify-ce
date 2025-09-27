@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package admin
 
 import (
@@ -11,7 +12,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
 )
 
-// AdminHandlers handles admin-specific HTTP requests
 type AdminHandlers struct {
 	adminRepo   *database.AdminRepository
 	userService userService
@@ -19,7 +19,6 @@ type AdminHandlers struct {
 	baseURL     string
 }
 
-// NewAdminHandlers creates new admin handlers
 func NewAdminHandlers(
 	adminRepo *database.AdminRepository,
 	userService userService,
@@ -34,7 +33,6 @@ func NewAdminHandlers(
 	}
 }
 
-// HandleDashboard handles GET /admin - lists documents with signature counts
 func (h *AdminHandlers) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -73,7 +71,6 @@ func (h *AdminHandlers) HandleDashboard(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// HandleDocumentDetails handles GET /admin/docs/{docID} - shows document signataires
 func (h *AdminHandlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := chi.URLParam(r, "docID")
@@ -134,7 +131,6 @@ func (h *AdminHandlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Req
 	}
 }
 
-// HandleChainIntegrityAPI handles GET /admin/api/chain-integrity/{docID} - returns JSON
 func (h *AdminHandlers) HandleChainIntegrityAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := chi.URLParam(r, "docID")

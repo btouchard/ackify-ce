@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package models
 
 import (
@@ -111,24 +112,21 @@ func TestErrorWrapping(t *testing.T) {
 	originalErr := ErrSignatureNotFound
 	wrappedErr := errors.Join(originalErr, errors.New("additional context"))
 
-	// Test that the original error can be detected in the wrapped error
-	if !errors.Is(wrappedErr, originalErr) {
-		t.Error("Original error should be detectable in wrapped error")
-	}
+    if !errors.Is(wrappedErr, originalErr) {
+        t.Error("Original error should be detectable in wrapped error")
+    }
 
-	// Test error message contains both parts
-	wrappedMsg := wrappedErr.Error()
-	if !contains(wrappedMsg, "signature not found") {
-		t.Errorf("Wrapped error should contain original message: %v", wrappedMsg)
-	}
-	if !contains(wrappedMsg, "additional context") {
-		t.Errorf("Wrapped error should contain additional context: %v", wrappedMsg)
-	}
+    wrappedMsg := wrappedErr.Error()
+    if !contains(wrappedMsg, "signature not found") {
+        t.Errorf("Wrapped error should contain original message: %v", wrappedMsg)
+    }
+    if !contains(wrappedMsg, "additional context") {
+        t.Errorf("Wrapped error should contain additional context: %v", wrappedMsg)
+    }
 }
 
 func TestErrorTypes(t *testing.T) {
-	// Test that all errors are of type error interface
-	errors := []error{
+    errors := []error{
 		ErrSignatureNotFound,
 		ErrSignatureAlreadyExists,
 		ErrInvalidUser,
@@ -144,22 +142,19 @@ func TestErrorTypes(t *testing.T) {
 				t.Error("Error should not be nil")
 			}
 
-			// Test that error implements error interface
-			if _, ok := err.(error); !ok {
-				t.Error("Error should implement error interface")
-			}
+            if _, ok := err.(error); !ok {
+                t.Error("Error should implement error interface")
+            }
 
-			// Test that error message is not empty
-			if err.Error() == "" {
-				t.Error("Error message should not be empty")
-			}
+            if err.Error() == "" {
+                t.Error("Error message should not be empty")
+            }
 		})
 	}
 }
 
 func TestErrorUniqueness(t *testing.T) {
-	// Test that all error messages are unique
-	errors := map[string]error{
+    errors := map[string]error{
 		"signature not found":       ErrSignatureNotFound,
 		"signature already exists":  ErrSignatureAlreadyExists,
 		"invalid user":              ErrInvalidUser,
@@ -181,16 +176,14 @@ func TestErrorUniqueness(t *testing.T) {
 		}
 	}
 
-	// Verify we have the expected number of unique errors
-	expectedCount := 7
+    expectedCount := 7
 	if len(messages) != expectedCount {
 		t.Errorf("Expected %d unique error messages, got %d", expectedCount, len(messages))
 	}
 }
 
 func TestErrorSentinelValues(t *testing.T) {
-	// Test that errors are sentinel values (same instance when accessed multiple times)
-	if ErrSignatureNotFound != ErrSignatureNotFound {
+    if ErrSignatureNotFound != ErrSignatureNotFound {
 		t.Error("ErrSignatureNotFound should be a sentinel value")
 	}
 	if ErrSignatureAlreadyExists != ErrSignatureAlreadyExists {
@@ -213,7 +206,6 @@ func TestErrorSentinelValues(t *testing.T) {
 	}
 }
 
-// Helper function to check if string contains substring
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || containsAt(s, substr, 0))
 }

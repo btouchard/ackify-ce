@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
@@ -12,7 +13,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
-// OEmbedHandler handles oEmbed requests
 type OEmbedHandler struct {
 	signatureService signatureService
 	template         *template.Template
@@ -20,7 +20,6 @@ type OEmbedHandler struct {
 	organisation     string
 }
 
-// NewOEmbedHandler creates a new oEmbed handler
 func NewOEmbedHandler(signatureService signatureService, tmpl *template.Template, baseURL, organisation string) *OEmbedHandler {
 	return &OEmbedHandler{
 		signatureService: signatureService,
@@ -30,7 +29,6 @@ func NewOEmbedHandler(signatureService signatureService, tmpl *template.Template
 	}
 }
 
-// OEmbedResponse represents the oEmbed JSON response format
 type OEmbedResponse struct {
 	Type         string `json:"type"`
 	Version      string `json:"version"`
@@ -45,7 +43,6 @@ type OEmbedResponse struct {
 	Height       int    `json:"height,omitempty"`
 }
 
-// SignatoryData represents data for rendering signatories
 type SignatoryData struct {
 	DocID        string
 	Signatures   []SignatoryInfo
@@ -55,14 +52,12 @@ type SignatoryData struct {
 	SignURL      string
 }
 
-// SignatoryInfo represents a signatory's information
 type SignatoryInfo struct {
 	Name     string
 	Email    string
 	SignedAt string
 }
 
-// HandleOEmbed handles oEmbed requests for signature lists
 func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 	targetURL := r.URL.Query().Get("url")
 	format := r.URL.Query().Get("format")
@@ -142,8 +137,7 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Create oEmbed response
-	response := OEmbedResponse{
+    response := OEmbedResponse{
 		Type:         "rich",
 		Version:      "1.0",
 		Title:        fmt.Sprintf("Signataires du document %s", docID),
@@ -161,7 +155,6 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-// HandleEmbedView handles direct embed view requests
 func (h *OEmbedHandler) HandleEmbedView(w http.ResponseWriter, r *http.Request) {
 	docID := strings.TrimSpace(r.URL.Query().Get("doc"))
 	if docID == "" {

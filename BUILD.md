@@ -168,4 +168,4 @@ This is the Community Edition. Contributions are welcome! Please see the main re
 
 ## License
 
-Community Edition is released under the Server Side Public License (SSPL).
+Community Edition is released under the GNU Affero General Public License v3.0 (AGPLv3).

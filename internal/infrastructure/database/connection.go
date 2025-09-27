@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package database
 
 import (
@@ -9,12 +10,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// Config holds database configuration
 type Config struct {
-	DSN string
+    DSN string
 }
 
-// InitDB initializes the database connection
 func InitDB(ctx context.Context, config Config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", config.DSN)
 	if err != nil {

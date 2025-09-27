@@ -7,7 +7,7 @@ Secure document reading validation service with cryptographic traceability and i
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/btouchard/ackify-ce)
 [![Security](https://img.shields.io/badge/crypto-Ed25519-blue.svg)](https://en.wikipedia.org/wiki/EdDSA)
 [![Go](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org/)
-[![License](https://img.shields.io/badge/license-SSPL-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 > 🇫🇷 [Version française disponible ici](README_FR.md)
 
@@ -355,9 +355,9 @@ staticcheck ./...
 - 🐛 **Issues**: [GitHub Issues](https://github.com/btouchard/ackify-ce/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/btouchard/ackify-ce/discussions)
 
-### SSPL License
-Free usage for internal projects. Restriction for competing commercial services.
-See [LICENSE](LICENSE) for complete details.
+### License (AGPLv3)
+Distributed under the GNU Affero General Public License v3.0.
+See [LICENSE](LICENSE) for details.
 
 ---
 

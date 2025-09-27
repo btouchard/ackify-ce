@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 //go:build integration
 
 package database
@@ -56,7 +57,6 @@ func TestRepository_Create_Integration(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			// Verify signature was created with ID and CreatedAt
 			if tt.signature.ID <= 0 {
 				t.Error("Expected ID to be set after create")
 			}
@@ -65,7 +65,6 @@ func TestRepository_Create_Integration(t *testing.T) {
 				t.Error("Expected CreatedAt to be set after create")
 			}
 
-			// Verify data in database
 			count := testDB.GetTableCount(t)
 			if count != 1 {
 				t.Errorf("Expected 1 signature in DB, got %d", count)
@@ -80,14 +79,12 @@ func TestRepository_Create_UniqueConstraint_Integration(t *testing.T) {
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
-	// Create first signature
 	sig1 := factory.CreateSignatureWithDocAndUser("doc1", "user1", "user1@example.com")
 	err := repo.Create(ctx, sig1)
 	if err != nil {
 		t.Fatalf("Failed to create first signature: %v", err)
 	}
 
-	// Try to create duplicate (same doc_id and user_sub)
 	sig2 := factory.CreateSignatureWithDocAndUser("doc1", "user1", "user1@example.com")
 	err = repo.Create(ctx, sig2)
 
@@ -95,7 +92,6 @@ func TestRepository_Create_UniqueConstraint_Integration(t *testing.T) {
 		t.Error("Expected error for duplicate signature but got none")
 	}
 
-	// Should still have only 1 signature
 	count := testDB.GetTableCount(t)
 	if count != 1 {
 		t.Errorf("Expected 1 signature in DB after constraint violation, got %d", count)
@@ -184,7 +180,6 @@ func TestRepository_GetByDocAndUser_Integration(t *testing.T) {
 				t.Fatal("Expected signature but got nil")
 			}
 
-			// Compare with expected (excluding ID and CreatedAt which are set by DB)
 			AssertSignatureEqual(t, expected, result)
 		})
 	}
@@ -196,7 +191,6 @@ func TestRepository_GetByDoc_Integration(t *testing.T) {
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
-	// Setup: Create signatures for multiple docs and users
 	sig1 := factory.CreateSignatureWithDocAndUser("doc1", "user1", "user1@example.com")
 	sig2 := factory.CreateSignatureWithDocAndUser("doc1", "user2", "user2@example.com")
 	sig3 := factory.CreateSignatureWithDocAndUser("doc2", "user1", "user1@example.com")
@@ -245,7 +239,6 @@ func TestRepository_GetByDoc_Integration(t *testing.T) {
 				t.Errorf("Expected %d signatures, got %d", tt.expectedCount, len(result))
 			}
 
-			// Verify order (should be by created_at DESC)
 			for i, sig := range result {
 				if i < len(tt.expectedUsers) && sig.UserSub != tt.expectedUsers[i] {
 					t.Errorf("Expected user %s at position %d, got %s", tt.expectedUsers[i], i, sig.UserSub)
@@ -265,7 +258,6 @@ func TestRepository_GetByUser_Integration(t *testing.T) {
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
-	// Setup: Create signatures for multiple users and docs
 	sig1 := factory.CreateSignatureWithDocAndUser("doc1", "user1", "user1@example.com")
 	sig2 := factory.CreateSignatureWithDocAndUser("doc2", "user1", "user1@example.com")
 	sig3 := factory.CreateSignatureWithDocAndUser("doc1", "user2", "user2@example.com")
@@ -314,7 +306,6 @@ func TestRepository_GetByUser_Integration(t *testing.T) {
 				t.Errorf("Expected %d signatures, got %d", tt.expectedCount, len(result))
 			}
 
-			// Verify order and data
 			for i, sig := range result {
 				if i < len(tt.expectedDocIDs) && sig.DocID != tt.expectedDocIDs[i] {
 					t.Errorf("Expected DocID %s at position %d, got %s", tt.expectedDocIDs[i], i, sig.DocID)
@@ -334,7 +325,6 @@ func TestRepository_ExistsByDocAndUser_Integration(t *testing.T) {
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
-	// Setup: Create a signature
 	sig := factory.CreateSignatureWithDocAndUser("doc1", "user1", "user1@example.com")
 	_ = repo.Create(ctx, sig)
 
@@ -391,7 +381,6 @@ func TestRepository_CheckUserSignatureStatus_Integration(t *testing.T) {
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
-	// Setup: Create signatures with different users
 	sig1 := factory.CreateSignatureWithDocAndUser("doc1", "user-sub-123", "user@EXAMPLE.COM")
 	sig2 := factory.CreateSignatureWithDocAndUser("doc2", "another-user", "another@example.com")
 
@@ -499,7 +488,6 @@ func TestRepository_GetLastSignature_Integration(t *testing.T) {
 	t.Run("multiple signatures", func(t *testing.T) {
 		testDB.ClearTable(t)
 
-		// Create signatures with different content
 		sig1 := factory.CreateSignatureWithUser("user1", "user1@example.com")
 		sig2 := factory.CreateSignatureWithUser("user2", "user2@example.com")
 		sig3 := factory.CreateSignatureWithUser("user3", "user3@example.com")
@@ -520,7 +508,6 @@ func TestRepository_GetLastSignature_Integration(t *testing.T) {
 			t.Fatal("Expected signature but got nil")
 		}
 
-		// Should return the last created signature (sig3)
 		if result.UserSub != "user3" {
 			t.Errorf("Expected last signature to be user3, got %s", result.UserSub)
 		}
@@ -550,7 +537,6 @@ func TestRepository_GetAllSignaturesOrdered_Integration(t *testing.T) {
 	t.Run("multiple signatures ordered by ID ASC", func(t *testing.T) {
 		testDB.ClearTable(t)
 
-		// Create signatures
 		sig1 := factory.CreateSignatureWithUser("user1", "user1@example.com")
 		sig2 := factory.CreateSignatureWithUser("user2", "user2@example.com")
 		sig3 := factory.CreateSignatureWithUser("user3", "user3@example.com")
@@ -569,14 +555,12 @@ func TestRepository_GetAllSignaturesOrdered_Integration(t *testing.T) {
 			t.Errorf("Expected 3 signatures, got %d", len(result))
 		}
 
-		// Verify order by ID ASC
 		expectedUsers := []string{"user1", "user2", "user3"}
 		for i, sig := range result {
 			if sig.UserSub != expectedUsers[i] {
 				t.Errorf("Expected user %s at position %d, got %s", expectedUsers[i], i, sig.UserSub)
 			}
 
-			// Verify IDs are in ascending order
 			if i > 0 && result[i].ID <= result[i-1].ID {
 				t.Errorf("IDs not in ascending order: %d should be > %d", result[i].ID, result[i-1].ID)
 			}

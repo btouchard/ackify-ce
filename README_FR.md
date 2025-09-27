@@ -7,7 +7,7 @@ Service sécurisé de validation de lecture avec traçabilité cryptographique e
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/btouchard/ackify-ce)
 [![Security](https://img.shields.io/badge/crypto-Ed25519-blue.svg)](https://en.wikipedia.org/wiki/EdDSA)
 [![Go](https://img.shields.io/badge/go-1.24.5-blue.svg)](https://golang.org/)
-[![License](https://img.shields.io/badge/license-SSPL-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 > 🌍 [English version available here](README.md)
 
@@ -359,9 +359,9 @@ docker run -p 8080:8080 --env-file .env ackify:dev
 - 🐛 **Issues** : [GitHub Issues](https://github.com/btouchard/ackify-ce/issues)
 - 💬 **Discussions** : [GitHub Discussions](https://github.com/btouchard/ackify-ce/discussions)
 
-### Licence SSPL
-Usage libre pour projets internes. Restriction pour services commerciaux concurrents.
-Voir [LICENSE](LICENSE) pour détails complets.
+### Licence AGPLv3
+Distribué sous la licence GNU Affero General Public License v3.0.
+Voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 

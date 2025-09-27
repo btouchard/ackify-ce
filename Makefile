@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Makefile for ackify-ce project
 
 .PHONY: build test test-unit test-integration test-short coverage lint fmt vet clean help

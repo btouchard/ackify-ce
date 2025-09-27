@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package crypto
 
 import (
@@ -13,13 +14,11 @@ import (
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
-// Ed25519Signer handles Ed25519 cryptographic operations
 type Ed25519Signer struct {
-	privateKey ed25519.PrivateKey
-	publicKey  ed25519.PublicKey
+    privateKey ed25519.PrivateKey
+    publicKey  ed25519.PublicKey
 }
 
-// NewEd25519Signer creates a new Ed25519 signer
 func NewEd25519Signer() (*Ed25519Signer, error) {
 	privKey, pubKey, err := loadOrGenerateKeys()
 	if err != nil {
@@ -32,7 +31,6 @@ func NewEd25519Signer() (*Ed25519Signer, error) {
 	}, nil
 }
 
-// CreateSignature creates a cryptographic signature for a document
 func (s *Ed25519Signer) CreateSignature(docID string, user *models.User, timestamp time.Time, nonce string) (string, string, error) {
 	payload := canonicalPayload(docID, user, timestamp, nonce)
 	hash := sha256.Sum256(payload)
@@ -41,7 +39,6 @@ func (s *Ed25519Signer) CreateSignature(docID string, user *models.User, timesta
 	return base64.StdEncoding.EncodeToString(hash[:]), base64.StdEncoding.EncodeToString(signature), nil
 }
 
-// GetPublicKey returns the base64 encoded public key
 func (s *Ed25519Signer) GetPublicKey() string {
 	return base64.StdEncoding.EncodeToString(s.publicKey)
 }

@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"html/template"
 	"net/http"
@@ -14,7 +16,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
-// Fake implementations for testing
 
 type fakeAuthService struct {
 	shouldFailSetUser  bool
@@ -25,6 +26,9 @@ type fakeAuthService struct {
 	callbackError      error
 	authURL            string
 	logoutCalled       bool
+
+	verifyStateResult bool
+	lastVerifyToken   string
 }
 
 func newFakeAuthService() *fakeAuthService {
@@ -32,6 +36,7 @@ func newFakeAuthService() *fakeAuthService {
 		authURL:         "https://oauth.example.com/auth",
 		callbackUser:    &models.User{Sub: "test-user", Email: "test@example.com", Name: "Test User"},
 		callbackNextURL: "/",
+		verifyStateResult: true,
 	}
 }
 
@@ -47,7 +52,16 @@ func (f *fakeAuthService) Logout(_ http.ResponseWriter, _ *http.Request) {
 }
 
 func (f *fakeAuthService) GetAuthURL(nextURL string) string {
-	return f.authURL + "?next=" + url.QueryEscape(nextURL)
+    return f.authURL + "?next=" + url.QueryEscape(nextURL)
+}
+
+func (f *fakeAuthService) CreateAuthURL(_ http.ResponseWriter, _ *http.Request, nextURL string) string {
+    return f.GetAuthURL(nextURL)
+}
+
+func (f *fakeAuthService) VerifyState(_ http.ResponseWriter, _ *http.Request, token string) bool {
+    f.lastVerifyToken = token
+    return f.verifyStateResult
 }
 
 func (f *fakeAuthService) HandleCallback(_ context.Context, _, _ string) (*models.User, string, error) {
@@ -175,7 +189,6 @@ func (f *fakeSignatureService) CheckUserSignature(_ context.Context, _, _ string
 	return f.checkResult, nil
 }
 
-// Test helpers
 
 func createTestTemplate() *template.Template {
 	tmpl := template.New("test")
@@ -267,29 +280,45 @@ func TestAuthHandlers_HandleLogout(t *testing.T) {
 }
 
 func TestAuthHandlers_HandleOAuthCallback(t *testing.T) {
-	tests := []struct {
-		name             string
-		code             string
-		state            string
-		setupAuth        func(*fakeAuthService)
-		expectedStatus   int
-		expectedRedirect string
-	}{
-		{
-			name:             "successful callback",
-			code:             "test-code",
-			state:            "test-state",
-			setupAuth:        func(a *fakeAuthService) {},
-			expectedStatus:   http.StatusFound,
-			expectedRedirect: "/",
-		},
-		{
-			name:           "missing code",
-			code:           "",
-			state:          "test-state",
-			setupAuth:      func(a *fakeAuthService) {},
-			expectedStatus: http.StatusBadRequest,
-		},
+    tests := []struct {
+        name             string
+        code             string
+        state            string
+        setupAuth        func(*fakeAuthService)
+        expectedStatus   int
+        expectedRedirect string
+    }{
+        {
+            name:             "successful callback",
+            code:             "test-code",
+            state:            "test-state",
+            setupAuth:        func(a *fakeAuthService) {},
+            expectedStatus:   http.StatusFound,
+            expectedRedirect: "/",
+        },
+        {
+            name:           "missing state",
+            code:           "test-code",
+            state:          "",
+            setupAuth:      func(a *fakeAuthService) {},
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name:  "invalid state - verify fails",
+            code:  "test-code",
+            state: "abc123:Lw",
+            setupAuth: func(a *fakeAuthService) {
+                a.verifyStateResult = false
+            },
+            expectedStatus: http.StatusBadRequest,
+        },
+        {
+            name:           "missing code",
+            code:           "",
+            state:          "test-state",
+            setupAuth:      func(a *fakeAuthService) {},
+            expectedStatus: http.StatusBadRequest,
+        },
 		{
 			name:  "callback fails",
 			code:  "test-code",
@@ -343,6 +372,22 @@ func TestAuthHandlers_HandleOAuthCallback(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAuthHandlers_HandleOAuthCallback_VerifyStateToken(t *testing.T) {
+    authService := newFakeAuthService()
+    handlers := NewAuthHandlers(authService, "https://example.com")
+
+    token := "abc123"
+    state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte("/"))
+
+    req := httptest.NewRequest("GET", "/oauth2/callback?code=ok&state="+url.QueryEscape(state), nil)
+    w := httptest.NewRecorder()
+    handlers.HandleOAuthCallback(w, req)
+
+    if authService.lastVerifyToken != token {
+        t.Errorf("expected VerifyState to receive token %q, got %q", token, authService.lastVerifyToken)
+    }
 }
 
 func TestSignatureHandlers_NewSignatureHandlers(t *testing.T) {
@@ -564,7 +609,6 @@ func TestSignatureHandlers_HandleSignPOST(t *testing.T) {
 			tmpl := createTestTemplate()
 			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation")
 
-			// Create form data
 			form := url.Values{}
 			for key, value := range tt.formData {
 				form.Set(key, value)

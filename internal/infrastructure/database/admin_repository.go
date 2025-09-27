@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package database
 
 import (
@@ -9,10 +10,9 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
 )
 
-// DocumentAgg represents a document with signature count
 type DocumentAgg struct {
-	DocID string `json:"doc_id"`
-	Count int    `json:"count"`
+    DocID string `json:"doc_id"`
+    Count int    `json:"count"`
 }
 
 // AdminRepository provides read-only access for admin operations
@@ -20,7 +20,6 @@ type AdminRepository struct {
     db *sql.DB
 }
 
-// NewAdminRepository creates a new admin repository with its own database connection
 func NewAdminRepository(ctx context.Context) (*AdminRepository, error) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -35,7 +34,6 @@ func NewAdminRepository(ctx context.Context) (*AdminRepository, error) {
 	return &AdminRepository{db: db}, nil
 }
 
-// NewAdminRepositoryFromDB reuses an existing *sql.DB connection
 func NewAdminRepositoryFromDB(db *sql.DB) *AdminRepository {
     return &AdminRepository{db: db}
 }

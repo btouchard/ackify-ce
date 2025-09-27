@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
@@ -9,13 +10,11 @@ import (
     "github.com/btouchard/ackify-ce/pkg/logger"
 )
 
-// AuthMiddleware provides authentication middleware
 type AuthMiddleware struct {
-	userService userService
-	baseURL     string
+    userService userService
+    baseURL     string
 }
 
-// NewAuthMiddleware creates a new auth middleware
 func NewAuthMiddleware(userService userService, baseURL string) *AuthMiddleware {
 	return &AuthMiddleware{
 		userService: userService,
@@ -23,7 +22,6 @@ func NewAuthMiddleware(userService userService, baseURL string) *AuthMiddleware 
 	}
 }
 
-// RequireAuth wraps a handler to require authentication
 func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := m.userService.GetUser(r)
@@ -37,7 +35,7 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// SecureHeaders middleware adds security headers with default configuration
+// SecureHeaders Enforce baseline security headers (CSP, XFO, etc.) to mitigate clickjacking, MIME sniffing, and unsafe embedding by default.
 func SecureHeaders(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -52,7 +50,7 @@ func SecureHeaders(next http.Handler) http.Handler {
     })
 }
 
-// RequestLogger logs basic request info with latency and status code
+// RequestLogger Minimal structured logging without PII; record latency and status for ops visibility.
 func RequestLogger(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
@@ -78,7 +76,6 @@ func (sr *statusRecorder) WriteHeader(code int) {
     sr.ResponseWriter.WriteHeader(code)
 }
 
-// ErrorResponse represents an error response
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`

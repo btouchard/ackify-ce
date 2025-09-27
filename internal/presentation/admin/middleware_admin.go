@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package admin
 
 import (
@@ -12,13 +13,11 @@ type userService interface {
 	GetUser(r *http.Request) (*models.User, error)
 }
 
-// AdminMiddleware provides admin authentication middleware
 type AdminMiddleware struct {
 	userService userService
 	baseURL     string
 }
 
-// NewAdminMiddleware creates a new admin middleware
 func NewAdminMiddleware(userService userService, baseURL string) *AdminMiddleware {
 	return &AdminMiddleware{
 		userService: userService,
@@ -26,7 +25,6 @@ func NewAdminMiddleware(userService userService, baseURL string) *AdminMiddlewar
 	}
 }
 
-// RequireAdmin wraps a handler to require admin authentication
 func (m *AdminMiddleware) RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, err := m.userService.GetUser(r)
@@ -46,7 +44,6 @@ func (m *AdminMiddleware) RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// isAdminUser checks if the user is in the admin emails list
 func (m *AdminMiddleware) isAdminUser(user *models.User) bool {
 	adminEmails := os.Getenv("ACKIFY_ADMIN_EMAILS")
 	if adminEmails == "" {
@@ -66,7 +63,6 @@ func (m *AdminMiddleware) isAdminUser(user *models.User) bool {
 	return false
 }
 
-// IsAdminUser is a public function to check if a user is admin (for templates)
 func IsAdminUser(user *models.User) bool {
 	if user == nil {
 		return false

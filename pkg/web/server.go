@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package web
 
 import (
@@ -19,7 +20,6 @@ import (
 	"github.com/btouchard/ackify-ce/pkg/crypto"
 )
 
-// Server represents the Ackify web server
 type Server struct {
 	httpServer *http.Server
 	db         *sql.DB
@@ -28,7 +28,6 @@ type Server struct {
 	baseURL    string
 }
 
-// NewServer creates a new Ackify server instance
 func NewServer(ctx context.Context) (*Server, error) {
 	cfg, db, tmpl, signer, err := initInfrastructure(ctx)
 	if err != nil {
@@ -74,12 +73,10 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}, nil
 }
 
-// Start starts the HTTP server
 func (s *Server) Start() error {
 	return s.httpServer.ListenAndServe()
 }
 
-// Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		return err
@@ -90,32 +87,26 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// GetAddr returns the server address
 func (s *Server) GetAddr() string {
 	return s.httpServer.Addr
 }
 
-// Router returns the underlying Chi router for composition
 func (s *Server) Router() *chi.Mux {
 	return s.router
 }
 
-// RegisterRoutes allows external packages to register additional routes
 func (s *Server) RegisterRoutes(fn func(r *chi.Mux)) {
 	fn(s.router)
 }
 
-// GetTemplates returns the server templates
 func (s *Server) GetTemplates() *template.Template {
 	return s.templates
 }
 
-// GetBaseURL returns the server base URL
 func (s *Server) GetBaseURL() string {
     return s.baseURL
 }
 
-// GetDB returns the database connection (read-only access for route wiring)
 func (s *Server) GetDB() *sql.DB {
     return s.db
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package handlers
 
 import (
@@ -16,19 +17,16 @@ type checkService interface {
 	CheckUserSignature(ctx context.Context, docID, userIdentifier string) (bool, error)
 }
 
-// BadgeHandler handles badge generation
 type BadgeHandler struct {
-	checkService checkService
+    checkService checkService
 }
 
-// NewBadgeHandler creates a new badge handler
 func NewBadgeHandler(checkService checkService) *BadgeHandler {
 	return &BadgeHandler{
 		checkService: checkService,
 	}
 }
 
-// HandleStatusPNG generates a PNG badge showing signature status
 func (h *BadgeHandler) HandleStatusPNG(w http.ResponseWriter, r *http.Request) {
 	docID, err := validateDocID(r)
 	if err != nil {
@@ -58,17 +56,15 @@ func (h *BadgeHandler) HandleStatusPNG(w http.ResponseWriter, r *http.Request) {
 
 const badgeSize = 64
 
-// BadgeColors represents the color scheme for badges
 type BadgeColors struct {
-	Background color.RGBA
-	Icon       color.RGBA
-	Border     color.RGBA
+    Background color.RGBA
+    Icon       color.RGBA
+    Border     color.RGBA
 }
 
-// BadgeThemes contains predefined color schemes
 var BadgeThemes = struct {
-	Success BadgeColors
-	Error   BadgeColors
+    Success BadgeColors
+    Error   BadgeColors
 }{
 	Success: BadgeColors{
 		Background: color.RGBA{R: 240, G: 253, B: 244, A: 255}, // success-50
@@ -131,7 +127,6 @@ func (h *BadgeHandler) encodeToPNG(img *image.RGBA) []byte {
 	return buf.Bytes()
 }
 
-// drawCheckmark draws a checkmark icon
 func (h *BadgeHandler) drawCheckmark(img *image.RGBA, size int, col color.RGBA) {
 	cx, cy := size/2, size/2
 	scale := float64(size) / 64.0
@@ -154,7 +149,6 @@ func (h *BadgeHandler) drawCheckmark(img *image.RGBA, size int, col color.RGBA) 
 		cx+points[2][0]-cx, cy+points[2][1]-cy, thickness, col)
 }
 
-// drawX draws an X icon
 func (h *BadgeHandler) drawX(img *image.RGBA, size int, col color.RGBA) {
 	cx, cy := size/2, size/2
 	offset := int(float64(size) * 0.3)
@@ -168,7 +162,7 @@ func (h *BadgeHandler) drawX(img *image.RGBA, size int, col color.RGBA) {
 	h.drawThickLine(img, cx-offset, cy+offset, cx+offset, cy-offset, thickness, col)
 }
 
-// drawThickLine draws a thick line using Bresenham's algorithm
+// Rationale Use Bresenham's algorithm for integer-only line drawing (fast, no floats)
 func (h *BadgeHandler) drawThickLine(img *image.RGBA, x0, y0, x1, y1, thickness int, col color.RGBA) {
 	dx := abs(x1 - x0)
 	dy := abs(y1 - y0)
@@ -210,7 +204,6 @@ func (h *BadgeHandler) drawThickLine(img *image.RGBA, x0, y0, x1, y1, thickness 
 	}
 }
 
-// abs returns absolute value
 func abs(x int) int {
 	if x < 0 {
 		return -x

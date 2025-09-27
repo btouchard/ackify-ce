@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package models
 
 import (
@@ -173,8 +174,7 @@ func TestUser_JSONSerialization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test serialization
-			data, err := json.Marshal(tt.user)
+            data, err := json.Marshal(tt.user)
 			if err != nil {
 				t.Fatalf("Failed to marshal user: %v", err)
 			}
@@ -183,8 +183,7 @@ func TestUser_JSONSerialization(t *testing.T) {
 				t.Errorf("JSON serialization mismatch:\ngot:      %s\nexpected: %s", string(data), tt.expected)
 			}
 
-			// Test deserialization
-			var user User
+            var user User
 			err = json.Unmarshal(data, &user)
 			if err != nil {
 				t.Fatalf("Failed to unmarshal user: %v", err)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package config
 
 import (
@@ -9,7 +10,6 @@ import (
 	"github.com/gorilla/securecookie"
 )
 
-// Config holds all application configuration
 type Config struct {
 	App      AppConfig
 	Database DatabaseConfig
@@ -17,19 +17,16 @@ type Config struct {
 	Server   ServerConfig
 }
 
-// AppConfig holds general application settings
 type AppConfig struct {
 	BaseURL       string
 	Organisation  string
 	SecureCookies bool
 }
 
-// DatabaseConfig holds database connection settings
 type DatabaseConfig struct {
 	DSN string
 }
 
-// OAuthConfig holds OAuth authentication settings
 type OAuthConfig struct {
 	ClientID      string
 	ClientSecret  string
@@ -41,7 +38,6 @@ type OAuthConfig struct {
 	CookieSecret  []byte
 }
 
-// ServerConfig holds server settings
 type ServerConfig struct {
 	ListenAddr string
 }
@@ -98,7 +94,6 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-// mustGetEnv gets an environment variable or panics if not found
 func mustGetEnv(key string) string {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
@@ -107,7 +102,6 @@ func mustGetEnv(key string) string {
 	return value
 }
 
-// getEnv gets an environment variable with a default value
 func getEnv(key, defaultValue string) string {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
@@ -116,7 +110,6 @@ func getEnv(key, defaultValue string) string {
 	return value
 }
 
-// parseCookieSecret parses the cookie secret from environment
 func parseCookieSecret() ([]byte, error) {
 	raw := os.Getenv("ACKIFY_OAUTH_COOKIE_SECRET")
 	if raw == "" {

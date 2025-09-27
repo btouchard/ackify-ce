@@ -1,5 +1,6 @@
 //go:build integration
 
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package database
 
 import (
@@ -100,7 +101,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		close(successCount)
 		close(errorCount)
 
-		// Count results
 		successes := 0
 		failures := 0
 		for range successCount {
@@ -110,7 +110,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 			failures++
 		}
 
-		// Only one should succeed due to unique constraint
 		if successes != 1 {
 			t.Errorf("Expected exactly 1 success, got %d", successes)
 		}
@@ -118,7 +117,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 			t.Errorf("Expected %d failures, got %d", numGoroutines-1, failures)
 		}
 
-		// Verify only one record exists
 		count := testDB.GetTableCount(t)
 		if count != 1 {
 			t.Errorf("Expected 1 signature after concurrent duplicates, got %d", count)
@@ -135,7 +133,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 
 		var wg sync.WaitGroup
 
-		// Start writers
 		for i := 0; i < numWriters; i++ {
 			wg.Add(1)
 			go func(writerID int) {
@@ -154,7 +151,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 			}(i)
 		}
 
-		// Start readers
 		readResults := make(chan int, numReaders*10) // Buffer for all results
 		for i := 0; i < numReaders; i++ {
 			wg.Add(1)
@@ -176,14 +172,12 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		wg.Wait()
 		close(readResults)
 
-		// Verify reads were consistent (no corruption)
 		for count := range readResults {
 			if count < 0 || count > numWriters*numWrites {
 				t.Errorf("Invalid read result: %d (should be 0-%d)", count, numWriters*numWrites)
 			}
 		}
 
-		// Verify final count
 		finalCount := testDB.GetTableCount(t)
 		expectedCount := numWriters * numWrites
 		if finalCount != expectedCount {
@@ -199,7 +193,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 
 		var wg sync.WaitGroup
 
-		// Start creators
 		for i := 0; i < numCreators; i++ {
 			wg.Add(1)
 			go func(creatorID int) {
@@ -217,7 +210,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 			}(i)
 		}
 
-		// Start readers calling GetLastSignature
 		lastSigResults := make(chan *models.Signature, numReaders*10)
 		for i := 0; i < numReaders; i++ {
 			wg.Add(1)
@@ -239,14 +231,11 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		wg.Wait()
 		close(lastSigResults)
 
-		// Verify GetLastSignature results are valid
 		for sig := range lastSigResults {
 			if sig != nil {
-				// Should have valid ID assigned by database
 				if sig.ID <= 0 {
 					t.Error("GetLastSignature returned signature with invalid ID")
 				}
-				// Should have valid required fields
 				if sig.DocID == "" || sig.UserSub == "" {
 					t.Error("GetLastSignature returned signature with empty required fields")
 				}
@@ -262,7 +251,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 
 		var wg sync.WaitGroup
 
-		// Start creators
 		for i := 0; i < numCreators; i++ {
 			wg.Add(1)
 			go func(creatorID int) {
@@ -280,7 +268,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 			}(i)
 		}
 
-		// Start readers calling GetAllSignaturesOrdered
 		orderingErrors := make(chan error, numReaders*5)
 		for i := 0; i < numReaders; i++ {
 			wg.Add(1)
@@ -294,7 +281,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 						return
 					}
 
-					// Verify ordering (ID should be ascending)
 					for k := 1; k < len(signatures); k++ {
 						if signatures[k].ID <= signatures[k-1].ID {
 							orderingErrors <- err
@@ -310,7 +296,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		wg.Wait()
 		close(orderingErrors)
 
-		// Check for ordering violations
 		for err := range orderingErrors {
 			if err != nil {
 				t.Errorf("Concurrent ordering error: %v", err)
@@ -330,7 +315,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		var wg sync.WaitGroup
 		operationCounts := make(chan map[string]int, numWorkers)
 
-		// Start workers doing mixed operations
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
 			go func(workerID int) {
@@ -351,7 +335,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 						operationCounts <- counts
 						return
 					default:
-						// Randomly choose operation
 						switch workerID % 5 {
 						case 0: // Create
 							sig := factory.CreateSignatureWithUser(
@@ -404,7 +387,6 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		wg.Wait()
 		close(operationCounts)
 
-		// Aggregate results
 		totalOps := 0
 		totalErrors := 0
 		for counts := range operationCounts {
@@ -419,12 +401,10 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 
 		t.Logf("Stress test completed: %d operations, %d errors", totalOps, totalErrors)
 
-		// Should have completed many operations with minimal errors
 		if totalOps < 100 {
 			t.Errorf("Expected at least 100 operations, got %d", totalOps)
 		}
 
-		// Error rate should be reasonable (< 10%)
 		errorRate := float64(totalErrors) / float64(totalOps+totalErrors) * 100
 		if errorRate > 10 {
 			t.Errorf("Error rate too high: %.2f%% (expected < 10%%)", errorRate)
@@ -446,7 +426,6 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 		var wg sync.WaitGroup
 		deadlockErrors := make(chan error, numWorkers)
 
-		// Workers with different access patterns that could cause deadlocks
 		for i := 0; i < numWorkers; i++ {
 			wg.Add(1)
 			go func(workerID int) {
@@ -454,7 +433,6 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 				repo := NewSignatureRepository(testDB.DB)
 
 				for j := 0; j < opsPerWorker; j++ {
-					// Pattern 1: Create then immediately query
 					if workerID%2 == 0 {
 						sig := factory.CreateSignatureWithUser(
 							fmt.Sprintf("pattern1-user-%d-%d", workerID, j),
@@ -466,7 +444,6 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 							_, _ = repo.ExistsByDocAndUser(ctx, sig.DocID, sig.UserSub)
 						}
 					} else {
-						// Pattern 2: Query then create
 						testDocID := fmt.Sprintf("pattern2-doc-%d", workerID)
 						testUserSub := fmt.Sprintf("pattern2-user-%d", j)
 
@@ -481,13 +458,11 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 						_ = repo.Create(ctx, sig)
 					}
 
-					// Small random delay to increase chance of contention
 					time.Sleep(time.Duration(workerID%3+1) * time.Millisecond)
 				}
 			}(i)
 		}
 
-		// Wait with timeout to detect deadlocks
 		done := make(chan bool)
 		go func() {
 			wg.Wait()
@@ -496,14 +471,12 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 
 		select {
 		case <-done:
-			// Success - no deadlocks
 		case <-time.After(30 * time.Second):
 			t.Fatal("Test timed out - possible deadlock detected")
 		}
 
 		close(deadlockErrors)
 
-		// Check for deadlock-specific errors
 		for err := range deadlockErrors {
 			if err != nil {
 				t.Errorf("Deadlock-related error: %v", err)

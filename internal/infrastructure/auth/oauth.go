@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 package auth
 
 import (
@@ -20,14 +21,13 @@ import (
 const sessionName = "ackapp_session"
 
 type OauthService struct {
-    oauthConfig   *oauth2.Config
-    sessionStore  *sessions.CookieStore
-    userInfoURL   string
-    allowedDomain string
-    secureCookies bool
+	oauthConfig   *oauth2.Config
+	sessionStore  *sessions.CookieStore
+	userInfoURL   string
+	allowedDomain string
+	secureCookies bool
 }
 
-// Config holds OAuth service configuration
 type Config struct {
 	BaseURL       string
 	ClientID      string
@@ -41,7 +41,6 @@ type Config struct {
 	SecureCookies bool
 }
 
-// NewOAuthService creates a new OAuth service
 func NewOAuthService(config Config) *OauthService {
 	oauthConfig := &oauth2.Config{
 		ClientID:     config.ClientID,
@@ -114,50 +113,50 @@ func (s *OauthService) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *OauthService) GetAuthURL(nextURL string) string {
-    state := base64.RawURLEncoding.EncodeToString(securecookie.GenerateRandomKey(20)) +
-        ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
+	state := base64.RawURLEncoding.EncodeToString(securecookie.GenerateRandomKey(20)) +
+		":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
 
-    return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
+	return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
 }
 
-// CreateAuthURL generates the OAuth URL and stores the random state token in session for later verification
+// CreateAuthURL Persist a CSRF state token server-side to prevent forged OAuth callbacks; encode nextURL to preserve intended redirect.
 func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nextURL string) string {
-    randPart := securecookie.GenerateRandomKey(20)
-    token := base64.RawURLEncoding.EncodeToString(randPart)
-    state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
+	randPart := securecookie.GenerateRandomKey(20)
+	token := base64.RawURLEncoding.EncodeToString(randPart)
+	state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
 
-    session, _ := s.sessionStore.Get(r, sessionName)
-    session.Values["oauth_state"] = token
-    session.Options = &sessions.Options{Path: "/", HttpOnly: true, Secure: s.secureCookies, SameSite: http.SameSiteLaxMode}
-    _ = session.Save(r, w)
+	session, _ := s.sessionStore.Get(r, sessionName)
+	session.Values["oauth_state"] = token
+	session.Options = &sessions.Options{Path: "/", HttpOnly: true, Secure: s.secureCookies, SameSite: http.SameSiteLaxMode}
+	_ = session.Save(r, w)
 
-    return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
+	return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
 }
 
-// VerifyState checks the provided state token against the session and clears it on success
+// VerifyState Clear single-use state on success to prevent replay; compare in constant time to avoid timing leaks.
 func (s *OauthService) VerifyState(w http.ResponseWriter, r *http.Request, stateToken string) bool {
-    session, _ := s.sessionStore.Get(r, sessionName)
-    stored, _ := session.Values["oauth_state"].(string)
-    if stored == "" || stateToken == "" {
-        return false
-    }
-    if subtleConstantTimeCompare(stored, stateToken) {
-        delete(session.Values, "oauth_state")
-        _ = session.Save(r, w)
-        return true
-    }
-    return false
+	session, _ := s.sessionStore.Get(r, sessionName)
+	stored, _ := session.Values["oauth_state"].(string)
+	if stored == "" || stateToken == "" {
+		return false
+	}
+	if subtleConstantTimeCompare(stored, stateToken) {
+		delete(session.Values, "oauth_state")
+		_ = session.Save(r, w)
+		return true
+	}
+	return false
 }
 
 func subtleConstantTimeCompare(a, b string) bool {
-    if len(a) != len(b) {
-        return false
-    }
-    var v byte
-    for i := 0; i < len(a); i++ {
-        v |= a[i] ^ b[i]
-    }
-    return v == 0
+	if len(a) != len(b) {
+		return false
+	}
+	var v byte
+	for i := 0; i < len(a); i++ {
+		v |= a[i] ^ b[i]
+	}
+	return v == 0
 }
 
 func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (*models.User, string, error) {
@@ -212,12 +211,14 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 		return nil, fmt.Errorf("failed to decode user info: %w", err)
 	}
 
-    // Reduce PII in standard logs; log only keys at debug level
-    if rawUser != nil {
-        keys := make([]string, 0, len(rawUser))
-        for k := range rawUser { keys = append(keys, k) }
-        logger.Logger.Debug("OAuth user info received", "keys", keys)
-    }
+	// Reduce PII in standard logs; log only keys at debug level
+	if rawUser != nil {
+		keys := make([]string, 0, len(rawUser))
+		for k := range rawUser {
+			keys = append(keys, k)
+		}
+		logger.Logger.Debug("OAuth user info received", "keys", keys)
+	}
 
 	user := &models.User{}
 
@@ -254,10 +255,10 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 
 	user.Name = name
 
-    logger.Logger.Debug("Extracted OAuth user identifiers",
-        "sub", user.Sub,
-        "email_present", user.Email != "",
-        "name_present", user.Name != "")
+	logger.Logger.Debug("Extracted OAuth user identifiers",
+		"sub", user.Sub,
+		"email_present", user.Email != "",
+		"name_present", user.Name != "")
 
 	if !user.IsValid() {
 		return nil, fmt.Errorf("invalid user data extracted: sub=%s, email=%s", user.Sub, user.Email)
