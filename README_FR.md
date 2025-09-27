@@ -11,6 +11,8 @@ Service sécurisé de validation de lecture avec traçabilité cryptographique e
 
 > 🌍 [English version available here](README.md)
 
+### Visitez notre site : https://www.ackify.eu/fr
+
 ## 🎯 Pourquoi Ackify ?
 
 **Problème** : Comment prouver qu'un collaborateur a bien lu et compris un document important ?
