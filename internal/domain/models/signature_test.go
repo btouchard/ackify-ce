@@ -30,18 +30,18 @@ func TestSignature_JSONSerialization(t *testing.T) {
 		PrevHash:    &prevHash,
 	}
 
-    data, err := json.Marshal(signature)
+	data, err := json.Marshal(signature)
 	if err != nil {
 		t.Fatalf("Failed to marshal signature: %v", err)
 	}
 
-    var unmarshaled Signature
+	var unmarshaled Signature
 	err = json.Unmarshal(data, &unmarshaled)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal signature: %v", err)
 	}
 
-    if unmarshaled.ID != signature.ID {
+	if unmarshaled.ID != signature.ID {
 		t.Errorf("ID mismatch: got %v, expected %v", unmarshaled.ID, signature.ID)
 	}
 	if unmarshaled.DocID != signature.DocID {
@@ -107,12 +107,12 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 		PrevHash:    nil,
 	}
 
-    data, err := json.Marshal(signature)
+	data, err := json.Marshal(signature)
 	if err != nil {
 		t.Fatalf("Failed to marshal signature: %v", err)
 	}
 
-    jsonStr := string(data)
+	jsonStr := string(data)
 	if strings.Contains(jsonStr, "user_name") {
 		t.Error("user_name should be omitted when nil")
 	}
@@ -123,13 +123,13 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 		t.Error("prev_hash should be omitted when nil")
 	}
 
-    var unmarshaled Signature
+	var unmarshaled Signature
 	err = json.Unmarshal(data, &unmarshaled)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal signature: %v", err)
 	}
 
-    if unmarshaled.UserName != nil {
+	if unmarshaled.UserName != nil {
 		t.Errorf("UserName should be nil, got %v", unmarshaled.UserName)
 	}
 	if unmarshaled.Referer != nil {
@@ -262,19 +262,19 @@ func TestSignature_ComputeRecordHash(t *testing.T) {
 	hash1 := signature.ComputeRecordHash()
 	hash2 := signature.ComputeRecordHash()
 
-    if hash1 != hash2 {
+	if hash1 != hash2 {
 		t.Errorf("Hash computation is not deterministic: %v != %v", hash1, hash2)
 	}
 
-    if hash1 == "" {
+	if hash1 == "" {
 		t.Error("Hash should not be empty")
 	}
 
-    if !isValidBase64(hash1) {
+	if !isValidBase64(hash1) {
 		t.Errorf("Hash is not valid base64: %v", hash1)
 	}
 
-    originalID := signature.ID
+	originalID := signature.ID
 	signature.ID = 456
 	hashChanged := signature.ComputeRecordHash()
 	if hashChanged == hash1 {
@@ -282,13 +282,13 @@ func TestSignature_ComputeRecordHash(t *testing.T) {
 	}
 	signature.ID = originalID
 
-    signature.UserName = nil
+	signature.UserName = nil
 	hashWithNilName := signature.ComputeRecordHash()
 	if hashWithNilName == hash1 {
 		t.Error("Hash should change when UserName becomes nil")
 	}
 
-    signature.UserName = &userName
+	signature.UserName = &userName
 	signature.Referer = nil
 	hashWithNilReferer := signature.ComputeRecordHash()
 	if hashWithNilReferer == hash1 {
@@ -440,7 +440,7 @@ func TestSignatureStatus_Creation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-        data, err := json.Marshal(tt.status)
+			data, err := json.Marshal(tt.status)
 			if err != nil {
 				t.Fatalf("Failed to marshal status: %v", err)
 			}
@@ -451,7 +451,7 @@ func TestSignatureStatus_Creation(t *testing.T) {
 				t.Fatalf("Failed to unmarshal status: %v", err)
 			}
 
-        if unmarshaled.DocID != tt.status.DocID {
+			if unmarshaled.DocID != tt.status.DocID {
 				t.Errorf("DocID mismatch: got %v, expected %v", unmarshaled.DocID, tt.status.DocID)
 			}
 			if unmarshaled.UserEmail != tt.status.UserEmail {
@@ -504,27 +504,27 @@ func TestSignature_TimestampValidation(t *testing.T) {
 				CreatedAt:   tt.createdAt,
 			}
 
-            isValid := !signature.CreatedAt.Before(signature.SignedAtUTC)
+			isValid := !signature.CreatedAt.Before(signature.SignedAtUTC)
 			if isValid != tt.expectValid {
 				t.Errorf("Timestamp validation mismatch: got %v, expected %v", isValid, tt.expectValid)
 			}
 
-            if signature.SignedAtUTC.Location() != time.UTC {
-                t.Error("SignedAtUTC should be in UTC timezone")
-            }
-            if signature.CreatedAt.Location() != time.UTC {
-                t.Error("CreatedAt should be in UTC timezone")
-            }
+			if signature.SignedAtUTC.Location() != time.UTC {
+				t.Error("SignedAtUTC should be in UTC timezone")
+			}
+			if signature.CreatedAt.Location() != time.UTC {
+				t.Error("CreatedAt should be in UTC timezone")
+			}
 		})
 	}
 }
 
 func stringPtr(s string) *string {
-    return &s
+	return &s
 }
 
 func isValidBase64(s string) bool {
-    validChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+	validChars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 	for _, char := range s {
 		found := false
 		for _, valid := range validChars {

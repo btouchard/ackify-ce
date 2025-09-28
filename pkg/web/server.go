@@ -104,11 +104,11 @@ func (s *Server) GetTemplates() *template.Template {
 }
 
 func (s *Server) GetBaseURL() string {
-    return s.baseURL
+	return s.baseURL
 }
 
 func (s *Server) GetDB() *sql.DB {
-    return s.db
+	return s.db
 }
 
 func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template.Template, *crypto.Ed25519Signer, error) {

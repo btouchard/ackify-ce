@@ -108,25 +108,8 @@ func TestErrorComparison(t *testing.T) {
 	}
 }
 
-func TestErrorWrapping(t *testing.T) {
-	originalErr := ErrSignatureNotFound
-	wrappedErr := errors.Join(originalErr, errors.New("additional context"))
-
-    if !errors.Is(wrappedErr, originalErr) {
-        t.Error("Original error should be detectable in wrapped error")
-    }
-
-    wrappedMsg := wrappedErr.Error()
-    if !contains(wrappedMsg, "signature not found") {
-        t.Errorf("Wrapped error should contain original message: %v", wrappedMsg)
-    }
-    if !contains(wrappedMsg, "additional context") {
-        t.Errorf("Wrapped error should contain additional context: %v", wrappedMsg)
-    }
-}
-
 func TestErrorTypes(t *testing.T) {
-    errors := []error{
+	errs := []error{
 		ErrSignatureNotFound,
 		ErrSignatureAlreadyExists,
 		ErrInvalidUser,
@@ -136,25 +119,25 @@ func TestErrorTypes(t *testing.T) {
 		ErrDomainNotAllowed,
 	}
 
-	for i, err := range errors {
+	for i, err := range errs {
 		t.Run("error_type_"+string(rune(i+'0')), func(t *testing.T) {
 			if err == nil {
 				t.Error("Error should not be nil")
 			}
 
-            if _, ok := err.(error); !ok {
-                t.Error("Error should implement error interface")
-            }
+			if _, ok := err.(error); !ok {
+				t.Error("Error should implement error interface")
+			}
 
-            if err.Error() == "" {
-                t.Error("Error message should not be empty")
-            }
+			if err.Error() == "" {
+				t.Error("Error message should not be empty")
+			}
 		})
 	}
 }
 
 func TestErrorUniqueness(t *testing.T) {
-    errors := map[string]error{
+	errs := map[string]error{
 		"signature not found":       ErrSignatureNotFound,
 		"signature already exists":  ErrSignatureAlreadyExists,
 		"invalid user":              ErrInvalidUser,
@@ -165,7 +148,7 @@ func TestErrorUniqueness(t *testing.T) {
 	}
 
 	messages := make(map[string]bool)
-	for msg, err := range errors {
+	for msg, err := range errs {
 		if messages[msg] {
 			t.Errorf("Duplicate error message found: %v", msg)
 		}
@@ -176,51 +159,8 @@ func TestErrorUniqueness(t *testing.T) {
 		}
 	}
 
-    expectedCount := 7
+	expectedCount := 7
 	if len(messages) != expectedCount {
 		t.Errorf("Expected %d unique error messages, got %d", expectedCount, len(messages))
 	}
-}
-
-func TestErrorSentinelValues(t *testing.T) {
-    if ErrSignatureNotFound != ErrSignatureNotFound {
-		t.Error("ErrSignatureNotFound should be a sentinel value")
-	}
-	if ErrSignatureAlreadyExists != ErrSignatureAlreadyExists {
-		t.Error("ErrSignatureAlreadyExists should be a sentinel value")
-	}
-	if ErrInvalidUser != ErrInvalidUser {
-		t.Error("ErrInvalidUser should be a sentinel value")
-	}
-	if ErrInvalidDocument != ErrInvalidDocument {
-		t.Error("ErrInvalidDocument should be a sentinel value")
-	}
-	if ErrDatabaseConnection != ErrDatabaseConnection {
-		t.Error("ErrDatabaseConnection should be a sentinel value")
-	}
-	if ErrUnauthorized != ErrUnauthorized {
-		t.Error("ErrUnauthorized should be a sentinel value")
-	}
-	if ErrDomainNotAllowed != ErrDomainNotAllowed {
-		t.Error("ErrDomainNotAllowed should be a sentinel value")
-	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || containsAt(s, substr, 0))
-}
-
-func containsAt(s, substr string, start int) bool {
-	if start+len(substr) > len(s) {
-		return false
-	}
-	for i := 0; i < len(substr); i++ {
-		if s[start+i] != substr[i] {
-			if start+1 < len(s) {
-				return containsAt(s, substr, start+1)
-			}
-			return false
-		}
-	}
-	return true
 }

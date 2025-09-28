@@ -10,15 +10,15 @@ import (
 type HealthHandler struct{}
 
 func NewHealthHandler() *HealthHandler {
-    return &HealthHandler{}
+	return &HealthHandler{}
 }
 
 type HealthResponse struct {
-    OK   bool      `json:"ok"`
-    Time time.Time `json:"time"`
+	OK   bool      `json:"ok"`
+	Time time.Time `json:"time"`
 }
 
-func (h *HealthHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
+func (h *HealthHandler) HandleHealth(w http.ResponseWriter, _ *http.Request) {
 	response := HealthResponse{
 		OK:   true,
 		Time: time.Now().UTC(),

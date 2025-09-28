@@ -2,17 +2,17 @@
 package handlers
 
 import (
-    "errors"
-    "net/http"
-    "time"
+	"errors"
+	"net/http"
+	"time"
 
-    "github.com/btouchard/ackify-ce/internal/domain/models"
-    "github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 type AuthMiddleware struct {
-    userService userService
-    baseURL     string
+	userService userService
+	baseURL     string
 }
 
 func NewAuthMiddleware(userService userService, baseURL string) *AuthMiddleware {
@@ -37,43 +37,43 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 
 // SecureHeaders Enforce baseline security headers (CSP, XFO, etc.) to mitigate clickjacking, MIME sniffing, and unsafe embedding by default.
 func SecureHeaders(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("X-Content-Type-Options", "nosniff")
-        w.Header().Set("X-Frame-Options", "DENY")
-        w.Header().Set("Referrer-Policy", "no-referrer")
-        w.Header().Set("Content-Security-Policy",
-            "default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
-                "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
-                "img-src 'self' data: https://cdn.simpleicons.org; connect-src 'self'; "+
-                "frame-ancestors 'self'")
-        next.ServeHTTP(w, r)
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Content-Security-Policy",
+			"default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
+				"script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
+				"img-src 'self' data: https://cdn.simpleicons.org; connect-src 'self'; "+
+				"frame-ancestors 'self'")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // RequestLogger Minimal structured logging without PII; record latency and status for ops visibility.
 func RequestLogger(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
-        start := time.Now()
-        next.ServeHTTP(sr, r)
-        duration := time.Since(start)
-        // Minimal structured log to avoid PII
-        logger.Logger.Info("http_request",
-            "method", r.Method,
-            "path", r.URL.Path,
-            "status", sr.status,
-            "duration_ms", duration.Milliseconds())
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sr := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		start := time.Now()
+		next.ServeHTTP(sr, r)
+		duration := time.Since(start)
+		// Minimal structured log to avoid PII
+		logger.Logger.Info("http_request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", sr.status,
+			"duration_ms", duration.Milliseconds())
+	})
 }
 
 type statusRecorder struct {
-    http.ResponseWriter
-    status int
+	http.ResponseWriter
+	status int
 }
 
 func (sr *statusRecorder) WriteHeader(code int) {
-    sr.status = code
-    sr.ResponseWriter.WriteHeader(code)
+	sr.status = code
+	sr.ResponseWriter.WriteHeader(code)
 }
 
 type ErrorResponse struct {

@@ -11,7 +11,7 @@ import (
 )
 
 type Config struct {
-    DSN string
+	DSN string
 }
 
 func InitDB(ctx context.Context, config Config) (*sql.DB, error) {

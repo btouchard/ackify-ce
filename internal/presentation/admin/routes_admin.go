@@ -2,9 +2,9 @@
 package admin
 
 import (
-    "database/sql"
-    "html/template"
-    "log"
+	"database/sql"
+	"html/template"
+	"log"
 
 	"github.com/go-chi/chi/v5"
 
@@ -15,15 +15,15 @@ import (
 
 // RegisterAdminRoutes returns a function that registers admin routes
 func RegisterAdminRoutes(baseURL string, templates *template.Template, db *sql.DB) func(r *chi.Mux) {
-    return func(r *chi.Mux) {
+	return func(r *chi.Mux) {
 
-        // Initialize admin repository by reusing the existing DB connection
-        adminRepo := database.NewAdminRepositoryFromDB(db)
+		// Initialize admin repository by reusing the existing DB connection
+		adminRepo := database.NewAdminRepository(db)
 
-        // Initialize OAuth service for user authentication
-        cfg, err := config.Load()
-        if err != nil {
-            log.Printf("Failed to load config for admin routes: %v", err)
+		// Initialize OAuth service for user authentication
+		cfg, err := config.Load()
+		if err != nil {
+			log.Printf("Failed to load config for admin routes: %v", err)
 			return
 		}
 

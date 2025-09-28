@@ -137,7 +137,7 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-    response := OEmbedResponse{
+	response := OEmbedResponse{
 		Type:         "rich",
 		Version:      "1.0",
 		Title:        fmt.Sprintf("Signataires du document %s", docID),
@@ -196,14 +196,14 @@ func (h *OEmbedHandler) HandleEmbedView(w http.ResponseWriter, r *http.Request) 
 		SignURL:      fmt.Sprintf("%s/sign?doc=%s", h.baseURL, url.QueryEscape(docID)),
 	}
 
-    w.Header().Set("Content-Type", "text/html; charset=utf-8")
-    w.Header().Set("X-Frame-Options", "ALLOWALL") // Allow embedding in iframes
-    // Override default CSP to allow framing from any parent (widget use-case)
-    w.Header().Set("Content-Security-Policy",
-        "default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
-            "img-src 'self' data: https://cdn.simpleicons.org; connect-src 'self'; "+
-            "frame-ancestors *")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Frame-Options", "ALLOWALL") // Allow embedding in iframes
+	// Override default CSP to allow framing from any parent (widget use-case)
+	w.Header().Set("Content-Security-Policy",
+		"default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
+			"script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; "+
+			"img-src 'self' data: https://cdn.simpleicons.org; connect-src 'self'; "+
+			"frame-ancestors *")
 
 	if err := h.template.ExecuteTemplate(w, "embed", data); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)

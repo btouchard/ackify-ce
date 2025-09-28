@@ -20,10 +20,10 @@ func TestGenerateNonce(t *testing.T) {
 		nonce, err := GenerateNonce()
 		require.NoError(t, err)
 
-        decoded, err := base64.RawURLEncoding.DecodeString(nonce)
+		decoded, err := base64.RawURLEncoding.DecodeString(nonce)
 		require.NoError(t, err)
 
-        assert.Len(t, decoded, 16, "Decoded nonce should be 16 bytes")
+		assert.Len(t, decoded, 16, "Decoded nonce should be 16 bytes")
 	})
 
 	t.Run("generates unique nonces", func(t *testing.T) {
@@ -34,7 +34,7 @@ func TestGenerateNonce(t *testing.T) {
 			nonce, err := GenerateNonce()
 			require.NoError(t, err)
 
-            assert.False(t, nonces[nonce], "Nonce %s should be unique", nonce)
+			assert.False(t, nonces[nonce], "Nonce %s should be unique", nonce)
 			nonces[nonce] = true
 		}
 
@@ -46,9 +46,9 @@ func TestGenerateNonce(t *testing.T) {
 			nonce, err := GenerateNonce()
 			require.NoError(t, err)
 
-            assert.NotEmpty(t, nonce)
+			assert.NotEmpty(t, nonce)
 
-            assert.NotContains(t, nonce, "=", "Nonce should not contain padding")
+			assert.NotContains(t, nonce, "=", "Nonce should not contain padding")
 
 			// Should only contain valid base64url characters
 			assert.Regexp(t, `^[A-Za-z0-9_-]+$`, nonce, "Nonce should only contain base64url characters")
@@ -65,12 +65,12 @@ func TestGenerateNonce(t *testing.T) {
 			lengths = append(lengths, len(nonce))
 		}
 
-        expectedLength := lengths[0]
+		expectedLength := lengths[0]
 		for _, length := range lengths {
 			assert.Equal(t, expectedLength, length, "All nonces should have consistent length")
 		}
 
-        assert.Equal(t, 22, expectedLength, "Nonce should be 22 characters long")
+		assert.Equal(t, 22, expectedLength, "Nonce should be 22 characters long")
 	})
 
 	t.Run("concurrent nonce generation", func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestGenerateNonce(t *testing.T) {
 		nonceChan := make(chan string, numGoroutines*noncesPerGoroutine)
 		errorChan := make(chan error, numGoroutines*noncesPerGoroutine)
 
-        for i := 0; i < numGoroutines; i++ {
+		for i := 0; i < numGoroutines; i++ {
 			go func() {
 				for j := 0; j < noncesPerGoroutine; j++ {
 					nonce, err := GenerateNonce()
@@ -93,7 +93,7 @@ func TestGenerateNonce(t *testing.T) {
 			}()
 		}
 
-        nonces := make(map[string]bool)
+		nonces := make(map[string]bool)
 		for i := 0; i < numGoroutines*noncesPerGoroutine; i++ {
 			select {
 			case nonce := <-nonceChan:
@@ -118,7 +118,7 @@ func TestGenerateNonce(t *testing.T) {
 			decoded, err := base64.RawURLEncoding.DecodeString(nonce)
 			require.NoError(t, err)
 
-            for _, b := range decoded {
+			for _, b := range decoded {
 				for bit := 0; bit < 8; bit++ {
 					if (b>>bit)&1 == 1 {
 						bitCounts[bit]++
@@ -127,8 +127,8 @@ func TestGenerateNonce(t *testing.T) {
 			}
 		}
 
-        expectedCount := numNonces * 16 / 2 // 16 bytes per nonce, expect 50% ones
-        tolerance := expectedCount / 10     // 10% tolerance
+		expectedCount := numNonces * 16 / 2 // 16 bytes per nonce, expect 50% ones
+		tolerance := expectedCount / 10     // 10% tolerance
 
 		for bit, count := range bitCounts {
 			assert.InDelta(t, expectedCount, count, float64(tolerance),
@@ -142,16 +142,16 @@ func TestGenerateNonce(t *testing.T) {
 			nonce, err := GenerateNonce()
 			require.NoError(t, err)
 
-            assert.NotContains(t, nonce, "+", "Nonce should not contain + (use URL-safe base64)")
-            assert.NotContains(t, nonce, "/", "Nonce should not contain / (use URL-safe base64)")
-            assert.NotContains(t, nonce, "=", "Nonce should not contain = (use RawURLEncoding)")
+			assert.NotContains(t, nonce, "+", "Nonce should not contain + (use URL-safe base64)")
+			assert.NotContains(t, nonce, "/", "Nonce should not contain / (use URL-safe base64)")
+			assert.NotContains(t, nonce, "=", "Nonce should not contain = (use RawURLEncoding)")
 
-            assert.Regexp(t, `^[A-Za-z0-9_-]+$`, nonce, "Nonce should only contain URL-safe characters")
+			assert.Regexp(t, `^[A-Za-z0-9_-]+$`, nonce, "Nonce should only contain URL-safe characters")
 		}
 	})
 
 	t.Run("nonce anti-replay properties", func(t *testing.T) {
-        const numNonces = 10000
+		const numNonces = 10000
 		nonces := make([]string, 0, numNonces)
 		nonceSet := make(map[string]bool)
 
@@ -159,38 +159,38 @@ func TestGenerateNonce(t *testing.T) {
 			nonce, err := GenerateNonce()
 			require.NoError(t, err)
 
-            assert.False(t, nonceSet[nonce], "Nonce should not repeat (anti-replay)")
+			assert.False(t, nonceSet[nonce], "Nonce should not repeat (anti-replay)")
 			nonceSet[nonce] = true
 			nonces = append(nonces, nonce)
 		}
 
-        assert.Len(t, nonces, numNonces)
-        assert.Len(t, nonceSet, numNonces)
+		assert.Len(t, nonces, numNonces)
+		assert.Len(t, nonceSet, numNonces)
 
-        firstChars := make(map[byte]int)
+		firstChars := make(map[byte]int)
 		for _, nonce := range nonces {
 			firstChars[nonce[0]]++
 		}
 
-        assert.Greater(t, len(firstChars), 10, "First character should have good distribution")
+		assert.Greater(t, len(firstChars), 10, "First character should have good distribution")
 	})
 
 	t.Run("nonce cryptographic strength", func(t *testing.T) {
-        nonce1, err := GenerateNonce()
+		nonce1, err := GenerateNonce()
 		require.NoError(t, err)
 
 		nonce2, err := GenerateNonce()
 		require.NoError(t, err)
 
-        assert.NotEqual(t, nonce1, nonce2)
+		assert.NotEqual(t, nonce1, nonce2)
 
-        decoded1, err := base64.RawURLEncoding.DecodeString(nonce1)
+		decoded1, err := base64.RawURLEncoding.DecodeString(nonce1)
 		require.NoError(t, err)
 
 		decoded2, err := base64.RawURLEncoding.DecodeString(nonce2)
 		require.NoError(t, err)
 
-        commonBytes := 0
+		commonBytes := 0
 		for i := range decoded1 {
 			if decoded1[i] == decoded2[i] {
 				commonBytes++

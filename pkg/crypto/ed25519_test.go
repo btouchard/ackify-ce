@@ -17,12 +17,12 @@ import (
 
 func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 	t.Run("creates new signer successfully", func(t *testing.T) {
-    
+
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
-		os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
+		_ = os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 		defer func() {
 			if originalKey != "" {
-				os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", originalKey)
+				_ = os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", originalKey)
 			}
 		}()
 
@@ -30,10 +30,8 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, signer)
 
-
 		pubKey := signer.GetPublicKey()
 		assert.NotEmpty(t, pubKey)
-
 
 		_, err = base64.StdEncoding.DecodeString(pubKey)
 		assert.NoError(t, err)
@@ -41,20 +39,20 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 
 	t.Run("loads signer from environment variable", func(t *testing.T) {
 
-		pubKey, privKey, err := ed25519.GenerateKey(nil)
+		publicKey, privateKey, err := ed25519.GenerateKey(nil)
 		require.NoError(t, err)
 
-
-		b64Key := base64.StdEncoding.EncodeToString(privKey)
-		os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", b64Key)
-		defer os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
+		b64Key := base64.StdEncoding.EncodeToString(privateKey)
+		_ = os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", b64Key)
+		defer func() {
+			_ = os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
+		}()
 
 		signer, err := NewEd25519Signer()
 		require.NoError(t, err)
 		require.NotNil(t, signer)
 
-
-		expectedPubKey := base64.StdEncoding.EncodeToString(pubKey)
+		expectedPubKey := base64.StdEncoding.EncodeToString(publicKey)
 		actualPubKey := signer.GetPublicKey()
 		assert.Equal(t, expectedPubKey, actualPubKey)
 	})
@@ -72,11 +70,13 @@ func TestEd25519Signer_NewEd25519Signer(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", tc.value)
-				defer os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
+				_ = os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", tc.value)
+				defer func() {
+					_ = os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
+				}()
 
 				if tc.value == "" || tc.value == "   " {
-				
+
 					signer, err := NewEd25519Signer()
 					require.NoError(t, err)
 					assert.NotNil(t, signer)
@@ -109,11 +109,9 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 		assert.NotEmpty(t, hashB64)
 		assert.NotEmpty(t, sigB64)
 
-
 		hashBytes, err := base64.StdEncoding.DecodeString(hashB64)
 		require.NoError(t, err)
 		assert.Len(t, hashBytes, 32) // SHA-256 hash length
-
 
 		sigBytes, err := base64.StdEncoding.DecodeString(sigB64)
 		require.NoError(t, err)
@@ -323,7 +321,6 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		hash1, _, err := signer.CreateSignature(docID, user, timestamp, nonce)
 		require.NoError(t, err)
 
-
 		expectedPayload := []byte("doc_id=payload-test\nuser_sub=user-123-alice\nuser_email=alice@example.com\nsigned_at=2024-04-01T12:00:00Z\nnonce=payload-nonce\n")
 		expectedHash := sha256.Sum256(expectedPayload)
 		expectedHashB64 := base64.StdEncoding.EncodeToString(expectedHash[:])
@@ -346,7 +343,6 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		hash, _, err := signer.CreateSignature(docID, user, timestamp, nonce)
 		require.NoError(t, err)
 
-
 		expectedPayload := []byte("doc_id=email-test\nuser_sub=user-email-test\nuser_email=test.user@example.com\nsigned_at=2024-05-01T10:00:00Z\nnonce=email-nonce\n")
 		expectedHash := sha256.Sum256(expectedPayload)
 		expectedHashB64 := base64.StdEncoding.EncodeToString(expectedHash[:])
@@ -359,7 +355,6 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		docID := "time-format-test"
 		nonce := "time-nonce"
 
-
 		utcTime := time.Date(2024, 6, 1, 15, 30, 45, 123456789, time.UTC)
 		localTime := utcTime.In(time.Local)
 
@@ -368,7 +363,6 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 
 		hash2, _, err := signer.CreateSignature(docID, user, localTime, nonce)
 		require.NoError(t, err)
-
 
 		assert.Equal(t, hash1, hash2, "Different timezone representations of same moment should produce same hash")
 	})
@@ -400,10 +394,10 @@ func TestEd25519Signer_GetPublicKey(t *testing.T) {
 	t.Run("different signers have different public keys", func(t *testing.T) {
 
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")
-		os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
+		_ = os.Unsetenv("ACKIFY_ED25519_PRIVATE_KEY")
 		defer func() {
 			if originalKey != "" {
-				os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", originalKey)
+				_ = os.Setenv("ACKIFY_ED25519_PRIVATE_KEY", originalKey)
 			}
 		}()
 

@@ -15,8 +15,8 @@ import (
 )
 
 type Ed25519Signer struct {
-    privateKey ed25519.PrivateKey
-    publicKey  ed25519.PublicKey
+	privateKey ed25519.PrivateKey
+	publicKey  ed25519.PublicKey
 }
 
 func NewEd25519Signer() (*Ed25519Signer, error) {
@@ -74,8 +74,8 @@ func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 		return nil, nil, fmt.Errorf("failed to generate keys: %w", err)
 	}
 
-    // Do not print private keys. Warn about ephemeral key usage only.
-    fmt.Println("[WARN] Generated ephemeral Ed25519 keypair. Set ACKIFY_ED25519_PRIVATE_KEY to persist across restarts.")
+	// Do not print private keys. Warn about ephemeral key usage only.
+	fmt.Println("[WARN] Generated ephemeral Ed25519 keypair. Set ACKIFY_ED25519_PRIVATE_KEY to persist across restarts.")
 
 	return privateKey, publicKey, nil
 }

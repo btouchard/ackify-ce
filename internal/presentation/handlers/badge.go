@@ -18,7 +18,7 @@ type checkService interface {
 }
 
 type BadgeHandler struct {
-    checkService checkService
+	checkService checkService
 }
 
 func NewBadgeHandler(checkService checkService) *BadgeHandler {
@@ -57,14 +57,14 @@ func (h *BadgeHandler) HandleStatusPNG(w http.ResponseWriter, r *http.Request) {
 const badgeSize = 64
 
 type BadgeColors struct {
-    Background color.RGBA
-    Icon       color.RGBA
-    Border     color.RGBA
+	Background color.RGBA
+	Icon       color.RGBA
+	Border     color.RGBA
 }
 
 var BadgeThemes = struct {
-    Success BadgeColors
-    Error   BadgeColors
+	Success BadgeColors
+	Error   BadgeColors
 }{
 	Success: BadgeColors{
 		Background: color.RGBA{R: 240, G: 253, B: 244, A: 255}, // success-50

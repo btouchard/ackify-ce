@@ -28,7 +28,7 @@ func newFakeRepository() *fakeRepository {
 	}
 }
 
-func (f *fakeRepository) Create(ctx context.Context, signature *models.Signature) error {
+func (f *fakeRepository) Create(_ context.Context, signature *models.Signature) error {
 	if f.shouldFailCreate {
 		return errors.New("repository create failed")
 	}
@@ -43,7 +43,7 @@ func (f *fakeRepository) Create(ctx context.Context, signature *models.Signature
 	return nil
 }
 
-func (f *fakeRepository) GetByDocAndUser(ctx context.Context, docID, userSub string) (*models.Signature, error) {
+func (f *fakeRepository) GetByDocAndUser(_ context.Context, docID, userSub string) (*models.Signature, error) {
 	if f.shouldFailGet {
 		return nil, errors.New("repository get failed")
 	}
@@ -57,7 +57,7 @@ func (f *fakeRepository) GetByDocAndUser(ctx context.Context, docID, userSub str
 	return signature, nil
 }
 
-func (f *fakeRepository) GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error) {
+func (f *fakeRepository) GetByDoc(_ context.Context, docID string) ([]*models.Signature, error) {
 	if f.shouldFailGet {
 		return nil, errors.New("repository get failed")
 	}
@@ -72,7 +72,7 @@ func (f *fakeRepository) GetByDoc(ctx context.Context, docID string) ([]*models.
 	return result, nil
 }
 
-func (f *fakeRepository) GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error) {
+func (f *fakeRepository) GetByUser(_ context.Context, userSub string) ([]*models.Signature, error) {
 	if f.shouldFailGet {
 		return nil, errors.New("repository get failed")
 	}
@@ -87,7 +87,7 @@ func (f *fakeRepository) GetByUser(ctx context.Context, userSub string) ([]*mode
 	return result, nil
 }
 
-func (f *fakeRepository) ExistsByDocAndUser(ctx context.Context, docID, userSub string) (bool, error) {
+func (f *fakeRepository) ExistsByDocAndUser(_ context.Context, docID, userSub string) (bool, error) {
 	if f.shouldFailExists {
 		return false, errors.New("repository exists failed")
 	}
@@ -97,7 +97,7 @@ func (f *fakeRepository) ExistsByDocAndUser(ctx context.Context, docID, userSub 
 	return exists, nil
 }
 
-func (f *fakeRepository) CheckUserSignatureStatus(ctx context.Context, docID, userIdentifier string) (bool, error) {
+func (f *fakeRepository) CheckUserSignatureStatus(_ context.Context, docID, userIdentifier string) (bool, error) {
 	if f.shouldFailCheck {
 		return false, errors.New("repository check failed")
 	}
@@ -111,7 +111,7 @@ func (f *fakeRepository) CheckUserSignatureStatus(ctx context.Context, docID, us
 	return false, nil
 }
 
-func (f *fakeRepository) GetLastSignature(ctx context.Context) (*models.Signature, error) {
+func (f *fakeRepository) GetLastSignature(_ context.Context) (*models.Signature, error) {
 	if f.shouldFailGetLast {
 		return nil, errors.New("repository get last failed")
 	}
@@ -123,26 +123,26 @@ func (f *fakeRepository) GetLastSignature(ctx context.Context) (*models.Signatur
 	return f.allSignatures[len(f.allSignatures)-1], nil
 }
 
-func (f *fakeRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error) {
-    if f.shouldFailGetAll {
-        return nil, errors.New("repository get all failed")
-    }
+func (f *fakeRepository) GetAllSignaturesOrdered(_ context.Context) ([]*models.Signature, error) {
+	if f.shouldFailGetAll {
+		return nil, errors.New("repository get all failed")
+	}
 
-    return f.allSignatures, nil
+	return f.allSignatures, nil
 }
 
-func (f *fakeRepository) UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error {
-    for _, s := range f.allSignatures {
-        if s.ID == id {
-            s.PrevHash = prevHash
-        }
-    }
-    for _, s := range f.signatures {
-        if s.ID == id {
-            s.PrevHash = prevHash
-        }
-    }
-    return nil
+func (f *fakeRepository) UpdatePrevHash(_ context.Context, id int64, prevHash *string) error {
+	for _, s := range f.allSignatures {
+		if s.ID == id {
+			s.PrevHash = prevHash
+		}
+	}
+	for _, s := range f.signatures {
+		if s.ID == id {
+			s.PrevHash = prevHash
+		}
+	}
+	return nil
 }
 
 type fakeCryptoSigner struct {
@@ -153,7 +153,7 @@ func newFakeCryptoSigner() *fakeCryptoSigner {
 	return &fakeCryptoSigner{}
 }
 
-func (f *fakeCryptoSigner) CreateSignature(docID string, user *models.User, timestamp time.Time, nonce string) (string, string, error) {
+func (f *fakeCryptoSigner) CreateSignature(docID string, user *models.User, _ time.Time, _ string) (string, string, error) {
 	if f.shouldFail {
 		return "", "", errors.New("crypto signing failed")
 	}
@@ -363,12 +363,12 @@ func TestSignatureService_CreateSignature(t *testing.T) {
 				return
 			}
 
-            key := tt.request.DocID + "_" + tt.request.User.Sub
-            signature, exists := repo.signatures[key]
-            if !exists {
-                t.Error("Signature should have been created")
-                return
-            }
+			key := tt.request.DocID + "_" + tt.request.User.Sub
+			signature, exists := repo.signatures[key]
+			if !exists {
+				t.Error("Signature should have been created")
+				return
+			}
 
 			if signature.DocID != tt.request.DocID {
 				t.Errorf("DocID = %v, expected %v", signature.DocID, tt.request.DocID)
@@ -560,7 +560,7 @@ func TestSignatureService_GetUserSignatures(t *testing.T) {
 
 	t.Run("invalid user", func(t *testing.T) {
 		_, err := service.GetUserSignatures(context.Background(), nil)
-		if err != models.ErrInvalidUser {
+		if !errors.Is(err, models.ErrInvalidUser) {
 			t.Errorf("Error = %v, expected %v", err, models.ErrInvalidUser)
 		}
 	})
@@ -597,7 +597,7 @@ func TestSignatureService_GetSignatureByDocAndUser(t *testing.T) {
 
 	t.Run("invalid user", func(t *testing.T) {
 		_, err := service.GetSignatureByDocAndUser(context.Background(), "doc1", nil)
-		if err != models.ErrInvalidUser {
+		if !errors.Is(err, models.ErrInvalidUser) {
 			t.Errorf("Error = %v, expected %v", err, models.ErrInvalidUser)
 		}
 	})

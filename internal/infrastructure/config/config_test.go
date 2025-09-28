@@ -142,12 +142,14 @@ func TestGetEnv(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clean up environment variable before test
-			os.Unsetenv(tt.key)
+			_ = os.Unsetenv(tt.key)
 
 			// Set environment variable if specified
 			if tt.envValue != "" {
-				os.Setenv(tt.key, tt.envValue)
-				defer os.Unsetenv(tt.key)
+				_ = os.Setenv(tt.key, tt.envValue)
+				defer func(key string) {
+					_ = os.Unsetenv(key)
+				}(tt.key)
 			}
 
 			result := getEnv(tt.key, tt.defaultValue)
@@ -162,8 +164,10 @@ func TestMustGetEnv(t *testing.T) {
 	t.Run("existing environment variable", func(t *testing.T) {
 		key := "TEST_MUST_ENV_VAR"
 		expected := "test_value"
-		os.Setenv(key, expected)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, expected)
+		defer func(key string) {
+			_ = os.Unsetenv(key)
+		}(key)
 
 		result := mustGetEnv(key)
 		if result != expected {
@@ -173,8 +177,10 @@ func TestMustGetEnv(t *testing.T) {
 
 	t.Run("environment variable with spaces is trimmed", func(t *testing.T) {
 		key := "TEST_MUST_ENV_VAR_SPACES"
-		os.Setenv(key, "  trimmed_value  ")
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, "  trimmed_value  ")
+		defer func(key string) {
+			_ = os.Unsetenv(key)
+		}(key)
 
 		result := mustGetEnv(key)
 		if result != "trimmed_value" {
@@ -194,8 +200,10 @@ func TestMustGetEnv(t *testing.T) {
 
 	t.Run("empty environment variable panics", func(t *testing.T) {
 		key := "TEST_EMPTY_ENV_VAR"
-		os.Setenv(key, "")
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, "")
+		defer func(key string) {
+			_ = os.Unsetenv(key)
+		}(key)
 
 		defer func() {
 			if r := recover(); r == nil {
@@ -208,8 +216,10 @@ func TestMustGetEnv(t *testing.T) {
 
 	t.Run("whitespace-only environment variable panics", func(t *testing.T) {
 		key := "TEST_WHITESPACE_ENV_VAR"
-		os.Setenv(key, "   ")
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, "   ")
+		defer func(key string) {
+			_ = os.Unsetenv(key)
+		}(key)
 
 		defer func() {
 			if r := recover(); r == nil {
@@ -263,12 +273,14 @@ func TestParseCookieSecret(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clean up environment variable
-			os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+			_ = os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
 
 			// Set environment variable if specified
 			if tt.envValue != "" {
-				os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", tt.envValue)
-				defer os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+				_ = os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", tt.envValue)
+				defer func() {
+					_ = os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+				}()
 			}
 
 			result, err := parseCookieSecret()
@@ -308,11 +320,14 @@ func TestLoad_GoogleProvider(t *testing.T) {
 		"ACKIFY_LISTEN_ADDR":          ":8080",
 	}
 
-	// Set environment variables
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	config, err := Load()
 	if err != nil {
@@ -377,9 +392,13 @@ func TestLoad_GitHubProvider(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	config, err := Load()
 	if err != nil {
@@ -420,9 +439,13 @@ func TestLoad_GitLabProvider(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	config, err := Load()
 	if err != nil {
@@ -457,12 +480,16 @@ func TestLoad_GitLabDefaultURL(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	// Ensure OAUTH_GITLAB_URL is not set to test default
-	os.Unsetenv("ACKIFY_OAUTH_GITLAB_URL")
+	_ = os.Unsetenv("ACKIFY_OAUTH_GITLAB_URL")
 
 	config, err := Load()
 	if err != nil {
@@ -496,18 +523,22 @@ func TestLoad_CustomProvider(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	config, err := Load()
 	if err != nil {
 		t.Fatalf("Load() failed: %v", err)
 	}
 
-    if config.OAuth.AuthURL != "https://auth.custom.com/oauth/authorize" {
-        t.Errorf("OAuth.AuthURL = %v, expected custom auth URL", config.OAuth.AuthURL)
-    }
+	if config.OAuth.AuthURL != "https://auth.custom.com/oauth/authorize" {
+		t.Errorf("OAuth.AuthURL = %v, expected custom auth URL", config.OAuth.AuthURL)
+	}
 	if config.OAuth.TokenURL != "https://auth.custom.com/oauth/token" {
 		t.Errorf("OAuth.TokenURL = %v, expected custom token URL", config.OAuth.TokenURL)
 	}
@@ -531,7 +562,7 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 
 	for _, missingVar := range requiredVars {
 		t.Run("missing_"+missingVar, func(t *testing.T) {
-        envVars := map[string]string{
+			envVars := map[string]string{
 				"ACKIFY_BASE_URL":            "https://ackify.example.com",
 				"ACKIFY_ORGANISATION":        "Test Organisation",
 				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
@@ -540,22 +571,26 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 				"ACKIFY_OAUTH_PROVIDER":      "google",
 			}
 
-            delete(envVars, missingVar)
+			delete(envVars, missingVar)
 
-            for key, value := range envVars {
-				os.Setenv(key, value)
-				defer os.Unsetenv(key)
+			for key, value := range envVars {
+				_ = os.Setenv(key, value)
 			}
+			defer func() {
+				for key := range envVars {
+					_ = os.Unsetenv(key)
+				}
+			}()
 
-            os.Unsetenv(missingVar)
+			_ = os.Unsetenv(missingVar)
 
-            defer func() {
-                if r := recover(); r == nil {
-                    t.Errorf("Load() should panic when %s is missing", missingVar)
-                }
-            }()
+			defer func() {
+				if r := recover(); r == nil {
+					t.Errorf("Load() should panic when %s is missing", missingVar)
+				}
+			}()
 
-			Load()
+			_, _ = Load()
 		})
 	}
 }
@@ -569,7 +604,7 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 
 	for _, missingVar := range customRequiredVars {
 		t.Run("custom_missing_"+missingVar, func(t *testing.T) {
-        envVars := map[string]string{
+			envVars := map[string]string{
 				"ACKIFY_BASE_URL":            "https://ackify.example.com",
 				"ACKIFY_ORGANISATION":        "Test Organisation",
 				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
@@ -580,22 +615,26 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 				"ACKIFY_OAUTH_USERINFO_URL":  "https://api.custom.com/user",
 			}
 
-            delete(envVars, missingVar)
+			delete(envVars, missingVar)
 
-            for key, value := range envVars {
-				os.Setenv(key, value)
-				defer os.Unsetenv(key)
+			for key, value := range envVars {
+				_ = os.Setenv(key, value)
 			}
+			defer func() {
+				for key := range envVars {
+					_ = os.Unsetenv(key)
+				}
+			}()
 
-            os.Unsetenv(missingVar)
+			_ = os.Unsetenv(missingVar)
 
-            defer func() {
-                if r := recover(); r == nil {
-                    t.Errorf("Load() should panic when %s is missing for custom provider", missingVar)
-                }
-            }()
+			defer func() {
+				if r := recover(); r == nil {
+					t.Errorf("Load() should panic when %s is missing for custom provider", missingVar)
+				}
+			}()
 
-			Load()
+			_, _ = Load()
 		})
 	}
 }
@@ -611,14 +650,18 @@ func TestLoad_DefaultValues(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	// Ensure optional variables are not set to test defaults
-	os.Unsetenv("ACKIFY_OAUTH_ALLOWED_DOMAIN")
-	os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
-	os.Unsetenv("ACKIFY_LISTEN_ADDR")
+	_ = os.Unsetenv("ACKIFY_OAUTH_ALLOWED_DOMAIN")
+	_ = os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	_ = os.Unsetenv("ACKIFY_LISTEN_ADDR")
 
 	config, err := Load()
 	if err != nil {
@@ -651,12 +694,16 @@ func TestLoad_CustomProviderDefaultScopes(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
 	// Ensure OAUTH_SCOPES is not set to test default
-	os.Unsetenv("ACKIFY_OAUTH_SCOPES")
+	_ = os.Unsetenv("ACKIFY_OAUTH_SCOPES")
 
 	config, err := Load()
 	if err != nil {
@@ -672,8 +719,10 @@ func TestLoad_CustomProviderDefaultScopes(t *testing.T) {
 
 func TestParseCookieSecret_InvalidBase64(t *testing.T) {
 	// Test invalid base64 that falls back to raw string
-	os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", "this-is-not-valid-base64!")
-	defer os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	_ = os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", "this-is-not-valid-base64!")
+	defer func() {
+		_ = os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	}()
 
 	result, err := parseCookieSecret()
 	if err != nil {
@@ -687,18 +736,20 @@ func TestParseCookieSecret_InvalidBase64(t *testing.T) {
 }
 
 func TestParseCookieSecret_ValidBase64WrongLength(t *testing.T) {
-    wrongLength := base64.StdEncoding.EncodeToString(make([]byte, 16)) // 16 bytes instead of 32/64
-	os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", wrongLength)
-	defer os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	wrongLength := base64.StdEncoding.EncodeToString(make([]byte, 16)) // 16 bytes instead of 32/64
+	_ = os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", wrongLength)
+	defer func() {
+		_ = os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	}()
 
 	result, err := parseCookieSecret()
 	if err != nil {
 		t.Errorf("parseCookieSecret() should not fail for wrong length: %v", err)
 	}
 
-    if string(result) != wrongLength {
-        t.Errorf("parseCookieSecret() should fall back to raw string for wrong length")
-    }
+	if string(result) != wrongLength {
+		t.Errorf("parseCookieSecret() should fall back to raw string for wrong length")
+	}
 }
 
 func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
@@ -712,21 +763,27 @@ func TestLoad_ErrorInParseCookieSecret(t *testing.T) {
 	}
 
 	for key, value := range envVars {
-		os.Setenv(key, value)
-		defer os.Unsetenv(key)
+		_ = os.Setenv(key, value)
 	}
+	defer func() {
+		for key := range envVars {
+			_ = os.Unsetenv(key)
+		}
+	}()
 
-    os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", "valid-secret")
-	defer os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	_ = os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", "valid-secret")
+	defer func() {
+		_ = os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+	}()
 
 	config, err := Load()
 	if err != nil {
 		t.Fatalf("Load() should not fail: %v", err)
 	}
 
-    if config == nil {
-        t.Error("Config should not be nil")
-    }
+	if config == nil {
+		t.Error("Config should not be nil")
+	}
 }
 
 func TestAppConfig_SecureCookiesLogic(t *testing.T) {
@@ -769,9 +826,13 @@ func TestAppConfig_SecureCookiesLogic(t *testing.T) {
 			}
 
 			for key, value := range envVars {
-				os.Setenv(key, value)
-				defer os.Unsetenv(key)
+				_ = os.Setenv(key, value)
 			}
+			defer func() {
+				for key := range envVars {
+					_ = os.Unsetenv(key)
+				}
+			}()
 
 			config, err := Load()
 			if err != nil {

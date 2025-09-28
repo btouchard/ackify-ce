@@ -15,7 +15,7 @@ type SignatureRepository struct {
 }
 
 func NewSignatureRepository(db *sql.DB) *SignatureRepository {
-    return &SignatureRepository{db: db}
+	return &SignatureRepository{db: db}
 }
 
 func (r *SignatureRepository) Create(ctx context.Context, signature *models.Signature) error {
@@ -267,9 +267,9 @@ func (r *SignatureRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*m
 }
 
 func (r *SignatureRepository) UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error {
-    query := `UPDATE signatures SET prev_hash = $2 WHERE id = $1`
-    if _, err := r.db.ExecContext(ctx, query, id, prevHash); err != nil {
-        return fmt.Errorf("failed to update prev_hash: %w", err)
-    }
-    return nil
+	query := `UPDATE signatures SET prev_hash = $2 WHERE id = $1`
+	if _, err := r.db.ExecContext(ctx, query, id, prevHash); err != nil {
+		return fmt.Errorf("failed to update prev_hash: %w", err)
+	}
+	return nil
 }

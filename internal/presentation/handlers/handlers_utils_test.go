@@ -13,7 +13,6 @@ import (
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
-
 func TestBadgeHandler_NewBadgeHandler(t *testing.T) {
 	checkService := newFakeSignatureService()
 	handler := NewBadgeHandler(checkService)
@@ -114,7 +113,6 @@ func TestBadgeHandler_HandleStatusPNG(t *testing.T) {
 	}
 }
 
-
 func TestHealthHandler_NewHealthHandler(t *testing.T) {
 	handler := NewHealthHandler()
 	if handler == nil {
@@ -147,7 +145,6 @@ func TestHealthHandler_HandleHealth(t *testing.T) {
 		t.Error("Response should contain time field")
 	}
 }
-
 
 func TestOEmbedHandler_NewOEmbedHandler(t *testing.T) {
 	service := newFakeSignatureService()
@@ -394,7 +391,6 @@ func TestOEmbedHandler_extractDocIDFromURL(t *testing.T) {
 	}
 }
 
-
 func TestAuthMiddleware_NewAuthMiddleware(t *testing.T) {
 	userService := newFakeUserService()
 	baseURL := "https://example.com"
@@ -573,7 +569,6 @@ func TestHandleError(t *testing.T) {
 		})
 	}
 }
-
 
 func TestValidateDocID(t *testing.T) {
 	tests := []struct {

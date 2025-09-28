@@ -3,7 +3,6 @@ package crypto
 
 import "github.com/btouchard/ackify-ce/internal/domain/models"
 
-
 var (
 	testUserAlice = &models.User{
 		Sub:   "user-123-alice",

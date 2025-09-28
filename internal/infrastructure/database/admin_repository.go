@@ -7,35 +7,20 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
 )
 
 type DocumentAgg struct {
-    DocID string `json:"doc_id"`
-    Count int    `json:"count"`
+	DocID string `json:"doc_id"`
+	Count int    `json:"count"`
 }
 
 // AdminRepository provides read-only access for admin operations
 type AdminRepository struct {
-    db *sql.DB
+	db *sql.DB
 }
 
-func NewAdminRepository(ctx context.Context) (*AdminRepository, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
-
-	db, err := InitDB(ctx, Config{DSN: cfg.Database.DSN})
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize admin database: %w", err)
-	}
-
-	return &AdminRepository{db: db}, nil
-}
-
-func NewAdminRepositoryFromDB(db *sql.DB) *AdminRepository {
-    return &AdminRepository{db: db}
+func NewAdminRepository(db *sql.DB) *AdminRepository {
+	return &AdminRepository{db: db}
 }
 
 // ListDocumentsWithCounts returns all documents with their signature counts
@@ -123,12 +108,12 @@ func (r *AdminRepository) VerifyDocumentChainIntegrity(ctx context.Context, docI
 
 // ChainIntegrityResult contient le résultat de la vérification d'intégrité
 type ChainIntegrityResult struct {
-	IsValid      bool     `json:"is_valid"`
-	TotalSigs    int      `json:"total_signatures"`
-	ValidSigs    int      `json:"valid_signatures"`
-	InvalidSigs  int      `json:"invalid_signatures"`
-	Errors       []string `json:"errors,omitempty"`
-	DocID        string   `json:"doc_id"`
+	IsValid     bool     `json:"is_valid"`
+	TotalSigs   int      `json:"total_signatures"`
+	ValidSigs   int      `json:"valid_signatures"`
+	InvalidSigs int      `json:"invalid_signatures"`
+	Errors      []string `json:"errors,omitempty"`
+	DocID       string   `json:"doc_id"`
 }
 
 // verifyChainIntegrity vérifie l'intégrité de la chaîne de signatures
