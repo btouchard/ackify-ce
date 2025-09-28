@@ -367,4 +367,4 @@ Voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-**Développé avec ❤️ par [Benjamin TOUCHARD](mailto:benjamin@kolapsis.com)**
+**Développé avec ❤️ par [Benjamin TOUCHARD](https://www.kolapsis.com)**
