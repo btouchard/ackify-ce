@@ -181,6 +181,11 @@ ACKIFY_OAUTH_SCOPES="read:user,user:email"
 ACKIFY_OAUTH_ALLOWED_DOMAIN="@entreprise.com"  # Seuls les emails @entreprise.com
 ```
 
+### Log level setup
+```bash
+ACKIFY_LOG_LEVEL="info" # can be debug, info, warn(ing), error. default: info
+```
+
 ---
 
 ## 🛡️ Sécurité & Architecture

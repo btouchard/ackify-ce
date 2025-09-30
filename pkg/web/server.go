@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/btouchard/ackify-ce/pkg/logger"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/btouchard/ackify-ce/internal/application/services"
@@ -33,6 +34,8 @@ func NewServer(ctx context.Context) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
+
+	logger.SetLevel(logger.ParseLevel(cfg.Logger.Level))
 
 	authService := auth.NewOAuthService(auth.Config{
 		BaseURL:       cfg.App.BaseURL,

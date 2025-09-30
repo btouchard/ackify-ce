@@ -15,6 +15,7 @@ type Config struct {
 	Database DatabaseConfig
 	OAuth    OAuthConfig
 	Server   ServerConfig
+	Logger   LoggerConfig
 }
 
 type AppConfig struct {
@@ -40,6 +41,10 @@ type OAuthConfig struct {
 
 type ServerConfig struct {
 	ListenAddr string
+}
+
+type LoggerConfig struct {
+	Level string
 }
 
 // Load loads configuration from environment variables
@@ -90,6 +95,8 @@ func Load() (*Config, error) {
 	config.OAuth.CookieSecret = cookieSecret
 
 	config.Server.ListenAddr = getEnv("ACKIFY_LISTEN_ADDR", ":8080")
+
+	config.Logger.Level = getEnv("ACKIFY_LOG_LEVEL", "info")
 
 	return config, nil
 }

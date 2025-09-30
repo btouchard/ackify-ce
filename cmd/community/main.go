@@ -22,7 +22,6 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	// Register admin routes (reuse server DB connection)
 	server.RegisterRoutes(admin.RegisterAdminRoutes(server.GetBaseURL(), server.GetTemplates(), server.GetDB()))
 
 	go func() {

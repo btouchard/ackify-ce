@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 type AuthHandlers struct {
@@ -58,6 +60,7 @@ func (h *AuthHandlers) HandleOAuthCallback(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	user, nextURL, err := h.authService.HandleCallback(ctx, code, state)
 	if err != nil {
+		logger.Logger.Error("OAuth callback failed", "error", err.Error())
 		HandleError(w, err)
 		return
 	}
