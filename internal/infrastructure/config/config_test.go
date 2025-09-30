@@ -847,6 +847,81 @@ func TestAppConfig_SecureCookiesLogic(t *testing.T) {
 	}
 }
 
+func TestLoad_AdminEmails(t *testing.T) {
+	tests := []struct {
+		name           string
+		adminEmailsEnv string
+		expected       []string
+	}{
+		{
+			name:           "single admin email",
+			adminEmailsEnv: "admin@example.com",
+			expected:       []string{"admin@example.com"},
+		},
+		{
+			name:           "multiple admin emails",
+			adminEmailsEnv: "admin@example.com,user@example.com,manager@example.com",
+			expected:       []string{"admin@example.com", "user@example.com", "manager@example.com"},
+		},
+		{
+			name:           "admin emails with spaces",
+			adminEmailsEnv: "  admin@example.com  ,  user@example.com  ",
+			expected:       []string{"admin@example.com", "user@example.com"},
+		},
+		{
+			name:           "admin emails normalized to lowercase",
+			adminEmailsEnv: "Admin@Example.COM,User@Test.com",
+			expected:       []string{"admin@example.com", "user@test.com"},
+		},
+		{
+			name:           "empty admin emails",
+			adminEmailsEnv: "",
+			expected:       []string(nil),
+		},
+		{
+			name:           "admin emails with empty values filtered out",
+			adminEmailsEnv: "admin@example.com,,user@example.com",
+			expected:       []string{"admin@example.com", "user@example.com"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envVars := map[string]string{
+				"ACKIFY_BASE_URL":            "https://ackify.example.com",
+				"ACKIFY_ORGANISATION":        "Test Organisation",
+				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
+				"ACKIFY_OAUTH_PROVIDER":      "google",
+			}
+
+			if tt.adminEmailsEnv != "" {
+				envVars["ACKIFY_ADMIN_EMAILS"] = tt.adminEmailsEnv
+			}
+
+			for key, value := range envVars {
+				_ = os.Setenv(key, value)
+			}
+			defer func() {
+				for key := range envVars {
+					_ = os.Unsetenv(key)
+				}
+				_ = os.Unsetenv("ACKIFY_ADMIN_EMAILS")
+			}()
+
+			config, err := Load()
+			if err != nil {
+				t.Fatalf("Load() failed: %v", err)
+			}
+
+			if !equalSlices(config.App.AdminEmails, tt.expected) {
+				t.Errorf("AdminEmails = %v, expected %v", config.App.AdminEmails, tt.expected)
+			}
+		})
+	}
+}
+
 func equalSlices(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

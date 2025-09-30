@@ -10,19 +10,28 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
 	"github.com/btouchard/ackify-ce/internal/presentation/admin"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 	"github.com/btouchard/ackify-ce/pkg/web"
 )
 
 func main() {
 	ctx := context.Background()
 
-	server, err := web.NewServer(ctx)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	logger.SetLevel(logger.ParseLevel(cfg.Logger.Level))
+
+	server, err := web.NewServer(ctx, cfg)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	server.RegisterRoutes(admin.RegisterAdminRoutes(server.GetBaseURL(), server.GetTemplates(), server.GetDB()))
+	server.RegisterRoutes(admin.RegisterAdminRoutes(cfg, server.GetTemplates(), server.GetDB(), server.GetAuthService()))
 
 	go func() {
 		log.Printf("Community Edition server starting on %s", server.GetAddr())

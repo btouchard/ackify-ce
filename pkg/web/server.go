@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/btouchard/ackify-ce/pkg/logger"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/btouchard/ackify-ce/internal/application/services"
@@ -22,20 +21,20 @@ import (
 )
 
 type Server struct {
-	httpServer *http.Server
-	db         *sql.DB
-	router     *chi.Mux
-	templates  *template.Template
-	baseURL    string
+	httpServer  *http.Server
+	db          *sql.DB
+	router      *chi.Mux
+	templates   *template.Template
+	baseURL     string
+	adminEmails []string
+	authService *auth.OauthService
 }
 
-func NewServer(ctx context.Context) (*Server, error) {
-	cfg, db, tmpl, signer, err := initInfrastructure(ctx)
+func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
+	db, tmpl, signer, err := initInfrastructure(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
-
-	logger.SetLevel(logger.ParseLevel(cfg.Logger.Level))
 
 	authService := auth.NewOAuthService(auth.Config{
 		BaseURL:       cfg.App.BaseURL,
@@ -55,7 +54,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 
 	authHandlers := handlers.NewAuthHandlers(authService, cfg.App.BaseURL)
 	authMiddleware := handlers.NewAuthMiddleware(authService, cfg.App.BaseURL)
-	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
+	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL, cfg.App.Organisation, cfg.App.AdminEmails)
 	badgeHandler := handlers.NewBadgeHandler(signatureService)
 	oembedHandler := handlers.NewOEmbedHandler(signatureService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
 	healthHandler := handlers.NewHealthHandler()
@@ -68,11 +67,13 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 
 	return &Server{
-		httpServer: httpServer,
-		db:         db,
-		router:     router,
-		templates:  tmpl,
-		baseURL:    cfg.App.BaseURL,
+		httpServer:  httpServer,
+		db:          db,
+		router:      router,
+		templates:   tmpl,
+		baseURL:     cfg.App.BaseURL,
+		adminEmails: cfg.App.AdminEmails,
+		authService: authService,
 	}, nil
 }
 
@@ -106,38 +107,37 @@ func (s *Server) GetTemplates() *template.Template {
 	return s.templates
 }
 
-func (s *Server) GetBaseURL() string {
-	return s.baseURL
-}
-
 func (s *Server) GetDB() *sql.DB {
 	return s.db
 }
 
-func initInfrastructure(ctx context.Context) (*config.Config, *sql.DB, *template.Template, *crypto.Ed25519Signer, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to load config: %w", err)
-	}
+func (s *Server) GetAdminEmails() []string {
+	return s.adminEmails
+}
 
+func (s *Server) GetAuthService() *auth.OauthService {
+	return s.authService
+}
+
+func initInfrastructure(ctx context.Context, cfg *config.Config) (*sql.DB, *template.Template, *crypto.Ed25519Signer, error) {
 	db, err := database.InitDB(ctx, database.Config{
 		DSN: cfg.Database.DSN,
 	})
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	tmpl, err := initTemplates()
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}
 
 	signer, err := crypto.NewEd25519Signer()
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
 	}
 
-	return cfg, db, tmpl, signer, nil
+	return db, tmpl, signer, nil
 }
 
 func setupRouter(
@@ -178,7 +178,7 @@ func initTemplates() (*template.Template, error) {
 		return nil, fmt.Errorf("failed to parse base template: %w", err)
 	}
 
-	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl", "admin_dashboard.html.tpl", "admin_doc_details.html.tpl"}
+	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl", "admin_dashboard.html.tpl", "admin_doc_details.html.tpl", "error.html.tpl"}
 	for _, templateFile := range additionalTemplates {
 		templatePath := filepath.Join(templatesDir, templateFile)
 		_, err = tmpl.ParseFiles(templatePath)

@@ -59,7 +59,19 @@
     
     <main class="flex-1 py-8">
       <div class="max-w-4xl mx-auto px-6">
-        {{if eq .TemplateName "sign"}}{{template "sign" .}}{{else if eq .TemplateName "signatures"}}{{template "signatures" .}}{{else if eq .TemplateName "admin_dashboard"}}{{template "admin_dashboard" .}}{{else if eq .TemplateName "admin_doc_details"}}{{template "admin_doc_details" .}}{{else}}{{template "index" .}}{{end}}
+        {{if eq .TemplateName "sign"}}
+          {{template "sign" .}}
+        {{else if eq .TemplateName "signatures"}}
+          {{template "signatures" .}}
+        {{else if eq .TemplateName "admin_dashboard"}}
+          {{template "admin_dashboard" .}}
+        {{else if eq .TemplateName "admin_doc_details"}}
+          {{template "admin_doc_details" .}}
+        {{else if eq .TemplateName "error"}}
+          {{template "error" .}}
+        {{else}}
+          {{template "index" .}}
+        {{end}}
       </div>
     </main>
     

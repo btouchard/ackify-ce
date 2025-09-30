@@ -6,6 +6,7 @@ services:
     image: btouchard/ackify-ce
     container_name: ackify-ce-migrate
     environment:
+      ACKIFY_LOG_LEVEL: "${ACKIFY_LOG_LEVEL}"
       ACKIFY_BASE_URL: "${ACKIFY_BASE_URL}"
       ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
       ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
@@ -26,6 +27,7 @@ services:
     container_name: ackify-ce
     restart: unless-stopped
     environment:
+      ACKIFY_LOG_LEVEL: "${ACKIFY_LOG_LEVEL}"
       ACKIFY_BASE_URL: "https://${APP_DNS}"
       ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
       ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"

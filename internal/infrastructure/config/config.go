@@ -22,6 +22,7 @@ type AppConfig struct {
 	BaseURL       string
 	Organisation  string
 	SecureCookies bool
+	AdminEmails   []string
 }
 
 type DatabaseConfig struct {
@@ -97,6 +98,18 @@ func Load() (*Config, error) {
 	config.Server.ListenAddr = getEnv("ACKIFY_LISTEN_ADDR", ":8080")
 
 	config.Logger.Level = getEnv("ACKIFY_LOG_LEVEL", "info")
+
+	// Parse admin emails
+	adminEmailsStr := getEnv("ACKIFY_ADMIN_EMAILS", "")
+	if adminEmailsStr != "" {
+		emails := strings.Split(strings.ToLower(adminEmailsStr), ",")
+		for _, email := range emails {
+			trimmed := strings.TrimSpace(email)
+			if trimmed != "" {
+				config.App.AdminEmails = append(config.App.AdminEmails, trimmed)
+			}
+		}
+	}
 
 	return config, nil
 }

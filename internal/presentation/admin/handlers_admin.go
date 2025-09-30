@@ -12,7 +12,7 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
 )
 
-type AdminHandlers struct {
+type Handlers struct {
 	adminRepo   *database.AdminRepository
 	userService userService
 	templates   *template.Template
@@ -24,8 +24,8 @@ func NewAdminHandlers(
 	userService userService,
 	templates *template.Template,
 	baseURL string,
-) *AdminHandlers {
-	return &AdminHandlers{
+) *Handlers {
+	return &Handlers{
 		adminRepo:   adminRepo,
 		userService: userService,
 		templates:   templates,
@@ -33,7 +33,7 @@ func NewAdminHandlers(
 	}
 }
 
-func (h *AdminHandlers) HandleDashboard(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	user, err := h.userService.GetUser(r)
@@ -71,7 +71,7 @@ func (h *AdminHandlers) HandleDashboard(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (h *AdminHandlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := chi.URLParam(r, "docID")
 
@@ -131,7 +131,7 @@ func (h *AdminHandlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (h *AdminHandlers) HandleChainIntegrityAPI(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleChainIntegrityAPI(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := chi.URLParam(r, "docID")
 

@@ -394,8 +394,9 @@ func TestSignatureHandlers_NewSignatureHandlers(t *testing.T) {
 	tmpl := createTestTemplate()
 	baseURL := "https://example.com"
 	organisation := "Organisation"
+	adminEmails := []string{"admin@example.com"}
 
-	handlers := NewSignatureHandlers(signatureService, userService, tmpl, baseURL, organisation)
+	handlers := NewSignatureHandlers(signatureService, userService, tmpl, baseURL, organisation, adminEmails)
 
 	if handlers == nil {
 		t.Error("NewSignatureHandlers should not return nil")
@@ -416,7 +417,7 @@ func TestSignatureHandlers_HandleIndex(t *testing.T) {
 	signatureService := newFakeSignatureService()
 	userService := newFakeUserService()
 	tmpl := createTestTemplate()
-	handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation")
+	handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -505,7 +506,7 @@ func TestSignatureHandlers_HandleSignGET(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation")
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
 
 			req := httptest.NewRequest("GET", "/sign", nil)
 			if tt.docParam != "" {
@@ -605,7 +606,7 @@ func TestSignatureHandlers_HandleSignPOST(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation")
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
 
 			form := url.Values{}
 			for key, value := range tt.formData {
@@ -669,7 +670,7 @@ func TestSignatureHandlers_HandleStatusJSON(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation")
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
 
 			req := httptest.NewRequest("GET", "/status", nil)
 			if tt.docParam != "" {
@@ -736,7 +737,7 @@ func TestSignatureHandlers_HandleUserSignatures(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation")
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
 
 			req := httptest.NewRequest("GET", "/signatures", nil)
 			w := httptest.NewRecorder()

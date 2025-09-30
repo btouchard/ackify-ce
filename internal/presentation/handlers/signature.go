@@ -30,15 +30,17 @@ type SignatureHandlers struct {
 	template         *template.Template
 	baseURL          string
 	organisation     string
+	adminEmails      []string
 }
 
-func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL, organisation string) *SignatureHandlers {
+func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL, organisation string, adminEmails []string) *SignatureHandlers {
 	return &SignatureHandlers{
 		signatureService: signatureService,
 		userService:      userService,
 		template:         tmpl,
 		baseURL:          baseURL,
 		organisation:     organisation,
+		adminEmails:      adminEmails,
 	}
 }
 
@@ -218,7 +220,6 @@ func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Convert to JSON response format
 	response := make([]map[string]interface{}, 0, len(signatures))
 	for _, sig := range signatures {
 		sigData := map[string]interface{}{
@@ -266,7 +267,6 @@ func (h *SignatureHandlers) HandleUserSignatures(w http.ResponseWriter, r *http.
 	h.render(w, r, "signatures", PageData{User: user, BaseURL: h.baseURL, Signatures: signatures})
 }
 
-// render executes template with data
 func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templateName string, data PageData) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
@@ -277,7 +277,7 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templ
 		data.TemplateName = templateName
 	}
 	if !data.IsAdmin {
-		data.IsAdmin = admin.IsAdminUser(data.User)
+		data.IsAdmin = admin.IsAdminUser(data.User, h.adminEmails)
 	}
 
 	templateData := map[string]interface{}{
