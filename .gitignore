@@ -11,3 +11,11 @@ AGENTS.md
 docker-compose.local.yml
 docker-compose.prod.yml
 client_secret*.json
+
+/static
+/community
+/migrate
+
+# Tailwind CSS
+/bin/tailwindcss
+/static/output.css

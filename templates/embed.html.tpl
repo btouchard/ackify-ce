@@ -1,9 +1,9 @@
 {{define "embed"}}<!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Signataires - Document {{.DocID}}</title>
+    <title>Signatories - Document {{.DocID}}</title>
     <style>
         * {
             margin: 0;
@@ -353,17 +353,17 @@
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Signataires
+                Signatories
                 <span class="doc-id">{{.DocID}}</span>
             </h3>
             <div id="parent-domain" class="parent-domain"></div>
         </div>
-        
+
         {{if gt .Count 0}}
             <div class="stats">
                 <span class="count">{{.Count}} signature{{if gt .Count 1}}s{{end}}</span>
                 {{if .LastSignedAt}}
-                    <span class="last-signed">Dernière signature le {{.LastSignedAt}}</span>
+                    <span class="last-signed">Last signed on {{.LastSignedAt}}</span>
                 {{end}}
             </div>
             
@@ -387,83 +387,84 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                <p><strong>Aucune signature</strong></p>
-                <p>Ce document n'a pas encore été signé.</p>
+                <p><strong>No signatures</strong></p>
+                <p>This document has not been signed yet.</p>
             </div>
         {{end}}
-        
+
         <div class="footer">
             <a href="{{$.SignURL}}" target="_blank" class="sign-button">
-                Signer et confirmer la lecture de ce document
+                Sign and confirm reading this document
             </a>
         </div>
     </div>
 
     <script>
-        // Variable globale pour stocker les infos du referrer détecté
+        // Global variable to store detected referrer info
         let detectedReferrer = null;
-        
-        // Détecter le domaine parent de l'iframe
+
+        // Detect parent domain of the iframe
         function detectParentDomain() {
             const parentDomainEl = document.getElementById('parent-domain');
-            
+
             try {
-                // Essayer d'accéder au domaine parent
+                // Try to access parent domain
                 let parentHost = '';
                 let parentOrigin = '';
-                
-                // Vérifier si on est dans un iframe
+
+                // Check if we're in an iframe
                 if (window.parent !== window.self) {
                     try {
-                        // Tenter d'accéder à l'URL du parent (peut échouer à cause de CORS)
+                        // Try to access parent URL (may fail due to CORS)
                         parentHost = window.parent.location.hostname;
                         parentOrigin = window.parent.location.origin;
                     } catch (e) {
-                        // Si bloqué par CORS, essayer avec document.referrer
+                        // If blocked by CORS, try document.referrer
                         if (document.referrer) {
                             try {
                                 const referrerUrl = new URL(document.referrer);
                                 parentHost = referrerUrl.hostname;
                                 parentOrigin = referrerUrl.origin;
                             } catch (err) {
-                                console.log('Impossible de parser le referrer:', err);
+                                console.log('Unable to parse referrer:', err);
                             }
                         }
                     }
-                    
-                    // Afficher les informations si disponibles
+
+                    // Display information if available
                     if (parentHost) {
-                        // Détecter le service basé sur le domaine
+                        // Detect service based on domain
                         let serviceInfo = detectService(parentHost);
-                        
+
                         if (serviceInfo) {
-                            parentDomainEl.innerHTML = `${serviceInfo.icon} Intégré dans ${serviceInfo.name}`;
-                            // Stocker les infos du referrer pour l'URL de signature
+                            parentDomainEl.innerHTML = `${serviceInfo.icon} Embedded in ${serviceInfo.name}`;
+                            // Store referrer info for signature URL
                             detectedReferrer = serviceInfo.referrer;
                         } else {
-                            parentDomainEl.innerHTML = `🌐 Intégré dans ${parentHost}`;
-                            // Utiliser le domaine nettoyé comme referrer
+                            parentDomainEl.innerHTML = `🌐 Embedded in ${parentHost}`;
+                            // Use cleaned domain as referrer
                             detectedReferrer = parentHost.replace(/[^a-z0-9]/g, '-');
                         }
-                        
-                        // Ajouter l'information comme attribut pour debugging
+
+                        // Add information as attribute for debugging
                         parentDomainEl.setAttribute('data-parent-domain', parentHost);
                         parentDomainEl.setAttribute('data-parent-origin', parentOrigin);
                         parentDomainEl.setAttribute('data-referrer', detectedReferrer);
                     } else {
-                        parentDomainEl.innerHTML = '📱 Intégré (origine non détectable)';
+                        parentDomainEl.innerHTML = '📱 Embedded (origin undetectable)';
                     }
                 } else {
-                    // Pas dans un iframe
-                    parentDomainEl.innerHTML = '🌐 Vue directe';
+                    // Not in an iframe
+                    parentDomainEl.innerHTML = '🌐 Direct view';
                 }
             } catch (e) {
-                console.log('Erreur lors de la détection du domaine parent:', e);
-                parentDomainEl.innerHTML = '🔒 Origine protégée';
+                console.log('Error detecting parent domain:', e);
+                parentDomainEl.innerHTML = '🔒 Protected origin';
             }
         }
-        
-        // Fonction pour détecter le service basé sur le hostname
+
+
+        // Function to detect service based on hostname
         function detectService(hostname) {
             const host = hostname.toLowerCase();
             
@@ -566,8 +567,8 @@
             // Unknown service - use domain as referrer
             return { name: host, icon: '🌐', referrer: host.replace(/[^a-z0-9]/g, '-') };
         }
-        
-        // Fonction pour mettre à jour l'URL de signature avec le referrer
+
+        // Function to update signature URL with referrer
         function updateSignatureURL() {
             const signButton = document.querySelector('.sign-button');
             if (signButton && detectedReferrer) {
@@ -576,15 +577,16 @@
                 signButton.href = currentUrl.toString();
             }
         }
-        
-        // Détecter le domaine parent au chargement de la page
+
+
+        // Detect parent domain on page load
         document.addEventListener('DOMContentLoaded', function() {
             detectParentDomain();
-            // Petite pause pour s'assurer que detectedReferrer est défini
+            // Small pause to ensure detectedReferrer is set
             setTimeout(updateSignatureURL, 150);
         });
-        
-        // Retry après un court délai au cas où les permissions changeraient
+
+        // Retry after a short delay in case permissions change
         setTimeout(function() {
             detectParentDomain();
             updateSignatureURL();

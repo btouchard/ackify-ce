@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
@@ -42,7 +43,7 @@ func (m *Middleware) RequireAdmin(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !m.isAdminUser(user) {
-			m.renderForbidden(w, user)
+			m.renderForbidden(w, r, user)
 			return
 		}
 
@@ -75,8 +76,21 @@ func (m *Middleware) isAdminUser(user *models.User) bool {
 	return false
 }
 
-func (m *Middleware) renderForbidden(w http.ResponseWriter, user *models.User) {
+func (m *Middleware) renderForbidden(w http.ResponseWriter, r *http.Request, user *models.User) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+	ctx := r.Context()
+	lang := i18n.GetLang(ctx)
+	translations := i18n.GetTranslations(ctx)
+
+	// Get translated error messages
+	errorTitle := "Access Denied"
+	errorMessage := "You do not have permission to access the admin panel."
+
+	if lang == "fr" {
+		errorTitle = "Accès refusé"
+		errorMessage = "Vous n'avez pas la permission d'accéder au panneau d'administration."
+	}
 
 	data := struct {
 		TemplateName string
@@ -87,15 +101,19 @@ func (m *Middleware) renderForbidden(w http.ResponseWriter, user *models.User) {
 		ErrorTitle   string
 		ErrorMessage string
 		DocID        *string
+		Lang         string
+		T            map[string]string
 	}{
 		TemplateName: "error",
 		User:         user,
 		BaseURL:      m.baseURL,
 		Year:         time.Now().Year(),
 		IsAdmin:      false,
-		ErrorTitle:   "Access Denied",
-		ErrorMessage: "You do not have permission to access the admin panel.",
+		ErrorTitle:   errorTitle,
+		ErrorMessage: errorMessage,
 		DocID:        nil,
+		Lang:         lang,
+		T:            translations,
 	}
 
 	if err := m.templates.ExecuteTemplate(w, "base", data); err != nil {

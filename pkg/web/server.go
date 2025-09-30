@@ -16,6 +16,7 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/pkg/crypto"
 )
@@ -31,7 +32,7 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
-	db, tmpl, signer, err := initInfrastructure(ctx, cfg)
+	db, tmpl, signer, i18nService, err := initInfrastructure(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
@@ -58,8 +59,9 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	badgeHandler := handlers.NewBadgeHandler(signatureService)
 	oembedHandler := handlers.NewOEmbedHandler(signatureService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
 	healthHandler := handlers.NewHealthHandler()
+	langHandlers := handlers.NewLangHandlers(cfg.App.SecureCookies)
 
-	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler)
+	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler, langHandlers, i18nService)
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,
@@ -119,25 +121,31 @@ func (s *Server) GetAuthService() *auth.OauthService {
 	return s.authService
 }
 
-func initInfrastructure(ctx context.Context, cfg *config.Config) (*sql.DB, *template.Template, *crypto.Ed25519Signer, error) {
+func initInfrastructure(ctx context.Context, cfg *config.Config) (*sql.DB, *template.Template, *crypto.Ed25519Signer, *i18n.I18n, error) {
 	db, err := database.InitDB(ctx, database.Config{
 		DSN: cfg.Database.DSN,
 	})
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	tmpl, err := initTemplates()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}
 
 	signer, err := crypto.NewEd25519Signer()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
 	}
 
-	return db, tmpl, signer, nil
+	localesDir := getLocalesDir()
+	i18nService, err := i18n.NewI18n(localesDir)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("failed to initialize i18n: %w", err)
+	}
+
+	return db, tmpl, signer, i18nService, nil
 }
 
 func setupRouter(
@@ -147,8 +155,18 @@ func setupRouter(
 	badgeHandler *handlers.BadgeHandler,
 	oembedHandler *handlers.OEmbedHandler,
 	healthHandler *handlers.HealthHandler,
+	langHandlers *handlers.LangHandlers,
+	i18nService *i18n.I18n,
 ) *chi.Mux {
 	router := chi.NewRouter()
+
+	// Apply i18n middleware to all routes
+	router.Use(i18n.Middleware(i18nService))
+
+	// Serve static files (CSS)
+	staticDir := getStaticDir()
+	fileServer := http.FileServer(http.Dir(staticDir))
+	router.Get("/static/*", http.StripPrefix("/static/", fileServer).ServeHTTP)
 
 	router.Get("/", signatureHandlers.HandleIndex)
 	router.Get("/login", authHandlers.HandleLogin)
@@ -161,6 +179,9 @@ func setupRouter(
 	router.Get("/health", healthHandler.HandleHealth)
 	// Alias to match documentation and install script
 	router.Get("/healthz", healthHandler.HandleHealth)
+
+	// Language switcher
+	router.Get("/lang/{code}", langHandlers.HandleLangSwitch)
 
 	router.Get("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))
 	router.Post("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignPOST))
@@ -215,4 +236,58 @@ func getTemplatesDir() string {
 	}
 
 	return "templates"
+}
+
+func getLocalesDir() string {
+	if envDir := os.Getenv("ACKIFY_LOCALES_DIR"); envDir != "" {
+		return envDir
+	}
+
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		defaultDir := filepath.Join(execDir, "locales")
+		if _, err := os.Stat(defaultDir); err == nil {
+			return defaultDir
+		}
+	}
+
+	possiblePaths := []string{
+		"locales",   // When running from project root
+		"./locales", // Alternative relative path
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	return "locales"
+}
+
+func getStaticDir() string {
+	if envDir := os.Getenv("ACKIFY_STATIC_DIR"); envDir != "" {
+		return envDir
+	}
+
+	if execPath, err := os.Executable(); err == nil {
+		execDir := filepath.Dir(execPath)
+		defaultDir := filepath.Join(execDir, "static")
+		if _, err := os.Stat(defaultDir); err == nil {
+			return defaultDir
+		}
+	}
+
+	possiblePaths := []string{
+		"static",   // When running from project root
+		"./static", // Alternative relative path
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	return "static"
 }

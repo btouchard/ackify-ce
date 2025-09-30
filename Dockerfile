@@ -1,7 +1,7 @@
 # ---- Build ----
 FROM golang:alpine AS builder
 
-RUN apk update && apk add --no-cache ca-certificates git && rm -rf /var/cache/apk/*
+RUN apk update && apk add --no-cache ca-certificates git curl && rm -rf /var/cache/apk/*
 RUN adduser -D -g '' ackuser
 
 WORKDIR /app
@@ -9,6 +9,14 @@ COPY go.mod go.sum ./
 ENV GOTOOLCHAIN=auto
 RUN go mod download && go mod verify
 COPY . .
+
+# Download Tailwind CSS CLI (use v3 for compatibility)
+RUN curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.16/tailwindcss-linux-x64 -o /tmp/tailwindcss && \
+    chmod +x /tmp/tailwindcss
+
+# Build CSS
+RUN mkdir -p ./static && \
+    /tmp/tailwindcss -i ./assets/input.css -o ./static/output.css --minify
 
 ARG VERSION="dev"
 ARG COMMIT="unknown"
@@ -42,10 +50,13 @@ WORKDIR /app
 COPY --from=builder /app/ackify /app/ackify
 COPY --from=builder /app/migrate /app/migrate
 COPY --from=builder /app/migrations /app/migrations
-
+COPY --from=builder /app/locales /app/locales
 COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/static /app/static
 
 ENV ACKIFY_TEMPLATES_DIR=/app/templates
+ENV ACKIFY_LOCALES_DIR=/app/locales
+ENV ACKIFY_STATIC_DIR=/app/static
 
 EXPOSE 8080
 

@@ -34,17 +34,17 @@
             </div>
             
             <div>
-              <h3 class="text-xl font-bold text-success-700 mb-2">Document signé</h3>
-              <p class="text-slate-600 mb-4">Vous avez confirmé la lecture de ce document</p>
-              
+              <h3 class="text-xl font-bold text-success-700 mb-2">{{index .T "sign.already_signed_title"}}</h3>
+              <p class="text-slate-600 mb-4">{{index .T "sign.already_signed_desc"}}</p>
+
               <div class="bg-success-50 border border-success-200 rounded-2xl p-6">
                 <div class="flex items-center justify-center space-x-3 text-success-800">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
-                  <span class="font-semibold">Signé le {{.SignedAt}}</span>
+                  <span class="font-semibold">{{if eq .Lang "fr"}}Signé le {{.SignedAt}}{{else}}Signed on {{.SignedAt}}{{end}}</span>
                 </div>
-                <p class="text-success-700 text-sm mt-2">Signature cryptographique enregistrée et vérifiable</p>
+                <p class="text-success-700 text-sm mt-2">{{index .T "sign.signed_verified"}}</p>
               </div>
             </div>
           </div>
@@ -58,21 +58,21 @@
             </div>
             
             <div>
-              <h3 class="text-xl font-bold text-warning-700 mb-2">Document à signer</h3>
-              <p class="text-slate-600 mb-6">Vous devez confirmer avoir lu et compris ce document</p>
-              
+              <h3 class="text-xl font-bold text-warning-700 mb-2">{{index .T "sign.not_signed_title"}}</h3>
+              <p class="text-slate-600 mb-6">{{index .T "sign.not_signed_desc"}}</p>
+
               <div class="bg-warning-50 border border-warning-200 rounded-2xl p-6 mb-6">
                 <div class="flex items-start space-x-3">
                   <svg class="w-5 h-5 text-warning-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
                   <div class="text-left">
-                    <p class="font-semibold text-warning-800 mb-1">Avant de signer</p>
-                    <p class="text-warning-700 text-sm">Assurez-vous d'avoir lu et compris l'intégralité du document. La signature est irréversible.</p>
+                    <p class="font-semibold text-warning-800 mb-1">{{index .T "sign.warning_title"}}</p>
+                    <p class="text-warning-700 text-sm">{{index .T "sign.warning_desc"}}</p>
                   </div>
                 </div>
               </div>
-              
+
               <form method="POST" action="/sign">
                 <input type="hidden" name="doc" value="{{.DocID}}" />
                 {{if .ServiceInfo}}
@@ -82,7 +82,7 @@
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                   </svg>
-                  <span>Je certifie avoir lu et compris ce document</span>
+                  <span>{{index .T "sign.submit"}}</span>
                 </button>
               </form>
             </div>
@@ -93,20 +93,20 @@
     
     <!-- Actions Card -->
     <div class="bg-white rounded-2xl border border-slate-200 p-6">
-      <h4 class="font-semibold text-slate-900 mb-4">Actions supplémentaires</h4>
+      <h4 class="font-semibold text-slate-900 mb-4">{{index .T "sign.actions_title"}}</h4>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <a href="/signatures" target="_blank" class="flex items-center justify-center space-x-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors text-sm font-medium text-center">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          <span>Voir mes signatures</span>
+          <span>{{index .T "sign.view_signatures"}}</span>
         </a>
-        
+
         <a href="/" class="flex items-center justify-center space-x-2 px-4 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-xl transition-colors text-sm font-medium text-center">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
           </svg>
-          <span>Retour à l'accueil</span>
+          <span>{{index .T "sign.back_home"}}</span>
         </a>
       </div>
     </div>

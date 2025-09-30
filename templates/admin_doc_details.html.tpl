@@ -9,12 +9,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
           </a>
-          <h1 class="text-2xl font-bold text-slate-900">Document {{.DocID}}</h1>
+          <h1 class="text-2xl font-bold text-slate-900">{{index .T "admin_doc.title"}}</h1>
         </div>
-        <p class="text-slate-600">Détails des signatures</p>
+        <p class="text-slate-600">{{index .T "admin_doc.details_subtitle"}}</p>
       </div>
       <div class="text-right">
-        <div class="text-sm text-slate-500">Total signatures</div>
+        <div class="text-sm text-slate-500">{{index .T "admin_doc.total_signatures"}}</div>
         <div class="text-2xl font-bold text-primary-600">{{len .Signatures}}</div>
       </div>
     </div>
@@ -25,16 +25,16 @@
         <thead class="bg-slate-50">
           <tr>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Utilisateur
+              {{index .T "admin_doc.table_user"}}
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Date de signature
+              {{index .T "admin_doc.table_signed_at"}}
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              Service
+              {{index .T "admin_doc.table_service"}}
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              ID Utilisateur
+              {{index .T "admin_doc.table_user_id"}}
             </th>
           </tr>
         </thead>
@@ -86,14 +86,13 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
       </div>
-      <h3 class="text-lg font-medium text-slate-900 mb-2">Aucune signature</h3>
-      <p class="text-slate-600">Ce document n'a pas encore été signé.</p>
+      <h3 class="text-lg font-medium text-slate-900 mb-2">{{index .T "admin_doc.no_signatures_title"}}</h3>
+      <p class="text-slate-600">{{index .T "admin_doc.no_signatures_desc"}}</p>
     </div>
     {{end}}
   </div>
 
   {{if .Signatures}}
-  <!-- Vérification de l'intégrité de la chaîne -->
   {{if .ChainIntegrity}}
   {{if .ChainIntegrity.IsValid}}
   <div class="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -105,7 +104,7 @@
       </div>
       <div class="ml-3">
         <p class="text-sm text-green-700">
-          <strong>Chaîne de blocs intègre :</strong> {{.ChainIntegrity.ValidSigs}}/{{.ChainIntegrity.TotalSigs}} signatures valides
+          <strong>{{index .T "admin_doc.chain_integrity_valid"}}</strong> {{index .T "admin_doc.chain_integrity_count"}}
         </p>
       </div>
     </div>
@@ -120,11 +119,11 @@
       </div>
       <div class="ml-3">
         <p class="text-sm text-red-700">
-          <strong>Problème d'intégrité détecté :</strong> {{.ChainIntegrity.InvalidSigs}} signature(s) invalide(s)
+          <strong>{{index .T "admin_doc.chain_integrity_invalid"}}</strong> {{index .T "admin_doc.chain_integrity_errors"}}
         </p>
         {{if .ChainIntegrity.Errors}}
         <div class="mt-2">
-          <p class="text-xs text-red-600 font-medium">Erreurs détectées :</p>
+          <p class="text-xs text-red-600 font-medium">{{index .T "admin_doc.chain_errors_title"}}</p>
           <ul class="mt-1 text-xs text-red-600 list-disc list-inside">
             {{range .ChainIntegrity.Errors}}
             <li>{{.}}</li>

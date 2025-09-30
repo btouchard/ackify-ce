@@ -10,6 +10,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/internal/domain/models"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
 )
 
 type Handlers struct {
@@ -55,6 +56,8 @@ func (h *Handlers) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		Documents    []database.DocumentAgg
 		DocID        *string
 		IsAdmin      bool
+		Lang         string
+		T            map[string]string
 	}{
 		TemplateName: "admin_dashboard",
 		User:         user,
@@ -62,6 +65,8 @@ func (h *Handlers) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		Documents:    documents,
 		DocID:        nil,
 		IsAdmin:      true, // L'utilisateur est forcément admin pour accéder à cette page
+		Lang:         i18n.GetLang(ctx),
+		T:            i18n.GetTranslations(ctx),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -114,6 +119,8 @@ func (h *Handlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Request)
 		Signatures     []*models.Signature
 		ChainIntegrity *database.ChainIntegrityResult
 		IsAdmin        bool
+		Lang           string
+		T              map[string]string
 	}{
 		TemplateName:   "admin_doc_details",
 		User:           user,
@@ -122,6 +129,8 @@ func (h *Handlers) HandleDocumentDetails(w http.ResponseWriter, r *http.Request)
 		Signatures:     signatures,
 		ChainIntegrity: chainIntegrity,
 		IsAdmin:        true, // L'utilisateur est forcément admin pour accéder à cette page
+		Lang:           i18n.GetLang(ctx),
+		T:              i18n.GetTranslations(ctx),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

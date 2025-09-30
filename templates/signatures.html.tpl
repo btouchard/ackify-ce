@@ -11,8 +11,8 @@
               </svg>
             </div>
             <div>
-              <h2 class="text-2xl font-bold text-white">Mes signatures</h2>
-              <p class="text-primary-100">Liste de tous les documents que vous avez signés</p>
+              <h2 class="text-2xl font-bold text-white">{{index .T "signatures.title"}}</h2>
+              <p class="text-primary-100">{{index .T "signatures.subtitle"}}</p>
             </div>
           </div>
           <a href="/" class="text-primary-100 hover:text-white transition-colors">
@@ -31,10 +31,10 @@
         <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-4 border-b border-slate-200">
           <div class="flex items-center justify-between">
             <span class="text-slate-600 font-medium">
-              {{len .Signatures}} signature{{if gt (len .Signatures) 1}}s{{end}} au total
+              {{len .Signatures}} {{if eq .Lang "fr"}}signature{{if gt (len .Signatures) 1}}s{{end}} au total{{else}}signature{{if gt (len .Signatures) 1}}s{{end}} total{{end}}
             </span>
             <span class="text-sm text-slate-500">
-              Trié par date décroissante
+              {{index .T "signatures.sorted"}}
             </span>
           </div>
         </div>
@@ -66,20 +66,20 @@
                       </p>
                     </div>
                     <div class="flex space-x-2">
-                      <a href="/sign?doc={{.DocID}}" 
+                      <a href="/sign?doc={{.DocID}}"
                          class="inline-flex items-center px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
-                        Voir
+                        {{index $.T "signatures.action_view"}}
                       </a>
-                      <a href="/status?doc={{.DocID}}" 
+                      <a href="/status?doc={{.DocID}}"
                          class="inline-flex items-center px-3 py-2 text-sm font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                         </svg>
-                        Statut
+                        {{index $.T "signatures.action_status"}}
                       </a>
                     </div>
                   </div>
@@ -96,14 +96,14 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucune signature</h3>
-          <p class="text-slate-500 mb-6">Vous n'avez encore signé aucun document.</p>
-          <a href="/" 
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">{{index .T "signatures.empty_title"}}</h3>
+          <p class="text-slate-500 mb-6">{{index .T "signatures.empty_desc"}}</p>
+          <a href="/"
              class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold rounded-2xl transition-all duration-200 shadow-lg hover:shadow-xl">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
             </svg>
-            Signer un document
+            {{index .T "signatures.empty_action"}}
           </a>
         </div>
       {{end}}

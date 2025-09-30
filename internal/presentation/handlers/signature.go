@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/internal/presentation/admin"
 	"github.com/btouchard/ackify-ce/pkg/services"
 )
@@ -56,6 +57,8 @@ type PageData struct {
 	BaseURL      string
 	Signatures   []*models.Signature
 	IsAdmin      bool
+	Lang         string
+	T            map[string]string
 	ServiceInfo  *struct {
 		Name     string
 		Icon     string
@@ -267,7 +270,7 @@ func (h *SignatureHandlers) HandleUserSignatures(w http.ResponseWriter, r *http.
 	h.render(w, r, "signatures", PageData{User: user, BaseURL: h.baseURL, Signatures: signatures})
 }
 
-func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templateName string, data PageData) {
+func (h *SignatureHandlers) render(w http.ResponseWriter, r *http.Request, templateName string, data PageData) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	if data.Year == 0 {
@@ -278,6 +281,15 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templ
 	}
 	if !data.IsAdmin {
 		data.IsAdmin = admin.IsAdminUser(data.User, h.adminEmails)
+	}
+
+	// Get language and translations from context
+	ctx := r.Context()
+	if data.Lang == "" {
+		data.Lang = i18n.GetLang(ctx)
+	}
+	if data.T == nil {
+		data.T = i18n.GetTranslations(ctx)
 	}
 
 	templateData := map[string]interface{}{
@@ -291,6 +303,8 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, _ *http.Request, templ
 		"Signatures":   data.Signatures,
 		"ServiceInfo":  data.ServiceInfo,
 		"IsAdmin":      data.IsAdmin,
+		"Lang":         data.Lang,
+		"T":            data.T,
 	}
 
 	if err := h.template.ExecuteTemplate(w, "base", templateData); err != nil {
