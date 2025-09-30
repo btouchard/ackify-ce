@@ -11,7 +11,11 @@ RUN go mod download && go mod verify
 COPY . .
 
 # Download Tailwind CSS CLI (use v3 for compatibility)
-RUN curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.16/tailwindcss-linux-x64 -o /tmp/tailwindcss && \
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then TAILWIND_ARCH="x64"; \
+    elif [ "$ARCH" = "aarch64" ]; then TAILWIND_ARCH="arm64"; \
+    else echo "Unsupported architecture: $ARCH" && exit 1; fi && \
+    curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.16/tailwindcss-linux-${TAILWIND_ARCH} -o /tmp/tailwindcss && \
     chmod +x /tmp/tailwindcss
 
 # Build CSS
@@ -22,12 +26,12 @@ ARG VERSION="dev"
 ARG COMMIT="unknown"
 ARG BUILD_DATE="unknown"
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=0 GOOS=linux go build \
     -a -installsuffix cgo \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
     -o ackify ./cmd/community
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=0 GOOS=linux go build \
     -a -installsuffix cgo \
     -ldflags="-w -s" \
     -o migrate ./cmd/migrate
