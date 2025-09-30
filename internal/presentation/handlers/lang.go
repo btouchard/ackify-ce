@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
-	"github.com/go-chi/chi/v5"
 	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/go-chi/chi/v5"
 )
 
 type LangHandlers struct {

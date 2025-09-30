@@ -38,14 +38,6 @@ func GetLang(ctx context.Context) string {
 	return DefaultLang
 }
 
-// GetI18n extracts i18n service from context
-func GetI18n(ctx context.Context) *I18n {
-	if i18n, ok := ctx.Value(i18nContextKey).(*I18n); ok {
-		return i18n
-	}
-	return nil
-}
-
 // GetTranslations extracts translations map from context
 func GetTranslations(ctx context.Context) map[string]string {
 	if trans, ok := ctx.Value(transContextKey).(map[string]string); ok {
