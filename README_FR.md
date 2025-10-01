@@ -284,8 +284,8 @@ services:
 ### Variables production
 ```bash
 # Sécurité renforcée
-ACKIFY_OAUTH_COOKIE_SECRET="$(openssl rand -base64 64)"  # AES-256
-ACKIFY_ED25519_PRIVATE_KEY="$(openssl genpkey -algorithm Ed25519 | base64 -w 0)"
+ACKIFY_OAUTH_COOKIE_SECRET="$(openssl rand 64 | base64 -w 0)"
+ACKIFY_ED25519_PRIVATE_KEY="$(openssl rand 64 | base64 -w 0)"
 
 # HTTPS obligatoire
 ACKIFY_BASE_URL="https://ackify.company.com"
