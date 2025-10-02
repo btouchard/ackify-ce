@@ -233,8 +233,8 @@ func (h *SignatureHandlers) HandleStatusJSON(w http.ResponseWriter, r *http.Requ
 			"signed_at":  sig.SignedAtUTC,
 		}
 
-		if sig.UserName != nil && *sig.UserName != "" {
-			sigData["user_name"] = *sig.UserName
+		if sig.UserName != "" {
+			sigData["user_name"] = sig.UserName
 		}
 
 		if serviceInfo := sig.GetServiceInfo(); serviceInfo != nil {

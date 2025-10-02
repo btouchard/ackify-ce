@@ -69,9 +69,9 @@
   "admin_doc.no_signatures_title": "Aucune signature",
   "admin_doc.no_signatures_desc": "Ce document n'a pas encore été signé.",
   "admin_doc.chain_integrity_valid": "Chaîne de blocs intègre :",
-  "admin_doc.chain_integrity_count": "{{.ValidSigs}}/{{.TotalSigs}} signatures valides",
+  "admin_doc.chain_integrity_count": "signatures valides",
   "admin_doc.chain_integrity_invalid": "Problème d'intégrité détecté :",
-  "admin_doc.chain_integrity_errors": "{{.InvalidSigs}} signature(s) invalide(s)",
+  "admin_doc.chain_integrity_errors": "signature(s) invalide(s)",
   "admin_doc.chain_errors_title": "Erreurs détectées :",
 
   "error.title": "Erreur",

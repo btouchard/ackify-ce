@@ -85,11 +85,6 @@ func (s *SignatureService) CreateSignature(ctx context.Context, request *models.
 		logger.Logger.Info("Creating genesis signature (no previous signature)")
 	}
 
-	var userName *string
-	if request.User.Name != "" {
-		userName = &request.User.Name
-	}
-
 	logger.Logger.Info("Creating signature",
 		"docID", request.DocID,
 		"userSub", request.User.Sub,
@@ -100,7 +95,7 @@ func (s *SignatureService) CreateSignature(ctx context.Context, request *models.
 		DocID:       request.DocID,
 		UserSub:     request.User.Sub,
 		UserEmail:   request.User.NormalizedEmail(),
-		UserName:    userName,
+		UserName:    request.User.Name,
 		SignedAtUTC: timestamp,
 		PayloadHash: payloadHash,
 		Signature:   signatureB64,

@@ -11,7 +11,6 @@ import (
 func TestSignature_JSONSerialization(t *testing.T) {
 	timestamp := time.Date(2024, 1, 15, 10, 30, 45, 123456789, time.UTC)
 	createdAt := time.Date(2024, 1, 15, 10, 30, 46, 0, time.UTC)
-	userName := "Test User"
 	referer := "https://github.com/user/repo"
 	prevHash := "abcd1234efgh5678"
 
@@ -20,7 +19,7 @@ func TestSignature_JSONSerialization(t *testing.T) {
 		DocID:       "test-doc-123",
 		UserSub:     "google-oauth2|123456789",
 		UserEmail:   "test@example.com",
-		UserName:    &userName,
+		UserName:    "Test User",
 		SignedAtUTC: timestamp,
 		PayloadHash: "SGVsbG8gV29ybGQ=",
 		Signature:   "c2lnbmF0dXJlLWRhdGE=",
@@ -53,11 +52,8 @@ func TestSignature_JSONSerialization(t *testing.T) {
 	if unmarshaled.UserEmail != signature.UserEmail {
 		t.Errorf("UserEmail mismatch: got %v, expected %v", unmarshaled.UserEmail, signature.UserEmail)
 	}
-	if (unmarshaled.UserName == nil) != (signature.UserName == nil) {
-		t.Errorf("UserName nil mismatch: got %v, expected %v", unmarshaled.UserName == nil, signature.UserName == nil)
-	}
-	if unmarshaled.UserName != nil && signature.UserName != nil && *unmarshaled.UserName != *signature.UserName {
-		t.Errorf("UserName mismatch: got %v, expected %v", *unmarshaled.UserName, *signature.UserName)
+	if unmarshaled.UserName != signature.UserName {
+		t.Errorf("UserName mismatch: got %v, expected %v", unmarshaled.UserName, signature.UserName)
 	}
 	if !unmarshaled.SignedAtUTC.Equal(signature.SignedAtUTC) {
 		t.Errorf("SignedAtUTC mismatch: got %v, expected %v", unmarshaled.SignedAtUTC, signature.SignedAtUTC)
@@ -97,7 +93,7 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 		DocID:       "minimal-doc",
 		UserSub:     "github|987654321",
 		UserEmail:   "minimal@example.com",
-		UserName:    nil,
+		UserName:    "",
 		SignedAtUTC: timestamp,
 		PayloadHash: "bWluaW1hbA==",
 		Signature:   "bWluaW1hbC1zaWc=",
@@ -129,8 +125,8 @@ func TestSignature_JSONSerializationWithNilFields(t *testing.T) {
 		t.Fatalf("Failed to unmarshal signature: %v", err)
 	}
 
-	if unmarshaled.UserName != nil {
-		t.Errorf("UserName should be nil, got %v", unmarshaled.UserName)
+	if unmarshaled.UserName != "" {
+		t.Errorf("UserName should be empty string, got %v", unmarshaled.UserName)
 	}
 	if unmarshaled.Referer != nil {
 		t.Errorf("Referer should be nil, got %v", unmarshaled.Referer)
@@ -242,7 +238,6 @@ func TestSignature_GetServiceInfo(t *testing.T) {
 func TestSignature_ComputeRecordHash(t *testing.T) {
 	timestamp := time.Date(2024, 1, 15, 10, 30, 45, 123456789, time.UTC)
 	createdAt := time.Date(2024, 1, 15, 10, 30, 46, 0, time.UTC)
-	userName := "Test User"
 	referer := "https://github.com/user/repo"
 
 	signature := &Signature{
@@ -250,7 +245,7 @@ func TestSignature_ComputeRecordHash(t *testing.T) {
 		DocID:       "test-doc-123",
 		UserSub:     "google-oauth2|123456789",
 		UserEmail:   "test@example.com",
-		UserName:    &userName,
+		UserName:    "Test User",
 		SignedAtUTC: timestamp,
 		PayloadHash: "SGVsbG8gV29ybGQ=",
 		Signature:   "c2lnbmF0dXJlLWRhdGE=",
@@ -282,13 +277,13 @@ func TestSignature_ComputeRecordHash(t *testing.T) {
 	}
 	signature.ID = originalID
 
-	signature.UserName = nil
-	hashWithNilName := signature.ComputeRecordHash()
-	if hashWithNilName == hash1 {
-		t.Error("Hash should change when UserName becomes nil")
+	signature.UserName = ""
+	hashWithEmptyName := signature.ComputeRecordHash()
+	if hashWithEmptyName == hash1 {
+		t.Error("Hash should change when UserName becomes empty")
 	}
 
-	signature.UserName = &userName
+	signature.UserName = "Test User"
 	signature.Referer = nil
 	hashWithNilReferer := signature.ComputeRecordHash()
 	if hashWithNilReferer == hash1 {
@@ -300,7 +295,6 @@ func TestSignature_ComputeRecordHashDeterministic(t *testing.T) {
 	// Test that the same signature data produces the same hash
 	timestamp := time.Date(2024, 1, 15, 10, 30, 45, 123456789, time.UTC)
 	createdAt := time.Date(2024, 1, 15, 10, 30, 46, 0, time.UTC)
-	userName := "Test User"
 	referer := "https://github.com/user/repo"
 
 	sig1 := &Signature{
@@ -308,7 +302,7 @@ func TestSignature_ComputeRecordHashDeterministic(t *testing.T) {
 		DocID:       "test-doc-123",
 		UserSub:     "google-oauth2|123456789",
 		UserEmail:   "test@example.com",
-		UserName:    &userName,
+		UserName:    "Test User",
 		SignedAtUTC: timestamp,
 		PayloadHash: "SGVsbG8gV29ybGQ=",
 		Signature:   "c2lnbmF0dXJlLWRhdGE=",
@@ -322,7 +316,7 @@ func TestSignature_ComputeRecordHashDeterministic(t *testing.T) {
 		DocID:       "test-doc-123",
 		UserSub:     "google-oauth2|123456789",
 		UserEmail:   "test@example.com",
-		UserName:    &userName,
+		UserName:    "Test User",
 		SignedAtUTC: timestamp,
 		PayloadHash: "SGVsbG8gV29ybGQ=",
 		Signature:   "c2lnbmF0dXJlLWRhdGE=",

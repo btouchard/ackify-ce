@@ -15,7 +15,7 @@ type Signature struct {
 	DocID       string    `json:"doc_id" db:"doc_id"`
 	UserSub     string    `json:"user_sub" db:"user_sub"`
 	UserEmail   string    `json:"user_email" db:"user_email"`
-	UserName    *string   `json:"user_name,omitempty" db:"user_name"`
+	UserName    string    `json:"user_name,omitempty" db:"user_name"`
 	SignedAtUTC time.Time `json:"signed_at" db:"signed_at"`
 	PayloadHash string    `json:"payload_hash" db:"payload_hash"`
 	Signature   string    `json:"signature" db:"signature"`
@@ -47,7 +47,7 @@ type SignatureStatus struct {
 
 // ComputeRecordHash Stable record hash supports tamper-evident chaining and integrity checks across migrations.
 func (s *Signature) ComputeRecordHash() string {
-	data := fmt.Sprintf("%d|%s|%s|%s|%v|%s|%s|%s|%s|%s|%s",
+	data := fmt.Sprintf("%d|%s|%s|%s|%s|%s|%s|%s|%s|%s|%s",
 		s.ID,
 		s.DocID,
 		s.UserSub,

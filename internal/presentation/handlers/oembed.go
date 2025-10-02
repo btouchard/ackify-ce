@@ -95,12 +95,8 @@ func (h *OEmbedHandler) HandleOEmbed(w http.ResponseWriter, r *http.Request) {
 	signatories := make([]SignatoryInfo, len(signatures))
 	var lastSignedAt string
 	for i, sig := range signatures {
-		name := ""
-		if sig.UserName != nil {
-			name = *sig.UserName
-		}
 		signatories[i] = SignatoryInfo{
-			Name:     name,
+			Name:     sig.UserName,
 			Email:    sig.UserEmail,
 			SignedAt: sig.SignedAtUTC.Format("02/01/2006 à 15:04"),
 		}
@@ -173,12 +169,8 @@ func (h *OEmbedHandler) HandleEmbedView(w http.ResponseWriter, r *http.Request) 
 	signatories := make([]SignatoryInfo, len(signatures))
 	var lastSignedAt string
 	for i, sig := range signatures {
-		name := ""
-		if sig.UserName != nil {
-			name = *sig.UserName
-		}
 		signatories[i] = SignatoryInfo{
-			Name:     name,
+			Name:     sig.UserName,
 			Email:    sig.UserEmail,
 			SignedAt: sig.SignedAtUTC.Format("02/01/2006 à 15:04"),
 		}

@@ -104,7 +104,7 @@
       </div>
       <div class="ml-3">
         <p class="text-sm text-green-700">
-          <strong>{{index .T "admin_doc.chain_integrity_valid"}}</strong> {{index .T "admin_doc.chain_integrity_count"}}
+          <strong>{{index .T "admin_doc.chain_integrity_valid"}}</strong> {{.ChainIntegrity.ValidSigs}}/{{.ChainIntegrity.TotalSigs}} {{index .T "admin_doc.chain_integrity_count"}}
         </p>
       </div>
     </div>
@@ -119,7 +119,7 @@
       </div>
       <div class="ml-3">
         <p class="text-sm text-red-700">
-          <strong>{{index .T "admin_doc.chain_integrity_invalid"}}</strong> {{index .T "admin_doc.chain_integrity_errors"}}
+          <strong>{{index .T "admin_doc.chain_integrity_invalid"}}</strong> {{.ChainIntegrity.InvalidSigs}} {{index .T "admin_doc.chain_integrity_errors"}}
         </p>
         {{if .ChainIntegrity.Errors}}
         <div class="mt-2">

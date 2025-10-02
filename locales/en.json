@@ -69,9 +69,9 @@
   "admin_doc.no_signatures_title": "No signatures",
   "admin_doc.no_signatures_desc": "This document has not been signed yet.",
   "admin_doc.chain_integrity_valid": "Blockchain integrity:",
-  "admin_doc.chain_integrity_count": "{{.ValidSigs}}/{{.TotalSigs}} valid signatures",
+  "admin_doc.chain_integrity_count": "valid signatures",
   "admin_doc.chain_integrity_invalid": "Integrity issue detected:",
-  "admin_doc.chain_integrity_errors": "{{.InvalidSigs}} invalid signature(s)",
+  "admin_doc.chain_integrity_errors": "invalid signature(s)",
   "admin_doc.chain_errors_title": "Detected errors:",
 
   "error.title": "Error",

@@ -125,14 +125,13 @@ type SignatureFactory struct{}
 
 func (f *SignatureFactory) CreateValidSignature() *models.Signature {
 	now := time.Now().UTC()
-	userName := "Test User"
 	referer := "https://example.com/doc"
 
 	return &models.Signature{
 		DocID:       "test-doc-123",
 		UserSub:     "user-123",
 		UserEmail:   "test@example.com",
-		UserName:    &userName,
+		UserName:    "Test User",
 		SignedAtUTC: now,
 		PayloadHash: "dGVzdC1wYXlsb2FkLWhhc2g=", // base64("test-payload-hash")
 		Signature:   "dGVzdC1zaWduYXR1cmU=",     // base64("test-signature")
@@ -176,7 +175,7 @@ func (f *SignatureFactory) CreateMinimalSignature() *models.Signature {
 		DocID:       "minimal-doc",
 		UserSub:     "minimal-user",
 		UserEmail:   "minimal@example.com",
-		UserName:    nil, // NULL
+		UserName:    "", // Empty string
 		SignedAtUTC: now,
 		PayloadHash: "bWluaW1hbA==", // base64("minimal")
 		Signature:   "bWluaW1hbA==", // base64("minimal")
@@ -202,8 +201,8 @@ func AssertSignatureEqual(t *testing.T, expected, actual *models.Signature) {
 		t.Errorf("UserEmail mismatch: got %s, want %s", actual.UserEmail, expected.UserEmail)
 	}
 
-	if !isStringPtrEqual(actual.UserName, expected.UserName) {
-		t.Errorf("UserName mismatch: got %v, want %v", actual.UserName, expected.UserName)
+	if actual.UserName != expected.UserName {
+		t.Errorf("UserName mismatch: got %s, want %s", actual.UserName, expected.UserName)
 	}
 
 	if actual.PayloadHash != expected.PayloadHash {
