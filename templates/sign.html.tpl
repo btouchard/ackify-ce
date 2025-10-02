@@ -11,7 +11,7 @@
           </div>
           <div>
             <div class="flex items-center space-x-3">
-              <p class="font-semibold text-slate-900 text-2xl">Document {{.DocID}}</p>
+              <p class="font-semibold text-slate-900 text-2xl">{{index .T "sign.document_prefix"}} {{.DocID}}</p>
               {{if .ServiceInfo}}
                 <div class="flex items-center space-x-1 bg-slate-100 px-2 py-1 rounded-md">
                   <img src="{{.ServiceInfo.Icon}}" alt="{{.ServiceInfo.Name}}" class="w-3 h-3">
@@ -42,7 +42,7 @@
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
-                  <span class="font-semibold">{{if eq .Lang "fr"}}Signé le {{.SignedAt}}{{else}}Signed on {{.SignedAt}}{{end}}</span>
+                  <span class="font-semibold">{{index .T "sign.signed_at_prefix"}} {{.SignedAt}}</span>
                 </div>
                 <p class="text-success-700 text-sm mt-2">{{index .T "sign.signed_verified"}}</p>
               </div>

@@ -37,7 +37,7 @@
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-slate-900">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                  {{.Count}} {{if eq $.Lang "fr"}}signature{{if ne .Count 1}}s{{end}}{{else}}signature{{if ne .Count 1}}s{{end}}{{end}}
+                  {{.Count}} {{if ne .Count 1}}{{index $.T "admin.signature_plural"}}{{else}}{{index $.T "admin.signature_singular"}}{{end}}
                 </span>
               </div>
             </td>

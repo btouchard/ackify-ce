@@ -9,7 +9,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
           </a>
-          <h1 class="text-2xl font-bold text-slate-900">{{index .T "admin_doc.title"}}</h1>
+          <h1 class="text-2xl font-bold text-slate-900">{{index .T "admin_doc.title"}} {{.DocID}}</h1>
         </div>
         <p class="text-slate-600">{{index .T "admin_doc.details_subtitle"}}</p>
       </div>

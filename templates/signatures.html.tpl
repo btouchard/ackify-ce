@@ -31,7 +31,7 @@
         <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-4 border-b border-slate-200">
           <div class="flex items-center justify-between">
             <span class="text-slate-600 font-medium">
-              {{len .Signatures}} {{if eq .Lang "fr"}}signature{{if gt (len .Signatures) 1}}s{{end}} au total{{else}}signature{{if gt (len .Signatures) 1}}s{{end}} total{{end}}
+              {{len .Signatures}} {{if gt (len .Signatures) 1}}{{index .T "signatures.signature_plural"}}{{else}}{{index .T "signatures.signature_singular"}}{{end}} {{index .T "signatures.total_suffix"}}
             </span>
             <span class="text-sm text-slate-500">
               {{index .T "signatures.sorted"}}
@@ -53,7 +53,7 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <div class="flex items-center space-x-3">
-                        <p class="font-semibold text-slate-900">Document {{.DocID}}</p>
+                        <p class="font-semibold text-slate-900">{{index $.T "signatures.document_prefix"}} {{.DocID}}</p>
                         {{if .GetServiceInfo}}
                           <div class="flex items-center space-x-1 bg-slate-100 px-2 py-1 rounded-md">
                             <img src="{{.GetServiceInfo.Icon}}" alt="{{.GetServiceInfo.Name}}" class="w-3 h-3">
@@ -62,7 +62,7 @@
                         {{end}}
                       </div>
                       <p class="text-sm text-slate-500 mt-1">
-                        Signé le {{.SignedAtUTC.Format "02/01/2006 à 15:04:05"}}
+                        {{index $.T "signatures.signed_at_prefix"}} {{.SignedAtUTC.Format "02/01/2006 à 15:04:05"}}
                       </p>
                     </div>
                     <div class="flex space-x-2">
