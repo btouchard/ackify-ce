@@ -62,7 +62,7 @@ func TestRepository_DatabaseConstraints_Integration(t *testing.T) {
 			{
 				name: "valid signature with nulls",
 				modifyFn: func(s *models.Signature) {
-					s.UserName = nil
+					s.UserName = ""
 					s.Referer = nil
 					s.PrevHash = nil
 				},
@@ -403,7 +403,7 @@ func TestRepository_EdgeCases_Integration(t *testing.T) {
 		// Test with empty strings for nullable fields
 		sig := factory.CreateValidSignature()
 		emptyString := ""
-		sig.UserName = &emptyString
+		sig.UserName = emptyString
 		sig.Referer = &emptyString
 		sig.PrevHash = &emptyString
 
@@ -418,7 +418,7 @@ func TestRepository_EdgeCases_Integration(t *testing.T) {
 		}
 
 		// Verify empty strings are preserved (not converted to NULL)
-		if result.UserName == nil || *result.UserName != "" {
+		if result.UserName != "" {
 			t.Error("Empty string UserName not preserved")
 		}
 		if result.Referer == nil || *result.Referer != "" {
