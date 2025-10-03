@@ -217,7 +217,7 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 				defer wg.Done()
 
 				for j := 0; j < 10; j++ {
-					lastSig, err := repo.GetLastSignature(ctx)
+					lastSig, err := repo.GetLastSignature(ctx, "test-doc-123")
 					if err != nil {
 						t.Errorf("GetLastSignature error: %v", err)
 						return
@@ -364,7 +364,7 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 							}
 
 						case 3: // GetLastSignature
-							_, err := repo.GetLastSignature(ctx)
+							_, err := repo.GetLastSignature(ctx, "test-doc-123")
 							if err != nil {
 								counts["errors"]++
 							} else {

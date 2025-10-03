@@ -19,7 +19,7 @@ type repository interface {
 	GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error)
 	ExistsByDocAndUser(ctx context.Context, docID, userSub string) (bool, error)
 	CheckUserSignatureStatus(ctx context.Context, docID, userIdentifier string) (bool, error)
-	GetLastSignature(ctx context.Context) (*models.Signature, error)
+	GetLastSignature(ctx context.Context, docID string) (*models.Signature, error)
 	GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error)
 	UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error
 }
@@ -69,7 +69,7 @@ func (s *SignatureService) CreateSignature(ctx context.Context, request *models.
 		return fmt.Errorf("failed to create cryptographic signature: %w", err)
 	}
 
-	lastSignature, err := s.repo.GetLastSignature(ctx)
+	lastSignature, err := s.repo.GetLastSignature(ctx, request.DocID)
 	if err != nil {
 		return fmt.Errorf("failed to get last signature for chaining: %w", err)
 	}

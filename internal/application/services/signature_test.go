@@ -111,16 +111,21 @@ func (f *fakeRepository) CheckUserSignatureStatus(_ context.Context, docID, user
 	return false, nil
 }
 
-func (f *fakeRepository) GetLastSignature(_ context.Context) (*models.Signature, error) {
+func (f *fakeRepository) GetLastSignature(_ context.Context, docID string) (*models.Signature, error) {
 	if f.shouldFailGetLast {
 		return nil, errors.New("repository get last failed")
 	}
 
-	if len(f.allSignatures) == 0 {
-		return nil, nil
+	// Find the last signature for the given docID
+	var lastSig *models.Signature
+	for i := len(f.allSignatures) - 1; i >= 0; i-- {
+		if f.allSignatures[i].DocID == docID {
+			lastSig = f.allSignatures[i]
+			break
+		}
 	}
 
-	return f.allSignatures[len(f.allSignatures)-1], nil
+	return lastSig, nil
 }
 
 func (f *fakeRepository) GetAllSignaturesOrdered(_ context.Context) ([]*models.Signature, error) {
@@ -893,6 +898,104 @@ func stringPtr(s string) *string {
 
 func int64Ptr(i int64) *int64 {
 	return &i
+}
+
+// TestSignatureService_CreateSignature_MultipleDocumentsChaining tests that
+// each document has its own blockchain chain (genesis + chaining)
+func TestSignatureService_CreateSignature_MultipleDocumentsChaining(t *testing.T) {
+	repo := newFakeRepository()
+	signer := newFakeCryptoSigner()
+	service := NewSignatureService(repo, signer)
+
+	ctx := context.Background()
+
+	// Create first signature for document A
+	reqA1 := &models.SignatureRequest{
+		DocID: "document-A",
+		User: &models.User{
+			Sub:   "user1",
+			Email: "user1@example.com",
+			Name:  "User 1",
+		},
+	}
+	if err := service.CreateSignature(ctx, reqA1); err != nil {
+		t.Fatalf("Failed to create first signature for doc A: %v", err)
+	}
+
+	sigA1, _ := repo.GetByDocAndUser(ctx, "document-A", "user1")
+	if sigA1.PrevHash != nil {
+		t.Errorf("First signature for doc A should have nil prev_hash (genesis), got: %v", *sigA1.PrevHash)
+	}
+
+	// Create first signature for document B
+	// This should be a GENESIS signature for document B (prev_hash = nil)
+	// NOT chained to document A's signature
+	reqB1 := &models.SignatureRequest{
+		DocID: "document-B",
+		User: &models.User{
+			Sub:   "user2",
+			Email: "user2@example.com",
+			Name:  "User 2",
+		},
+	}
+	if err := service.CreateSignature(ctx, reqB1); err != nil {
+		t.Fatalf("Failed to create first signature for doc B: %v", err)
+	}
+
+	sigB1, _ := repo.GetByDocAndUser(ctx, "document-B", "user2")
+	if sigB1.PrevHash != nil {
+		t.Errorf("First signature for doc B should have nil prev_hash (genesis for this document), got: %v", *sigB1.PrevHash)
+	}
+
+	// Create second signature for document B
+	// This should chain to the first signature of document B
+	reqB2 := &models.SignatureRequest{
+		DocID: "document-B",
+		User: &models.User{
+			Sub:   "user3",
+			Email: "user3@example.com",
+			Name:  "User 3",
+		},
+	}
+	if err := service.CreateSignature(ctx, reqB2); err != nil {
+		t.Fatalf("Failed to create second signature for doc B: %v", err)
+	}
+
+	sigB2, _ := repo.GetByDocAndUser(ctx, "document-B", "user3")
+	if sigB2.PrevHash == nil {
+		t.Errorf("Second signature for doc B should have prev_hash (chain to first signature of doc B)")
+	} else {
+		expectedHash := sigB1.ComputeRecordHash()
+		if *sigB2.PrevHash != expectedHash {
+			t.Errorf("Second signature for doc B should chain to first signature of doc B.\nExpected: %s\nGot: %s",
+				expectedHash, *sigB2.PrevHash)
+		}
+	}
+
+	// Create second signature for document A
+	// This should chain to the first signature of document A, NOT to any signature of document B
+	reqA2 := &models.SignatureRequest{
+		DocID: "document-A",
+		User: &models.User{
+			Sub:   "user4",
+			Email: "user4@example.com",
+			Name:  "User 4",
+		},
+	}
+	if err := service.CreateSignature(ctx, reqA2); err != nil {
+		t.Fatalf("Failed to create second signature for doc A: %v", err)
+	}
+
+	sigA2, _ := repo.GetByDocAndUser(ctx, "document-A", "user4")
+	if sigA2.PrevHash == nil {
+		t.Errorf("Second signature for doc A should have prev_hash (chain to first signature of doc A)")
+	} else {
+		expectedHash := sigA1.ComputeRecordHash()
+		if *sigA2.PrevHash != expectedHash {
+			t.Errorf("Second signature for doc A should chain to first signature of doc A.\nExpected: %s\nGot: %s",
+				expectedHash, *sigA2.PrevHash)
+		}
+	}
 }
 
 func contains(s, substr string) bool {

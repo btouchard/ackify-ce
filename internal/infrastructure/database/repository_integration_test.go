@@ -455,7 +455,7 @@ func TestRepository_GetLastSignature_Integration(t *testing.T) {
 	t.Run("no signatures", func(t *testing.T) {
 		testDB.ClearTable(t)
 
-		result, err := repo.GetLastSignature(ctx)
+		result, err := repo.GetLastSignature(ctx, "test-doc-123")
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
@@ -472,7 +472,7 @@ func TestRepository_GetLastSignature_Integration(t *testing.T) {
 		sig := factory.CreateValidSignature()
 		_ = repo.Create(ctx, sig)
 
-		result, err := repo.GetLastSignature(ctx)
+		result, err := repo.GetLastSignature(ctx, "test-doc-123")
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
@@ -498,7 +498,7 @@ func TestRepository_GetLastSignature_Integration(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		_ = repo.Create(ctx, sig3)
 
-		result, err := repo.GetLastSignature(ctx)
+		result, err := repo.GetLastSignature(ctx, "test-doc-123")
 
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)

@@ -188,16 +188,17 @@ func (r *SignatureRepository) CheckUserSignatureStatus(ctx context.Context, docI
 	return exists, nil
 }
 
-func (r *SignatureRepository) GetLastSignature(ctx context.Context) (*models.Signature, error) {
+func (r *SignatureRepository) GetLastSignature(ctx context.Context, docID string) (*models.Signature, error) {
 	query := `
 		SELECT id, doc_id, user_sub, user_email, user_name, signed_at, payload_hash, signature, nonce, created_at, referer, prev_hash
 		FROM signatures
+		WHERE doc_id = $1
 		ORDER BY id DESC
 		LIMIT 1
 	`
 
 	signature := &models.Signature{}
-	err := scanSignature(r.db.QueryRowContext(ctx, query), signature)
+	err := scanSignature(r.db.QueryRowContext(ctx, query, docID), signature)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
