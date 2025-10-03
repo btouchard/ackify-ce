@@ -34,6 +34,14 @@ func (h *AuthHandlers) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandlers) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	h.authService.Logout(w, r)
+
+	// Redirect to SSO logout if configured, otherwise redirect to home
+	ssoLogoutURL := h.authService.GetLogoutURL()
+	if ssoLogoutURL != "" {
+		http.Redirect(w, r, ssoLogoutURL, http.StatusFound)
+		return
+	}
+
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 

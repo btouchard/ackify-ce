@@ -24,6 +24,7 @@ type fakeAuthService struct {
 	callbackNextURL    string
 	callbackError      error
 	authURL            string
+	logoutURL          string
 	logoutCalled       bool
 
 	verifyStateResult bool
@@ -48,6 +49,10 @@ func (f *fakeAuthService) SetUser(_ http.ResponseWriter, _ *http.Request, _ *mod
 
 func (f *fakeAuthService) Logout(_ http.ResponseWriter, _ *http.Request) {
 	f.logoutCalled = true
+}
+
+func (f *fakeAuthService) GetLogoutURL() string {
+	return f.logoutURL
 }
 
 func (f *fakeAuthService) GetAuthURL(nextURL string) string {
@@ -255,26 +260,53 @@ func TestAuthHandlers_HandleLogin(t *testing.T) {
 }
 
 func TestAuthHandlers_HandleLogout(t *testing.T) {
-	authService := newFakeAuthService()
-	handlers := NewAuthHandlers(authService, "https://example.com")
+	t.Run("logout without SSO logout URL redirects to home", func(t *testing.T) {
+		authService := newFakeAuthService()
+		handlers := NewAuthHandlers(authService, "https://example.com")
 
-	req := httptest.NewRequest("GET", "/logout", nil)
-	w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/logout", nil)
+		w := httptest.NewRecorder()
 
-	handlers.HandleLogout(w, req)
+		handlers.HandleLogout(w, req)
 
-	if w.Code != http.StatusFound {
-		t.Errorf("Expected status %d, got %d", http.StatusFound, w.Code)
-	}
+		if w.Code != http.StatusFound {
+			t.Errorf("Expected status %d, got %d", http.StatusFound, w.Code)
+		}
 
-	location := w.Header().Get("Location")
-	if location != "/" {
-		t.Errorf("Expected redirect to /, got %s", location)
-	}
+		location := w.Header().Get("Location")
+		if location != "/" {
+			t.Errorf("Expected redirect to /, got %s", location)
+		}
 
-	if !authService.logoutCalled {
-		t.Error("Logout should have been called on auth service")
-	}
+		if !authService.logoutCalled {
+			t.Error("Logout should have been called on auth service")
+		}
+	})
+
+	t.Run("logout with SSO logout URL redirects to SSO", func(t *testing.T) {
+		authService := newFakeAuthService()
+		authService.logoutURL = "https://accounts.google.com/Logout?continue=https://example.com"
+		handlers := NewAuthHandlers(authService, "https://example.com")
+
+		req := httptest.NewRequest("GET", "/logout", nil)
+		w := httptest.NewRecorder()
+
+		handlers.HandleLogout(w, req)
+
+		if w.Code != http.StatusFound {
+			t.Errorf("Expected status %d, got %d", http.StatusFound, w.Code)
+		}
+
+		location := w.Header().Get("Location")
+		expectedLocation := "https://accounts.google.com/Logout?continue=https://example.com"
+		if location != expectedLocation {
+			t.Errorf("Expected redirect to %s, got %s", expectedLocation, location)
+		}
+
+		if !authService.logoutCalled {
+			t.Error("Logout should have been called on auth service")
+		}
+	})
 }
 
 func TestAuthHandlers_HandleOAuthCallback(t *testing.T) {

@@ -24,8 +24,10 @@ type OauthService struct {
 	oauthConfig   *oauth2.Config
 	sessionStore  *sessions.CookieStore
 	userInfoURL   string
+	logoutURL     string
 	allowedDomain string
 	secureCookies bool
+	baseURL       string
 }
 
 type Config struct {
@@ -35,6 +37,7 @@ type Config struct {
 	AuthURL       string
 	TokenURL      string
 	UserInfoURL   string
+	LogoutURL     string
 	Scopes        []string
 	AllowedDomain string
 	CookieSecret  []byte
@@ -59,8 +62,10 @@ func NewOAuthService(config Config) *OauthService {
 		oauthConfig:   oauthConfig,
 		sessionStore:  sessionStore,
 		userInfoURL:   config.UserInfoURL,
+		logoutURL:     config.LogoutURL,
 		allowedDomain: config.AllowedDomain,
 		secureCookies: config.SecureCookies,
+		baseURL:       config.BaseURL,
 	}
 }
 
@@ -110,6 +115,24 @@ func (s *OauthService) Logout(w http.ResponseWriter, r *http.Request) {
 	session, _ := s.sessionStore.Get(r, sessionName)
 	session.Options.MaxAge = -1
 	_ = session.Save(r, w)
+}
+
+// GetLogoutURL returns the SSO logout URL if configured, otherwise returns empty string
+func (s *OauthService) GetLogoutURL() string {
+	if s.logoutURL == "" {
+		return ""
+	}
+
+	// For most providers, add post_logout_redirect_uri or continue parameter
+	logoutURL := s.logoutURL
+	if s.baseURL != "" {
+		// Google and OIDC providers use post_logout_redirect_uri
+		// GitHub uses a simple redirect
+		// GitLab uses a redirect parameter
+		logoutURL += "?continue=" + s.baseURL
+	}
+
+	return logoutURL
 }
 
 func (s *OauthService) GetAuthURL(nextURL string) string {

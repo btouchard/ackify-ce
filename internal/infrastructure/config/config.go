@@ -35,6 +35,7 @@ type OAuthConfig struct {
 	AuthURL       string
 	TokenURL      string
 	UserInfoURL   string
+	LogoutURL     string
 	Scopes        []string
 	AllowedDomain string
 	CookieSecret  []byte
@@ -69,22 +70,26 @@ func Load() (*Config, error) {
 		config.OAuth.AuthURL = "https://accounts.google.com/o/oauth2/auth"
 		config.OAuth.TokenURL = "https://oauth2.googleapis.com/token"
 		config.OAuth.UserInfoURL = "https://openidconnect.googleapis.com/v1/userinfo"
+		config.OAuth.LogoutURL = "https://accounts.google.com/Logout"
 		config.OAuth.Scopes = []string{"openid", "email", "profile"}
 	case "github":
 		config.OAuth.AuthURL = "https://github.com/login/oauth/authorize"
 		config.OAuth.TokenURL = "https://github.com/login/oauth/access_token"
 		config.OAuth.UserInfoURL = "https://api.github.com/user"
+		config.OAuth.LogoutURL = "https://github.com/logout"
 		config.OAuth.Scopes = []string{"user:email", "read:user"}
 	case "gitlab":
 		gitlabURL := getEnv("ACKIFY_OAUTH_GITLAB_URL", "https://gitlab.com")
 		config.OAuth.AuthURL = fmt.Sprintf("%s/oauth/authorize", gitlabURL)
 		config.OAuth.TokenURL = fmt.Sprintf("%s/oauth/token", gitlabURL)
 		config.OAuth.UserInfoURL = fmt.Sprintf("%s/api/v4/user", gitlabURL)
+		config.OAuth.LogoutURL = fmt.Sprintf("%s/users/sign_out", gitlabURL)
 		config.OAuth.Scopes = []string{"read_user", "profile"}
 	default:
 		config.OAuth.AuthURL = mustGetEnv("ACKIFY_OAUTH_AUTH_URL")
 		config.OAuth.TokenURL = mustGetEnv("ACKIFY_OAUTH_TOKEN_URL")
 		config.OAuth.UserInfoURL = mustGetEnv("ACKIFY_OAUTH_USERINFO_URL")
+		config.OAuth.LogoutURL = getEnv("ACKIFY_OAUTH_LOGOUT_URL", "")
 		scopesStr := getEnv("ACKIFY_OAUTH_SCOPES", "openid,email,profile")
 		config.OAuth.Scopes = strings.Split(scopesStr, ",")
 	}

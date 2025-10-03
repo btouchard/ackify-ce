@@ -44,6 +44,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		AuthURL:       cfg.OAuth.AuthURL,
 		TokenURL:      cfg.OAuth.TokenURL,
 		UserInfoURL:   cfg.OAuth.UserInfoURL,
+		LogoutURL:     cfg.OAuth.LogoutURL,
 		Scopes:        cfg.OAuth.Scopes,
 		AllowedDomain: cfg.OAuth.AllowedDomain,
 		CookieSecret:  cfg.OAuth.CookieSecret,

@@ -11,6 +11,7 @@ import (
 type authService interface {
 	SetUser(w http.ResponseWriter, r *http.Request, user *models.User) error
 	Logout(w http.ResponseWriter, r *http.Request)
+	GetLogoutURL() string
 	GetAuthURL(nextURL string) string
 	CreateAuthURL(w http.ResponseWriter, r *http.Request, nextURL string) string
 	VerifyState(w http.ResponseWriter, r *http.Request, stateToken string) bool
