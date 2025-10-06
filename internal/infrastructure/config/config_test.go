@@ -933,3 +933,273 @@ func equalSlices(a, b []string) bool {
 	}
 	return true
 }
+
+func TestLoad_MailConfig(t *testing.T) {
+	t.Run("mail config with all settings", func(t *testing.T) {
+		envVars := map[string]string{
+			"ACKIFY_BASE_URL":            "https://ackify.example.com",
+			"ACKIFY_ORGANISATION":        "Test Org",
+			"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+			"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+			"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
+			"ACKIFY_OAUTH_PROVIDER":      "google",
+			"ACKIFY_MAIL_HOST":           "smtp.example.com",
+			"ACKIFY_MAIL_PORT":           "465",
+			"ACKIFY_MAIL_USERNAME":       "noreply@example.com",
+			"ACKIFY_MAIL_PASSWORD":       "smtp-password",
+			"ACKIFY_MAIL_TLS":            "true",
+			"ACKIFY_MAIL_STARTTLS":       "false",
+			"ACKIFY_MAIL_TIMEOUT":        "30s",
+			"ACKIFY_MAIL_FROM":           "noreply@example.com",
+			"ACKIFY_MAIL_FROM_NAME":      "Ackify Notifications",
+			"ACKIFY_MAIL_SUBJECT_PREFIX": "[Ackify]",
+			"ACKIFY_MAIL_TEMPLATE_DIR":   "/custom/templates/emails",
+			"ACKIFY_MAIL_DEFAULT_LOCALE": "fr",
+		}
+
+		for key, value := range envVars {
+			_ = os.Setenv(key, value)
+		}
+		defer func() {
+			for key := range envVars {
+				_ = os.Unsetenv(key)
+			}
+		}()
+
+		config, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+
+		if config.Mail.Host != "smtp.example.com" {
+			t.Errorf("Mail.Host = %v, expected smtp.example.com", config.Mail.Host)
+		}
+		if config.Mail.Port != 465 {
+			t.Errorf("Mail.Port = %v, expected 465", config.Mail.Port)
+		}
+		if config.Mail.Username != "noreply@example.com" {
+			t.Errorf("Mail.Username = %v, expected noreply@example.com", config.Mail.Username)
+		}
+		if config.Mail.Password != "smtp-password" {
+			t.Errorf("Mail.Password = %v, expected smtp-password", config.Mail.Password)
+		}
+		if !config.Mail.TLS {
+			t.Error("Mail.TLS should be true")
+		}
+		if config.Mail.StartTLS {
+			t.Error("Mail.StartTLS should be false")
+		}
+		if config.Mail.Timeout != "30s" {
+			t.Errorf("Mail.Timeout = %v, expected 30s", config.Mail.Timeout)
+		}
+		if config.Mail.From != "noreply@example.com" {
+			t.Errorf("Mail.From = %v, expected noreply@example.com", config.Mail.From)
+		}
+		if config.Mail.FromName != "Ackify Notifications" {
+			t.Errorf("Mail.FromName = %v, expected Ackify Notifications", config.Mail.FromName)
+		}
+		if config.Mail.SubjectPrefix != "[Ackify]" {
+			t.Errorf("Mail.SubjectPrefix = %v, expected [Ackify]", config.Mail.SubjectPrefix)
+		}
+		if config.Mail.TemplateDir != "/custom/templates/emails" {
+			t.Errorf("Mail.TemplateDir = %v, expected /custom/templates/emails", config.Mail.TemplateDir)
+		}
+		if config.Mail.DefaultLocale != "fr" {
+			t.Errorf("Mail.DefaultLocale = %v, expected fr", config.Mail.DefaultLocale)
+		}
+	})
+
+	t.Run("mail config with defaults", func(t *testing.T) {
+		envVars := map[string]string{
+			"ACKIFY_BASE_URL":            "https://ackify.example.com",
+			"ACKIFY_ORGANISATION":        "Test Org",
+			"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+			"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+			"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
+			"ACKIFY_OAUTH_PROVIDER":      "google",
+			"ACKIFY_MAIL_HOST":           "smtp.example.com",
+		}
+
+		for key, value := range envVars {
+			_ = os.Setenv(key, value)
+		}
+		defer func() {
+			for key := range envVars {
+				_ = os.Unsetenv(key)
+			}
+		}()
+
+		config, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+
+		if config.Mail.Port != 587 {
+			t.Errorf("Mail.Port = %v, expected default 587", config.Mail.Port)
+		}
+		if !config.Mail.TLS {
+			t.Error("Mail.TLS should default to true")
+		}
+		if !config.Mail.StartTLS {
+			t.Error("Mail.StartTLS should default to true")
+		}
+		if config.Mail.Timeout != "10s" {
+			t.Errorf("Mail.Timeout = %v, expected default 10s", config.Mail.Timeout)
+		}
+		if config.Mail.FromName != "Test Org" {
+			t.Errorf("Mail.FromName = %v, expected organisation name", config.Mail.FromName)
+		}
+		if config.Mail.TemplateDir != "templates/emails" {
+			t.Errorf("Mail.TemplateDir = %v, expected default templates/emails", config.Mail.TemplateDir)
+		}
+		if config.Mail.DefaultLocale != "en" {
+			t.Errorf("Mail.DefaultLocale = %v, expected default en", config.Mail.DefaultLocale)
+		}
+	})
+
+	t.Run("mail disabled when MAIL_HOST not set", func(t *testing.T) {
+		envVars := map[string]string{
+			"ACKIFY_BASE_URL":            "https://ackify.example.com",
+			"ACKIFY_ORGANISATION":        "Test Org",
+			"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
+			"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+			"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
+			"ACKIFY_OAUTH_PROVIDER":      "google",
+		}
+
+		for key, value := range envVars {
+			_ = os.Setenv(key, value)
+		}
+		defer func() {
+			for key := range envVars {
+				_ = os.Unsetenv(key)
+			}
+		}()
+
+		_ = os.Unsetenv("ACKIFY_MAIL_HOST")
+
+		config, err := Load()
+		if err != nil {
+			t.Fatalf("Load() failed: %v", err)
+		}
+
+		if config.Mail.Host != "" {
+			t.Errorf("Mail.Host should be empty when not configured, got %v", config.Mail.Host)
+		}
+		if config.Mail.Port != 0 {
+			t.Errorf("Mail.Port should be 0 when not configured, got %v", config.Mail.Port)
+		}
+	})
+}
+
+func TestGetEnvInt(t *testing.T) {
+	tests := []struct {
+		name         string
+		key          string
+		envValue     string
+		defaultValue int
+		expected     int
+	}{
+		{
+			name:         "valid integer",
+			key:          "TEST_INT_VAR",
+			envValue:     "587",
+			defaultValue: 25,
+			expected:     587,
+		},
+		{
+			name:         "missing uses default",
+			key:          "MISSING_INT_VAR",
+			envValue:     "",
+			defaultValue: 100,
+			expected:     100,
+		},
+		{
+			name:         "invalid integer uses default",
+			key:          "INVALID_INT_VAR",
+			envValue:     "not-a-number",
+			defaultValue: 50,
+			expected:     50,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_ = os.Unsetenv(tt.key)
+			if tt.envValue != "" {
+				_ = os.Setenv(tt.key, tt.envValue)
+				defer func() {
+					_ = os.Unsetenv(tt.key)
+				}()
+			}
+
+			result := getEnvInt(tt.key, tt.defaultValue)
+			if result != tt.expected {
+				t.Errorf("getEnvInt() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetEnvBool(t *testing.T) {
+	tests := []struct {
+		name         string
+		key          string
+		envValue     string
+		defaultValue bool
+		expected     bool
+	}{
+		{
+			name:         "true string",
+			key:          "TEST_BOOL_VAR",
+			envValue:     "true",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			name:         "1 string",
+			key:          "TEST_BOOL_VAR",
+			envValue:     "1",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			name:         "false string",
+			key:          "TEST_BOOL_VAR",
+			envValue:     "false",
+			defaultValue: true,
+			expected:     false,
+		},
+		{
+			name:         "missing uses default true",
+			key:          "MISSING_BOOL_VAR",
+			envValue:     "",
+			defaultValue: true,
+			expected:     true,
+		},
+		{
+			name:         "missing uses default false",
+			key:          "MISSING_BOOL_VAR",
+			envValue:     "",
+			defaultValue: false,
+			expected:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_ = os.Unsetenv(tt.key)
+			if tt.envValue != "" {
+				_ = os.Setenv(tt.key, tt.envValue)
+				defer func() {
+					_ = os.Unsetenv(tt.key)
+				}()
+			}
+
+			result := getEnvBool(tt.key, tt.defaultValue)
+			if result != tt.expected {
+				t.Errorf("getEnvBool() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}

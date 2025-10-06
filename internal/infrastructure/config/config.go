@@ -16,6 +16,7 @@ type Config struct {
 	OAuth    OAuthConfig
 	Server   ServerConfig
 	Logger   LoggerConfig
+	Mail     MailConfig
 }
 
 type AppConfig struct {
@@ -48,6 +49,21 @@ type ServerConfig struct {
 
 type LoggerConfig struct {
 	Level string
+}
+
+type MailConfig struct {
+	Host          string
+	Port          int
+	Username      string
+	Password      string
+	TLS           bool
+	StartTLS      bool
+	Timeout       string
+	From          string
+	FromName      string
+	SubjectPrefix string
+	TemplateDir   string
+	DefaultLocale string
 }
 
 // Load loads configuration from environment variables
@@ -118,6 +134,23 @@ func Load() (*Config, error) {
 		}
 	}
 
+	// Parse mail config (optional, service disabled if MAIL_HOST not set)
+	mailHost := getEnv("ACKIFY_MAIL_HOST", "")
+	if mailHost != "" {
+		config.Mail.Host = mailHost
+		config.Mail.Port = getEnvInt("ACKIFY_MAIL_PORT", 587)
+		config.Mail.Username = getEnv("ACKIFY_MAIL_USERNAME", "")
+		config.Mail.Password = getEnv("ACKIFY_MAIL_PASSWORD", "")
+		config.Mail.TLS = getEnvBool("ACKIFY_MAIL_TLS", true)
+		config.Mail.StartTLS = getEnvBool("ACKIFY_MAIL_STARTTLS", true)
+		config.Mail.Timeout = getEnv("ACKIFY_MAIL_TIMEOUT", "10s")
+		config.Mail.From = getEnv("ACKIFY_MAIL_FROM", "")
+		config.Mail.FromName = getEnv("ACKIFY_MAIL_FROM_NAME", config.App.Organisation)
+		config.Mail.SubjectPrefix = getEnv("ACKIFY_MAIL_SUBJECT_PREFIX", "")
+		config.Mail.TemplateDir = getEnv("ACKIFY_MAIL_TEMPLATE_DIR", "templates/emails")
+		config.Mail.DefaultLocale = getEnv("ACKIFY_MAIL_DEFAULT_LOCALE", "en")
+	}
+
 	return config, nil
 }
 
@@ -150,4 +183,24 @@ func parseCookieSecret() ([]byte, error) {
 	}
 
 	return []byte(raw), nil
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return defaultValue
+	}
+	var result int
+	if _, err := fmt.Sscanf(value, "%d", &result); err == nil {
+		return result
+	}
+	return defaultValue
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return defaultValue
+	}
+	return strings.ToLower(value) == "true" || value == "1"
 }

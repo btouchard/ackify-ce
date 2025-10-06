@@ -1,0 +1,13 @@
+{{define "base"}}
+========================================
+{{.Organisation}}
+========================================
+
+{{template "content" .}}
+
+----------------------------------------
+This email was sent by {{.Organisation}}
+{{.BaseURL}}
+
+Powered by Ackify - Proof of Read
+{{end}}
