@@ -1,6 +1,7 @@
 {
   "site.title": "Ackify - Proof of Read",
   "site.brand": "Ackify - Proof of Read",
+  "header.login": "Connexion",
   "header.logout": "Déconnexion",
 
   "home.title": "Ackify",

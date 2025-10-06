@@ -9,6 +9,7 @@ import (
 )
 
 type authService interface {
+	GetUser(r *http.Request) (*models.User, error)
 	SetUser(w http.ResponseWriter, r *http.Request, user *models.User) error
 	Logout(w http.ResponseWriter, r *http.Request)
 	GetLogoutURL() string

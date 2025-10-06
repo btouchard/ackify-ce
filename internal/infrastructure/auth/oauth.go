@@ -72,19 +72,25 @@ func NewOAuthService(config Config) *OauthService {
 func (s *OauthService) GetUser(r *http.Request) (*models.User, error) {
 	session, err := s.sessionStore.Get(r, sessionName)
 	if err != nil {
+		logger.Logger.Debug("GetUser: failed to get session", "error", err.Error())
 		return nil, fmt.Errorf("failed to get session: %w", err)
 	}
 
 	userJSON, ok := session.Values["user"].(string)
 	if !ok || userJSON == "" {
+		logger.Logger.Debug("GetUser: no user in session",
+			"user_key_exists", ok,
+			"user_json_empty", userJSON == "")
 		return nil, models.ErrUnauthorized
 	}
 
 	var user models.User
 	if err := json.Unmarshal([]byte(userJSON), &user); err != nil {
+		logger.Logger.Error("GetUser: failed to unmarshal user", "error", err.Error())
 		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
 	}
 
+	logger.Logger.Debug("GetUser: user found", "email", user.Email)
 	return &user, nil
 }
 
@@ -93,8 +99,13 @@ func (s *OauthService) SetUser(w http.ResponseWriter, r *http.Request, user *mod
 
 	userJSON, err := json.Marshal(user)
 	if err != nil {
+		logger.Logger.Error("SetUser: failed to marshal user", "error", err.Error())
 		return fmt.Errorf("failed to marshal user: %w", err)
 	}
+
+	logger.Logger.Debug("SetUser: saving user to session",
+		"email", user.Email,
+		"secure_cookies", s.secureCookies)
 
 	session.Values["user"] = string(userJSON)
 	session.Options = &sessions.Options{
@@ -105,9 +116,11 @@ func (s *OauthService) SetUser(w http.ResponseWriter, r *http.Request, user *mod
 	}
 
 	if err := session.Save(r, w); err != nil {
+		logger.Logger.Error("SetUser: failed to save session", "error", err.Error())
 		return fmt.Errorf("failed to save session: %w", err)
 	}
 
+	logger.Logger.Debug("SetUser: session saved successfully")
 	return nil
 }
 
@@ -148,26 +161,57 @@ func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nex
 	token := base64.RawURLEncoding.EncodeToString(randPart)
 	state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
 
+	logger.Logger.Debug("CreateAuthURL: generating OAuth state",
+		"token_length", len(token),
+		"next_url", nextURL)
+
 	session, _ := s.sessionStore.Get(r, sessionName)
 	session.Values["oauth_state"] = token
 	session.Options = &sessions.Options{Path: "/", HttpOnly: true, Secure: s.secureCookies, SameSite: http.SameSiteLaxMode}
-	_ = session.Save(r, w)
+	err := session.Save(r, w)
+	if err != nil {
+		logger.Logger.Error("CreateAuthURL: failed to save session", "error", err.Error())
+	}
 
-	return s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "select_account"))
+	// Check if silent login is requested
+	promptParam := "select_account"
+	if r.URL.Query().Get("silent") == "true" {
+		promptParam = "none"
+		logger.Logger.Debug("CreateAuthURL: using silent login (prompt=none)")
+	}
+
+	authURL := s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", promptParam))
+	logger.Logger.Debug("CreateAuthURL: generated auth URL",
+		"prompt", promptParam,
+		"url_length", len(authURL))
+
+	return authURL
 }
 
 // VerifyState Clear single-use state on success to prevent replay; compare in constant time to avoid timing leaks.
 func (s *OauthService) VerifyState(w http.ResponseWriter, r *http.Request, stateToken string) bool {
 	session, _ := s.sessionStore.Get(r, sessionName)
 	stored, _ := session.Values["oauth_state"].(string)
+
+	logger.Logger.Debug("VerifyState: validating OAuth state",
+		"stored_length", len(stored),
+		"token_length", len(stateToken),
+		"stored_empty", stored == "",
+		"token_empty", stateToken == "")
+
 	if stored == "" || stateToken == "" {
+		logger.Logger.Warn("VerifyState: empty state tokens")
 		return false
 	}
+
 	if subtleConstantTimeCompare(stored, stateToken) {
+		logger.Logger.Debug("VerifyState: state valid, clearing token")
 		delete(session.Values, "oauth_state")
 		_ = session.Save(r, w)
 		return true
 	}
+
+	logger.Logger.Warn("VerifyState: state mismatch")
 	return false
 }
 

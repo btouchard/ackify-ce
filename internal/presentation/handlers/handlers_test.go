@@ -19,7 +19,9 @@ import (
 type fakeAuthService struct {
 	shouldFailSetUser  bool
 	shouldFailCallback bool
+	shouldFailGetUser  bool
 	setUserError       error
+	getUserError       error
 	callbackUser       *models.User
 	callbackNextURL    string
 	callbackError      error
@@ -29,6 +31,7 @@ type fakeAuthService struct {
 
 	verifyStateResult bool
 	lastVerifyToken   string
+	currentUser       *models.User
 }
 
 func newFakeAuthService() *fakeAuthService {
@@ -40,15 +43,24 @@ func newFakeAuthService() *fakeAuthService {
 	}
 }
 
-func (f *fakeAuthService) SetUser(_ http.ResponseWriter, _ *http.Request, _ *models.User) error {
+func (f *fakeAuthService) GetUser(_ *http.Request) (*models.User, error) {
+	if f.shouldFailGetUser {
+		return nil, f.getUserError
+	}
+	return f.currentUser, nil
+}
+
+func (f *fakeAuthService) SetUser(_ http.ResponseWriter, _ *http.Request, user *models.User) error {
 	if f.shouldFailSetUser {
 		return f.setUserError
 	}
+	f.currentUser = user
 	return nil
 }
 
 func (f *fakeAuthService) Logout(_ http.ResponseWriter, _ *http.Request) {
 	f.logoutCalled = true
+	f.currentUser = nil
 }
 
 func (f *fakeAuthService) GetLogoutURL() string {
@@ -428,7 +440,8 @@ func TestSignatureHandlers_NewSignatureHandlers(t *testing.T) {
 	organisation := "Organisation"
 	adminEmails := []string{"admin@example.com"}
 
-	handlers := NewSignatureHandlers(signatureService, userService, tmpl, baseURL, organisation, adminEmails)
+	autoLogin := false
+	handlers := NewSignatureHandlers(signatureService, userService, tmpl, baseURL, organisation, adminEmails, autoLogin)
 
 	if handlers == nil {
 		t.Error("NewSignatureHandlers should not return nil")
@@ -442,6 +455,8 @@ func TestSignatureHandlers_NewSignatureHandlers(t *testing.T) {
 		t.Error("BaseURL not set correctly")
 	} else if handlers.organisation != organisation {
 		t.Error("Organisation not set correctly")
+	} else if handlers.autoLogin != autoLogin {
+		t.Error("AutoLogin not set correctly")
 	}
 }
 
@@ -449,7 +464,7 @@ func TestSignatureHandlers_HandleIndex(t *testing.T) {
 	signatureService := newFakeSignatureService()
 	userService := newFakeUserService()
 	tmpl := createTestTemplate()
-	handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
+	handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{}, false)
 
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -538,7 +553,7 @@ func TestSignatureHandlers_HandleSignGET(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{}, false)
 
 			req := httptest.NewRequest("GET", "/sign", nil)
 			if tt.docParam != "" {
@@ -638,7 +653,7 @@ func TestSignatureHandlers_HandleSignPOST(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{}, false)
 
 			form := url.Values{}
 			for key, value := range tt.formData {
@@ -702,7 +717,7 @@ func TestSignatureHandlers_HandleStatusJSON(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{}, false)
 
 			req := httptest.NewRequest("GET", "/status", nil)
 			if tt.docParam != "" {
@@ -769,7 +784,7 @@ func TestSignatureHandlers_HandleUserSignatures(t *testing.T) {
 			tt.setupSig(signatureService)
 
 			tmpl := createTestTemplate()
-			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{})
+			handlers := NewSignatureHandlers(signatureService, userService, tmpl, "https://example.com", "Organisation", []string{}, false)
 
 			req := httptest.NewRequest("GET", "/signatures", nil)
 			w := httptest.NewRecorder()

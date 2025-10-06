@@ -78,7 +78,7 @@
                 {{if .ServiceInfo}}
                   <input type="hidden" name="referrer" value="{{.ServiceInfo.Referrer}}" />
                 {{end}}
-                <button type="submit" class="w-full bg-gradient-to-r from-success-600 to-success-700 hover:from-success-700 hover:to-success-800 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl text-lg">
+                <button type="submit" class="w-full bg-gradient-to-r from-success-600 to-success-700 hover:from-success-500 hover:to-success-600 text-white font-bold py-4 px-8 rounded-2xl transition-all duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl hover:scale-[1.02] text-lg">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                   </svg>
@@ -95,14 +95,14 @@
     <div class="bg-white rounded-2xl border border-slate-200 p-6">
       <h4 class="font-semibold text-slate-900 mb-4">{{index .T "sign.actions_title"}}</h4>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <a href="/signatures" target="_blank" class="flex items-center justify-center space-x-2 px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors text-sm font-medium text-center">
+        <a href="/signatures" target="_blank" class="flex items-center justify-center space-x-2 px-4 py-3 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 rounded-xl transition-all duration-200 text-sm font-medium text-center border border-slate-200 hover:border-slate-300">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           <span>{{index .T "sign.view_signatures"}}</span>
         </a>
 
-        <a href="/" class="flex items-center justify-center space-x-2 px-4 py-3 bg-primary-100 hover:bg-primary-200 text-primary-700 rounded-xl transition-colors text-sm font-medium text-center">
+        <a href="/" class="flex items-center justify-center space-x-2 px-4 py-3 bg-primary-50 hover:bg-primary-100 text-primary-700 hover:text-primary-800 rounded-xl transition-all duration-200 text-sm font-medium text-center border border-primary-200 hover:border-primary-300">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
           </svg>

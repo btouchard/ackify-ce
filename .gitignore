@@ -1,11 +1,14 @@
 CLAUDE.md
 AGENTS.md
 *SETUP.md
+.ai
 .claude
 .idea
 .env
 
-# Local Go build cache
+.ai/.last_prompt.txt
+.ai/.cache/
+
 .gocache/
 
 docker-compose.local.yml

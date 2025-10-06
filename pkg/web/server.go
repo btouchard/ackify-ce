@@ -29,6 +29,7 @@ type Server struct {
 	baseURL     string
 	adminEmails []string
 	authService *auth.OauthService
+	autoLogin   bool
 }
 
 func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
@@ -56,13 +57,13 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 
 	authHandlers := handlers.NewAuthHandlers(authService, cfg.App.BaseURL)
 	authMiddleware := handlers.NewAuthMiddleware(authService, cfg.App.BaseURL)
-	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL, cfg.App.Organisation, cfg.App.AdminEmails)
+	signatureHandlers := handlers.NewSignatureHandlers(signatureService, authService, tmpl, cfg.App.BaseURL, cfg.App.Organisation, cfg.App.AdminEmails, cfg.OAuth.AutoLogin)
 	badgeHandler := handlers.NewBadgeHandler(signatureService)
 	oembedHandler := handlers.NewOEmbedHandler(signatureService, tmpl, cfg.App.BaseURL, cfg.App.Organisation)
 	healthHandler := handlers.NewHealthHandler()
 	langHandlers := handlers.NewLangHandlers(cfg.App.SecureCookies)
 
-	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler, langHandlers, i18nService)
+	router := setupRouter(authHandlers, authMiddleware, signatureHandlers, badgeHandler, oembedHandler, healthHandler, langHandlers, i18nService, cfg.OAuth.AutoLogin)
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,
@@ -77,6 +78,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		baseURL:     cfg.App.BaseURL,
 		adminEmails: cfg.App.AdminEmails,
 		authService: authService,
+		autoLogin:   cfg.OAuth.AutoLogin,
 	}, nil
 }
 
@@ -158,13 +160,10 @@ func setupRouter(
 	healthHandler *handlers.HealthHandler,
 	langHandlers *handlers.LangHandlers,
 	i18nService *i18n.I18n,
+	autoLogin bool,
 ) *chi.Mux {
 	router := chi.NewRouter()
-
-	// Apply i18n middleware to all routes
 	router.Use(i18n.Middleware(i18nService))
-
-	// Serve static files (CSS)
 	staticDir := getStaticDir()
 	fileServer := http.FileServer(http.Dir(staticDir))
 	router.Get("/static/*", http.StripPrefix("/static/", fileServer).ServeHTTP)
@@ -173,15 +172,16 @@ func setupRouter(
 	router.Get("/login", authHandlers.HandleLogin)
 	router.Get("/logout", authHandlers.HandleLogout)
 	router.Get("/oauth2/callback", authHandlers.HandleOAuthCallback)
+
+	if autoLogin {
+		router.Get("/api/auth/check", authHandlers.HandleAuthCheck)
+	}
 	router.Get("/status", signatureHandlers.HandleStatusJSON)
 	router.Get("/status.png", badgeHandler.HandleStatusPNG)
 	router.Get("/oembed", oembedHandler.HandleOEmbed)
 	router.Get("/embed", oembedHandler.HandleEmbedView)
 	router.Get("/health", healthHandler.HandleHealth)
-	// Alias to match documentation and install script
-	router.Get("/healthz", healthHandler.HandleHealth)
 
-	// Language switcher
 	router.Get("/lang/{code}", langHandlers.HandleLangSwitch)
 
 	router.Get("/sign", authMiddleware.RequireAuth(signatureHandlers.HandleSignGET))

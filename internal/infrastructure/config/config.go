@@ -39,6 +39,7 @@ type OAuthConfig struct {
 	Scopes        []string
 	AllowedDomain string
 	CookieSecret  []byte
+	AutoLogin     bool
 }
 
 type ServerConfig struct {
@@ -63,6 +64,7 @@ func Load() (*Config, error) {
 	config.OAuth.ClientID = mustGetEnv("ACKIFY_OAUTH_CLIENT_ID")
 	config.OAuth.ClientSecret = mustGetEnv("ACKIFY_OAUTH_CLIENT_SECRET")
 	config.OAuth.AllowedDomain = os.Getenv("ACKIFY_OAUTH_ALLOWED_DOMAIN")
+	config.OAuth.AutoLogin = strings.ToLower(getEnv("ACKIFY_OAUTH_AUTO_LOGIN", "false")) == "true"
 
 	provider := strings.ToLower(getEnv("ACKIFY_OAUTH_PROVIDER", ""))
 	switch provider {

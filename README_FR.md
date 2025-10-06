@@ -109,7 +109,7 @@ export ACKIFY_ED25519_PRIVATE_KEY=$(openssl rand 64 | base64 -w 0)
 docker compose up -d
 
 # Test
-curl http://localhost:8080/health   # alias: /healthz
+curl http://localhost:8080/health
 ```
 
 ### Variables obligatoires
@@ -317,7 +317,7 @@ ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 - `GET /embed?doc=<id>` - Widget HTML
 
 ### Supervision
-- `GET /health` - Health check (alias: `/healthz`)
+- `GET /health` - Health check
 
 ### Administration
 - `GET /admin` - Tableau de bord (restreint)

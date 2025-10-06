@@ -101,7 +101,7 @@ cp .env.example .env
 docker compose up -d
 
 # Test
-curl http://localhost:8080/health   # alias: /healthz
+curl http://localhost:8080/health   # alias: /health
 ```
 
 ### Required variables
@@ -309,7 +309,7 @@ ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
 - `GET /embed?doc=<id>` - HTML widget
 
 ### Monitoring
-- `GET /health` - Health check (alias: `/healthz`)
+- `GET /health` - Health check
 
 ### Admin
 - `GET /admin` - Dashboard (restricted)

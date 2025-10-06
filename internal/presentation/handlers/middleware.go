@@ -24,13 +24,28 @@ func NewAuthMiddleware(userService userService, baseURL string) *AuthMiddleware 
 
 func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, err := m.userService.GetUser(r)
+		user, err := m.userService.GetUser(r)
 		if err != nil {
+			logger.Logger.Debug("RequireAuth: user not authenticated",
+				"error", err.Error(),
+				"path", r.URL.Path,
+				"query", r.URL.Query().Encode())
+
 			nextURL := m.baseURL + r.URL.RequestURI()
 			loginURL := buildLoginURL(nextURL)
+
+			logger.Logger.Debug("RequireAuth: redirecting to login",
+				"next_url", nextURL,
+				"login_url", loginURL)
+
 			http.Redirect(w, r, loginURL, http.StatusFound)
 			return
 		}
+
+		logger.Logger.Debug("RequireAuth: user authenticated",
+			"user_email", user.Email,
+			"path", r.URL.Path)
+
 		next(w, r)
 	}
 }

@@ -51,7 +51,14 @@
                   <span>{{if .User.Name}}{{.User.Name}}{{else}}{{.User.Email}}{{end}}</span>
                 </span>
               </div>
-              <a href="/logout" class="text-sm text-slate-500 hover:text-slate-700 underline">{{index .T "header.logout"}}</a>
+              <a href="/logout" onclick="localStorage.setItem('ackify_silent_login_attempted', Date.now().toString());" class="text-sm text-slate-500 hover:text-slate-700 underline">{{index .T "header.logout"}}</a>
+            {{else}}
+              <a href="/login" class="inline-flex items-center space-x-2 px-4 py-2 bg-white border border-slate-300 hover:border-primary-500 hover:bg-primary-50 text-slate-700 hover:text-primary-700 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm hover:shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+                <span>{{index .T "header.login"}}</span>
+              </a>
             {{end}}
           </div>
         </div>
@@ -89,5 +96,50 @@
       </div>
     </footer>
   </div>
+
+  {{if and (not .User) .AutoLogin}}
+  <script>
+    (function() {
+      // Silent login: tente une connexion automatique si session OAuth existe
+      const STORAGE_KEY = 'ackify_silent_login_attempted';
+      const ATTEMPT_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
+      function shouldAttemptSilentLogin() {
+        const lastAttempt = localStorage.getItem(STORAGE_KEY);
+        if (!lastAttempt) return true;
+
+        const elapsed = Date.now() - parseInt(lastAttempt, 10);
+        return elapsed > ATTEMPT_EXPIRY_MS;
+      }
+
+      function markSilentLoginAttempted() {
+        localStorage.setItem(STORAGE_KEY, Date.now().toString());
+      }
+
+      function attemptSilentLogin() {
+        if (!shouldAttemptSilentLogin()) {
+          console.debug('[Silent Login] Tentative récente détectée, abandon');
+          return;
+        }
+
+        console.debug('[Silent Login] Tentative de connexion silencieuse...');
+        markSilentLoginAttempted();
+
+        const currentURL = window.location.href;
+        const loginURL = '/login?silent=true&next=' + encodeURIComponent(currentURL);
+
+        // Redirection vers le provider OAuth avec prompt=none
+        window.location.href = loginURL;
+      }
+
+      // Lancer la tentative de silent login au chargement
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attemptSilentLogin);
+      } else {
+        attemptSilentLogin();
+      }
+    })();
+  </script>
+  {{end}}
 </body>
 </html>{{end}}

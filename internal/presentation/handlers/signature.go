@@ -32,9 +32,10 @@ type SignatureHandlers struct {
 	baseURL          string
 	organisation     string
 	adminEmails      []string
+	autoLogin        bool
 }
 
-func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL, organisation string, adminEmails []string) *SignatureHandlers {
+func NewSignatureHandlers(signatureService signatureService, userService userService, tmpl *template.Template, baseURL, organisation string, adminEmails []string, autoLogin bool) *SignatureHandlers {
 	return &SignatureHandlers{
 		signatureService: signatureService,
 		userService:      userService,
@@ -42,6 +43,7 @@ func NewSignatureHandlers(signatureService signatureService, userService userSer
 		baseURL:          baseURL,
 		organisation:     organisation,
 		adminEmails:      adminEmails,
+		autoLogin:        autoLogin,
 	}
 }
 
@@ -59,6 +61,7 @@ type PageData struct {
 	IsAdmin      bool
 	Lang         string
 	T            map[string]string
+	AutoLogin    bool
 	ServiceInfo  *struct {
 		Name     string
 		Icon     string
@@ -283,6 +286,9 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, r *http.Request, templ
 		data.IsAdmin = admin.IsAdminUser(data.User, h.adminEmails)
 	}
 
+	// Set AutoLogin from handler config
+	data.AutoLogin = h.autoLogin
+
 	// Get language and translations from context
 	ctx := r.Context()
 	if data.Lang == "" {
@@ -305,6 +311,7 @@ func (h *SignatureHandlers) render(w http.ResponseWriter, r *http.Request, templ
 		"IsAdmin":      data.IsAdmin,
 		"Lang":         data.Lang,
 		"T":            data.T,
+		"AutoLogin":    data.AutoLogin,
 	}
 
 	if err := h.template.ExecuteTemplate(w, "base", templateData); err != nil {
