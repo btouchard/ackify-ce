@@ -16,7 +16,7 @@
             id="newDocId"
             name="doc_id"
             required
-            pattern="[a-zA-Z0-9_-]+"
+            pattern="[a-zA-Z0-9\-_]+"
             placeholder="{{if eq .Lang "fr"}}ex: politique-securite-2025{{else}}e.g. security-policy-2025{{end}}"
             class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
@@ -86,9 +86,17 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-slate-900">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-                  {{.Count}} {{if ne .Count 1}}{{index $.T "admin.signature_plural"}}{{else}}{{index $.T "admin.signature_singular"}}{{end}}
-                </span>
+                {{if gt .ExpectedCount 0}}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                    {{.Count}} {{if eq .Count 1}}{{index $.T "admin.signature_singular"}}{{else}}{{index $.T "admin.signature_plural"}}{{end}}
+                    {{if gt .UnexpectedCount 0}} (+{{.UnexpectedCount}}){{end}}
+                    sur {{.ExpectedCount}}
+                  </span>
+                {{else}}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                    {{.Count}} {{if ne .Count 1}}{{index $.T "admin.signature_plural"}}{{else}}{{index $.T "admin.signature_singular"}}{{end}}
+                  </span>
+                {{end}}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">

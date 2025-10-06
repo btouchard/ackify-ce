@@ -10,8 +10,11 @@ import (
 )
 
 type DocumentAgg struct {
-	DocID string `json:"doc_id"`
-	Count int    `json:"count"`
+	DocID           string `json:"doc_id"`
+	Count           int    `json:"count"`            // Total signatures
+	ExpectedCount   int    `json:"expected_count"`   // Nombre de signataires attendus
+	SignedCount     int    `json:"signed_count"`     // Signatures attendues signées
+	UnexpectedCount int    `json:"unexpected_count"` // Signatures non attendues
 }
 
 // AdminRepository provides read-only access for admin operations
@@ -26,10 +29,34 @@ func NewAdminRepository(db *sql.DB) *AdminRepository {
 // ListDocumentsWithCounts returns all documents with their signature counts
 func (r *AdminRepository) ListDocumentsWithCounts(ctx context.Context) ([]DocumentAgg, error) {
 	query := `
-		SELECT doc_id, COUNT(*) as count
-		FROM signatures
-		GROUP BY doc_id
-		ORDER BY doc_id
+		SELECT
+			all_docs.doc_id,
+			COALESCE(sig_counts.sig_count, 0) as count,
+			COALESCE(expected_counts.expected_count, 0) as expected_count,
+			COALESCE(signed_expected.signed_count, 0) as signed_count,
+			COALESCE(sig_counts.sig_count, 0) - COALESCE(signed_expected.signed_count, 0) as unexpected_count
+		FROM (
+			SELECT DISTINCT doc_id FROM signatures
+			UNION
+			SELECT DISTINCT doc_id FROM expected_signers
+		) AS all_docs
+		LEFT JOIN (
+			SELECT doc_id, COUNT(*) as sig_count
+			FROM signatures
+			GROUP BY doc_id
+		) AS sig_counts USING (doc_id)
+		LEFT JOIN (
+			SELECT doc_id, COUNT(*) as expected_count
+			FROM expected_signers
+			GROUP BY doc_id
+		) AS expected_counts USING (doc_id)
+		LEFT JOIN (
+			SELECT es.doc_id, COUNT(DISTINCT s.id) as signed_count
+			FROM expected_signers es
+			INNER JOIN signatures s ON es.doc_id = s.doc_id AND es.email = s.user_email
+			GROUP BY es.doc_id
+		) AS signed_expected USING (doc_id)
+		ORDER BY all_docs.doc_id
 	`
 
 	rows, err := r.db.QueryContext(ctx, query)
@@ -43,7 +70,7 @@ func (r *AdminRepository) ListDocumentsWithCounts(ctx context.Context) ([]Docume
 	var documents []DocumentAgg
 	for rows.Next() {
 		var doc DocumentAgg
-		err := rows.Scan(&doc.DocID, &doc.Count)
+		err := rows.Scan(&doc.DocID, &doc.Count, &doc.ExpectedCount, &doc.SignedCount, &doc.UnexpectedCount)
 		if err != nil {
 			continue
 		}

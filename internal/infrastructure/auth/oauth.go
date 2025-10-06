@@ -304,20 +304,21 @@ func (s *OauthService) parseUserInfo(resp *http.Response) (*models.User, error) 
 	}
 
 	var name string
-	if preferredName, ok := rawUser["preferred_username"].(string); ok && preferredName != "" {
-		name = preferredName
+	// Priority: full name first, then composite name, then username as fallback
+	if fullName, ok := rawUser["name"].(string); ok && fullName != "" {
+		name = fullName
 	} else if firstName, ok := rawUser["given_name"].(string); ok {
 		if lastName, ok := rawUser["family_name"].(string); ok {
 			name = firstName + " " + lastName
 		} else {
 			name = firstName
 		}
-	} else if fullName, ok := rawUser["name"].(string); ok && fullName != "" {
-		name = fullName
 	} else if cn, ok := rawUser["cn"].(string); ok && cn != "" {
 		name = cn
 	} else if displayName, ok := rawUser["display_name"].(string); ok && displayName != "" {
 		name = displayName
+	} else if preferredName, ok := rawUser["preferred_username"].(string); ok && preferredName != "" {
+		name = preferredName
 	}
 
 	user.Name = name

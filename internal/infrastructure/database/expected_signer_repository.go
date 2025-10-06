@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // ExpectedSignerRepository handles database operations for expected signers
@@ -62,7 +63,12 @@ func (r *ExpectedSignerRepository) ListByDocID(ctx context.Context, docID string
 	if err != nil {
 		return nil, fmt.Errorf("failed to query expected signers: %w", err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			logger.Logger.Error("failed to close rows", "error", err)
+		}
+	}(rows)
 
 	var signers []*models.ExpectedSigner
 	for rows.Next() {
@@ -95,7 +101,8 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 			es.added_by,
 			es.notes,
 			CASE WHEN s.id IS NOT NULL THEN true ELSE false END as has_signed,
-			s.signed_at
+			s.signed_at,
+			s.user_name
 		FROM expected_signers es
 		LEFT JOIN signatures s ON es.doc_id = s.doc_id AND es.email = s.user_email
 		WHERE es.doc_id = $1
@@ -106,7 +113,12 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 	if err != nil {
 		return nil, fmt.Errorf("failed to query expected signers with status: %w", err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			logger.Logger.Error("failed to close rows", "error", err)
+		}
+	}(rows)
 
 	var signers []*models.ExpectedSignerWithStatus
 	for rows.Next() {
@@ -120,6 +132,7 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 			&signer.Notes,
 			&signer.HasSigned,
 			&signer.SignedAt,
+			&signer.UserName,
 		)
 		if err != nil {
 			continue

@@ -4,6 +4,10 @@
   "header.login": "Sign In",
   "header.logout": "Sign Out",
 
+  "nav.home": "Home",
+  "nav.signatures": "My Signatures",
+  "nav.admin": "Administration",
+
   "home.title": "Ackify",
   "home.subtitle": "Professional solution to validate document reading",
   "home.doc_label": "Document identifier",

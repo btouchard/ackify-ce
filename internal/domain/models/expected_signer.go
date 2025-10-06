@@ -18,6 +18,7 @@ type ExpectedSignerWithStatus struct {
 	ExpectedSigner
 	HasSigned bool       `json:"has_signed"`
 	SignedAt  *time.Time `json:"signed_at,omitempty"`
+	UserName  *string    `json:"user_name,omitempty"`
 }
 
 // DocCompletionStats provides completion statistics for a document
