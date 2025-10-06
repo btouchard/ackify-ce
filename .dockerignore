@@ -17,6 +17,8 @@ LICENSE
 .env.example
 community
 migrate
+docker-compose.cloud.yml
+docker-compose.local.yml
 
 # IDE
 .vscode/
