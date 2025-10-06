@@ -113,6 +113,17 @@ ACKIFY_DB_DSN="postgres://user:password@localhost/ackify?sslmode=disable"
 ACKIFY_OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
 ```
 
+### Optional: Email notifications (SMTP)
+```bash
+ACKIFY_MAIL_HOST="smtp.gmail.com"              # SMTP server
+ACKIFY_MAIL_PORT="587"                         # SMTP port (default: 587)
+ACKIFY_MAIL_USERNAME="your-email@gmail.com"    # SMTP username
+ACKIFY_MAIL_PASSWORD="your-app-password"       # SMTP password
+ACKIFY_MAIL_FROM="noreply@company.com"         # Sender address
+ACKIFY_MAIL_FROM_NAME="Ackify"                 # Sender name
+# If ACKIFY_MAIL_HOST is not set, email service is disabled (no error)
+```
+
 ---
 
 ## 🚀 Simple Usage
@@ -201,6 +212,7 @@ internal/
   infrastructure/        # Adapters
     auth/               # OAuth2
     database/           # PostgreSQL
+    email/              # SMTP service
     config/             # Configuration
   presentation/          # HTTP
     handlers/           # Controllers + interfaces
@@ -210,8 +222,9 @@ pkg/                    # Shared utilities
 
 ### Technology stack
 - **Go 1.24.5**: Performance and simplicity
-- **PostgreSQL**: Integrity constraints 
+- **PostgreSQL**: Integrity constraints
 - **OAuth2**: Multi-provider
+- **SMTP**: Email signature reminders (optional)
 - **Docker**: Simplified deployment
 - **Traefik**: HTTPS reverse proxy
 
@@ -246,7 +259,7 @@ CREATE TABLE signatures (
 
 ## 🚀 Production Deployment
 
-### docker-compose.yml
+### compose.yml
 ```yaml
 version: '3.8'
 services:
@@ -284,6 +297,12 @@ ACKIFY_BASE_URL="https://ackify.company.com"
 
 # Secure PostgreSQL
 ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
+
+# Optional: SMTP for signature reminders
+ACKIFY_MAIL_HOST="smtp.company.com"
+ACKIFY_MAIL_FROM="noreply@company.com"
+ACKIFY_MAIL_USERNAME="${SMTP_USERNAME}"
+ACKIFY_MAIL_PASSWORD="${SMTP_PASSWORD}"
 ```
 
 ---

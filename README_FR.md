@@ -94,7 +94,7 @@ Cliquez sur les GIFs pour ouvrir les vidéos WebM dans votre navigateur.
 curl -fsSL https://raw.githubusercontent.com/btouchard/ackify/main/install/install.sh | bash
 
 # Ou téléchargement manuel
-curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/docker-compose.yml
+curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/compose.yml
 curl -O https://raw.githubusercontent.com/btouchard/ackify/main/install/.env.example
 
 # Configuration
@@ -119,6 +119,17 @@ ACKIFY_OAUTH_CLIENT_ID="your-oauth-client-id"        # Google/GitHub/GitLab
 ACKIFY_OAUTH_CLIENT_SECRET="your-oauth-client-secret"
 ACKIFY_DB_DSN="postgres://user:password@localhost/ackify?sslmode=disable"
 ACKIFY_OAUTH_COOKIE_SECRET="$(openssl rand -base64 32)"
+```
+
+### Optionnel : Notifications email (SMTP)
+```bash
+ACKIFY_MAIL_HOST="smtp.gmail.com"              # Serveur SMTP
+ACKIFY_MAIL_PORT="587"                         # Port SMTP (défaut: 587)
+ACKIFY_MAIL_USERNAME="votre-email@gmail.com"   # Identifiant SMTP
+ACKIFY_MAIL_PASSWORD="votre-app-password"      # Mot de passe SMTP
+ACKIFY_MAIL_FROM="noreply@entreprise.com"      # Adresse expéditeur
+ACKIFY_MAIL_FROM_NAME="Ackify"                 # Nom expéditeur
+# Si ACKIFY_MAIL_HOST n'est pas défini, le service email est désactivé (pas d'erreur)
 ```
 
 ---
@@ -209,6 +220,7 @@ internal/
   infrastructure/        # Adaptateurs
     auth/               # OAuth2
     database/           # PostgreSQL
+    email/              # Service SMTP
     config/             # Configuration
   presentation/          # HTTP
     handlers/           # Contrôleurs + interfaces
@@ -218,8 +230,9 @@ pkg/                    # Utilitaires partagés
 
 ### Stack technique
 - **Go 1.24.5** : Performance et simplicité
-- **PostgreSQL** : Contraintes d'intégrité 
+- **PostgreSQL** : Contraintes d'intégrité
 - **OAuth2** : Multi-providers
+- **SMTP** : Rappels de signature par email (optionnel)
 - **Docker** : Déploiement simplifié
 - **Traefik** : Reverse proxy HTTPS
 
@@ -254,7 +267,7 @@ CREATE TABLE signatures (
 
 ## 🚀 Déploiement Production
 
-### docker-compose.yml
+### compose.yml
 ```yaml
 version: '3.8'
 services:
@@ -292,6 +305,12 @@ ACKIFY_BASE_URL="https://ackify.company.com"
 
 # PostgreSQL sécurisé
 ACKIFY_DB_DSN="postgres://user:pass@postgres:5432/ackdb?sslmode=require"
+
+# Optionnel : SMTP pour rappels de signature
+ACKIFY_MAIL_HOST="smtp.entreprise.com"
+ACKIFY_MAIL_FROM="noreply@entreprise.com"
+ACKIFY_MAIL_USERNAME="${SMTP_USERNAME}"
+ACKIFY_MAIL_PASSWORD="${SMTP_PASSWORD}"
 ```
 
 ---
