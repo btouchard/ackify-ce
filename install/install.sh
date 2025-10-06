@@ -21,8 +21,8 @@ cd "$INSTALL_DIR"
 
 echo "📦 Downloading configuration files..."
 
-# Download docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/docker-compose.yml -o docker-compose.yml
+# Download compose.yml
+curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/compose.yml -o compose.yml
 
 # Download .env.example
 curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/.env.example -o .env.example

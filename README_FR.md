@@ -241,6 +241,7 @@ pkg/                    # Utilitaires partagés
 ## 📊 Base de Données
 
 ```sql
+-- Table principale des signatures
 CREATE TABLE signatures (
     id BIGSERIAL PRIMARY KEY,
     doc_id TEXT NOT NULL,                    -- ID document
@@ -255,6 +256,17 @@ CREATE TABLE signatures (
     prev_hash TEXT,                          -- Prev Hash
     UNIQUE (doc_id, user_sub)                -- Une signature par user/doc
 );
+
+-- Table des signataires attendus (pour le suivi)
+CREATE TABLE expected_signers (
+    id BIGSERIAL PRIMARY KEY,
+    doc_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    added_by TEXT NOT NULL,                  -- Admin qui a ajouté
+    notes TEXT,
+    UNIQUE (doc_id, email)                   -- Une attente par email/doc
+);
 ```
 
 **Garanties** :
@@ -262,6 +274,7 @@ CREATE TABLE signatures (
 - ✅ **Immutabilité** : `created_at` protégé par trigger
 - ✅ **Intégrité** : Hachage SHA-256 pour détecter modifications
 - ✅ **Non-répudiation** : Signature Ed25519 cryptographiquement prouvable
+- ✅ **Suivi** : Signataires attendus pour monitoring de complétion
 
 ---
 
@@ -340,13 +353,25 @@ ACKIFY_MAIL_PASSWORD="${SMTP_PASSWORD}"
 
 ### Administration
 - `GET /admin` - Tableau de bord (restreint)
-- `GET /admin/docs/{docID}` - Signataires d’un document
-- `GET /admin/api/chain-integrity/{docID}` - Intégrité de chaîne (JSON)
+- `GET /admin/docs/{docID}` - Détails du document avec gestion des signataires attendus
+- `POST /admin/docs/{docID}/expected` - Ajouter des signataires attendus
+- `POST /admin/docs/{docID}/expected/remove` - Retirer un signataire attendu
+- `GET /admin/docs/{docID}/status.json` - Statut du document en JSON (AJAX)
+- `GET /admin/api/chain-integrity/{docID}` - Vérification d'intégrité de chaîne (JSON)
 
-Contrôle d’accès: définir `ACKIFY_ADMIN_EMAILS` avec des emails admins, séparés par des virgules (correspondance exacte, insensible à la casse). Exemple:
+Contrôle d'accès: définir `ACKIFY_ADMIN_EMAILS` avec des emails admins, séparés par des virgules (correspondance exacte, insensible à la casse). Exemple:
 ```bash
 ACKIFY_ADMIN_EMAILS="alice@entreprise.com,bob@entreprise.com"
 ```
+
+#### Fonctionnalité Signataires Attendus
+Les administrateurs peuvent définir et suivre les signataires attendus pour chaque document :
+- **Ajouter des signataires** : Coller des emails séparés par des sauts de ligne, virgules ou point-virgules
+- **Suivre la complétion** : Barre de progression visuelle avec pourcentage
+- **Monitorer le statut** : Voir qui a signé (✓) vs. qui est en attente (⏳)
+- **Détecter les signatures inattendues** : Identifier les utilisateurs qui ont signé sans être attendus
+- **Partage facile** : Copie en un clic du lien de signature du document
+- **Gestion en masse** : Ajouter/retirer des signataires individuellement ou en lot
 
 ---
 

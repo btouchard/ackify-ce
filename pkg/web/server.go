@@ -200,7 +200,7 @@ func initTemplates() (*template.Template, error) {
 		return nil, fmt.Errorf("failed to parse base template: %w", err)
 	}
 
-	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl", "admin_dashboard.html.tpl", "admin_doc_details.html.tpl", "error.html.tpl"}
+	additionalTemplates := []string{"index.html.tpl", "sign.html.tpl", "signatures.html.tpl", "embed.html.tpl", "admin_dashboard.html.tpl", "admin_doc_details.html.tpl", "admin_document_expected_signers.html.tpl", "error.html.tpl"}
 	for _, templateFile := range additionalTemplates {
 		templatePath := filepath.Join(templatesDir, templateFile)
 		_, err = tmpl.ParseFiles(templatePath)

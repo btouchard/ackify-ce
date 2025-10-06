@@ -111,10 +111,10 @@ docker-build: ## Build Docker image
 	docker build -t ackify-ce:latest .
 
 docker-test: ## Run tests in Docker environment
-	docker compose -f docker-compose.local.yml up -d ackify-db
+	docker compose -f compose.local.yml up -d ackify-db
 	@sleep 5
 	$(MAKE) test
-	docker compose -f docker-compose.local.yml down
+	docker compose -f compose.local.yml down
 
 # CI targets
 ci: deps lint test coverage ## Run all CI checks

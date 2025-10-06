@@ -233,6 +233,7 @@ pkg/                    # Shared utilities
 ## 📊 Database
 
 ```sql
+-- Main signatures table
 CREATE TABLE signatures (
     id BIGSERIAL PRIMARY KEY,
     doc_id TEXT NOT NULL,                    -- Document ID
@@ -247,6 +248,17 @@ CREATE TABLE signatures (
     prev_hash TEXT,
     UNIQUE (doc_id, user_sub)              -- One signature per user/doc
 );
+
+-- Expected signers table (for tracking)
+CREATE TABLE expected_signers (
+    id BIGSERIAL PRIMARY KEY,
+    doc_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    added_by TEXT NOT NULL,                 -- Admin who added
+    notes TEXT,
+    UNIQUE (doc_id, email)                  -- One expectation per email/doc
+);
 ```
 
 **Guarantees**:
@@ -254,6 +266,7 @@ CREATE TABLE signatures (
 - ✅ **Immutability**: `created_at` protected by trigger
 - ✅ **Integrity**: SHA-256 hash to detect modifications
 - ✅ **Non-repudiation**: Ed25519 signature cryptographically provable
+- ✅ **Tracking**: Expected signers for completion monitoring
 
 ---
 
@@ -332,13 +345,25 @@ ACKIFY_MAIL_PASSWORD="${SMTP_PASSWORD}"
 
 ### Admin
 - `GET /admin` - Dashboard (restricted)
-- `GET /admin/docs/{docID}` - Signatures for a document
-- `GET /admin/api/chain-integrity/{docID}` - Chain integrity JSON
+- `GET /admin/docs/{docID}` - Document details with expected signers management
+- `POST /admin/docs/{docID}/expected` - Add expected signers
+- `POST /admin/docs/{docID}/expected/remove` - Remove an expected signer
+- `GET /admin/docs/{docID}/status.json` - Document status as JSON (AJAX)
+- `GET /admin/api/chain-integrity/{docID}` - Chain integrity verification JSON
 
 Access control: set `ACKIFY_ADMIN_EMAILS` with a comma-separated list of admin emails (exact match, case-insensitive). Example:
 ```bash
 ACKIFY_ADMIN_EMAILS="alice@company.com,bob@company.com"
 ```
+
+#### Expected Signers Feature
+Administrators can define and track expected signers for each document:
+- **Add expected signers**: Paste emails separated by newlines, commas, or semicolons
+- **Track completion**: Visual progress bar with completion percentage
+- **Monitor status**: See who signed (✓) vs. who is pending (⏳)
+- **Detect unexpected signatures**: Identify users who signed but weren't expected
+- **Share easily**: One-click copy of document signature link
+- **Bulk management**: Add/remove signers individually or in batch
 
 ---
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{{index .T "site.title"}}</title>
-{{if and (ne .TemplateName "admin_dashboard") (ne .TemplateName "admin_doc_details")}}{{if .DocID}}
+{{if and (ne .TemplateName "admin_dashboard") (ne .TemplateName "admin_doc_details") (ne .TemplateName "admin_document_expected_signers")}}{{if .DocID}}
 <link rel="alternate" type="application/json+oembed" href="/oembed?url={{.BaseURL}}/sign?doc={{.DocID}}&format=json" title="Signataires du document {{.DocID}}" />
 {{end}}{{end}}
 <link rel="stylesheet" href="/static/output.css">
@@ -75,6 +75,8 @@
           {{template "admin_dashboard" .}}
         {{else if eq .TemplateName "admin_doc_details"}}
           {{template "admin_doc_details" .}}
+        {{else if eq .TemplateName "admin_document_expected_signers"}}
+          {{template "admin_document_expected_signers" .}}
         {{else if eq .TemplateName "error"}}
           {{template "error" .}}
         {{else}}

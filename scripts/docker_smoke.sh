@@ -3,7 +3,7 @@
 # Purpose: Local Docker smoke test with clear PASS/FAIL output
 set -uo pipefail
 
-COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.local.yml}
+COMPOSE_FILE=${COMPOSE_FILE:-compose.local.yml}
 BASE_URL=${BASE_URL:-http://localhost:8080}
 DOC_ID=${DOC_ID:-demo}
 USER1_EMAIL=${USER1_EMAIL:-user1@example.com}

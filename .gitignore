@@ -11,8 +11,8 @@ AGENTS.md
 
 .gocache/
 
-docker-compose.local.yml
-docker-compose.cloud.yml
+compose.local.yml
+compose.cloud.yml
 client_secret*.json
 
 /static
