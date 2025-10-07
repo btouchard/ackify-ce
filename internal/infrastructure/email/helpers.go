@@ -17,16 +17,17 @@ func SendEmail(ctx context.Context, sender Sender, template string, to []string,
 	return sender.Send(ctx, msg)
 }
 
-func SendSignatureReminderEmail(ctx context.Context, sender Sender, to []string, locale, docID, docURL, signURL string) error {
+func SendSignatureReminderEmail(ctx context.Context, sender Sender, to []string, locale, docID, docURL, signURL, recipientName string) error {
 	data := map[string]any{
-		"DocID":   docID,
-		"DocURL":  docURL,
-		"SignURL": signURL,
+		"DocID":         docID,
+		"DocURL":        docURL,
+		"SignURL":       signURL,
+		"RecipientName": recipientName,
 	}
 
-	subject := "Reminder: Document signature required"
+	subject := "Reminder: Document reading confirmation required"
 	if locale == "fr" {
-		subject = "Rappel : Signature de document requise"
+		subject = "Rappel : Confirmation de lecture de document requise"
 	}
 
 	return SendEmail(ctx, sender, "signature_reminder", to, locale, subject, data)

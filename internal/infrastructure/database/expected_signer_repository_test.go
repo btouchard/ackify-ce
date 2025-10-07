@@ -6,6 +6,8 @@ package database
 import (
 	"context"
 	"testing"
+
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestExpectedSignerRepository_AddExpected(t *testing.T) {
@@ -17,35 +19,44 @@ func TestExpectedSignerRepository_AddExpected(t *testing.T) {
 	tests := []struct {
 		name      string
 		docID     string
-		emails    []string
+		contacts  []models.ContactInfo
 		addedBy   string
 		wantError bool
 	}{
 		{
-			name:      "add single expected signer",
-			docID:     "doc-001",
-			emails:    []string{"user1@example.com"},
+			name:  "add single expected signer",
+			docID: "doc-001",
+			contacts: []models.ContactInfo{
+				{Email: "user1@example.com", Name: ""},
+			},
 			addedBy:   "admin@example.com",
 			wantError: false,
 		},
 		{
-			name:      "add multiple expected signers",
-			docID:     "doc-002",
-			emails:    []string{"user1@example.com", "user2@example.com", "user3@example.com"},
+			name:  "add multiple expected signers",
+			docID: "doc-002",
+			contacts: []models.ContactInfo{
+				{Email: "user1@example.com", Name: "User One"},
+				{Email: "user2@example.com", Name: "User Two"},
+				{Email: "user3@example.com", Name: ""},
+			},
 			addedBy:   "admin@example.com",
 			wantError: false,
 		},
 		{
-			name:      "add duplicate emails (should not error)",
-			docID:     "doc-003",
-			emails:    []string{"duplicate@example.com", "duplicate@example.com"},
+			name:  "add duplicate emails (should not error)",
+			docID: "doc-003",
+			contacts: []models.ContactInfo{
+				{Email: "duplicate@example.com", Name: ""},
+				{Email: "duplicate@example.com", Name: ""},
+			},
 			addedBy:   "admin@example.com",
 			wantError: false,
 		},
 		{
 			name:      "add empty list",
 			docID:     "doc-004",
-			emails:    []string{},
+			contacts:  []models.ContactInfo{},
 			addedBy:   "admin@example.com",
 			wantError: false,
 		},
@@ -55,7 +66,7 @@ func TestExpectedSignerRepository_AddExpected(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			clearExpectedSignersTable(t, testDB)
 
-			err := repo.AddExpected(ctx, tt.docID, tt.emails, tt.addedBy)
+			err := repo.AddExpected(ctx, tt.docID, tt.contacts, tt.addedBy)
 
 			if tt.wantError && err == nil {
 				t.Error("expected error, got nil")
@@ -65,13 +76,18 @@ func TestExpectedSignerRepository_AddExpected(t *testing.T) {
 			}
 
 			// Verify records were added
-			if !tt.wantError && len(tt.emails) > 0 {
+			if !tt.wantError && len(tt.contacts) > 0 {
 				signers, err := repo.ListByDocID(ctx, tt.docID)
 				if err != nil {
 					t.Fatalf("failed to list signers: %v", err)
 				}
 
-				expectedCount := len(uniqueStrings(tt.emails))
+				// Extract emails from contacts for unique check
+				emails := make([]string, len(tt.contacts))
+				for i, c := range tt.contacts {
+					emails[i] = c.Email
+				}
+				expectedCount := len(uniqueStrings(emails))
 				if len(signers) != expectedCount {
 					t.Errorf("expected %d signers, got %d", expectedCount, len(signers))
 				}
@@ -96,7 +112,7 @@ func TestExpectedSignerRepository_ListWithStatusByDocID(t *testing.T) {
 	emails := []string{"signed@example.com", "pending@example.com"}
 
 	// Add expected signers
-	err := expectedRepo.AddExpected(ctx, docID, emails, "admin@example.com")
+	err := expectedRepo.AddExpected(ctx, docID, emailsToContacts(emails), "admin@example.com")
 	if err != nil {
 		t.Fatalf("failed to add expected signers: %v", err)
 	}
@@ -164,7 +180,7 @@ func TestExpectedSignerRepository_GetStats(t *testing.T) {
 	}
 
 	// Add expected signers
-	err := expectedRepo.AddExpected(ctx, docID, emails, "admin@example.com")
+	err := expectedRepo.AddExpected(ctx, docID, emailsToContacts(emails), "admin@example.com")
 	if err != nil {
 		t.Fatalf("failed to add expected signers: %v", err)
 	}
@@ -215,7 +231,7 @@ func TestExpectedSignerRepository_Remove(t *testing.T) {
 	clearExpectedSignersTable(t, testDB)
 	docID := "doc-remove-test"
 	emails := []string{"user1@example.com", "user2@example.com"}
-	err := repo.AddExpected(ctx, docID, emails, "admin@example.com")
+	err := repo.AddExpected(ctx, docID, emailsToContacts(emails), "admin@example.com")
 	if err != nil {
 		t.Fatalf("failed to add expected signers: %v", err)
 	}
@@ -256,7 +272,7 @@ func TestExpectedSignerRepository_IsExpected(t *testing.T) {
 	clearExpectedSignersTable(t, testDB)
 	docID := "doc-check-test"
 	emails := []string{"expected@example.com"}
-	err := repo.AddExpected(ctx, docID, emails, "admin@example.com")
+	err := repo.AddExpected(ctx, docID, emailsToContacts(emails), "admin@example.com")
 	if err != nil {
 		t.Fatalf("failed to add expected signer: %v", err)
 	}
@@ -286,12 +302,14 @@ func setupExpectedSignersTable(t *testing.T, testDB *TestDB) {
 	t.Helper()
 
 	schema := `
+		DROP TABLE IF EXISTS reminder_logs;
 		DROP TABLE IF EXISTS expected_signers;
 
 		CREATE TABLE expected_signers (
 			id BIGSERIAL PRIMARY KEY,
 			doc_id TEXT NOT NULL,
 			email TEXT NOT NULL,
+			name TEXT NOT NULL DEFAULT '',
 			added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			added_by TEXT NOT NULL,
 			notes TEXT,
@@ -300,6 +318,21 @@ func setupExpectedSignersTable(t *testing.T, testDB *TestDB) {
 
 		CREATE INDEX idx_expected_signers_doc_id ON expected_signers(doc_id);
 		CREATE INDEX idx_expected_signers_email ON expected_signers(email);
+
+		CREATE TABLE reminder_logs (
+			id BIGSERIAL PRIMARY KEY,
+			doc_id TEXT NOT NULL,
+			recipient_email TEXT NOT NULL,
+			sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			sent_by TEXT NOT NULL,
+			template_used TEXT NOT NULL,
+			status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'bounced')),
+			error_message TEXT,
+			FOREIGN KEY (doc_id, recipient_email) REFERENCES expected_signers(doc_id, email) ON DELETE CASCADE
+		);
+
+		CREATE INDEX idx_reminder_logs_doc_id ON reminder_logs(doc_id);
+		CREATE INDEX idx_reminder_logs_recipient_email ON reminder_logs(recipient_email);
 	`
 
 	_, err := testDB.DB.Exec(schema)
@@ -310,10 +343,19 @@ func setupExpectedSignersTable(t *testing.T, testDB *TestDB) {
 
 func clearExpectedSignersTable(t *testing.T, testDB *TestDB) {
 	t.Helper()
-	_, err := testDB.DB.Exec("TRUNCATE TABLE expected_signers RESTART IDENTITY")
+	_, err := testDB.DB.Exec("TRUNCATE TABLE reminder_logs, expected_signers RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("failed to clear expected_signers table: %v", err)
 	}
+}
+
+// Helper function to convert emails to ContactInfo
+func emailsToContacts(emails []string) []models.ContactInfo {
+	contacts := make([]models.ContactInfo, len(emails))
+	for i, email := range emails {
+		contacts[i] = models.ContactInfo{Email: email, Name: ""}
+	}
+	return contacts
 }
 
 func uniqueStrings(slice []string) []string {

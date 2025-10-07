@@ -22,22 +22,22 @@ func NewExpectedSignerRepository(db *sql.DB) *ExpectedSignerRepository {
 }
 
 // AddExpected adds multiple expected signers for a document (batch insert with conflict handling)
-func (r *ExpectedSignerRepository) AddExpected(ctx context.Context, docID string, emails []string, addedBy string) error {
-	if len(emails) == 0 {
+func (r *ExpectedSignerRepository) AddExpected(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error {
+	if len(contacts) == 0 {
 		return nil
 	}
 
 	// Build batch INSERT with ON CONFLICT DO NOTHING
-	valueStrings := make([]string, 0, len(emails))
-	valueArgs := make([]interface{}, 0, len(emails)*3)
+	valueStrings := make([]string, 0, len(contacts))
+	valueArgs := make([]interface{}, 0, len(contacts)*4)
 
-	for i, email := range emails {
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3))
-		valueArgs = append(valueArgs, docID, email, addedBy)
+	for i, contact := range contacts {
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d, $%d)", i*4+1, i*4+2, i*4+3, i*4+4))
+		valueArgs = append(valueArgs, docID, contact.Email, contact.Name, addedBy)
 	}
 
 	query := fmt.Sprintf(`
-		INSERT INTO expected_signers (doc_id, email, added_by)
+		INSERT INTO expected_signers (doc_id, email, name, added_by)
 		VALUES %s
 		ON CONFLICT (doc_id, email) DO NOTHING
 	`, strings.Join(valueStrings, ","))
@@ -53,7 +53,7 @@ func (r *ExpectedSignerRepository) AddExpected(ctx context.Context, docID string
 // ListByDocID returns all expected signers for a document
 func (r *ExpectedSignerRepository) ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error) {
 	query := `
-		SELECT id, doc_id, email, added_at, added_by, notes
+		SELECT id, doc_id, email, name, added_at, added_by, notes
 		FROM expected_signers
 		WHERE doc_id = $1
 		ORDER BY added_at ASC
@@ -77,6 +77,7 @@ func (r *ExpectedSignerRepository) ListByDocID(ctx context.Context, docID string
 			&signer.ID,
 			&signer.DocID,
 			&signer.Email,
+			&signer.Name,
 			&signer.AddedAt,
 			&signer.AddedBy,
 			&signer.Notes,
@@ -97,15 +98,22 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 			es.id,
 			es.doc_id,
 			es.email,
+			es.name,
 			es.added_at,
 			es.added_by,
 			es.notes,
 			CASE WHEN s.id IS NOT NULL THEN true ELSE false END as has_signed,
 			s.signed_at,
-			s.user_name
+			s.user_name,
+			MAX(rl.sent_at) as last_reminder_sent,
+			COUNT(CASE WHEN rl.status = 'sent' THEN 1 END) as reminder_count,
+			EXTRACT(DAY FROM (NOW() - es.added_at))::int as days_since_added,
+			EXTRACT(DAY FROM (NOW() - MAX(rl.sent_at)))::int as days_since_last_reminder
 		FROM expected_signers es
 		LEFT JOIN signatures s ON es.doc_id = s.doc_id AND es.email = s.user_email
+		LEFT JOIN reminder_logs rl ON es.doc_id = rl.doc_id AND es.email = rl.recipient_email
 		WHERE es.doc_id = $1
+		GROUP BY es.id, es.doc_id, es.email, es.name, es.added_at, es.added_by, es.notes, s.id, s.signed_at, s.user_name
 		ORDER BY has_signed DESC, es.added_at ASC
 	`
 
@@ -123,20 +131,38 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 	var signers []*models.ExpectedSignerWithStatus
 	for rows.Next() {
 		signer := &models.ExpectedSignerWithStatus{}
+		var lastReminderSent sql.NullTime
+		var daysSinceLastReminder sql.NullInt64
+
 		err := rows.Scan(
 			&signer.ID,
 			&signer.DocID,
 			&signer.Email,
+			&signer.Name,
 			&signer.AddedAt,
 			&signer.AddedBy,
 			&signer.Notes,
 			&signer.HasSigned,
 			&signer.SignedAt,
 			&signer.UserName,
+			&lastReminderSent,
+			&signer.ReminderCount,
+			&signer.DaysSinceAdded,
+			&daysSinceLastReminder,
 		)
 		if err != nil {
 			continue
 		}
+
+		if lastReminderSent.Valid {
+			signer.LastReminderSent = &lastReminderSent.Time
+		}
+
+		if daysSinceLastReminder.Valid {
+			days := int(daysSinceLastReminder.Int64)
+			signer.DaysSinceLastReminder = &days
+		}
+
 		signers = append(signers, signer)
 	}
 

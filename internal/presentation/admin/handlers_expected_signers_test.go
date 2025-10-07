@@ -5,66 +5,95 @@ import (
 	"testing"
 )
 
-func TestParseEmailsFromText(t *testing.T) {
+func TestParseContactsFromText(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected []string
+		expected []ParsedContact
 	}{
 		{
-			name:     "newline separated",
-			input:    "user1@example.com\nuser2@example.com\nuser3@example.com",
-			expected: []string{"user1@example.com", "user2@example.com", "user3@example.com"},
+			name:  "newline separated plain emails",
+			input: "user1@example.com\nuser2@example.com\nuser3@example.com",
+			expected: []ParsedContact{
+				{Email: "user1@example.com", Name: ""},
+				{Email: "user2@example.com", Name: ""},
+				{Email: "user3@example.com", Name: ""},
+			},
 		},
 		{
-			name:     "comma separated",
-			input:    "user1@example.com,user2@example.com,user3@example.com",
-			expected: []string{"user1@example.com", "user2@example.com", "user3@example.com"},
+			name:  "comma separated plain emails",
+			input: "user1@example.com,user2@example.com,user3@example.com",
+			expected: []ParsedContact{
+				{Email: "user1@example.com", Name: ""},
+				{Email: "user2@example.com", Name: ""},
+				{Email: "user3@example.com", Name: ""},
+			},
 		},
 		{
-			name:     "semicolon separated",
-			input:    "user1@example.com;user2@example.com;user3@example.com",
-			expected: []string{"user1@example.com", "user2@example.com", "user3@example.com"},
+			name:  "with names format",
+			input: "Benjamin Touchard <benjamin@example.com>\nMarie Dupont <marie@example.com>",
+			expected: []ParsedContact{
+				{Email: "benjamin@example.com", Name: "Benjamin Touchard"},
+				{Email: "marie@example.com", Name: "Marie Dupont"},
+			},
 		},
 		{
-			name:     "mixed separators",
-			input:    "user1@example.com\nuser2@example.com,user3@example.com;user4@example.com",
-			expected: []string{"user1@example.com", "user2@example.com", "user3@example.com", "user4@example.com"},
+			name:  "mixed formats",
+			input: "Benjamin Touchard <benjamin@example.com>\njohn@doe.fr\nMarie Dupont <marie@example.com>",
+			expected: []ParsedContact{
+				{Email: "benjamin@example.com", Name: "Benjamin Touchard"},
+				{Email: "john@doe.fr", Name: ""},
+				{Email: "marie@example.com", Name: "Marie Dupont"},
+			},
 		},
 		{
-			name:     "with extra whitespace",
-			input:    "  user1@example.com  \n  user2@example.com  ",
-			expected: []string{"user1@example.com", "user2@example.com"},
+			name:  "with extra whitespace in names",
+			input: "  Benjamin Touchard  <  benjamin@example.com  >  ",
+			expected: []ParsedContact{
+				{Email: "benjamin@example.com", Name: "Benjamin Touchard"},
+			},
 		},
 		{
 			name:     "empty string",
 			input:    "",
-			expected: []string{},
+			expected: []ParsedContact{},
 		},
 		{
 			name:     "whitespace only",
 			input:    "   \n   \n   ",
-			expected: []string{},
+			expected: []ParsedContact{},
 		},
 		{
-			name:     "single email",
-			input:    "user@example.com",
-			expected: []string{"user@example.com"},
+			name:  "single email",
+			input: "user@example.com",
+			expected: []ParsedContact{
+				{Email: "user@example.com", Name: ""},
+			},
+		},
+		{
+			name:  "single email with name",
+			input: "John Doe <john@example.com>",
+			expected: []ParsedContact{
+				{Email: "john@example.com", Name: "John Doe"},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := parseEmailsFromText(tt.input)
+			result := parseContactsFromText(tt.input)
 
 			if len(result) != len(tt.expected) {
-				t.Errorf("expected %d emails, got %d", len(tt.expected), len(result))
+				t.Errorf("expected %d contacts, got %d", len(tt.expected), len(result))
 				return
 			}
 
-			for i, email := range result {
-				if email != tt.expected[i] {
-					t.Errorf("at index %d: expected %s, got %s", i, tt.expected[i], email)
+			for i, contact := range result {
+				if contact.Email != tt.expected[i].Email {
+					t.Errorf("at index %d: expected email %s, got %s", i, tt.expected[i].Email, contact.Email)
+				}
+				if contact.Name != tt.expected[i].Name {
+					t.Errorf("at index %d: expected name %s, got %s", i, tt.expected[i].Name, contact.Name)
 				}
 			}
 		})

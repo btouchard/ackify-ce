@@ -31,7 +31,7 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	server.RegisterRoutes(admin.RegisterAdminRoutes(cfg, server.GetTemplates(), server.GetDB(), server.GetAuthService()))
+	server.RegisterRoutes(admin.RegisterAdminRoutes(cfg, server.GetTemplates(), server.GetDB(), server.GetAuthService(), server.GetEmailSender()))
 
 	go func() {
 		log.Printf("Community Edition server starting on %s", server.GetAddr())

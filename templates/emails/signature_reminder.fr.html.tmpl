@@ -1,26 +1,35 @@
 {{define "content"}}
-<h2>Rappel de signature de document</h2>
+<h2>Rappel de confirmation de lecture de document</h2>
 
+{{if .Data.RecipientName}}
+<p>Bonjour {{.Data.RecipientName}},</p>
+{{else}}
 <p>Bonjour,</p>
+{{end}}
 
-<p>Ceci est un rappel que le document suivant nécessite votre signature :</p>
+<p>Ceci est un rappel que le document suivant nécessite votre confirmation de lecture :</p>
 
 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
     <p style="margin: 0;"><strong>ID du document :</strong> {{.Data.DocID}}</p>
+    {{if .Data.DocURL}}
+    <p style="margin: 10px 0 0 0;"><strong>Emplacement :</strong> <a href="{{.Data.DocURL}}">{{.Data.DocURL}}</a></p>
+    {{end}}
 </div>
 
-<p>Pour consulter et signer ce document, veuillez suivre ces étapes :</p>
+<p>Pour consulter et confirmer la lecture de ce document, veuillez suivre ces étapes :</p>
 
 <ol>
+    {{if .Data.DocURL}}
     <li>Consulter le document à : <a href="{{.Data.DocURL}}">{{.Data.DocURL}}</a></li>
-    <li>Signer le document à : <a href="{{.Data.SignURL}}">{{.Data.SignURL}}</a></li>
+    {{end}}
+    <li>Confirmer votre lecture à : <a href="{{.Data.SignURL}}">{{.Data.SignURL}}</a></li>
 </ol>
 
 <div style="margin: 30px 0;">
-    <a href="{{.Data.SignURL}}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Signer le document maintenant</a>
+    <a href="{{.Data.SignURL}}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Confirmer la lecture maintenant</a>
 </div>
 
-<p>Votre signature cryptographique fournira une preuve vérifiable que vous avez lu et pris connaissance de ce document.</p>
+<p>Votre confirmation cryptographique fournira une preuve vérifiable que vous avez lu et pris connaissance de ce document.</p>
 
 <p>Si vous avez des questions, veuillez contacter votre administrateur.</p>
 

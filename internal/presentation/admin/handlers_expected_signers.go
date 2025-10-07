@@ -2,6 +2,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -18,27 +19,36 @@ import (
 
 const maxTextareaSize = 10000
 
+type reminderService interface {
+	SendReminders(ctx context.Context, docID, sentBy string, specificEmails []string, docURL string) (*models.ReminderSendResult, error)
+	GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error)
+	GetReminderHistory(ctx context.Context, docID string) ([]*models.ReminderLog, error)
+}
+
 type ExpectedSignersHandlers struct {
-	expectedRepo *database.ExpectedSignerRepository
-	adminRepo    *database.AdminRepository
-	userService  userService
-	templates    *template.Template
-	baseURL      string
+	expectedRepo    *database.ExpectedSignerRepository
+	adminRepo       *database.AdminRepository
+	userService     userService
+	reminderService reminderService
+	templates       *template.Template
+	baseURL         string
 }
 
 func NewExpectedSignersHandlers(
 	expectedRepo *database.ExpectedSignerRepository,
 	adminRepo *database.AdminRepository,
 	userService userService,
+	reminderService reminderService,
 	templates *template.Template,
 	baseURL string,
 ) *ExpectedSignersHandlers {
 	return &ExpectedSignersHandlers{
-		expectedRepo: expectedRepo,
-		adminRepo:    adminRepo,
-		userService:  userService,
-		templates:    templates,
-		baseURL:      baseURL,
+		expectedRepo:    expectedRepo,
+		adminRepo:       adminRepo,
+		userService:     userService,
+		reminderService: reminderService,
+		templates:       templates,
+		baseURL:         baseURL,
 	}
 }
 
@@ -85,6 +95,19 @@ func (h *ExpectedSignersHandlers) HandleDocumentDetailsWithExpected(w http.Respo
 		}
 	}
 
+	// Get reminder stats
+	var reminderStats *models.ReminderStats
+	if h.reminderService != nil {
+		reminderStats, err = h.reminderService.GetReminderStats(ctx, docID)
+		if err != nil {
+			logger.Logger.Error("Failed to retrieve reminder stats", "error", err.Error())
+			reminderStats = &models.ReminderStats{
+				TotalSent:    0,
+				PendingCount: stats.PendingCount,
+			}
+		}
+	}
+
 	// Check chain integrity
 	chainIntegrity, err := h.adminRepo.VerifyDocumentChainIntegrity(ctx, docID)
 	if err != nil {
@@ -121,6 +144,7 @@ func (h *ExpectedSignersHandlers) HandleDocumentDetailsWithExpected(w http.Respo
 		Signatures           []*models.Signature
 		ExpectedSigners      []*models.ExpectedSignerWithStatus
 		Stats                *models.DocCompletionStats
+		ReminderStats        *models.ReminderStats
 		UnexpectedSignatures []*models.Signature
 		ChainIntegrity       *database.ChainIntegrityResult
 		ShareLink            string
@@ -135,6 +159,7 @@ func (h *ExpectedSignersHandlers) HandleDocumentDetailsWithExpected(w http.Respo
 		Signatures:           signatures,
 		ExpectedSigners:      expectedSigners,
 		Stats:                stats,
+		ReminderStats:        reminderStats,
 		UnexpectedSignatures: unexpectedSignatures,
 		ChainIntegrity:       chainIntegrity,
 		ShareLink:            h.baseURL + "/sign?doc=" + docID,
@@ -177,29 +202,32 @@ func (h *ExpectedSignersHandlers) HandleAddExpectedSigners(w http.ResponseWriter
 		return
 	}
 
-	emails := parseEmailsFromText(emailsText)
+	contacts := parseContactsFromText(emailsText)
 
-	if len(emails) == 0 {
+	if len(contacts) == 0 {
 		http.Redirect(w, r, "/admin/docs/"+docID, http.StatusSeeOther)
 		return
 	}
 
-	// Validate emails
-	validEmails := []string{}
-	for _, email := range emails {
-		if isValidEmail(email) {
-			validEmails = append(validEmails, email)
+	// Validate emails and build ContactInfo list
+	validContacts := []models.ContactInfo{}
+	for _, contact := range contacts {
+		if isValidEmail(contact.Email) {
+			validContacts = append(validContacts, models.ContactInfo{
+				Name:  contact.Name,
+				Email: contact.Email,
+			})
 		} else {
-			logger.Logger.Warn("Invalid email format", "email", email)
+			logger.Logger.Warn("Invalid email format", "email", contact.Email)
 		}
 	}
 
-	if len(validEmails) == 0 {
+	if len(validContacts) == 0 {
 		http.Error(w, "No valid emails provided", http.StatusBadRequest)
 		return
 	}
 
-	err = h.expectedRepo.AddExpected(ctx, docID, validEmails, user.Email)
+	err = h.expectedRepo.AddExpected(ctx, docID, validContacts, user.Email)
 	if err != nil {
 		logger.Logger.Error("Failed to add expected signers", "error", err.Error())
 		http.Error(w, "Failed to add expected signers", http.StatusInternalServerError)
@@ -277,21 +305,56 @@ func (h *ExpectedSignersHandlers) HandleGetDocumentStatusJSON(w http.ResponseWri
 	}
 }
 
-// parseEmailsFromText extracts emails from text (separated by newlines, commas, semicolons)
-func parseEmailsFromText(text string) []string {
-	// Split by multiple separators: newline, comma, semicolon, space
-	separators := regexp.MustCompile(`[\n,;\s]+`)
-	parts := separators.Split(text, -1)
+// ParsedContact represents a contact with optional name and email
+type ParsedContact struct {
+	Name  string
+	Email string
+}
 
-	emails := []string{}
-	for _, part := range parts {
-		email := strings.TrimSpace(part)
-		if email != "" {
-			emails = append(emails, email)
+// parseContactsFromText extracts contacts from text supporting formats:
+// - "Name <email@example.com>" (with name)
+// - "email@example.com" (email only)
+func parseContactsFromText(text string) []ParsedContact {
+	// Split by newlines first to preserve individual contacts
+	lines := strings.Split(text, "\n")
+
+	contacts := []ParsedContact{}
+
+	// Regex for "Name <email>" format
+	nameEmailRegex := regexp.MustCompile(`^\s*(.+?)\s*<([^>]+)>\s*$`)
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Try to match "Name <email>" format
+		if matches := nameEmailRegex.FindStringSubmatch(line); len(matches) == 3 {
+			name := strings.TrimSpace(matches[1])
+			email := strings.TrimSpace(matches[2])
+			contacts = append(contacts, ParsedContact{
+				Name:  name,
+				Email: email,
+			})
+		} else {
+			// Split by commas, semicolons, or spaces for plain emails
+			separators := regexp.MustCompile(`[,;\s]+`)
+			parts := separators.Split(line, -1)
+
+			for _, part := range parts {
+				email := strings.TrimSpace(part)
+				if email != "" {
+					contacts = append(contacts, ParsedContact{
+						Name:  "",
+						Email: email,
+					})
+				}
+			}
 		}
 	}
 
-	return emails
+	return contacts
 }
 
 // isValidEmail performs basic email validation
@@ -303,4 +366,82 @@ func isValidEmail(email string) bool {
 	// Basic regex: has @ and . after @
 	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 	return emailRegex.MatchString(email)
+}
+
+// HandleSendReminders sends reminder emails to pending signers
+func (h *ExpectedSignersHandlers) HandleSendReminders(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	docID := chi.URLParam(r, "docID")
+
+	if docID == "" {
+		http.Error(w, "Document ID required", http.StatusBadRequest)
+		return
+	}
+
+	if h.reminderService == nil {
+		http.Error(w, "Reminder service not configured", http.StatusInternalServerError)
+		return
+	}
+
+	user, err := h.userService.GetUser(r)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	sendMode := r.FormValue("send_mode")
+	docURL := r.FormValue("doc_url")
+	var selectedEmails []string
+
+	if sendMode == "selected" {
+		selectedEmails = r.Form["emails"]
+		if len(selectedEmails) == 0 {
+			http.Error(w, "No emails selected", http.StatusBadRequest)
+			return
+		}
+	}
+
+	result, err := h.reminderService.SendReminders(ctx, docID, user.Email, selectedEmails, docURL)
+	if err != nil {
+		logger.Logger.Error("Failed to send reminders", "error", err.Error())
+		http.Error(w, "Failed to send reminders", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Logger.Info("Reminders sent", "doc_id", docID, "sent_by", user.Email, "total", result.TotalAttempted, "success", result.SuccessfullySent, "failed", result.Failed)
+
+	http.Redirect(w, r, "/admin/docs/"+docID, http.StatusSeeOther)
+}
+
+// HandleGetReminderHistory returns reminder history as JSON
+func (h *ExpectedSignersHandlers) HandleGetReminderHistory(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	docID := chi.URLParam(r, "docID")
+
+	if docID == "" {
+		http.Error(w, "Document ID required", http.StatusBadRequest)
+		return
+	}
+
+	if h.reminderService == nil {
+		http.Error(w, "Reminder service not configured", http.StatusInternalServerError)
+		return
+	}
+
+	history, err := h.reminderService.GetReminderHistory(ctx, docID)
+	if err != nil {
+		http.Error(w, "Failed to get reminder history", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(history); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }

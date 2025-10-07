@@ -16,6 +16,7 @@ import (
 	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/config"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/email"
 	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/pkg/crypto"
@@ -26,6 +27,7 @@ type Server struct {
 	db          *sql.DB
 	router      *chi.Mux
 	templates   *template.Template
+	emailSender email.Sender
 	baseURL     string
 	adminEmails []string
 	authService *auth.OauthService
@@ -33,7 +35,7 @@ type Server struct {
 }
 
 func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
-	db, tmpl, signer, i18nService, err := initInfrastructure(ctx, cfg)
+	db, tmpl, signer, i18nService, emailSender, err := initInfrastructure(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
@@ -75,6 +77,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		db:          db,
 		router:      router,
 		templates:   tmpl,
+		emailSender: emailSender,
 		baseURL:     cfg.App.BaseURL,
 		adminEmails: cfg.App.AdminEmails,
 		authService: authService,
@@ -124,31 +127,41 @@ func (s *Server) GetAuthService() *auth.OauthService {
 	return s.authService
 }
 
-func initInfrastructure(ctx context.Context, cfg *config.Config) (*sql.DB, *template.Template, *crypto.Ed25519Signer, *i18n.I18n, error) {
+func (s *Server) GetEmailSender() email.Sender {
+	return s.emailSender
+}
+
+func initInfrastructure(ctx context.Context, cfg *config.Config) (*sql.DB, *template.Template, *crypto.Ed25519Signer, *i18n.I18n, email.Sender, error) {
 	db, err := database.InitDB(ctx, database.Config{
 		DSN: cfg.Database.DSN,
 	})
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	tmpl, err := initTemplates()
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize templates: %w", err)
 	}
 
 	signer, err := crypto.NewEd25519Signer()
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize signer: %w", err)
 	}
 
 	localesDir := getLocalesDir()
 	i18nService, err := i18n.NewI18n(localesDir)
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to initialize i18n: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to initialize i18n: %w", err)
 	}
 
-	return db, tmpl, signer, i18nService, nil
+	// Initialize email sender
+	templatesDir := getTemplatesDir()
+	emailTemplatesDir := filepath.Join(templatesDir, "emails")
+	renderer := email.NewRenderer(emailTemplatesDir, cfg.App.BaseURL, cfg.App.Organisation, cfg.Mail.FromName, cfg.Mail.From, "fr")
+	emailSender := email.NewSMTPSender(cfg.Mail, renderer)
+
+	return db, tmpl, signer, i18nService, emailSender, nil
 }
 
 func setupRouter(
