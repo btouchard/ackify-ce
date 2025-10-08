@@ -51,15 +51,9 @@
 
   <!-- Documents List -->
   <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-    <div class="flex items-center justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-900">{{index .T "admin.title"}}</h1>
-        <p class="text-slate-600 mt-1">{{index .T "admin.subtitle"}}</p>
-      </div>
-      <div class="flex items-center space-x-2">
-        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-        <span class="text-sm text-slate-600">{{index .T "admin.connected"}}</span>
-      </div>
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-slate-900">{{index .T "admin.title"}}</h1>
+      <p class="text-slate-600 mt-1">{{index .T "admin.subtitle"}}</p>
     </div>
 
     {{if .Documents}}

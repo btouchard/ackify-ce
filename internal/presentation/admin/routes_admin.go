@@ -20,6 +20,7 @@ func RegisterAdminRoutes(cfg *config.Config, templates *template.Template, db *s
 		adminRepo := database.NewAdminRepository(db)
 		expectedSignerRepo := database.NewExpectedSignerRepository(db)
 		reminderRepo := database.NewReminderRepository(db)
+		documentRepo := database.NewDocumentRepository(db)
 
 		// Initialize reminder service if email sender is available
 		var reminderService reminderService
@@ -37,7 +38,8 @@ func RegisterAdminRoutes(cfg *config.Config, templates *template.Template, db *s
 		// Initialize middleware and handlers
 		adminMiddleware := NewAdminMiddleware(authService, cfg.App.BaseURL, cfg.App.AdminEmails, templates)
 		adminHandlers := NewAdminHandlers(adminRepo, authService, templates, cfg.App.BaseURL)
-		expectedHandlers := NewExpectedSignersHandlers(expectedSignerRepo, adminRepo, authService, reminderService, templates, cfg.App.BaseURL)
+		expectedHandlers := NewExpectedSignersHandlers(expectedSignerRepo, adminRepo, documentRepo, authService, reminderService, templates, cfg.App.BaseURL)
+		documentHandlers := NewDocumentHandlers(documentRepo, authService)
 
 		// Register admin routes
 		r.Get("/admin", adminMiddleware.RequireAdmin(adminHandlers.HandleDashboard))
@@ -48,5 +50,10 @@ func RegisterAdminRoutes(cfg *config.Config, templates *template.Template, db *s
 		r.Get("/admin/docs/{docID}/reminders/history", adminMiddleware.RequireAdmin(expectedHandlers.HandleGetReminderHistory))
 		r.Get("/admin/docs/{docID}/status.json", adminMiddleware.RequireAdmin(expectedHandlers.HandleGetDocumentStatusJSON))
 		r.Get("/admin/api/chain-integrity/{docID}", adminMiddleware.RequireAdmin(adminHandlers.HandleChainIntegrityAPI))
+
+		// Document metadata routes
+		r.Get("/admin/docs/{docID}/metadata", adminMiddleware.RequireAdmin(documentHandlers.HandleGetDocumentMetadata))
+		r.Post("/admin/docs/{docID}/metadata", adminMiddleware.RequireAdmin(documentHandlers.HandleUpdateDocumentMetadata))
+		r.Delete("/admin/docs/{docID}/metadata", adminMiddleware.RequireAdmin(documentHandlers.HandleDeleteDocumentMetadata))
 	}
 }

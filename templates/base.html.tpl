@@ -7,6 +7,7 @@
 {{if and (ne .TemplateName "admin_dashboard") (ne .TemplateName "admin_doc_details") (ne .TemplateName "admin_document_expected_signers")}}{{if .DocID}}
 <link rel="alternate" type="application/json+oembed" href="/oembed?url={{.BaseURL}}/sign?doc={{.DocID}}&format=json" title="Signataires du document {{.DocID}}" />
 {{end}}{{end}}
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <link rel="stylesheet" href="/static/output.css">
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">

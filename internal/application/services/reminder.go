@@ -40,6 +40,7 @@ func (s *ReminderService) SendReminders(
 	sentBy string,
 	specificEmails []string,
 	docURL string,
+	locale string,
 ) (*models.ReminderSendResult, error) {
 
 	allSigners, err := s.expectedSignerRepo.ListWithStatusByDocID(ctx, docID)
@@ -73,7 +74,7 @@ func (s *ReminderService) SendReminders(
 	}
 
 	for _, signer := range pendingSigners {
-		err := s.sendSingleReminder(ctx, docID, signer.Email, signer.Name, sentBy, docURL)
+		err := s.sendSingleReminder(ctx, docID, signer.Email, signer.Name, sentBy, docURL, locale)
 		if err != nil {
 			result.Failed++
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", signer.Email, err))
@@ -93,6 +94,7 @@ func (s *ReminderService) sendSingleReminder(
 	recipientName string,
 	sentBy string,
 	docURL string,
+	locale string,
 ) error {
 
 	signURL := fmt.Sprintf("%s/sign?doc=%s", s.baseURL, docID)
@@ -106,7 +108,7 @@ func (s *ReminderService) sendSingleReminder(
 		Status:         "sent",
 	}
 
-	err := email.SendSignatureReminderEmail(ctx, s.emailSender, []string{recipientEmail}, "fr", docID, docURL, signURL, recipientName)
+	err := email.SendSignatureReminderEmail(ctx, s.emailSender, []string{recipientEmail}, locale, docID, docURL, signURL, recipientName)
 	if err != nil {
 		log.Status = "failed"
 		errMsg := err.Error()

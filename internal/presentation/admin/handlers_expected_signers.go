@@ -20,7 +20,7 @@ import (
 const maxTextareaSize = 10000
 
 type reminderService interface {
-	SendReminders(ctx context.Context, docID, sentBy string, specificEmails []string, docURL string) (*models.ReminderSendResult, error)
+	SendReminders(ctx context.Context, docID, sentBy string, specificEmails []string, docURL string, locale string) (*models.ReminderSendResult, error)
 	GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error)
 	GetReminderHistory(ctx context.Context, docID string) ([]*models.ReminderLog, error)
 }
@@ -28,6 +28,7 @@ type reminderService interface {
 type ExpectedSignersHandlers struct {
 	expectedRepo    *database.ExpectedSignerRepository
 	adminRepo       *database.AdminRepository
+	documentRepo    *database.DocumentRepository
 	userService     userService
 	reminderService reminderService
 	templates       *template.Template
@@ -37,6 +38,7 @@ type ExpectedSignersHandlers struct {
 func NewExpectedSignersHandlers(
 	expectedRepo *database.ExpectedSignerRepository,
 	adminRepo *database.AdminRepository,
+	documentRepo *database.DocumentRepository,
 	userService userService,
 	reminderService reminderService,
 	templates *template.Template,
@@ -45,6 +47,7 @@ func NewExpectedSignersHandlers(
 	return &ExpectedSignersHandlers{
 		expectedRepo:    expectedRepo,
 		adminRepo:       adminRepo,
+		documentRepo:    documentRepo,
 		userService:     userService,
 		reminderService: reminderService,
 		templates:       templates,
@@ -121,6 +124,16 @@ func (h *ExpectedSignersHandlers) HandleDocumentDetailsWithExpected(w http.Respo
 		}
 	}
 
+	// Get document metadata
+	var documentMetadata *models.Document
+	if h.documentRepo != nil {
+		documentMetadata, err = h.documentRepo.GetByDocID(ctx, docID)
+		if err != nil {
+			logger.Logger.Error("Failed to retrieve document metadata", "error", err.Error())
+			documentMetadata = nil
+		}
+	}
+
 	// Find unexpected signatures (signed but not in expected list)
 	unexpectedSignatures := []*models.Signature{}
 	if len(expectedSigners) > 0 {
@@ -141,6 +154,7 @@ func (h *ExpectedSignersHandlers) HandleDocumentDetailsWithExpected(w http.Respo
 		User                 *models.User
 		BaseURL              string
 		DocID                *string
+		Document             *models.Document
 		Signatures           []*models.Signature
 		ExpectedSigners      []*models.ExpectedSignerWithStatus
 		Stats                *models.DocCompletionStats
@@ -156,6 +170,7 @@ func (h *ExpectedSignersHandlers) HandleDocumentDetailsWithExpected(w http.Respo
 		User:                 user,
 		BaseURL:              h.baseURL,
 		DocID:                &docID,
+		Document:             documentMetadata,
 		Signatures:           signatures,
 		ExpectedSigners:      expectedSigners,
 		Stats:                stats,
@@ -395,7 +410,6 @@ func (h *ExpectedSignersHandlers) HandleSendReminders(w http.ResponseWriter, r *
 	}
 
 	sendMode := r.FormValue("send_mode")
-	docURL := r.FormValue("doc_url")
 	var selectedEmails []string
 
 	if sendMode == "selected" {
@@ -406,7 +420,22 @@ func (h *ExpectedSignersHandlers) HandleSendReminders(w http.ResponseWriter, r *
 		}
 	}
 
-	result, err := h.reminderService.SendReminders(ctx, docID, user.Email, selectedEmails, docURL)
+	// Get document URL from metadata
+	var docURL string
+	if h.documentRepo != nil {
+		doc, err := h.documentRepo.GetByDocID(ctx, docID)
+		if err != nil {
+			logger.Logger.Error("Failed to get document metadata for reminder", "error", err.Error(), "doc_id", docID)
+		}
+		if doc != nil && doc.URL != "" {
+			docURL = doc.URL
+		}
+	}
+
+	// Get language from context
+	locale := i18n.GetLang(ctx)
+
+	result, err := h.reminderService.SendReminders(ctx, docID, user.Email, selectedEmails, docURL, locale)
 	if err != nil {
 		logger.Logger.Error("Failed to send reminders", "error", err.Error())
 		http.Error(w, "Failed to send reminders", http.StatusInternalServerError)

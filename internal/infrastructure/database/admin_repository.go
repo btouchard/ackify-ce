@@ -39,6 +39,8 @@ func (r *AdminRepository) ListDocumentsWithCounts(ctx context.Context) ([]Docume
 			SELECT DISTINCT doc_id FROM signatures
 			UNION
 			SELECT DISTINCT doc_id FROM expected_signers
+			UNION
+			SELECT DISTINCT doc_id FROM documents
 		) AS all_docs
 		LEFT JOIN (
 			SELECT doc_id, COUNT(*) as sig_count
