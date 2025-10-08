@@ -262,10 +262,24 @@ CREATE TABLE expected_signers (
     id BIGSERIAL PRIMARY KEY,
     doc_id TEXT NOT NULL,
     email TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',           -- Nom d'affichage (optionnel)
     added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     added_by TEXT NOT NULL,                  -- Admin qui a ajouté
     notes TEXT,
     UNIQUE (doc_id, email)                   -- Une attente par email/doc
+);
+
+-- Table des métadonnées de documents
+CREATE TABLE documents (
+    doc_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',            -- Emplacement du document
+    checksum TEXT NOT NULL DEFAULT '',       -- SHA-256/SHA-512/MD5
+    checksum_algorithm TEXT NOT NULL DEFAULT 'SHA-256',
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by TEXT NOT NULL DEFAULT ''
 );
 ```
 
@@ -275,6 +289,7 @@ CREATE TABLE expected_signers (
 - ✅ **Intégrité** : Hachage SHA-256 pour détecter modifications
 - ✅ **Non-répudiation** : Signature Ed25519 cryptographiquement prouvable
 - ✅ **Suivi** : Signataires attendus pour monitoring de complétion
+- ✅ **Métadonnées** : Informations de documents avec URL, checksum et description
 
 ---
 
@@ -356,6 +371,11 @@ ACKIFY_MAIL_PASSWORD="${SMTP_PASSWORD}"
 - `GET /admin/docs/{docID}` - Détails du document avec gestion des signataires attendus
 - `POST /admin/docs/{docID}/expected` - Ajouter des signataires attendus
 - `POST /admin/docs/{docID}/expected/remove` - Retirer un signataire attendu
+- `POST /admin/docs/{docID}/reminders/send` - Envoyer des rappels par email aux lecteurs en attente
+- `GET /admin/docs/{docID}/reminders/history` - Obtenir l'historique des rappels en JSON
+- `GET /admin/docs/{docID}/metadata` - Obtenir les métadonnées du document en JSON
+- `POST /admin/docs/{docID}/metadata` - Créer ou mettre à jour les métadonnées du document
+- `DELETE /admin/docs/{docID}/metadata` - Supprimer les métadonnées du document
 - `GET /admin/docs/{docID}/status.json` - Statut du document en JSON (AJAX)
 - `GET /admin/api/chain-integrity/{docID}` - Vérification d'intégrité de chaîne (JSON)
 
@@ -364,11 +384,21 @@ Contrôle d'accès: définir `ACKIFY_ADMIN_EMAILS` avec des emails admins, sépa
 ACKIFY_ADMIN_EMAILS="alice@entreprise.com,bob@entreprise.com"
 ```
 
+#### Gestion des Métadonnées de Documents
+Les administrateurs peuvent gérer des métadonnées complètes pour chaque document :
+- **Stocker les informations** : Titre, URL/emplacement, checksum, description
+- **Vérification d'intégrité** : Support pour les checksums SHA-256, SHA-512 et MD5
+- **Accès facile** : Copie en un clic pour les checksums, URLs de documents cliquables
+- **Horodatage automatique** : Suivi de la création et des mises à jour avec triggers PostgreSQL
+- **Intégration email** : URL du document automatiquement incluse dans les emails de rappel
+
 #### Fonctionnalité Signataires Attendus
 Les administrateurs peuvent définir et suivre les signataires attendus pour chaque document :
 - **Ajouter des signataires** : Coller des emails séparés par des sauts de ligne, virgules ou point-virgules
+- **Support des noms** : Utiliser le format "Nom <email@example.com>" pour les emails personnalisés
 - **Suivre la complétion** : Barre de progression visuelle avec pourcentage
 - **Monitorer le statut** : Voir qui a signé (✓) vs. qui est en attente (⏳)
+- **Rappels par email** : Envoyer des rappels en masse ou sélectifs dans la langue de l'utilisateur
 - **Détecter les signatures inattendues** : Identifier les utilisateurs qui ont signé sans être attendus
 - **Partage facile** : Copie en un clic du lien de signature du document
 - **Gestion en masse** : Ajouter/retirer des signataires individuellement ou en lot

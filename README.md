@@ -254,10 +254,24 @@ CREATE TABLE expected_signers (
     id BIGSERIAL PRIMARY KEY,
     doc_id TEXT NOT NULL,
     email TEXT NOT NULL,
+    name TEXT NOT NULL DEFAULT '',          -- Display name (optional)
     added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     added_by TEXT NOT NULL,                 -- Admin who added
     notes TEXT,
     UNIQUE (doc_id, email)                  -- One expectation per email/doc
+);
+
+-- Document metadata table
+CREATE TABLE documents (
+    doc_id TEXT PRIMARY KEY,
+    title TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL DEFAULT '',           -- Document location
+    checksum TEXT NOT NULL DEFAULT '',      -- SHA-256/SHA-512/MD5
+    checksum_algorithm TEXT NOT NULL DEFAULT 'SHA-256',
+    description TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by TEXT NOT NULL DEFAULT ''
 );
 ```
 
@@ -267,6 +281,7 @@ CREATE TABLE expected_signers (
 - ✅ **Integrity**: SHA-256 hash to detect modifications
 - ✅ **Non-repudiation**: Ed25519 signature cryptographically provable
 - ✅ **Tracking**: Expected signers for completion monitoring
+- ✅ **Metadata**: Document information with URL, checksum, and description
 
 ---
 
@@ -348,6 +363,11 @@ ACKIFY_MAIL_PASSWORD="${SMTP_PASSWORD}"
 - `GET /admin/docs/{docID}` - Document details with expected signers management
 - `POST /admin/docs/{docID}/expected` - Add expected signers
 - `POST /admin/docs/{docID}/expected/remove` - Remove an expected signer
+- `POST /admin/docs/{docID}/reminders/send` - Send email reminders to pending readers
+- `GET /admin/docs/{docID}/reminders/history` - Get reminder history as JSON
+- `GET /admin/docs/{docID}/metadata` - Get document metadata as JSON
+- `POST /admin/docs/{docID}/metadata` - Create or update document metadata
+- `DELETE /admin/docs/{docID}/metadata` - Delete document metadata
 - `GET /admin/docs/{docID}/status.json` - Document status as JSON (AJAX)
 - `GET /admin/api/chain-integrity/{docID}` - Chain integrity verification JSON
 
@@ -356,11 +376,21 @@ Access control: set `ACKIFY_ADMIN_EMAILS` with a comma-separated list of admin e
 ACKIFY_ADMIN_EMAILS="alice@company.com,bob@company.com"
 ```
 
+#### Document Metadata Management
+Administrators can manage comprehensive metadata for each document:
+- **Store document information**: Title, URL/location, checksum, description
+- **Integrity verification**: Support for SHA-256, SHA-512, and MD5 checksums
+- **Easy access**: One-click copy for checksums, clickable document URLs
+- **Automatic timestamps**: Track creation and updates with PostgreSQL triggers
+- **Email integration**: Document URL automatically included in reminder emails
+
 #### Expected Signers Feature
 Administrators can define and track expected signers for each document:
 - **Add expected signers**: Paste emails separated by newlines, commas, or semicolons
+- **Support names**: Use format "Name <email@example.com>" for personalized emails
 - **Track completion**: Visual progress bar with completion percentage
 - **Monitor status**: See who signed (✓) vs. who is pending (⏳)
+- **Email reminders**: Send bulk or selective reminders in user's language
 - **Detect unexpected signatures**: Identify users who signed but weren't expected
 - **Share easily**: One-click copy of document signature link
 - **Bulk management**: Add/remove signers individually or in batch
