@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Makefile for ackify-ce project
 
-.PHONY: build test test-unit test-integration test-short coverage lint fmt vet clean help
+.PHONY: build build-frontend build-backend build-all test test-unit test-integration test-short coverage lint fmt vet clean help dev dev-frontend dev-backend migrate-up migrate-down docker-rebuild
 
 # Variables
 BINARY_NAME=ackify-ce
-BUILD_DIR=./cmd/community
+BUILD_DIR=./backend/cmd/community
+MIGRATE_DIR=./backend/cmd/migrate
 COVERAGE_DIR=coverage
+WEBAPP_DIR=./webapp
 
 # Default target
 help: ## Display this help message
@@ -14,30 +16,37 @@ help: ## Display this help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # Build targets
-build: ## Build the application
+build: build-all ## Build the complete application (frontend + backend)
+
+build-frontend: ## Build the Vue.js frontend
+	@echo "Building frontend..."
+	cd $(WEBAPP_DIR) && npm install && npm run build
+
+build-backend: ## Build the Go backend
 	@echo "Building $(BINARY_NAME)..."
 	go build -o $(BINARY_NAME) $(BUILD_DIR)
+
+build-all: build-frontend build-backend ## Build frontend and backend
 
 # Test targets
 test: test-unit test-integration ## Run all tests
 
 test-unit: ## Run unit tests
 	@echo "Running unit tests with race detection..."
-	CGO_ENABLED=1 go test -short -race -v ./internal/... ./pkg/... ./cmd/...
+	CGO_ENABLED=1 go test -short -race -v ./backend/internal/... ./backend/pkg/... ./backend/cmd/...
 
-test-integration: ## Run integration tests (requires PostgreSQL)
+test-integration: ## Run integration tests (requires PostgreSQL - migrations are applied automatically)
 	@echo "Running integration tests with race detection..."
-	@if [ -z "$(DB_DSN)" ]; then \
-		export DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
-	fi; \
-	export INTEGRATION_TESTS=true; \
-	CGO_ENABLED=1 go test -v -race -tags=integration ./internal/infrastructure/database/...
+	@echo "Note: Migrations are applied automatically by test setup"
+	@export INTEGRATION_TESTS=1; \
+	export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
+	CGO_ENABLED=1 go test -v -race -tags=integration ./backend/internal/infrastructure/database/...
 
-test-integration-setup: ## Setup test database for integration tests
+test-integration-setup: ## Setup test database for integration tests (migrations applied by tests)
 	@echo "Setting up test database..."
 	@psql "postgres://postgres:testpassword@localhost:5432/postgres?sslmode=disable" -c "DROP DATABASE IF EXISTS ackify_test;" || true
 	@psql "postgres://postgres:testpassword@localhost:5432/postgres?sslmode=disable" -c "CREATE DATABASE ackify_test;"
-	@echo "Test database ready!"
+	@echo "Test database ready! Migrations will be applied automatically when tests run."
 
 test-short: ## Run only quick tests
 	@echo "Running short tests..."
@@ -55,18 +64,18 @@ coverage: ## Generate test coverage report
 coverage-integration: ## Generate integration test coverage report
 	@echo "Generating integration coverage report..."
 	@mkdir -p $(COVERAGE_DIR)
-	@export DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
-	export INTEGRATION_TESTS=true; \
-	go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./internal/infrastructure/database/...
+	@export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
+	export INTEGRATION_TESTS=1; \
+	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./backend/internal/infrastructure/database/...
 	go tool cover -html=$(COVERAGE_DIR)/coverage-integration.out -o $(COVERAGE_DIR)/coverage-integration.html
 	@echo "Integration coverage report generated: $(COVERAGE_DIR)/coverage-integration.html"
 
 coverage-all: ## Generate full coverage report (unit + integration)
 	@echo "Generating full coverage report..."
 	@mkdir -p $(COVERAGE_DIR)
-	@export DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
-	export INTEGRATION_TESTS=true; \
-	go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-all.out ./...
+	@export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
+	export INTEGRATION_TESTS=1; \
+	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-all.out ./...
 	go tool cover -html=$(COVERAGE_DIR)/coverage-all.out -o $(COVERAGE_DIR)/coverage-all.html
 	go tool cover -func=$(COVERAGE_DIR)/coverage-all.out
 	@echo "Full coverage report generated: $(COVERAGE_DIR)/coverage-all.html"
@@ -91,16 +100,38 @@ lint-extra: ## Run staticcheck if available (installs if missing)
 	staticcheck ./...
 
 # Development targets
+dev: dev-backend ## Start development server (backend only - frontend served by backend)
+
+dev-frontend: ## Start frontend development server (Vite hot reload)
+	@echo "Starting frontend dev server..."
+	cd $(WEBAPP_DIR) && npm run dev
+
+dev-backend: ## Run backend in development mode
+	@echo "Starting backend..."
+	go run $(BUILD_DIR)
+
 clean: ## Clean build artifacts and test coverage
 	@echo "Cleaning..."
 	rm -f $(BINARY_NAME)
 	rm -rf $(COVERAGE_DIR)
+	rm -rf $(WEBAPP_DIR)/dist
+	rm -rf $(WEBAPP_DIR)/node_modules
 	go clean ./...
 
-deps: ## Download and tidy dependencies
-	@echo "Downloading dependencies..."
+deps: ## Download and tidy dependencies (Go + npm)
+	@echo "Downloading Go dependencies..."
 	go mod download
 	go mod tidy
+	@echo "Installing frontend dependencies..."
+	cd $(WEBAPP_DIR) && npm install
+
+migrate-up: ## Apply database migrations
+	@echo "Applying database migrations..."
+	go run $(MIGRATE_DIR) up
+
+migrate-down: ## Rollback last database migration
+	@echo "Rolling back last migration..."
+	go run $(MIGRATE_DIR) down
 
 # Mock generation (none at the moment)
 generate-mocks: ## No exported interfaces to mock (skipped)
@@ -109,6 +140,19 @@ generate-mocks: ## No exported interfaces to mock (skipped)
 # Docker targets
 docker-build: ## Build Docker image
 	docker build -t ackify-ce:latest .
+
+docker-rebuild: ## Rebuild and restart Docker containers (as per CLAUDE.md)
+	@echo "Rebuilding and restarting Docker containers..."
+	docker compose -f compose.local.yml up -d --force-recreate ackify-ce --build
+
+docker-up: ## Start Docker containers
+	docker compose -f compose.local.yml up -d
+
+docker-down: ## Stop Docker containers
+	docker compose -f compose.local.yml down
+
+docker-logs: ## View Docker logs
+	docker compose -f compose.local.yml logs -f ackify-ce
 
 docker-test: ## Run tests in Docker environment
 	docker compose -f compose.local.yml up -d ackify-db

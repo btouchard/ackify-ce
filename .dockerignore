@@ -15,8 +15,6 @@ LICENSE
 .env
 .env.local
 .env.example
-community
-migrate
 compose.cloud.yml
 compose.local.yml
 

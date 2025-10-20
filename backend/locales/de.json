@@ -1,0 +1,17 @@
+{
+  "email.reminder.subject": "Erinnerung zur Bestätigung des Dokumentenlesens",
+  "email.reminder.title": "Erinnerung zur Bestätigung des Dokumentenlesens",
+  "email.reminder.greeting_with_name": "Hallo {{.RecipientName}},",
+  "email.reminder.greeting": "Hallo,",
+  "email.reminder.intro": "Dies ist eine Erinnerung, dass das folgende Dokument Ihre Lesebestätigung erfordert:",
+  "email.reminder.doc_id_label": "Dokument-ID:",
+  "email.reminder.doc_location_label": "Standort:",
+  "email.reminder.instructions": "Um dieses Dokument anzusehen und das Lesen zu bestätigen, folgen Sie bitte diesen Schritten:",
+  "email.reminder.step_view_doc": "Dokument ansehen unter:",
+  "email.reminder.step_sign": "Ihr Lesen bestätigen unter:",
+  "email.reminder.cta_button": "Lesen jetzt bestätigen",
+  "email.reminder.explanation": "Ihre kryptographische Bestätigung liefert einen überprüfbaren Nachweis, dass Sie dieses Dokument gelesen und zur Kenntnis genommen haben.",
+  "email.reminder.contact": "Bei Fragen wenden Sie sich bitte an Ihren Administrator.",
+  "email.reminder.regards": "Mit freundlichen Grüßen,",
+  "email.reminder.team": "Das {{.Organisation}}-Team"
+}

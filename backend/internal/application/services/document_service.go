@@ -1,0 +1,311 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+package services
+
+import (
+	"context"
+	"crypto/rand"
+	"fmt"
+	"math/big"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/config"
+	"github.com/btouchard/ackify-ce/backend/pkg/checksum"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+)
+
+type documentRepository interface {
+	Create(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
+	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
+	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
+}
+
+// DocumentService handles document metadata operations and unique ID generation
+type DocumentService struct {
+	repo           documentRepository
+	checksumConfig *config.ChecksumConfig
+}
+
+// NewDocumentService initializes the document service with its repository dependency
+func NewDocumentService(repo documentRepository, checksumConfig *config.ChecksumConfig) *DocumentService {
+	return &DocumentService{
+		repo:           repo,
+		checksumConfig: checksumConfig,
+	}
+}
+
+// CreateDocumentRequest represents the request to create a document
+type CreateDocumentRequest struct {
+	Reference string `json:"reference" validate:"required,min=1"`
+	Title     string `json:"title"`
+}
+
+// CreateDocument generates a collision-resistant base36 identifier and persists document metadata
+func (s *DocumentService) CreateDocument(ctx context.Context, req CreateDocumentRequest) (*models.Document, error) {
+	logger.Logger.Info("Document creation attempt", "reference", req.Reference)
+
+	var docID string
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		docID = generateDocID()
+
+		existing, err := s.repo.GetByDocID(ctx, docID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check doc_id uniqueness: %w", err)
+		}
+
+		if existing == nil {
+			break
+		}
+
+		logger.Logger.Debug("Generated doc_id already exists, retrying",
+			"doc_id", docID, "attempt", i+1)
+	}
+
+	var url, title string
+	if strings.HasPrefix(req.Reference, "http://") || strings.HasPrefix(req.Reference, "https://") {
+		url = req.Reference
+
+		if req.Title == "" {
+			title = extractTitleFromURL(req.Reference)
+		} else {
+			title = req.Title
+		}
+	} else {
+		url = ""
+		if req.Title == "" {
+			title = req.Reference
+		} else {
+			title = req.Title
+		}
+	}
+
+	input := models.DocumentInput{
+		Title: title,
+		URL:   url,
+	}
+
+	// Automatically compute checksum for remote URLs if enabled
+	if url != "" && s.checksumConfig != nil {
+		checksumResult := s.computeChecksumForURL(url)
+		if checksumResult != nil {
+			input.Checksum = checksumResult.ChecksumHex
+			input.ChecksumAlgorithm = checksumResult.Algorithm
+			logger.Logger.Info("Automatically computed checksum for document",
+				"doc_id", docID,
+				"checksum", checksumResult.ChecksumHex,
+				"algorithm", checksumResult.Algorithm)
+		}
+	}
+
+	doc, err := s.repo.Create(ctx, docID, input, "")
+	if err != nil {
+		logger.Logger.Error("Failed to create document",
+			"doc_id", docID,
+			"error", err.Error())
+		return nil, fmt.Errorf("failed to create document: %w", err)
+	}
+
+	logger.Logger.Info("Document created successfully",
+		"doc_id", docID,
+		"url", url,
+		"title", title)
+
+	return doc, nil
+}
+
+func generateDocID() string {
+	timestamp := time.Now().Unix()
+	timestampB36 := strconv.FormatInt(timestamp, 36)
+
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	const suffixLen = 4
+
+	suffix := make([]byte, suffixLen)
+	for i := range suffix {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			suffix[i] = charset[(int(timestamp)+i)%len(charset)]
+		} else {
+			suffix[i] = charset[n.Int64()]
+		}
+	}
+
+	return timestampB36 + string(suffix)
+}
+
+func extractTitleFromURL(urlStr string) string {
+	urlStr = strings.TrimRight(urlStr, "/")
+
+	urlStr = strings.TrimPrefix(urlStr, "http://")
+	urlStr = strings.TrimPrefix(urlStr, "https://")
+
+	parts := strings.Split(urlStr, "/")
+
+	if len(parts) == 0 {
+		return urlStr
+	}
+
+	var lastSegment string
+	for i := len(parts) - 1; i >= 0; i-- {
+		if parts[i] != "" {
+			lastSegment = parts[i]
+			break
+		}
+	}
+
+	if lastSegment == "" {
+		if len(parts) > 0 && parts[0] != "" {
+			return parts[0]
+		}
+		return urlStr
+	}
+
+	if idx := strings.Index(lastSegment, "?"); idx >= 0 {
+		lastSegment = lastSegment[:idx]
+	}
+
+	if idx := strings.Index(lastSegment, "#"); idx >= 0 {
+		lastSegment = lastSegment[:idx]
+	}
+
+	if idx := strings.LastIndex(lastSegment, "."); idx > 0 {
+		return lastSegment[:idx]
+	}
+
+	return lastSegment
+}
+
+// computeChecksumForURL attempts to compute the checksum for a remote URL
+// Returns nil if the checksum cannot be computed (error, too large, etc.)
+func (s *DocumentService) computeChecksumForURL(url string) *checksum.Result {
+	if s.checksumConfig == nil {
+		return nil
+	}
+
+	opts := checksum.ComputeOptions{
+		MaxBytes:           s.checksumConfig.MaxBytes,
+		TimeoutMs:          s.checksumConfig.TimeoutMs,
+		MaxRedirects:       s.checksumConfig.MaxRedirects,
+		AllowedContentType: s.checksumConfig.AllowedContentType,
+		SkipSSRFCheck:      s.checksumConfig.SkipSSRFCheck,
+		InsecureSkipVerify: s.checksumConfig.InsecureSkipVerify,
+	}
+
+	result, err := checksum.ComputeRemoteChecksum(url, opts)
+	if err != nil {
+		logger.Logger.Warn("Failed to compute checksum for URL",
+			"url", url,
+			"error", err.Error())
+		return nil
+	}
+
+	return result
+}
+
+type ReferenceType string
+
+const (
+	ReferenceTypeURL       ReferenceType = "url"
+	ReferenceTypePath      ReferenceType = "path"
+	ReferenceTypeReference ReferenceType = "reference"
+)
+
+func detectReferenceType(ref string) ReferenceType {
+	if strings.HasPrefix(ref, "http://") || strings.HasPrefix(ref, "https://") {
+		return ReferenceTypeURL
+	}
+
+	if strings.Contains(ref, "/") || strings.Contains(ref, "\\") {
+		return ReferenceTypePath
+	}
+
+	return ReferenceTypeReference
+}
+
+// FindByReference finds a document by its reference without creating it
+func (s *DocumentService) FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error) {
+	doc, err := s.repo.FindByReference(ctx, ref, refType)
+	if err != nil {
+		return nil, err
+	}
+	return doc, nil
+}
+
+// FindOrCreateDocument performs smart lookup by URL/path/reference or creates new document if not found
+func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error) {
+	logger.Logger.Info("Find or create document", "reference", ref)
+
+	refType := detectReferenceType(ref)
+	logger.Logger.Debug("Reference type detected", "type", refType, "reference", ref)
+
+	doc, err := s.repo.FindByReference(ctx, ref, string(refType))
+	if err != nil {
+		logger.Logger.Error("Error searching for document", "reference", ref, "error", err.Error())
+		return nil, false, fmt.Errorf("failed to search for document: %w", err)
+	}
+
+	if doc != nil {
+		logger.Logger.Info("Document found", "doc_id", doc.DocID, "reference", ref)
+		return doc, false, nil
+	}
+
+	logger.Logger.Info("Document not found, creating new one", "reference", ref)
+
+	var title string
+	switch refType {
+	case ReferenceTypeURL:
+		title = extractTitleFromURL(ref)
+	case ReferenceTypePath:
+		title = extractTitleFromURL(ref)
+	case ReferenceTypeReference:
+		title = ref
+	}
+
+	createReq := CreateDocumentRequest{
+		Reference: ref,
+		Title:     title,
+	}
+
+	if refType == ReferenceTypeReference {
+		input := models.DocumentInput{
+			Title: title,
+			URL:   "",
+		}
+
+		doc, err := s.repo.Create(ctx, ref, input, "")
+		if err != nil {
+			logger.Logger.Error("Failed to create document with custom doc_id",
+				"doc_id", ref,
+				"error", err.Error())
+			return nil, false, fmt.Errorf("failed to create document: %w", err)
+		}
+
+		logger.Logger.Info("Document created with custom doc_id",
+			"doc_id", ref,
+			"title", title)
+
+		return doc, true, nil
+	}
+
+	// For URL references, compute checksum before creating
+	if refType == ReferenceTypeURL && s.checksumConfig != nil {
+		logger.Logger.Debug("Computing checksum for URL reference", "url", ref)
+		checksumResult := s.computeChecksumForURL(ref)
+		if checksumResult != nil {
+			logger.Logger.Info("Automatically computed checksum for URL reference",
+				"url", ref,
+				"checksum", checksumResult.ChecksumHex,
+				"algorithm", checksumResult.Algorithm)
+		}
+	}
+
+	doc, err = s.CreateDocument(ctx, createReq)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return doc, true, nil
+}

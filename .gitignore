@@ -1,23 +1,21 @@
 CLAUDE.md
 AGENTS.md
 *SETUP.md
+RELEASE_*.md
 .ai
 .claude
 .idea
 .env
-
-.ai/.last_prompt.txt
-.ai/.cache/
+.env.local
 
 .gocache/
+codecov.yml
 
 compose.local.yml
 compose.cloud.yml
 client_secret*.json
 
-/static
-/community
-/migrate
+/cmd/community/web/dist
 
 # Tailwind CSS
 /bin/tailwindcss

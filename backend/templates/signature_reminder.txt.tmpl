@@ -1,0 +1,22 @@
+{{define "content"}}
+{{T "email.reminder.title"}}
+
+{{if .Data.RecipientName}}{{T "email.reminder.greeting_with_name" (dict "RecipientName" .Data.RecipientName)}}{{else}}{{T "email.reminder.greeting"}}{{end}}
+
+{{T "email.reminder.intro"}}
+
+{{T "email.reminder.doc_id_label"}} {{.Data.DocID}}
+{{if .Data.DocURL}}{{T "email.reminder.doc_location_label"}} {{.Data.DocURL}}{{end}}
+
+{{T "email.reminder.instructions"}}
+
+{{if .Data.DocURL}}1. {{T "email.reminder.step_view_doc"}} {{.Data.DocURL}}
+2. {{T "email.reminder.step_sign"}} {{.Data.SignURL}}{{else}}1. {{T "email.reminder.step_sign"}} {{.Data.SignURL}}{{end}}
+
+{{T "email.reminder.explanation"}}
+
+{{T "email.reminder.contact"}}
+
+{{T "email.reminder.regards"}}
+{{T "email.reminder.team" (dict "Organisation" .Organisation)}}
+{{end}}

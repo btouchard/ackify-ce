@@ -1,0 +1,319 @@
+{
+  "app": {
+    "name": "Ackify"
+  },
+  "nav": {
+    "home": "Inicio",
+    "myConfirmations": "Mis confirmaciones",
+    "admin": "Admin",
+    "administration": "Administración",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "mobileMenu": "Menú móvil",
+    "mainNavigation": "Navegación principal"
+  },
+  "theme": {
+    "toggle": "Cambiar tema"
+  },
+  "language": {
+    "select": "Seleccionar idioma",
+    "fr": "Francés",
+    "en": "Inglés",
+    "es": "Español",
+    "de": "Alemán",
+    "it": "Italiano"
+  },
+  "auth": {
+    "user": {
+      "connectedAs": "Conectado como"
+    }
+  },
+  "sign": {
+    "title": "Confirmación de Lectura",
+    "subtitle": "Certifique su lectura con una confirmación criptográfica Ed25519",
+    "loading": {
+      "title": "Cargando documento...",
+      "description": "Por favor espere mientras preparamos el documento para la firma."
+    },
+    "noDocument": {
+      "title": "Ningún documento especificado",
+      "description": "Para firmar un documento, agregue el parámetro {code} a la URL",
+      "examples": "Ejemplos:"
+    },
+    "success": {
+      "title": "¡Lectura confirmada con éxito!",
+      "description": "Su confirmación ha sido registrada de manera criptográfica y segura."
+    },
+    "error": {
+      "title": "Ha ocurrido un error",
+      "authRequired": "Debe iniciar sesión para crear un documento.",
+      "loadFailed": "Error al cargar el documento",
+      "loginButton": "Iniciar sesión"
+    },
+    "document": {
+      "title": "Documento a confirmar",
+      "id": "ID"
+    },
+    "info": {
+      "description": "Al confirmar la lectura de este documento, usted certifica haber leído su contenido y acepta validarlo de manera criptográfica y no repudiable.",
+      "recorded": "Su confirmación será registrada con la siguiente información:",
+      "email": "Su dirección de correo electrónico",
+      "timestamp": "Marca de tiempo precisa de la confirmación",
+      "signature": "Confirmación criptográfica Ed25519",
+      "hash": "Hash SHA-256 del contenido"
+    },
+    "confirmations": {
+      "title": "Confirmaciones existentes",
+      "count": "{count} confirmación | {count} confirmaciones",
+      "recorded": "registrada | registradas"
+    },
+    "empty": {
+      "title": "Ninguna confirmación por el momento",
+      "description": "Sea el primero en confirmar su lectura de este documento"
+    },
+    "howItWorks": {
+      "title": "¿Cómo funciona?",
+      "subtitle": "Ackify le permite demostrar criptográficamente que ha leído un documento",
+      "step1": {
+        "title": "1. Acceda al documento",
+        "description": "Agregue {code} a la dirección de esta página"
+      },
+      "step2": {
+        "title": "2. Autentíquese",
+        "description": "Inicie sesión a través de OAuth2 para confirmar su identidad"
+      },
+      "step3": {
+        "title": "3. Confirme la lectura",
+        "description": "Su confirmación se registra con una firma Ed25519"
+      },
+      "features": {
+        "crypto": {
+          "title": "Seguridad criptográfica",
+          "description": "Firmas Ed25519 no repudiables que garantizan la autenticidad"
+        },
+        "instant": {
+          "title": "Instantáneo",
+          "description": "Confirmación en dos clics con verificación criptográfica inmediata"
+        },
+        "timestamp": {
+          "title": "Marca de tiempo precisa",
+          "description": "Cada confirmación está marcada temporalmente y encadenada para garantizar la integridad"
+        }
+      }
+    }
+  },
+  "signButton": {
+    "confirm": "Confirmar mi lectura",
+    "alreadySigned": "Ya confirmado",
+    "mustLogin": "Iniciar sesión para confirmar",
+    "signing": "Confirmando...",
+    "verified": "Verificado",
+    "error": {
+      "title": "Error en la confirmación",
+      "notAuthenticated": "Debe iniciar sesión para confirmar un documento.",
+      "alreadySigned": "Ya ha confirmado este documento.",
+      "generic": "Ha ocurrido un error durante la confirmación. Por favor, inténtelo de nuevo."
+    }
+  },
+  "signatureList": {
+    "loading": "Cargando confirmaciones...",
+    "email": "Correo electrónico",
+    "date": "Fecha",
+    "signature": "Firma",
+    "hash": "Hash",
+    "nonce": "Nonce",
+    "verificationStatus": "Estado de verificación",
+    "verified": "Verificado",
+    "notVerified": "No verificado",
+    "showDetails": "Mostrar detalles",
+    "hideDetails": "Ocultar detalles",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "previousHash": "Hash anterior"
+  },
+  "signatures": {
+    "title": "Mis confirmaciones de lectura",
+    "subtitle": "Lista de todos los documentos cuya lectura ha confirmado criptográficamente",
+    "loading": "Cargando sus confirmaciones...",
+    "empty": {
+      "title": "Ninguna confirmación por el momento",
+      "description": "Aún no ha confirmado ningún documento. Comience confirmando un documento para verlo aparecer aquí."
+    },
+    "count": "{count} confirmación | {count} confirmaciones",
+    "results": "{count} resultado | {count} resultados",
+    "document": "Documento",
+    "signedAt": "Confirmado el",
+    "viewDetails": "Ver detalles",
+    "stats": {
+      "total": "Total",
+      "totalConfirmations": "Total confirmaciones",
+      "unique": "Únicos",
+      "uniqueDocuments": "Documentos únicos",
+      "last": "Último",
+      "lastConfirmation": "Última confirmación"
+    },
+    "allConfirmations": "Todas mis confirmaciones",
+    "about": {
+      "title": "Acerca de las confirmaciones",
+      "description": "Cada confirmación se registra criptográficamente con Ed25519 y se encadena para garantizar la integridad. Las confirmaciones son no repudiables y están marcadas temporalmente con precisión."
+    },
+    "search": "Buscar...",
+    "error": {
+      "title": "Error al cargar las confirmaciones",
+      "description": "No se pueden cargar sus confirmaciones. Por favor, inténtelo de nuevo."
+    }
+  },
+  "admin": {
+    "title": "Administración",
+    "subtitle": "Gestionar documentos y lectores esperados",
+    "loading": "Cargando datos...",
+    "dashboard": {
+      "title": "Panel de control",
+      "totalDocuments": "Documentos totales",
+      "totalSignatures": "Confirmaciones totales",
+      "recentActivity": "Actividad reciente",
+      "stats": {
+        "documents": "Documentos",
+        "readers": "Lectores",
+        "active": "Activos",
+        "expected": "Esperados",
+        "signed": "Firmados",
+        "pending": "Pendientes",
+        "completion": "Finalización"
+      }
+    },
+    "documents": {
+      "title": "Todos los documentos",
+      "new": "Crear nuevo documento",
+      "newDescription": "Preparar la referencia de un documento para rastrear las confirmaciones de lectura",
+      "search": "Buscar...",
+      "searchPlaceholder": "Buscar por ID, título o URL...",
+      "id": "ID del documento",
+      "idLabel": "ID del documento",
+      "idHelper": "Solo letras, números, guiones y guiones bajos",
+      "idPlaceholder": "ej: politica-seguridad-2025",
+      "signatures": "Confirmaciones",
+      "created": "Creado",
+      "createdOn": "Creado el",
+      "by": "Por",
+      "url": "URL",
+      "document": "Documento",
+      "actions": "Acciones",
+      "view": "Ver",
+      "manage": "Gestionar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "empty": "No se encontraron documentos"
+    },
+    "documentDetail": {
+      "title": "Detalles del documento",
+      "metadata": "Metadatos y checksum del documento",
+      "checksum": "Checksum",
+      "algorithm": "Algoritmo",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Política de Seguridad 2025",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com/doc.pdf",
+      "checksumLabel": "Checksum",
+      "checksumPlaceholder": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "algorithmLabel": "Algoritmo",
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "Descripción del documento...",
+      "signatures": "Confirmaciones",
+      "back": "Volver a la lista",
+      "expectedSigners": "Firmantes esperados",
+      "addExpectedSigner": "Agregar firmante esperado",
+      "addSigners": "Agregar lectores esperados",
+      "emailsLabel": "Correos electrónicos (uno por línea)",
+      "emailsPlaceholder": "María García <maria.garcia@example.com>\njuan.martinez@example.com\nSofía Rodríguez <sofia@example.com>",
+      "emailLabel": "Correo electrónico *",
+      "emailPlaceholder": "email@example.com",
+      "nameLabel": "Nombre",
+      "namePlaceholder": "Nombre completo",
+      "reader": "Lector",
+      "user": "Usuario",
+      "status": "Estado",
+      "confirmedOn": "Confirmado el",
+      "noExpectedSigners": "Ningún lector esperado",
+      "noSignatures": "Ninguna confirmación",
+      "reminders": "Recordatorios por correo electrónico",
+      "remindersSent": "Recordatorios enviados",
+      "toRemind": "Por recordar",
+      "lastReminder": "Último recordatorio",
+      "sendReminder": "Enviar recordatorio",
+      "metadataWarning": {
+        "title": "⚠️ Atención: Invalidación de firmas",
+        "description": "Está a punto de modificar información crítica del documento (URL, checksum, algoritmo o descripción).",
+        "warning": "Esta modificación resultará en la invalidación de todas las firmas existentes, ya que están vinculadas criptográficamente al contenido actual del documento.",
+        "currentSignatures": "Firmas actuales que serán invalidadas:",
+        "confirm": "Entiendo, continuar",
+        "cancel": "Cancelar"
+      },
+      "dangerZone": "Zona de peligro",
+      "dangerZoneDescription": "Acciones irreversibles en este documento",
+      "deleteDocument": "Eliminar este documento",
+      "deleteWarning": "¡Esta acción es irreversible!",
+      "deleteWillRemove": "Esta acción eliminará permanentemente:",
+      "deleteItem1": "Todos los metadatos del documento",
+      "deleteItem2": "La lista de lectores esperados",
+      "deleteItem3": "Todas las confirmaciones criptográficas",
+      "deleteItem4": "El historial de recordatorios"
+    },
+    "documentForm": {
+      "title": "Referencia del documento",
+      "label": "Referencia (URL, ruta o ID)",
+      "placeholder": "https://example.com/doc.pdf o /ruta/al/doc",
+      "submit": "Confirmar",
+      "creating": "Creando..."
+    }
+  },
+  "embed": {
+    "loading": "Cargando información de firma...",
+    "title": "Firma para",
+    "signedBy": "Firmado por",
+    "on": "el",
+    "verified": "Verificado",
+    "viewAll": "Ver todas las confirmaciones",
+    "error": "No se puede cargar la información de firma"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "description": "La página que busca no existe o ha sido movida.",
+    "home": "Volver al inicio"
+  },
+  "footer": {
+    "madeWith": "Hecho con",
+    "by": "por",
+    "links": {
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "contact": "Contacto"
+    }
+  },
+  "toast": {
+    "success": "Éxito",
+    "error": "Error",
+    "info": "Información",
+    "warning": "Advertencia"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "actions": "Acciones",
+    "details": "Detalles",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "skipToContent": "Ir al contenido principal"
+  }
+}

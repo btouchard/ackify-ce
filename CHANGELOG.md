@@ -5,6 +5,153 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-10-16
+
+### 🎉 Major Release: API-First Vue Migration
+
+Complete architectural overhaul to a modern API-first architecture with Vue 3 SPA frontend.
+
+### Added
+
+- **RESTful API v1**
+  - Versioned API with `/api/v1` prefix
+  - Structured JSON responses with consistent error handling
+  - Public endpoints: health, documents, signatures, expected signers
+  - Authentication endpoints: OAuth flow, logout, auth check
+  - Authenticated endpoints: user profile, signatures, signature creation
+  - Admin endpoints: document management, signer management, reminders
+  - OpenAPI specification endpoint `/api/v1/openapi.json`
+
+- **Vue 3 SPA Frontend**
+  - Modern single-page application with TypeScript
+  - Vite build tool with hot module replacement (HMR)
+  - Pinia state management for centralized application state
+  - Vue Router for client-side routing
+  - Tailwind CSS for utility-first styling
+  - Responsive design with mobile support
+  - Pages: Home, Sign, Signatures, Embed, Admin Dashboard, Document Details
+
+- **Comprehensive Logging System**
+  - Structured JSON logging with `slog` package
+  - Log levels: debug, info, warn, error (configurable via `ACKIFY_LOG_LEVEL`)
+  - Request ID tracking through entire request lifecycle
+  - HTTP request/response logging with timing
+  - Authentication flow logging
+  - Signature operation logging
+  - Reminder service logging
+  - Database query logging
+  - OAuth flow progression logging
+
+- **Enhanced Security**
+  - CSRF token protection for all state-changing operations
+  - Rate limiting (5 auth attempts/min, 100 general requests/min)
+  - CORS configuration for development and production
+  - Security headers (CSP, X-Content-Type-Options, X-Frame-Options, etc.)
+  - Session-based authentication with secure cookies
+  - Request ID propagation for distributed tracing
+
+- **Public Embed Route**
+  - `/embed/{docId}` route for public embedding (no authentication required)
+  - oEmbed protocol support for unfurl functionality
+  - CSP headers configured to allow iframe embedding on embed routes
+  - Suitable for integration in documentation tools and wikis
+
+- **Auto-Login Feature**
+  - Optional `ACKIFY_OAUTH_AUTO_LOGIN` configuration
+  - Silent authentication when OAuth session exists
+  - `/api/v1/auth/check` endpoint for session verification
+  - Seamless user experience when returning to application
+
+- **Docker Multi-Stage Build**
+  - Optimized Dockerfile with separate Node and Go build stages
+  - Smaller final image size
+  - SPA assets built during Docker build process
+  - Production-ready containerized deployment
+
+### Changed
+
+- **Architecture**
+  - Migrated from template-based rendering to API-first architecture
+  - Introduced clear separation between API and frontend
+  - Organized API handlers into logical modules (admin, auth, documents, signatures, users)
+  - Centralized middleware in `shared` package (logging, CORS, CSRF, rate limiting, security headers)
+
+- **Routing**
+  - Chi router now serves both API v1 and Vue SPA
+  - SPA fallback routing for all unmatched routes
+  - API endpoints prefixed with `/api/v1`
+  - Static assets served from `/assets` for SPA and `/static` for legacy
+
+- **Authentication**
+  - Standardized session-based auth across API and templates
+  - CSRF protection on all authenticated API endpoints
+  - Rate limiting on authentication endpoints
+
+- **Documentation**
+  - Updated BUILD.md with Vue SPA build instructions
+  - Updated README.md with API v1 endpoint documentation
+  - Updated README_FR.md with French translations
+  - Added logging configuration documentation
+  - Added development environment setup instructions
+
+### Fixed
+
+- Consistent error handling across all API endpoints
+- Proper HTTP status codes for all responses
+- CORS issues in development environment
+
+### Technical Details
+
+**New Files:**
+- `internal/presentation/api/` - Complete API v1 implementation
+  - `admin/handler.go` - Admin endpoints
+  - `auth/handler.go` - Authentication endpoints
+  - `documents/handler.go` - Document endpoints
+  - `signatures/handler.go` - Signature endpoints
+  - `users/handler.go` - User endpoints
+  - `health/handler.go` - Health check endpoint
+  - `shared/` - Shared middleware and utilities
+    - `logging.go` - Request logging middleware
+    - `middleware.go` - Auth, admin, CSRF, rate limiting middleware
+    - `response.go` - Standardized JSON response helpers
+    - `errors.go` - Error code constants
+  - `router.go` - API v1 router configuration
+- `webapp/` - Complete Vue 3 SPA
+  - `src/components/` - Reusable Vue components
+  - `src/pages/` - Page components (Home, Sign, Signatures, Embed, Admin)
+  - `src/services/` - API client services
+  - `src/stores/` - Pinia state stores
+  - `src/router/` - Vue Router configuration
+  - `vite.config.ts` - Vite build configuration
+  - `tsconfig.json` - TypeScript configuration
+
+**Modified Files:**
+- `pkg/web/server.go` - Updated to serve both API and SPA
+- `internal/infrastructure/auth/oauth.go` - Added structured logging
+- `internal/application/services/signature.go` - Added structured logging
+- `internal/application/services/reminder.go` - Added structured logging
+- `Dockerfile` - Multi-stage build for Node and Go
+- `docker-compose.yml` - Updated for new architecture
+
+**Deprecated:**
+- Template-based admin routes (will be maintained for backward compatibility)
+- Legacy `/status` and `/status.png` endpoints (superseded by API v1)
+
+### Migration Guide
+
+For users upgrading from v1.x to v2.0:
+
+1. **Environment Variables**: Add optional `ACKIFY_LOG_LEVEL` and `ACKIFY_OAUTH_AUTO_LOGIN` if desired
+2. **Docker**: Rebuild images to include Vue SPA build
+3. **API Clients**: Consider migrating to new API v1 endpoints for better structure
+4. **Embed URLs**: Update to use `/embed/{docId}` instead of token-based system
+
+### Breaking Changes
+
+- None - v2.0 maintains backward compatibility with all v1.x features
+- Template-based admin interface remains functional
+- Legacy endpoints continue to work
+
 ## [1.1.3] - 2025-10-08
 
 ### Added
@@ -116,6 +263,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NULL UserName handling in database operations
 - Proper string conversion for UserName field
 
+[2.0.0]: https://github.com/btouchard/ackify-ce/compare/v1.1.3...v2.0.0
 [1.1.3]: https://github.com/btouchard/ackify-ce/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/btouchard/ackify-ce/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/btouchard/ackify-ce/compare/v1.1.0...v1.1.1

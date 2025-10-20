@@ -1,0 +1,17 @@
+{
+  "email.reminder.subject": "Recordatorio de confirmación de lectura de documento",
+  "email.reminder.title": "Recordatorio de confirmación de lectura de documento",
+  "email.reminder.greeting_with_name": "Hola {{.RecipientName}},",
+  "email.reminder.greeting": "Hola,",
+  "email.reminder.intro": "Este es un recordatorio de que el siguiente documento requiere su confirmación de lectura:",
+  "email.reminder.doc_id_label": "ID del documento:",
+  "email.reminder.doc_location_label": "Ubicación:",
+  "email.reminder.instructions": "Para revisar y confirmar la lectura de este documento, siga estos pasos:",
+  "email.reminder.step_view_doc": "Ver el documento en:",
+  "email.reminder.step_sign": "Confirmar su lectura en:",
+  "email.reminder.cta_button": "Confirmar lectura ahora",
+  "email.reminder.explanation": "Su confirmación criptográfica proporcionará una prueba verificable de que ha leído y reconocido este documento.",
+  "email.reminder.contact": "Si tiene alguna pregunta, póngase en contacto con su administrador.",
+  "email.reminder.regards": "Saludos cordiales,",
+  "email.reminder.team": "El equipo de {{.Organisation}}"
+}

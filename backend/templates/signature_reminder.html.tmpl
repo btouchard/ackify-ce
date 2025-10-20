@@ -1,0 +1,38 @@
+{{define "content"}}
+<h2>{{T "email.reminder.title"}}</h2>
+
+{{if .Data.RecipientName}}
+<p>{{T "email.reminder.greeting_with_name" (dict "RecipientName" .Data.RecipientName)}}</p>
+{{else}}
+<p>{{T "email.reminder.greeting"}}</p>
+{{end}}
+
+<p>{{T "email.reminder.intro"}}</p>
+
+<div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+    <p style="margin: 0;"><strong>{{T "email.reminder.doc_id_label"}}</strong> {{.Data.DocID}}</p>
+    {{if .Data.DocURL}}
+    <p style="margin: 10px 0 0 0;"><strong>{{T "email.reminder.doc_location_label"}}</strong> <a href="{{.Data.DocURL}}">{{.Data.DocURL}}</a></p>
+    {{end}}
+</div>
+
+<p>{{T "email.reminder.instructions"}}</p>
+
+<ol>
+    {{if .Data.DocURL}}
+    <li>{{T "email.reminder.step_view_doc"}} <a href="{{.Data.DocURL}}">{{.Data.DocURL}}</a></li>
+    {{end}}
+    <li>{{T "email.reminder.step_sign"}} <a href="{{.Data.SignURL}}">{{.Data.SignURL}}</a></li>
+</ol>
+
+<div style="margin: 30px 0;">
+    <a href="{{.Data.SignURL}}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">{{T "email.reminder.cta_button"}}</a>
+</div>
+
+<p>{{T "email.reminder.explanation"}}</p>
+
+<p>{{T "email.reminder.contact"}}</p>
+
+<p>{{T "email.reminder.regards"}}<br>
+{{T "email.reminder.team" (dict "Organisation" .Organisation)}}</p>
+{{end}}

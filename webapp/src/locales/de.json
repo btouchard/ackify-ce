@@ -1,0 +1,319 @@
+{
+  "app": {
+    "name": "Ackify"
+  },
+  "nav": {
+    "home": "Startseite",
+    "myConfirmations": "Meine Bestätigungen",
+    "admin": "Admin",
+    "administration": "Verwaltung",
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "mobileMenu": "Mobilmenü",
+    "mainNavigation": "Hauptnavigation"
+  },
+  "theme": {
+    "toggle": "Design wechseln"
+  },
+  "language": {
+    "select": "Sprache auswählen",
+    "fr": "Französisch",
+    "en": "Englisch",
+    "es": "Spanisch",
+    "de": "Deutsch",
+    "it": "Italienisch"
+  },
+  "auth": {
+    "user": {
+      "connectedAs": "Angemeldet als"
+    }
+  },
+  "sign": {
+    "title": "Lesebestätigung",
+    "subtitle": "Bestätigen Sie Ihre Lesung mit einer kryptographischen Ed25519-Bestätigung",
+    "loading": {
+      "title": "Dokument wird geladen...",
+      "description": "Bitte warten Sie, während wir das Dokument zur Signierung vorbereiten."
+    },
+    "noDocument": {
+      "title": "Kein Dokument angegeben",
+      "description": "Um ein Dokument zu signieren, fügen Sie den Parameter {code} zur URL hinzu",
+      "examples": "Beispiele:"
+    },
+    "success": {
+      "title": "Lesung erfolgreich bestätigt!",
+      "description": "Ihre Bestätigung wurde kryptographisch und sicher gespeichert."
+    },
+    "error": {
+      "title": "Ein Fehler ist aufgetreten",
+      "authRequired": "Sie müssen angemeldet sein, um ein Dokument zu erstellen.",
+      "loadFailed": "Fehler beim Laden des Dokuments",
+      "loginButton": "Anmelden"
+    },
+    "document": {
+      "title": "Zu bestätigendes Dokument",
+      "id": "ID"
+    },
+    "info": {
+      "description": "Durch die Bestätigung der Lesung dieses Dokuments bestätigen Sie, dass Sie dessen Inhalt gelesen haben und akzeptieren, es kryptographisch und unwiderruflich zu validieren.",
+      "recorded": "Ihre Bestätigung wird mit den folgenden Informationen gespeichert:",
+      "email": "Ihre E-Mail-Adresse",
+      "timestamp": "Präziser Zeitstempel der Bestätigung",
+      "signature": "Kryptographische Ed25519-Bestätigung",
+      "hash": "SHA-256-Hash des Inhalts"
+    },
+    "confirmations": {
+      "title": "Bestehende Bestätigungen",
+      "count": "{count} Bestätigung | {count} Bestätigungen",
+      "recorded": "gespeichert"
+    },
+    "empty": {
+      "title": "Noch keine Bestätigungen",
+      "description": "Seien Sie der Erste, der die Lesung dieses Dokuments bestätigt"
+    },
+    "howItWorks": {
+      "title": "Wie funktioniert es?",
+      "subtitle": "Ackify ermöglicht es Ihnen, kryptographisch zu beweisen, dass Sie ein Dokument gelesen haben",
+      "step1": {
+        "title": "1. Greifen Sie auf das Dokument zu",
+        "description": "Fügen Sie {code} zur Adresse dieser Seite hinzu"
+      },
+      "step2": {
+        "title": "2. Authentifizieren Sie sich",
+        "description": "Melden Sie sich über OAuth2 an, um Ihre Identität zu bestätigen"
+      },
+      "step3": {
+        "title": "3. Bestätigen Sie die Lesung",
+        "description": "Ihre Bestätigung wird mit einer Ed25519-Signatur gespeichert"
+      },
+      "features": {
+        "crypto": {
+          "title": "Kryptographische Sicherheit",
+          "description": "Unwiderrufliche Ed25519-Signaturen garantieren Authentizität"
+        },
+        "instant": {
+          "title": "Sofort",
+          "description": "Bestätigung mit zwei Klicks und sofortiger kryptographischer Verifizierung"
+        },
+        "timestamp": {
+          "title": "Präziser Zeitstempel",
+          "description": "Jede Bestätigung wird zeitgestempelt und verkettet, um Integrität zu gewährleisten"
+        }
+      }
+    }
+  },
+  "signButton": {
+    "confirm": "Meine Lesung bestätigen",
+    "alreadySigned": "Bereits bestätigt",
+    "mustLogin": "Anmelden zum Bestätigen",
+    "signing": "Bestätigung läuft...",
+    "verified": "Verifiziert",
+    "error": {
+      "title": "Bestätigung fehlgeschlagen",
+      "notAuthenticated": "Sie müssen angemeldet sein, um ein Dokument zu bestätigen.",
+      "alreadySigned": "Sie haben dieses Dokument bereits bestätigt.",
+      "generic": "Bei der Bestätigung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut."
+    }
+  },
+  "signatureList": {
+    "loading": "Bestätigungen werden geladen...",
+    "email": "E-Mail",
+    "date": "Datum",
+    "signature": "Signatur",
+    "hash": "Hash",
+    "nonce": "Nonce",
+    "verificationStatus": "Verifizierungsstatus",
+    "verified": "Verifiziert",
+    "notVerified": "Nicht verifiziert",
+    "showDetails": "Details anzeigen",
+    "hideDetails": "Details verbergen",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "previousHash": "Vorheriger Hash"
+  },
+  "signatures": {
+    "title": "Meine Lesebestätigungen",
+    "subtitle": "Liste aller Dokumente, deren Lesung Sie kryptographisch bestätigt haben",
+    "loading": "Ihre Bestätigungen werden geladen...",
+    "empty": {
+      "title": "Noch keine Bestätigungen",
+      "description": "Sie haben noch keine Dokumente bestätigt. Beginnen Sie mit der Bestätigung eines Dokuments, um es hier anzuzeigen."
+    },
+    "count": "{count} Bestätigung | {count} Bestätigungen",
+    "results": "{count} Ergebnis | {count} Ergebnisse",
+    "document": "Dokument",
+    "signedAt": "Bestätigt am",
+    "viewDetails": "Details anzeigen",
+    "stats": {
+      "total": "Gesamt",
+      "totalConfirmations": "Gesamtbestätigungen",
+      "unique": "Eindeutige",
+      "uniqueDocuments": "Eindeutige Dokumente",
+      "last": "Letzte",
+      "lastConfirmation": "Letzte Bestätigung"
+    },
+    "allConfirmations": "Alle meine Bestätigungen",
+    "about": {
+      "title": "Über Bestätigungen",
+      "description": "Jede Bestätigung wird kryptographisch mit Ed25519 aufgezeichnet und verkettet, um Integrität zu gewährleisten. Bestätigungen sind unwiderruflich und präzise zeitgestempelt."
+    },
+    "search": "Suchen...",
+    "error": {
+      "title": "Fehler beim Laden der Bestätigungen",
+      "description": "Ihre Bestätigungen können nicht geladen werden. Bitte versuchen Sie es erneut."
+    }
+  },
+  "admin": {
+    "title": "Verwaltung",
+    "subtitle": "Dokumente und erwartete Leser verwalten",
+    "loading": "Daten werden geladen...",
+    "dashboard": {
+      "title": "Dashboard",
+      "totalDocuments": "Gesamtdokumente",
+      "totalSignatures": "Gesamtbestätigungen",
+      "recentActivity": "Letzte Aktivität",
+      "stats": {
+        "documents": "Dokumente",
+        "readers": "Leser",
+        "active": "Aktiv",
+        "expected": "Erwartet",
+        "signed": "Signiert",
+        "pending": "Ausstehend",
+        "completion": "Fertigstellung"
+      }
+    },
+    "documents": {
+      "title": "Alle Dokumente",
+      "new": "Neues Dokument erstellen",
+      "newDescription": "Eine Dokumentreferenz vorbereiten, um Lesebestätigungen zu verfolgen",
+      "search": "Suchen...",
+      "searchPlaceholder": "Nach ID, Titel oder URL suchen...",
+      "id": "Dokument-ID",
+      "idLabel": "Dokument-ID",
+      "idHelper": "Nur Buchstaben, Zahlen, Bindestriche und Unterstriche",
+      "idPlaceholder": "z.B.: sicherheitsrichtlinie-2025",
+      "signatures": "Bestätigungen",
+      "created": "Erstellt",
+      "createdOn": "Erstellt am",
+      "by": "Von",
+      "url": "URL",
+      "document": "Dokument",
+      "actions": "Aktionen",
+      "view": "Ansehen",
+      "manage": "Verwalten",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "empty": "Keine Dokumente gefunden"
+    },
+    "documentDetail": {
+      "title": "Dokumentdetails",
+      "metadata": "Dokumentmetadaten und Prüfsumme",
+      "checksum": "Prüfsumme",
+      "algorithm": "Algorithmus",
+      "titleLabel": "Titel",
+      "titlePlaceholder": "Sicherheitsrichtlinie 2025",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com/doc.pdf",
+      "checksumLabel": "Prüfsumme",
+      "checksumPlaceholder": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "algorithmLabel": "Algorithmus",
+      "descriptionLabel": "Beschreibung",
+      "descriptionPlaceholder": "Dokumentbeschreibung...",
+      "signatures": "Bestätigungen",
+      "back": "Zurück zur Liste",
+      "expectedSigners": "Erwartete Unterzeichner",
+      "addExpectedSigner": "Erwarteten Unterzeichner hinzufügen",
+      "addSigners": "Erwartete Leser hinzufügen",
+      "emailsLabel": "E-Mails (eine pro Zeile)",
+      "emailsPlaceholder": "Maria Schmidt <maria.schmidt@example.com>\njohn.mueller@example.com\nSophie Weber <sophie@example.com>",
+      "emailLabel": "E-Mail *",
+      "emailPlaceholder": "email@example.com",
+      "nameLabel": "Name",
+      "namePlaceholder": "Vollständiger Name",
+      "reader": "Leser",
+      "user": "Benutzer",
+      "status": "Status",
+      "confirmedOn": "Bestätigt am",
+      "noExpectedSigners": "Keine erwarteten Leser",
+      "noSignatures": "Keine Bestätigungen",
+      "reminders": "E-Mail-Erinnerungen",
+      "remindersSent": "Gesendete Erinnerungen",
+      "toRemind": "Zu erinnern",
+      "lastReminder": "Letzte Erinnerung",
+      "sendReminder": "Erinnerung senden",
+      "metadataWarning": {
+        "title": "⚠️ Warnung: Signaturungültigkeit",
+        "description": "Sie sind dabei, kritische Dokumentinformationen (URL, Prüfsumme, Algorithmus oder Beschreibung) zu ändern.",
+        "warning": "Diese Änderung führt zur Ungültigkeit aller bestehenden Signaturen, da sie kryptographisch mit dem aktuellen Dokumentinhalt verknüpft sind.",
+        "currentSignatures": "Aktuelle Signaturen, die ungültig werden:",
+        "confirm": "Ich verstehe, fortfahren",
+        "cancel": "Abbrechen"
+      },
+      "dangerZone": "Gefahrenbereich",
+      "dangerZoneDescription": "Irreversible Aktionen für dieses Dokument",
+      "deleteDocument": "Dieses Dokument löschen",
+      "deleteWarning": "Diese Aktion ist irreversibel!",
+      "deleteWillRemove": "Diese Aktion wird dauerhaft entfernen:",
+      "deleteItem1": "Alle Dokumentmetadaten",
+      "deleteItem2": "Die Liste der erwarteten Leser",
+      "deleteItem3": "Alle kryptographischen Bestätigungen",
+      "deleteItem4": "Den Erinnerungsverlauf"
+    },
+    "documentForm": {
+      "title": "Dokumentreferenz",
+      "label": "Referenz (URL, Pfad oder ID)",
+      "placeholder": "https://example.com/doc.pdf oder /pfad/zum/doc",
+      "submit": "Bestätigen",
+      "creating": "Wird erstellt..."
+    }
+  },
+  "embed": {
+    "loading": "Signaturinformationen werden geladen...",
+    "title": "Signatur für",
+    "signedBy": "Signiert von",
+    "on": "am",
+    "verified": "Verifiziert",
+    "viewAll": "Alle Bestätigungen anzeigen",
+    "error": "Signaturinformationen können nicht geladen werden"
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "description": "Die Seite, die Sie suchen, existiert nicht oder wurde verschoben.",
+    "home": "Zurück zur Startseite"
+  },
+  "footer": {
+    "madeWith": "Erstellt mit",
+    "by": "von",
+    "links": {
+      "privacy": "Datenschutz",
+      "terms": "Bedingungen",
+      "contact": "Kontakt"
+    }
+  },
+  "toast": {
+    "success": "Erfolg",
+    "error": "Fehler",
+    "info": "Information",
+    "warning": "Warnung"
+  },
+  "common": {
+    "loading": "Wird geladen...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "yes": "Ja",
+    "no": "Nein",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "sort": "Sortieren",
+    "actions": "Aktionen",
+    "details": "Details",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "skipToContent": "Zum Hauptinhalt springen"
+  }
+}

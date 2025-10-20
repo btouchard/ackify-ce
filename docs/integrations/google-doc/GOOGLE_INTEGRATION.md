@@ -85,11 +85,12 @@ function validateReading() {
  * Affiche les validations existantes
  */
 function viewSignatures() {
-  const statusUrl = `${ACKIFY_BASE_URL}/status?doc=${DOCUMENT_ID}`;
-  
+  const statusUrl = `${ACKIFY_BASE_URL}/api/v1/documents/${DOCUMENT_ID}/signatures`;
+
   try {
     const response = UrlFetchApp.fetch(statusUrl);
-    const signatures = JSON.parse(response.getContentText());
+    const result = JSON.parse(response.getContentText());
+    const signatures = result.data || [];
     
     let html = `
       <div style="padding: 20px; font-family: Arial, sans-serif;">
@@ -142,7 +143,7 @@ function viewSignatures() {
  */
 function showEmbedCode() {
   const embedCode = `<!-- Widget Ackify -->
-<iframe src="${ACKIFY_BASE_URL}/embed?doc=${DOCUMENT_ID}&referrer=${encodeURIComponent(getDocumentUrl())}"
+<iframe src="${ACKIFY_BASE_URL}/?doc=${DOCUMENT_ID}&referrer=${encodeURIComponent(getDocumentUrl())}"
         width="100%" height="200" frameborder="0"
         style="border: 1px solid #ddd; border-radius: 6px;">
 </iframe>`;
@@ -251,19 +252,17 @@ Intégrer un badge directement dans le document :
 
 ```javascript
 /**
- * Insère un badge Ackify dans le document
+ * Insère un lien vers la page de signature Ackify dans le document
  */
-function insertBadge() {
+function insertSignatureLink() {
   const doc = DocumentApp.getActiveDocument();
   const body = doc.getBody();
-  
-  const badgeUrl = `${ACKIFY_BASE_URL}/status.png?doc=${DOCUMENT_ID}`;
-  const signUrl = `${ACKIFY_BASE_URL}/sign?doc=${DOCUMENT_ID}`;
-  
-  // Insérer image avec lien
+
+  const signUrl = `${ACKIFY_BASE_URL}/?doc=${DOCUMENT_ID}`;
+
+  // Insérer lien de signature
   const paragraph = body.appendParagraph('');
-  const image = paragraph.appendInlineImage(UrlFetchApp.fetch(badgeUrl).getBlob());
-  image.setLinkUrl(signUrl);
+  paragraph.appendText('Signer ce document avec Ackify').setLinkUrl(signUrl);
 }
 ```
 
@@ -285,9 +284,10 @@ Le même principe s'applique à d'autres plateformes :
 
 ## 📞 Support
 
-- **Documentation** : [Ackify Docs](https://docs.ackify.app)  
-- **API** : `GET /status?doc=<id>` et `POST /sign`
-- **oEmbed** : `GET /oembed?url=<doc_url>`
+- **Documentation** : [Ackify GitHub](https://github.com/btouchard/ackify-ce)
+- **API** : `GET /api/v1/documents/{docId}/signatures` et `POST /api/v1/signatures`
+- **Embed** : Vue SPA gère les embeds via `/?doc=<id>` avec méta tags Open Graph pour l'unfurling automatique
+- **Widget** : Utiliser iframe avec `/?doc=<id>` (voir fonction `showEmbedCode()` ci-dessus)
 
 ---
 
