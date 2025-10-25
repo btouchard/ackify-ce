@@ -146,7 +146,7 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	user, nextURL, err := h.authService.HandleCallback(ctx, code, state)
+	user, nextURL, err := h.authService.HandleCallback(ctx, w, r, code, state)
 	if err != nil {
 		logger.Logger.Error("OAuth callback failed", "error", err.Error())
 		handlers.HandleError(w, err)

@@ -1,0 +1,936 @@
+openapi: 3.0.3
+info:
+  title: Ackify API
+  description: |
+    REST API for Ackify - Document signature tracking with cryptographic Ed25519 signatures.
+
+    ## Authentication
+    Most endpoints require OAuth2 authentication via session cookies.
+    Admin endpoints additionally require the user's email to be in the ACKIFY_ADMIN_EMAILS list.
+
+    ## CSRF Protection
+    Write operations (POST, PUT, DELETE) require a CSRF token obtained from `GET /api/v1/csrf`.
+    Include the token in the `X-CSRF-Token` header.
+  version: 1.0.0
+  contact:
+    name: Ackify Support
+    url: https://github.com/btouchard/ackify-ce
+  license:
+    name: AGPL-3.0-or-later
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: Health
+    description: System health checks
+  - name: Auth
+    description: OAuth2 authentication endpoints
+  - name: Users
+    description: User information
+  - name: Documents
+    description: Document management (public)
+  - name: Signatures
+    description: Signature creation and retrieval
+  - name: Admin - Documents
+    description: Admin document management
+  - name: Admin - Signers
+    description: Admin expected signers management
+  - name: Admin - Reminders
+    description: Admin email reminder management
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /csrf:
+    get:
+      summary: Get CSRF token
+      description: Returns a CSRF token required for write operations
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: CSRF token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  csrfToken:
+                    type: string
+                    example: abc123def456
+
+  /auth/start:
+    post:
+      summary: Start OAuth2 flow
+      description: Initiates OAuth2 authentication with the configured provider
+      tags:
+        - Auth
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirectTo:
+                  type: string
+                  description: URL to redirect to after successful authentication
+                  example: /signatures
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+        '400':
+          description: Invalid request
+
+  /auth/callback:
+    get:
+      summary: OAuth2 callback
+      description: Handles OAuth2 provider callback after user authentication
+      tags:
+        - Auth
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to application
+        '400':
+          description: Invalid callback parameters
+        '401':
+          description: Authentication failed
+
+  /auth/logout:
+    get:
+      summary: Logout
+      description: Logs out the current user and clears the session
+      tags:
+        - Auth
+      responses:
+        '302':
+          description: Redirect to home page
+
+  /auth/check:
+    get:
+      summary: Check authentication status
+      description: Checks if user has an active OAuth session (only available if ACKIFY_OAUTH_AUTO_LOGIN=true)
+      tags:
+        - Auth
+      responses:
+        '200':
+          description: Authentication status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authenticated:
+                    type: boolean
+
+  /users/me:
+    get:
+      summary: Get current user
+      description: Returns information about the currently authenticated user
+      tags:
+        - Users
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+
+  /documents:
+    get:
+      summary: List documents
+      description: Returns a paginated list of all documents
+      tags:
+        - Documents
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+    post:
+      summary: Create document
+      description: Creates a new document with metadata
+      tags:
+        - Documents
+      security:
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentRequest'
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Invalid request
+        '403':
+          description: CSRF token missing or invalid
+
+  /documents/{docId}:
+    get:
+      summary: Get document
+      description: Returns document metadata and signature count
+      tags:
+        - Documents
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentWithCount'
+        '404':
+          description: Document not found
+
+  /documents/{docId}/signatures:
+    get:
+      summary: Get document signatures
+      description: Returns all signatures for a document
+      tags:
+        - Documents
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signatures:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Signature'
+
+  /documents/{docId}/signatures/status:
+    get:
+      summary: Get user signature status
+      description: Checks if the current user has signed this document
+      tags:
+        - Signatures
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signature status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasSigned:
+                    type: boolean
+                  signature:
+                    $ref: '#/components/schemas/Signature'
+
+  /documents/{docId}/expected-signers:
+    get:
+      summary: Get expected signers
+      description: Returns the list of expected signers for a document
+      tags:
+        - Documents
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of expected signers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  expectedSigners:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExpectedSigner'
+
+  /documents/find-or-create:
+    get:
+      summary: Find or create document
+      description: Finds a document by reference, or creates it if it doesn't exist
+      tags:
+        - Documents
+      parameters:
+        - name: ref
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Document reference (URL, path, or custom ID)
+      responses:
+        '200':
+          description: Document found or created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+
+  /signatures:
+    get:
+      summary: Get user signatures
+      description: Returns all signatures created by the current user
+      tags:
+        - Signatures
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: List of user signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signatures:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Signature'
+
+    post:
+      summary: Create signature
+      description: Creates a cryptographic Ed25519 signature for a document
+      tags:
+        - Signatures
+      security:
+        - sessionAuth: []
+        - csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSignatureRequest'
+      responses:
+        '201':
+          description: Signature created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Signature'
+        '400':
+          description: Invalid request
+        '409':
+          description: User has already signed this document
+
+  /admin/documents:
+    get:
+      summary: List all documents (admin)
+      description: Returns paginated list of all documents with admin metadata
+      tags:
+        - Admin - Documents
+      security:
+        - sessionAuth: []
+        - adminRole: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+                  total:
+                    type: integer
+
+  /admin/documents/{docId}:
+    get:
+      summary: Get document details (admin)
+      description: Returns detailed document information
+      tags:
+        - Admin - Documents
+      security:
+        - sessionAuth: []
+        - adminRole: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+
+    delete:
+      summary: Delete document (admin)
+      description: Soft deletes a document
+      tags:
+        - Admin - Documents
+      security:
+        - sessionAuth: []
+        - adminRole: []
+        - csrfToken: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Document deleted
+        '404':
+          description: Document not found
+
+  /admin/documents/{docId}/metadata:
+    put:
+      summary: Update document metadata (admin)
+      description: Updates document title, URL, checksum, and description
+      tags:
+        - Admin - Documents
+      security:
+        - sessionAuth: []
+        - adminRole: []
+        - csrfToken: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentMetadataRequest'
+      responses:
+        '200':
+          description: Metadata updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+
+  /admin/documents/{docId}/signers:
+    get:
+      summary: Get document with signers (admin)
+      description: Returns document with both expected and actual signers
+      tags:
+        - Admin - Signers
+      security:
+        - sessionAuth: []
+        - adminRole: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document with signers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentWithSigners'
+
+    post:
+      summary: Add expected signer (admin)
+      description: Adds one or more expected signers to a document
+      tags:
+        - Admin - Signers
+      security:
+        - sessionAuth: []
+        - adminRole: []
+        - csrfToken: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddExpectedSignerRequest'
+      responses:
+        '201':
+          description: Signer(s) added
+        '400':
+          description: Invalid request
+
+  /admin/documents/{docId}/signers/{email}:
+    delete:
+      summary: Remove expected signer (admin)
+      description: Removes an expected signer from a document
+      tags:
+        - Admin - Signers
+      security:
+        - sessionAuth: []
+        - adminRole: []
+        - csrfToken: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Signer removed
+
+  /admin/documents/{docId}/status:
+    get:
+      summary: Get document status (admin)
+      description: Returns completion statistics for a document
+      tags:
+        - Admin - Documents
+      security:
+        - sessionAuth: []
+        - adminRole: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentStatus'
+
+  /admin/documents/{docId}/reminders:
+    get:
+      summary: Get reminder history (admin)
+      description: Returns email reminder send history for a document
+      tags:
+        - Admin - Reminders
+      security:
+        - sessionAuth: []
+        - adminRole: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reminder history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reminders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReminderLog'
+
+    post:
+      summary: Send reminders (admin)
+      description: Sends email reminders to pending signers
+      tags:
+        - Admin - Reminders
+      security:
+        - sessionAuth: []
+        - adminRole: []
+        - csrfToken: []
+      parameters:
+        - name: docId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendRemindersRequest'
+      responses:
+        '200':
+          description: Reminders queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queued:
+                    type: integer
+                    description: Number of emails queued for sending
+
+  /openapi.json:
+    get:
+      summary: Get OpenAPI specification
+      description: Returns this OpenAPI specification in JSON format
+      tags:
+        - Health
+      responses:
+        '200':
+          description: OpenAPI spec
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: OAuth2 session cookie
+
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: CSRF protection token
+
+    adminRole:
+      type: http
+      scheme: bearer
+      description: Admin email must be in ACKIFY_ADMIN_EMAILS
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User unique identifier (OAuth sub claim)
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        isAdmin:
+          type: boolean
+
+    Document:
+      type: object
+      properties:
+        docId:
+          type: string
+          example: abc123
+        title:
+          type: string
+        url:
+          type: string
+        checksum:
+          type: string
+        checksumAlgorithm:
+          type: string
+          enum: [SHA-256, SHA-512, MD5]
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+
+    DocumentWithCount:
+      allOf:
+        - $ref: '#/components/schemas/Document'
+        - type: object
+          properties:
+            signatureCount:
+              type: integer
+
+    Signature:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        docId:
+          type: string
+        userSub:
+          type: string
+        userEmail:
+          type: string
+          format: email
+        userName:
+          type: string
+        signedAt:
+          type: string
+          format: date-time
+        payloadHash:
+          type: string
+        signature:
+          type: string
+          description: Ed25519 signature (hex-encoded)
+        nonce:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        referer:
+          type: string
+        prevHash:
+          type: string
+        docChecksum:
+          type: string
+
+    ExpectedSigner:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        docId:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        addedAt:
+          type: string
+          format: date-time
+        addedBy:
+          type: string
+        notes:
+          type: string
+
+    ReminderLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        docId:
+          type: string
+        recipientEmail:
+          type: string
+          format: email
+        sentAt:
+          type: string
+          format: date-time
+        sentBy:
+          type: string
+        templateUsed:
+          type: string
+        status:
+          type: string
+          enum: [sent, failed, bounced, queued]
+        errorMessage:
+          type: string
+
+    DocumentStatus:
+      type: object
+      properties:
+        docId:
+          type: string
+        expectedCount:
+          type: integer
+        signedCount:
+          type: integer
+        pendingCount:
+          type: integer
+        completionPercentage:
+          type: number
+          format: float
+
+    DocumentWithSigners:
+      allOf:
+        - $ref: '#/components/schemas/Document'
+        - type: object
+          properties:
+            expectedSigners:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExpectedSigner'
+            signatures:
+              type: array
+              items:
+                $ref: '#/components/schemas/Signature'
+
+    CreateDocumentRequest:
+      type: object
+      required:
+        - reference
+      properties:
+        reference:
+          type: string
+          description: Document URL, path, or custom ID
+        title:
+          type: string
+        description:
+          type: string
+
+    UpdateDocumentMetadataRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+        checksum:
+          type: string
+        checksumAlgorithm:
+          type: string
+          enum: [SHA-256, SHA-512, MD5]
+        description:
+          type: string
+
+    CreateSignatureRequest:
+      type: object
+      required:
+        - docId
+      properties:
+        docId:
+          type: string
+        referer:
+          type: string
+          description: Source service (Google Docs, GitHub, etc.)
+        docChecksum:
+          type: string
+          description: Document checksum at signing time
+
+    AddExpectedSignerRequest:
+      type: object
+      required:
+        - emails
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+            format: email
+        notes:
+          type: string
+
+    SendRemindersRequest:
+      type: object
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Specific emails to send to (omit to send to all pending)
+        docURL:
+          type: string
+          description: Custom document URL for email
+        locale:
+          type: string
+          enum: [en, fr, es, de, it]
+          default: en
+          description: Email language

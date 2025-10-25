@@ -9,16 +9,27 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 const sessionName = "ackapp_session"
+
+// SessionRepository defines the interface for OAuth session storage
+type SessionRepository interface {
+	Create(ctx context.Context, session *models.OAuthSession) error
+	GetBySessionID(ctx context.Context, sessionID string) (*models.OAuthSession, error)
+	UpdateRefreshToken(ctx context.Context, sessionID string, encryptedToken []byte, expiresAt time.Time) error
+	DeleteBySessionID(ctx context.Context, sessionID string) error
+	DeleteExpired(ctx context.Context, olderThan time.Duration) (int64, error)
+}
 
 type OauthService struct {
 	oauthConfig   *oauth2.Config
@@ -28,6 +39,8 @@ type OauthService struct {
 	allowedDomain string
 	secureCookies bool
 	baseURL       string
+	sessionRepo   SessionRepository
+	encryptionKey []byte
 }
 
 type Config struct {
@@ -42,6 +55,7 @@ type Config struct {
 	AllowedDomain string
 	CookieSecret  []byte
 	SecureCookies bool
+	SessionRepo   SessionRepository
 }
 
 func NewOAuthService(config Config) *OauthService {
@@ -64,12 +78,26 @@ func NewOAuthService(config Config) *OauthService {
 		HttpOnly: true,
 		Secure:   config.SecureCookies,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400 * 7, // 7 days
+		MaxAge:   86400 * 30, // 30 days
 	}
 
 	logger.Logger.Info("OAuth session store configured",
 		"secure_cookies", config.SecureCookies,
-		"max_age_days", 7)
+		"max_age_days", 30)
+
+	// Use CookieSecret as encryption key (must be 32 bytes for AES-256)
+	encryptionKey := config.CookieSecret
+	if len(encryptionKey) < 32 {
+		logger.Logger.Warn("Encryption key too short, padding to 32 bytes",
+			"original_length", len(encryptionKey))
+		// Pad with zeros (not ideal, but prevents crashes)
+		padded := make([]byte, 32)
+		copy(padded, encryptionKey)
+		encryptionKey = padded
+	} else if len(encryptionKey) > 32 {
+		// Truncate to 32 bytes for AES-256
+		encryptionKey = encryptionKey[:32]
+	}
 
 	return &OauthService{
 		oauthConfig:   oauthConfig,
@@ -79,6 +107,8 @@ func NewOAuthService(config Config) *OauthService {
 		allowedDomain: config.AllowedDomain,
 		secureCookies: config.SecureCookies,
 		baseURL:       config.BaseURL,
+		sessionRepo:   config.SessionRepo,
+		encryptionKey: encryptionKey,
 	}
 }
 
@@ -178,6 +208,18 @@ func (s *OauthService) GetAuthURL(nextURL string) string {
 }
 
 func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nextURL string) string {
+	// Generate PKCE code verifier and challenge
+	codeVerifier, err := crypto.GenerateCodeVerifier()
+	if err != nil {
+		logger.Logger.Error("Failed to generate PKCE code verifier", "error", err.Error())
+		// Fallback to OAuth flow without PKCE for backward compatibility
+		return s.createAuthURLWithoutPKCE(w, r, nextURL)
+	}
+
+	codeChallenge := crypto.GenerateCodeChallenge(codeVerifier)
+	logger.Logger.Debug("Generated PKCE parameters for OAuth flow")
+
+	// Generate state token
 	randPart := securecookie.GenerateRandomKey(20)
 	token := base64.RawURLEncoding.EncodeToString(randPart)
 	state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
@@ -188,7 +230,7 @@ func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nex
 		promptParam = "none"
 	}
 
-	logger.Logger.Info("Starting OAuth flow",
+	logger.Logger.Info("Starting OAuth flow with PKCE",
 		"next_url", nextURL,
 		"silent", isSilent,
 		"state_token_length", len(token))
@@ -200,10 +242,51 @@ func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nex
 		session, _ = s.sessionStore.New(r, sessionName)
 	}
 
+	// Store state and code_verifier in session
 	session.Values["oauth_state"] = token
+	session.Values["code_verifier"] = codeVerifier
 
-	// Session options are already configured globally on the store
-	// No need to set them again here
+	err = session.Save(r, w)
+	if err != nil {
+		logger.Logger.Error("CreateAuthURL: failed to save session", "error", err.Error())
+	}
+
+	// Generate OAuth URL with PKCE parameters
+	authURL := s.oauthConfig.AuthCodeURL(state,
+		oauth2.SetAuthURLParam("prompt", promptParam),
+		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
+		oauth2.SetAuthURLParam("code_challenge_method", "S256"))
+
+	logger.Logger.Debug("CreateAuthURL: generated auth URL with PKCE",
+		"prompt", promptParam,
+		"url_length", len(authURL))
+
+	return authURL
+}
+
+// createAuthURLWithoutPKCE is a fallback method for OAuth without PKCE
+// Used for backward compatibility if PKCE generation fails
+func (s *OauthService) createAuthURLWithoutPKCE(w http.ResponseWriter, r *http.Request, nextURL string) string {
+	randPart := securecookie.GenerateRandomKey(20)
+	token := base64.RawURLEncoding.EncodeToString(randPart)
+	state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
+
+	promptParam := "select_account"
+	isSilent := r.URL.Query().Get("silent") == "true"
+	if isSilent {
+		promptParam = "none"
+	}
+
+	logger.Logger.Warn("Starting OAuth flow WITHOUT PKCE (fallback mode)",
+		"next_url", nextURL,
+		"silent", isSilent)
+
+	session, err := s.sessionStore.Get(r, sessionName)
+	if err != nil {
+		session, _ = s.sessionStore.New(r, sessionName)
+	}
+
+	session.Values["oauth_state"] = token
 
 	err = session.Save(r, w)
 	if err != nil {
@@ -211,9 +294,6 @@ func (s *OauthService) CreateAuthURL(w http.ResponseWriter, r *http.Request, nex
 	}
 
 	authURL := s.oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", promptParam))
-	logger.Logger.Debug("CreateAuthURL: generated auth URL",
-		"prompt", promptParam,
-		"url_length", len(authURL))
 
 	return authURL
 }
@@ -255,7 +335,7 @@ func subtleConstantTimeCompare(a, b string) bool {
 	return v == 0
 }
 
-func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (*models.User, string, error) {
+func (s *OauthService) HandleCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, code, state string) (*models.User, string, error) {
 	parts := strings.SplitN(state, ":", 2)
 	nextURL := "/"
 	if len(parts) == 2 {
@@ -268,14 +348,37 @@ func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (
 		"has_code", code != "",
 		"next_url", nextURL)
 
-	token, err := s.oauthConfig.Exchange(ctx, code)
+	// Retrieve code_verifier from session for PKCE
+	session, _ := s.sessionStore.Get(r, sessionName)
+	codeVerifier, hasPKCE := session.Values["code_verifier"].(string)
+
+	// Clean up code_verifier immediately after retrieval
+	if hasPKCE {
+		delete(session.Values, "code_verifier")
+		_ = session.Save(r, w)
+	}
+
+	// Exchange authorization code for token (with or without PKCE)
+	var token *oauth2.Token
+	var err error
+
+	if hasPKCE && codeVerifier != "" {
+		logger.Logger.Info("OAuth token exchange with PKCE")
+		token, err = s.oauthConfig.Exchange(ctx, code,
+			oauth2.SetAuthURLParam("code_verifier", codeVerifier))
+	} else {
+		logger.Logger.Warn("OAuth token exchange without PKCE (legacy session or fallback)")
+		token, err = s.oauthConfig.Exchange(ctx, code)
+	}
+
 	if err != nil {
 		logger.Logger.Error("OAuth token exchange failed",
-			"error", err.Error())
+			"error", err.Error(),
+			"with_pkce", hasPKCE)
 		return nil, nextURL, fmt.Errorf("oauth exchange failed: %w", err)
 	}
 
-	logger.Logger.Debug("OAuth token exchange successful")
+	logger.Logger.Info("OAuth token exchange successful", "with_pkce", hasPKCE)
 
 	client := s.oauthConfig.Client(ctx, token)
 	resp, err := client.Get(s.userInfoURL)
@@ -314,7 +417,93 @@ func (s *OauthService) HandleCallback(ctx context.Context, code, state string) (
 		"user_email", user.Email,
 		"user_name", user.Name)
 
+	// Store refresh token if available and repository is configured
+	if token.RefreshToken != "" && s.sessionRepo != nil && s.encryptionKey != nil {
+		if err := s.storeRefreshToken(ctx, w, r, token, user); err != nil {
+			// Log error but don't fail the authentication
+			logger.Logger.Error("Failed to store refresh token (non-fatal)",
+				"user_sub", user.Sub,
+				"error", err.Error())
+		}
+	}
+
 	return user, nextURL, nil
+}
+
+// storeRefreshToken encrypts and stores the OAuth refresh token
+func (s *OauthService) storeRefreshToken(ctx context.Context, w http.ResponseWriter, r *http.Request, token *oauth2.Token, user *models.User) error {
+	// Encrypt refresh token
+	encryptedToken, err := crypto.EncryptToken(token.RefreshToken, s.encryptionKey)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt refresh token: %w", err)
+	}
+
+	// Generate unique session ID for OAuth session tracking
+	sessionID := generateSessionID()
+
+	// Get client IP and user agent for security tracking
+	ipAddress := getClientIP(r)
+	userAgent := r.UserAgent()
+
+	// Create OAuth session
+	oauthSession := &models.OAuthSession{
+		SessionID:             sessionID,
+		UserSub:               user.Sub,
+		RefreshTokenEncrypted: encryptedToken,
+		AccessTokenExpiresAt:  token.Expiry,
+		UserAgent:             userAgent,
+		IPAddress:             ipAddress,
+	}
+
+	// Save to database
+	if err := s.sessionRepo.Create(ctx, oauthSession); err != nil {
+		return fmt.Errorf("failed to create OAuth session: %w", err)
+	}
+
+	// Link OAuth session ID to user session
+	userSession, _ := s.sessionStore.Get(r, sessionName)
+	userSession.Values["oauth_session_id"] = sessionID
+	if err := userSession.Save(r, w); err != nil {
+		logger.Logger.Error("Failed to link OAuth session to user session",
+			"session_id", sessionID,
+			"error", err.Error())
+		// Don't return error, session is already created in DB
+	}
+
+	logger.Logger.Info("Stored encrypted refresh token",
+		"user_sub", user.Sub,
+		"session_id", sessionID,
+		"expires_at", token.Expiry)
+
+	return nil
+}
+
+// generateSessionID generates a unique session ID for OAuth sessions
+func generateSessionID() string {
+	nonce, _ := crypto.GenerateNonce()
+	return nonce
+}
+
+// getClientIP extracts the client IP address from the request
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For header (if behind proxy)
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		// Take the first IP in the list
+		parts := strings.Split(forwarded, ",")
+		if len(parts) > 0 {
+			return strings.TrimSpace(parts[0])
+		}
+	}
+
+	// Check X-Real-IP header
+	realIP := r.Header.Get("X-Real-IP")
+	if realIP != "" {
+		return realIP
+	}
+
+	// Fallback to RemoteAddr
+	return r.RemoteAddr
 }
 
 func (s *OauthService) IsAllowedDomain(email string) bool {

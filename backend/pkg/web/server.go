@@ -24,15 +24,16 @@ import (
 )
 
 type Server struct {
-	httpServer  *http.Server
-	db          *sql.DB
-	router      *chi.Mux
-	emailSender email.Sender
-	emailWorker *email.Worker
-	baseURL     string
-	adminEmails []string
-	authService *auth.OauthService
-	autoLogin   bool
+	httpServer    *http.Server
+	db            *sql.DB
+	router        *chi.Mux
+	emailSender   email.Sender
+	emailWorker   *email.Worker
+	sessionWorker *auth.SessionWorker
+	baseURL       string
+	adminEmails   []string
+	authService   *auth.OauthService
+	autoLogin     bool
 }
 
 func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Server, error) {
@@ -41,6 +42,15 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
 
+	// Initialize repositories
+	signatureRepo := database.NewSignatureRepository(db)
+	documentRepo := database.NewDocumentRepository(db)
+	expectedSignerRepo := database.NewExpectedSignerRepository(db)
+	reminderRepo := database.NewReminderRepository(db)
+	emailQueueRepo := database.NewEmailQueueRepository(db)
+	oauthSessionRepo := database.NewOAuthSessionRepository(db)
+
+	// Initialize OAuth auth service with session repository
 	authService := auth.NewOAuthService(auth.Config{
 		BaseURL:       cfg.App.BaseURL,
 		ClientID:      cfg.OAuth.ClientID,
@@ -53,14 +63,8 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 		AllowedDomain: cfg.OAuth.AllowedDomain,
 		CookieSecret:  cfg.OAuth.CookieSecret,
 		SecureCookies: cfg.App.SecureCookies,
+		SessionRepo:   oauthSessionRepo,
 	})
-
-	// Initialize repositories
-	signatureRepo := database.NewSignatureRepository(db)
-	documentRepo := database.NewDocumentRepository(db)
-	expectedSignerRepo := database.NewExpectedSignerRepository(db)
-	reminderRepo := database.NewReminderRepository(db)
-	emailQueueRepo := database.NewEmailQueueRepository(db)
 
 	// Initialize services
 	signatureService := services.NewSignatureService(signatureRepo, documentRepo, signer)
@@ -88,6 +92,16 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 			emailQueueRepo,
 			cfg.App.BaseURL,
 		)
+	}
+
+	// Initialize OAuth session cleanup worker
+	var sessionWorker *auth.SessionWorker
+	if oauthSessionRepo != nil {
+		workerConfig := auth.DefaultSessionWorkerConfig()
+		sessionWorker = auth.NewSessionWorker(oauthSessionRepo, workerConfig)
+		if err := sessionWorker.Start(); err != nil {
+			return nil, fmt.Errorf("failed to start OAuth session worker: %w", err)
+		}
 	}
 
 	router := chi.NewRouter()
@@ -118,15 +132,16 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 	}
 
 	return &Server{
-		httpServer:  httpServer,
-		db:          db,
-		router:      router,
-		emailSender: emailSender,
-		emailWorker: emailWorker,
-		baseURL:     cfg.App.BaseURL,
-		adminEmails: cfg.App.AdminEmails,
-		authService: authService,
-		autoLogin:   cfg.OAuth.AutoLogin,
+		httpServer:    httpServer,
+		db:            db,
+		router:        router,
+		emailSender:   emailSender,
+		emailWorker:   emailWorker,
+		sessionWorker: sessionWorker,
+		baseURL:       cfg.App.BaseURL,
+		adminEmails:   cfg.App.AdminEmails,
+		authService:   authService,
+		autoLogin:     cfg.OAuth.AutoLogin,
 	}, nil
 }
 
@@ -135,7 +150,14 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	// Stop email worker first if it exists
+	// Stop OAuth session worker first if it exists
+	if s.sessionWorker != nil {
+		if err := s.sessionWorker.Stop(); err != nil {
+			fmt.Printf("Warning: failed to stop OAuth session worker: %v\n", err)
+		}
+	}
+
+	// Stop email worker if it exists
 	if s.emailWorker != nil {
 		if err := s.emailWorker.Stop(); err != nil {
 			// Log but don't fail shutdown

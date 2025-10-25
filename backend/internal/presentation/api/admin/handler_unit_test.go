@@ -656,7 +656,7 @@ func TestHandleSendReminders_Success(t *testing.T) {
 		sendRemindersFunc: func(ctx context.Context, docID, sentBy string, specificEmails []string, docURL string, locale string) (*models.ReminderSendResult, error) {
 			assert.Equal(t, "doc1", docID)
 			assert.Equal(t, "admin@example.com", sentBy)
-			assert.Equal(t, "fr", locale)
+			assert.Equal(t, "en", locale) // Default locale when no language preference is set
 			return &models.ReminderSendResult{
 				TotalAttempted:   2,
 				SuccessfullySent: 2,

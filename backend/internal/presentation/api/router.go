@@ -2,11 +2,14 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"gopkg.in/yaml.v3"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
@@ -167,9 +170,34 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 // serveOpenAPISpec serves the OpenAPI specification
 func serveOpenAPISpec(w http.ResponseWriter, r *http.Request) {
-	// TODO: Read and serve the OpenAPI YAML file as JSON
-	// For now, return a simple response
+	// Read the OpenAPI YAML file and convert to JSON
+	yamlData, err := os.ReadFile("openapi.yaml")
+	if err != nil {
+		// Fallback to basic response if file not found
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"info":{"title":"Ackify API","version":"1.0.0"},"message":"OpenAPI spec file not found - see /backend/openapi.yaml"}`))
+		return
+	}
+
+	// Parse YAML and convert to JSON
+	var spec map[string]interface{}
+	if err := yaml.Unmarshal(yamlData, &spec); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"Failed to parse OpenAPI spec"}`))
+		return
+	}
+
+	jsonData, err := json.MarshalIndent(spec, "", "  ")
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"error":"Failed to convert OpenAPI spec to JSON"}`))
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"info":{"title":"Ackify API","version":"1.0.0"}}`))
+	w.Write(jsonData)
 }

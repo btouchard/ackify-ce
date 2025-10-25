@@ -282,6 +282,24 @@
     "home": "Zurück zur Startseite"
   },
   "footer": {
+    "description": "Open-Source-Lösung für kryptographische Dokumentenlesebestätigung mit unwiderruflichen Ed25519-Signaturen.",
+    "navigation": {
+      "title": "Navigation"
+    },
+    "resources": {
+      "title": "Ressourcen",
+      "documentation": "Dokumentation",
+      "apiReference": "API-Referenz",
+      "support": "Support"
+    },
+    "legal": {
+      "title": "Rechtliches",
+      "terms": "Nutzungsbedingungen",
+      "privacy": "Datenschutzerklärung",
+      "contact": "Kontakt"
+    },
+    "copyright": "Alle Rechte vorbehalten.",
+    "license": "Lizenziert unter AGPL-3.0-or-later",
     "madeWith": "Erstellt mit",
     "by": "von",
     "links": {

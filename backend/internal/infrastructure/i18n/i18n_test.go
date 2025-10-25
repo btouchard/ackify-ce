@@ -41,7 +41,7 @@ func TestNewI18n_InvalidDirectory(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, i18n)
-	assert.Contains(t, err.Error(), "failed to load English translations")
+	assert.Contains(t, err.Error(), "failed to load en translations")
 }
 
 func TestNewI18n_MissingEnglishFile(t *testing.T) {
@@ -81,10 +81,10 @@ func TestI18n_T_EnglishTranslation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test a known key from en.json
-	result := i18n.T("en", "site.title")
+	result := i18n.T("en", "email.reminder.subject")
 	assert.NotEmpty(t, result)
-	assert.NotEqual(t, "site.title", result, "Should return translation, not key")
-	assert.Contains(t, result, "Ackify", "Should contain 'Ackify'")
+	assert.NotEqual(t, "email.reminder.subject", result, "Should return translation, not key")
+	assert.Contains(t, result, "Document Reading", "Should contain expected text")
 }
 
 func TestI18n_T_FrenchTranslation(t *testing.T) {
@@ -94,10 +94,10 @@ func TestI18n_T_FrenchTranslation(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test a known key from fr.json
-	result := i18n.T("fr", "site.title")
+	result := i18n.T("fr", "email.reminder.subject")
 	assert.NotEmpty(t, result)
-	assert.NotEqual(t, "site.title", result, "Should return translation, not key")
-	assert.Contains(t, result, "Ackify", "Should contain 'Ackify'")
+	assert.NotEqual(t, "email.reminder.subject", result, "Should return translation, not key")
+	assert.Contains(t, result, "lecture", "Should contain expected French text")
 }
 
 func TestI18n_T_FallbackToEnglish(t *testing.T) {
@@ -107,7 +107,7 @@ func TestI18n_T_FallbackToEnglish(t *testing.T) {
 	require.NoError(t, err)
 
 	// Request French translation for a key - should work for existing keys
-	result := i18n.T("fr", "site.title")
+	result := i18n.T("fr", "email.reminder.subject")
 	assert.NotEmpty(t, result)
 }
 
@@ -129,10 +129,10 @@ func TestI18n_T_UnknownLanguage(t *testing.T) {
 	i18n, err := NewI18n(testLocalesDir)
 	require.NoError(t, err)
 
-	// Test with unsupported language, should fallback to English
-	result := i18n.T("de", "site.title")
+	// Test with unsupported language (Chinese), should fallback to English
+	result := i18n.T("zh", "email.reminder.subject")
 	assert.NotEmpty(t, result)
-	assert.Contains(t, result, "Ackify", "Should fallback to English translation")
+	assert.Contains(t, result, "Document Reading", "Should fallback to English translation")
 }
 
 // ============================================================================
@@ -215,7 +215,7 @@ func TestGetLangFromRequest_FromAcceptLanguageHeader(t *testing.T) {
 		},
 		{
 			name:         "Unsupported language defaults to English",
-			acceptLang:   "de,es",
+			acceptLang:   "zh,ja",
 			expectedLang: "en",
 		},
 	}
@@ -327,7 +327,7 @@ func TestSetLangCookie_UnsupportedLanguage(t *testing.T) {
 	t.Parallel()
 
 	rec := httptest.NewRecorder()
-	SetLangCookie(rec, "de", false)
+	SetLangCookie(rec, "zh", false)
 
 	cookies := rec.Result().Cookies()
 	require.Len(t, cookies, 1)
@@ -379,14 +379,14 @@ func Test_normalizeLang(t *testing.T) {
 			expected: "en",
 		},
 		{
-			name:     "Other language",
+			name:     "German",
 			input:    "de",
 			expected: "de",
 		},
 		{
-			name:     "Other language with region",
+			name:     "German with region",
 			input:    "de-DE",
-			expected: "de-de",
+			expected: "de",
 		},
 	}
 
@@ -435,11 +435,21 @@ func Test_isSupported(t *testing.T) {
 		{
 			name:     "German",
 			lang:     "de",
-			expected: false,
+			expected: true,
 		},
 		{
 			name:     "Spanish",
 			lang:     "es",
+			expected: true,
+		},
+		{
+			name:     "Italian",
+			lang:     "it",
+			expected: true,
+		},
+		{
+			name:     "Unsupported language (Chinese)",
+			lang:     "zh",
 			expected: false,
 		},
 	}
@@ -484,8 +494,8 @@ func TestI18n_GetTranslations_UnsupportedLanguage(t *testing.T) {
 	i18n, err := NewI18n(testLocalesDir)
 	require.NoError(t, err)
 
-	// Should fallback to default language (English)
-	translations := i18n.GetTranslations("de")
+	// Should fallback to default language (English) for truly unsupported languages
+	translations := i18n.GetTranslations("zh")
 	assert.NotEmpty(t, translations)
 	assert.Equal(t, i18n.translations[DefaultLang], translations)
 }
@@ -512,7 +522,7 @@ func TestI18n_T_Concurrent(t *testing.T) {
 				lang = "fr"
 			}
 
-			result := i18n.T(lang, "site.title")
+			result := i18n.T(lang, "email.reminder.subject")
 			assert.NotEmpty(t, result)
 		}(i)
 	}
@@ -533,7 +543,7 @@ func BenchmarkI18n_T(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		i18n.T("en", "site.title")
+		i18n.T("en", "email.reminder.subject")
 	}
 }
 
@@ -543,7 +553,7 @@ func BenchmarkI18n_T_Parallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			i18n.T("en", "site.title")
+			i18n.T("en", "email.reminder.subject")
 		}
 	})
 }

@@ -282,6 +282,24 @@
     "home": "Torna alla home"
   },
   "footer": {
+    "description": "Soluzione open-source di conferma crittografica di lettura di documenti con firme Ed25519 non ripudiabili.",
+    "navigation": {
+      "title": "Navigazione"
+    },
+    "resources": {
+      "title": "Risorse",
+      "documentation": "Documentazione",
+      "apiReference": "Riferimento API",
+      "support": "Supporto"
+    },
+    "legal": {
+      "title": "Legale",
+      "terms": "Termini di utilizzo",
+      "privacy": "Politica sulla privacy",
+      "contact": "Contatto"
+    },
+    "copyright": "Tutti i diritti riservati.",
+    "license": "Licenza AGPL-3.0-or-later",
     "madeWith": "Fatto con",
     "by": "da",
     "links": {

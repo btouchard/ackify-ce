@@ -282,6 +282,24 @@
     "home": "Retour à l'accueil"
   },
   "footer": {
+    "description": "Solution open-source de confirmation cryptographique de lecture de documents avec signatures Ed25519 non répudiables.",
+    "navigation": {
+      "title": "Navigation"
+    },
+    "resources": {
+      "title": "Ressources",
+      "documentation": "Documentation",
+      "apiReference": "Référence API",
+      "support": "Support"
+    },
+    "legal": {
+      "title": "Légal",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité",
+      "contact": "Contact"
+    },
+    "copyright": "Tous droits réservés.",
+    "license": "Licence AGPL-3.0-or-later",
     "madeWith": "Fait avec",
     "by": "par",
     "links": {

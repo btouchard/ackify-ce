@@ -754,7 +754,9 @@ func TestOauthService_HandleCallback_StateDecoding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// We can't easily test the full HandleCallback without mocking OAuth2 exchange
 			// So we test the state parsing logic by calling with invalid code
-			_, nextURL, _ := service.HandleCallback(context.Background(), "invalid-code", tt.state)
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/", nil)
+			_, nextURL, _ := service.HandleCallback(context.Background(), w, r, "invalid-code", tt.state)
 
 			if nextURL != tt.expectedURL {
 				t.Errorf("NextURL = %v, expected %v", nextURL, tt.expectedURL)

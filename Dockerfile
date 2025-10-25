@@ -53,6 +53,7 @@ COPY --from=builder /app/migrate /app/migrate
 COPY --from=builder /app/backend/migrations /app/migrations
 COPY --from=builder /app/backend/locales /app/locales
 COPY --from=builder /app/backend/templates /app/templates
+COPY --from=builder /app/backend/openapi.yaml /app/openapi.yaml
 
 ENV ACKIFY_TEMPLATES_DIR=/app/templates
 ENV ACKIFY_LOCALES_DIR=/app/locales
