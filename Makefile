@@ -70,14 +70,20 @@ coverage-integration: ## Generate integration test coverage report
 	go tool cover -html=$(COVERAGE_DIR)/coverage-integration.out -o $(COVERAGE_DIR)/coverage-integration.html
 	@echo "Integration coverage report generated: $(COVERAGE_DIR)/coverage-integration.html"
 
-coverage-all: ## Generate full coverage report (unit + integration)
+coverage-all: ## Generate full coverage report (unit + integration merged)
 	@echo "Generating full coverage report..."
 	@mkdir -p $(COVERAGE_DIR)
+	@echo "Step 1/3: Running unit tests with coverage..."
+	@CGO_ENABLED=1 go test -short -race -coverprofile=$(COVERAGE_DIR)/coverage-unit.out ./backend/internal/... ./backend/pkg/... ./backend/cmd/...
+	@echo "Step 2/3: Running integration tests with coverage..."
 	@export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
 	export INTEGRATION_TESTS=1; \
-	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-all.out ./...
-	go tool cover -html=$(COVERAGE_DIR)/coverage-all.out -o $(COVERAGE_DIR)/coverage-all.html
-	go tool cover -func=$(COVERAGE_DIR)/coverage-all.out
+	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./backend/internal/infrastructure/database/...
+	@echo "Step 3/3: Merging coverage files..."
+	@echo "mode: atomic" > $(COVERAGE_DIR)/coverage-all.out
+	@grep -h -v "^mode:" $(COVERAGE_DIR)/coverage-unit.out $(COVERAGE_DIR)/coverage-integration.out >> $(COVERAGE_DIR)/coverage-all.out || true
+	@go tool cover -html=$(COVERAGE_DIR)/coverage-all.out -o $(COVERAGE_DIR)/coverage-all.html
+	@go tool cover -func=$(COVERAGE_DIR)/coverage-all.out
 	@echo "Full coverage report generated: $(COVERAGE_DIR)/coverage-all.html"
 
 coverage-func: ## Show function-level coverage
