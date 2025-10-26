@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,27 +37,75 @@ func SetupTestDB(t *testing.T) *TestDB {
 		dsn = "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
 	}
 
-	db, err := sql.Open("postgres", dsn)
+	// Create unique test database name to enable parallel test execution
+	// Format: testdb_{nanosecond}_{pid}_{testname}
+	// PostgreSQL converts unquoted identifiers to lowercase, so we normalize to lowercase
+	testName := strings.ReplaceAll(t.Name(), "/", "_")
+	testName = strings.ReplaceAll(testName, " ", "_")
+	testName = strings.ToLower(testName)
+	// Limit testName to avoid exceeding PostgreSQL's 63-character limit
+	if len(testName) > 30 {
+		testName = testName[:30]
+	}
+	dbName := fmt.Sprintf("testdb_%d_%d_%s", time.Now().UnixNano(), os.Getpid(), testName)
+
+	// Truncate database name to PostgreSQL's 63-character limit
+	if len(dbName) > 63 {
+		dbName = dbName[:63]
+	}
+
+	// Connect to default postgres database to create test database
+	mainDSN := strings.Replace(dsn, "/ackify_test?", "/postgres?", 1)
+	mainDB, err := sql.Open("postgres", mainDSN)
 	if err != nil {
-		t.Fatalf("Failed to connect to test database: %v", err)
+		t.Fatalf("Failed to connect to postgres database: %v", err)
+	}
+	defer mainDB.Close()
+
+	// Create unique test database
+	_, err = mainDB.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+	if err != nil {
+		t.Fatalf("Failed to create test database %s: %v", dbName, err)
+	}
+
+	// Connect to the new test database
+	testDSN := strings.Replace(dsn, "/ackify_test?", fmt.Sprintf("/%s?", dbName), 1)
+	db, err := sql.Open("postgres", testDSN)
+	if err != nil {
+		t.Fatalf("Failed to connect to test database %s: %v", dbName, err)
 	}
 
 	if err := db.Ping(); err != nil {
-		t.Fatalf("Failed to ping test database: %v", err)
+		t.Fatalf("Failed to ping test database %s: %v", dbName, err)
 	}
 
 	testDB := &TestDB{
 		DB:     db,
-		DSN:    dsn,
-		dbName: fmt.Sprintf("test_%d_%d", time.Now().UnixNano(), os.Getpid()),
+		DSN:    testDSN,
+		dbName: dbName,
 	}
 
 	if err := testDB.createSchema(); err != nil {
-		t.Fatalf("Failed to create test schema: %v", err)
+		t.Fatalf("Failed to create test schema in %s: %v", dbName, err)
 	}
 
 	t.Cleanup(func() {
 		testDB.Cleanup()
+
+		// Drop the test database after cleanup
+		mainDB, err := sql.Open("postgres", mainDSN)
+		if err == nil {
+			defer mainDB.Close()
+			// Force close any remaining connections
+			_, _ = mainDB.Exec(fmt.Sprintf(`
+				SELECT pg_terminate_backend(pg_stat_activity.pid)
+				FROM pg_stat_activity
+				WHERE pg_stat_activity.datname = '%s'
+				AND pid <> pg_backend_pid()
+			`, dbName))
+			// Drop the database
+			_, _ = mainDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName))
+		}
 	})
 
 	return testDB
