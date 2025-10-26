@@ -107,25 +107,27 @@ func TestAdminHandler_GetDocumentStatus_WithUnexpectedSignatures(t *testing.T) {
 		t.Fatalf("Expected status 200, got %d", w.Code)
 	}
 
-	// Parse response
+	// Parse response (API responses are wrapped under {"data": ...})
 	var response struct {
-		DocID           string `json:"docId"`
-		ExpectedSigners []struct {
-			Email     string `json:"email"`
-			HasSigned bool   `json:"hasSigned"`
-		} `json:"expectedSigners"`
-		UnexpectedSignatures []struct {
-			UserEmail   string  `json:"userEmail"`
-			UserName    *string `json:"userName,omitempty"`
-			SignedAtUTC string  `json:"signedAtUTC"`
-		} `json:"unexpectedSignatures"`
-		Stats struct {
-			ExpectedCount  int     `json:"expectedCount"`
-			SignedCount    int     `json:"signedCount"`
-			PendingCount   int     `json:"pendingCount"`
-			CompletionRate float64 `json:"completionRate"`
-		} `json:"stats"`
-		ShareLink string `json:"shareLink"`
+		Data struct {
+			DocID           string `json:"docId"`
+			ExpectedSigners []struct {
+				Email     string `json:"email"`
+				HasSigned bool   `json:"hasSigned"`
+			} `json:"expectedSigners"`
+			UnexpectedSignatures []struct {
+				UserEmail   string  `json:"userEmail"`
+				UserName    *string `json:"userName,omitempty"`
+				SignedAtUTC string  `json:"signedAtUTC"`
+			} `json:"unexpectedSignatures"`
+			Stats struct {
+				ExpectedCount  int     `json:"expectedCount"`
+				SignedCount    int     `json:"signedCount"`
+				PendingCount   int     `json:"pendingCount"`
+				CompletionRate float64 `json:"completionRate"`
+			} `json:"stats"`
+			ShareLink string `json:"shareLink"`
+		} `json:"data"`
 	}
 
 	err = json.NewDecoder(w.Body).Decode(&response)
@@ -134,48 +136,48 @@ func TestAdminHandler_GetDocumentStatus_WithUnexpectedSignatures(t *testing.T) {
 	}
 
 	// Verify response
-	if response.DocID != docID {
-		t.Errorf("Expected docId %s, got %s", docID, response.DocID)
+	if response.Data.DocID != docID {
+		t.Errorf("Expected docId %s, got %s", docID, response.Data.DocID)
 	}
 
 	// Check expected signers
-	if len(response.ExpectedSigners) != 1 {
-		t.Errorf("Expected 1 expected signer, got %d", len(response.ExpectedSigners))
+	if len(response.Data.ExpectedSigners) != 1 {
+		t.Errorf("Expected 1 expected signer, got %d", len(response.Data.ExpectedSigners))
 	} else {
-		if response.ExpectedSigners[0].Email != "expected@example.com" {
-			t.Errorf("Expected email 'expected@example.com', got '%s'", response.ExpectedSigners[0].Email)
+		if response.Data.ExpectedSigners[0].Email != "expected@example.com" {
+			t.Errorf("Expected email 'expected@example.com', got '%s'", response.Data.ExpectedSigners[0].Email)
 		}
-		if !response.ExpectedSigners[0].HasSigned {
+		if !response.Data.ExpectedSigners[0].HasSigned {
 			t.Error("Expected signer should have signed")
 		}
 	}
 
 	// Check unexpected signatures
-	if len(response.UnexpectedSignatures) != 1 {
-		t.Fatalf("Expected 1 unexpected signature, got %d", len(response.UnexpectedSignatures))
+	if len(response.Data.UnexpectedSignatures) != 1 {
+		t.Fatalf("Expected 1 unexpected signature, got %d", len(response.Data.UnexpectedSignatures))
 	}
-	if response.UnexpectedSignatures[0].UserEmail != "unexpected@example.com" {
-		t.Errorf("Expected unexpected email 'unexpected@example.com', got '%s'", response.UnexpectedSignatures[0].UserEmail)
+	if response.Data.UnexpectedSignatures[0].UserEmail != "unexpected@example.com" {
+		t.Errorf("Expected unexpected email 'unexpected@example.com', got '%s'", response.Data.UnexpectedSignatures[0].UserEmail)
 	}
-	if response.UnexpectedSignatures[0].UserName == nil || *response.UnexpectedSignatures[0].UserName != "Unexpected User" {
+	if response.Data.UnexpectedSignatures[0].UserName == nil || *response.Data.UnexpectedSignatures[0].UserName != "Unexpected User" {
 		t.Error("Expected unexpected userName to be 'Unexpected User'")
 	}
 
 	// Check stats
-	if response.Stats.ExpectedCount != 1 {
-		t.Errorf("Expected expectedCount 1, got %d", response.Stats.ExpectedCount)
+	if response.Data.Stats.ExpectedCount != 1 {
+		t.Errorf("Expected expectedCount 1, got %d", response.Data.Stats.ExpectedCount)
 	}
-	if response.Stats.SignedCount != 1 {
-		t.Errorf("Expected signedCount 1, got %d", response.Stats.SignedCount)
+	if response.Data.Stats.SignedCount != 1 {
+		t.Errorf("Expected signedCount 1, got %d", response.Data.Stats.SignedCount)
 	}
-	if response.Stats.CompletionRate != 100.0 {
-		t.Errorf("Expected completionRate 100.0, got %f", response.Stats.CompletionRate)
+	if response.Data.Stats.CompletionRate != 100.0 {
+		t.Errorf("Expected completionRate 100.0, got %f", response.Data.Stats.CompletionRate)
 	}
 
 	// Check share link
 	expectedShareLink := "https://example.com/?doc=" + docID
-	if response.ShareLink != expectedShareLink {
-		t.Errorf("Expected shareLink '%s', got '%s'", expectedShareLink, response.ShareLink)
+	if response.Data.ShareLink != expectedShareLink {
+		t.Errorf("Expected shareLink '%s', got '%s'", expectedShareLink, response.Data.ShareLink)
 	}
 }
 
@@ -228,12 +230,14 @@ func TestAdminHandler_GetDocumentStatus_NoExpectedSigners(t *testing.T) {
 		t.Fatalf("Expected status 200, got %d", w.Code)
 	}
 
-	// Parse response
+	// Parse response (wrapped in {"data": ...})
 	var response struct {
-		ExpectedSigners      []interface{} `json:"expectedSigners"`
-		UnexpectedSignatures []struct {
-			UserEmail string `json:"userEmail"`
-		} `json:"unexpectedSignatures"`
+		Data struct {
+			ExpectedSigners      []interface{} `json:"expectedSigners"`
+			UnexpectedSignatures []struct {
+				UserEmail string `json:"userEmail"`
+			} `json:"unexpectedSignatures"`
+		} `json:"data"`
 	}
 
 	err = json.NewDecoder(w.Body).Decode(&response)
@@ -242,15 +246,15 @@ func TestAdminHandler_GetDocumentStatus_NoExpectedSigners(t *testing.T) {
 	}
 
 	// Verify response
-	if len(response.ExpectedSigners) != 0 {
-		t.Errorf("Expected 0 expected signers, got %d", len(response.ExpectedSigners))
+	if len(response.Data.ExpectedSigners) != 0 {
+		t.Errorf("Expected 0 expected signers, got %d", len(response.Data.ExpectedSigners))
 	}
 
 	// All signatures should be unexpected since there are no expected signers
-	if len(response.UnexpectedSignatures) != 1 {
-		t.Fatalf("Expected 1 unexpected signature, got %d", len(response.UnexpectedSignatures))
+	if len(response.Data.UnexpectedSignatures) != 1 {
+		t.Fatalf("Expected 1 unexpected signature, got %d", len(response.Data.UnexpectedSignatures))
 	}
-	if response.UnexpectedSignatures[0].UserEmail != "user@example.com" {
-		t.Errorf("Expected email 'user@example.com', got '%s'", response.UnexpectedSignatures[0].UserEmail)
+	if response.Data.UnexpectedSignatures[0].UserEmail != "user@example.com" {
+		t.Errorf("Expected email 'user@example.com', got '%s'", response.Data.UnexpectedSignatures[0].UserEmail)
 	}
 }

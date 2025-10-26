@@ -35,12 +35,12 @@ test-unit: ## Run unit tests
 	@echo "Running unit tests with race detection..."
 	CGO_ENABLED=1 go test -short -race -v ./backend/internal/... ./backend/pkg/... ./backend/cmd/...
 
-test-integration: ## Run integration tests (requires PostgreSQL - migrations are applied automatically)
+test-integration: ## Run integration tests (DB + admin; requires PostgreSQL - migrations applied automatically)
 	@echo "Running integration tests with race detection..."
 	@echo "Note: Migrations are applied automatically by test setup"
 	@export INTEGRATION_TESTS=1; \
 	export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
-	CGO_ENABLED=1 go test -v -race -tags=integration ./backend/internal/infrastructure/database/...
+	CGO_ENABLED=1 go test -v -race -tags=integration ./backend/internal/infrastructure/database/... ./backend/internal/presentation/api/admin
 
 test-integration-setup: ## Setup test database for integration tests (migrations applied by tests)
 	@echo "Setting up test database..."
@@ -66,7 +66,7 @@ coverage-integration: ## Generate integration test coverage report
 	@mkdir -p $(COVERAGE_DIR)
 	@export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
 	export INTEGRATION_TESTS=1; \
-	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./backend/internal/infrastructure/database/...
+	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./backend/internal/infrastructure/database/... ./backend/internal/presentation/api/admin
 	go tool cover -html=$(COVERAGE_DIR)/coverage-integration.out -o $(COVERAGE_DIR)/coverage-integration.html
 	@echo "Integration coverage report generated: $(COVERAGE_DIR)/coverage-integration.html"
 
@@ -78,7 +78,7 @@ coverage-all: ## Generate full coverage report (unit + integration merged)
 	@echo "Step 2/3: Running integration tests with coverage..."
 	@export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"; \
 	export INTEGRATION_TESTS=1; \
-	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./backend/internal/infrastructure/database/...
+	CGO_ENABLED=1 go test -v -race -tags=integration -coverprofile=$(COVERAGE_DIR)/coverage-integration.out ./backend/internal/infrastructure/database/... ./backend/internal/presentation/api/admin
 	@echo "Step 3/3: Merging coverage files..."
 	@echo "mode: atomic" > $(COVERAGE_DIR)/coverage-all.out
 	@grep -h -v "^mode:" $(COVERAGE_DIR)/coverage-unit.out $(COVERAGE_DIR)/coverage-integration.out >> $(COVERAGE_DIR)/coverage-all.out || true
