@@ -4,7 +4,9 @@
 package database
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -38,7 +40,14 @@ func SetupTestDB(t *testing.T) *TestDB {
 	}
 
 	// Create unique test database name to enable parallel test execution
-	// Format: testdb_{nanosecond}_{pid}_{testname}
+	// Format: testdb_{random}_{testname}
+	// Use random bytes to ensure uniqueness even when tests start at the same nanosecond
+	randomBytes := make([]byte, 8)
+	if _, err := rand.Read(randomBytes); err != nil {
+		t.Fatalf("Failed to generate random database name: %v", err)
+	}
+	randomHex := hex.EncodeToString(randomBytes)
+
 	// PostgreSQL converts unquoted identifiers to lowercase, so we normalize to lowercase
 	testName := strings.ReplaceAll(t.Name(), "/", "_")
 	testName = strings.ReplaceAll(testName, " ", "_")
@@ -47,7 +56,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 	if len(testName) > 30 {
 		testName = testName[:30]
 	}
-	dbName := fmt.Sprintf("testdb_%d_%d_%s", time.Now().UnixNano(), os.Getpid(), testName)
+	dbName := fmt.Sprintf("testdb_%s_%s", randomHex, testName)
 
 	// Truncate database name to PostgreSQL's 63-character limit
 	if len(dbName) > 63 {
