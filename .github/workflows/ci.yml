@@ -78,7 +78,8 @@ jobs:
         INTEGRATION_TESTS: "1"
       run: |
         cd backend
-        go test -v -race -tags=integration ./internal/infrastructure/database/...
+        # Run DB + admin integration tests, serialized to avoid CI flakiness
+        go test -v -race -tags=integration -p 1 -count=1 ./internal/infrastructure/database/... ./internal/presentation/api/admin
 
     - name: Generate coverage report (unit+integration)
       env:
@@ -91,7 +92,16 @@ jobs:
         ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
       run: |
         cd backend
-        go test -v -race -tags=integration -coverprofile=coverage.out ./...
+        # 1) Unit coverage (no integration tag)
+        go test -v -race -short -covermode=atomic -coverprofile=coverage-unit.out ./...
+        # 2) Integration coverage only for integration packages, serialized
+        go test -v -race -tags=integration -p 1 -count=1 -covermode=atomic -coverprofile=coverage-integration.out \
+          ./internal/infrastructure/database/... \
+          ./internal/presentation/api/admin
+        # 3) Merge coverage
+        echo "mode: atomic" > coverage.out
+        tail -n +2 coverage-unit.out >> coverage.out
+        tail -n +2 coverage-integration.out >> coverage.out
         go tool cover -func=coverage.out | tail -1
 
     - name: Upload coverage to Codecov
