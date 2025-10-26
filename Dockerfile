@@ -1,8 +1,16 @@
-FROM node:22-alpine AS spa-builder
+# syntax=docker/dockerfile:1.7
+
+# Build the SPA with the build platform to avoid slow QEMU emulation on arm64
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS spa-builder
 
 WORKDIR /app/webapp
 COPY webapp/package*.json ./
-RUN npm ci
+# Speed up and stabilize npm installs in CI
+# - no-audit/no-fund: skip network calls
+# - no-progress: cleaner logs
+# - cache mount: reuse npm cache between builds
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund --no-progress
 COPY webapp/ ./
 RUN npm run build
 
@@ -14,22 +22,32 @@ RUN adduser -D -g '' ackuser
 WORKDIR /app
 COPY go.mod go.sum ./
 ENV GOTOOLCHAIN=auto
-RUN go mod download && go mod verify
+# Cache Go modules and build cache between builds
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download && go mod verify
 COPY backend/ ./backend/
 
 RUN mkdir -p backend/cmd/community/web/dist
 COPY --from=spa-builder /app/webapp/dist ./backend/cmd/community/web/dist
 
+# Cross-compile per target platform
+ARG TARGETOS
+ARG TARGETARCH
 ARG VERSION="dev"
 ARG COMMIT="unknown"
 ARG BUILD_DATE="unknown"
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
     -a -installsuffix cgo \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
     -o ackify ./backend/cmd/community
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
     -a -installsuffix cgo \
     -ldflags="-w -s" \
     -o migrate ./backend/cmd/migrate
