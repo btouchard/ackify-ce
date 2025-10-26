@@ -121,19 +121,20 @@ func (tdb *TestDB) createSchema() error {
 			return fmt.Errorf("failed to get working directory: %w", err)
 		}
 
-		// Walk up the directory tree looking for backend/migrations
+		// Walk up the directory tree looking for migrations directory
 		found := false
 		searchDir := wd
 		for i := 0; i < 10; i++ {
-			testPath := filepath.Join(searchDir, "backend", "migrations")
+			// Try migrations in current directory
+			testPath := filepath.Join(searchDir, "migrations")
 			if stat, err := os.Stat(testPath); err == nil && stat.IsDir() {
 				migrationsPath = testPath
 				found = true
 				break
 			}
 
-			// Also try just "migrations" directory
-			testPath = filepath.Join(searchDir, "migrations")
+			// Try backend/migrations (for root project directory)
+			testPath = filepath.Join(searchDir, "backend", "migrations")
 			if stat, err := os.Stat(testPath); err == nil && stat.IsDir() {
 				migrationsPath = testPath
 				found = true
