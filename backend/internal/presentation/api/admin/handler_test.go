@@ -20,71 +20,9 @@ import (
 )
 
 func setupTestDB(t *testing.T) *database.TestDB {
+	// Use database.SetupTestDB which applies all migrations automatically
+	// This ensures test schema matches production schema
 	testDB := database.SetupTestDB(t)
-
-	// Create tables
-	schema := `
-		DROP TABLE IF EXISTS reminder_logs CASCADE;
-		DROP TABLE IF EXISTS expected_signers CASCADE;
-		DROP TABLE IF EXISTS signatures CASCADE;
-		DROP TABLE IF EXISTS documents CASCADE;
-
-		CREATE TABLE documents (
-			doc_id TEXT PRIMARY KEY,
-			title TEXT NOT NULL DEFAULT '',
-			url TEXT NOT NULL DEFAULT '',
-			checksum TEXT NOT NULL DEFAULT '',
-			checksum_algorithm TEXT NOT NULL DEFAULT 'SHA-256',
-			description TEXT NOT NULL DEFAULT '',
-			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			created_by TEXT NOT NULL DEFAULT ''
-		);
-
-		CREATE TABLE signatures (
-			id BIGSERIAL PRIMARY KEY,
-			doc_id TEXT NOT NULL,
-			user_sub TEXT NOT NULL,
-			user_email TEXT NOT NULL,
-			user_name TEXT NOT NULL DEFAULT '',
-			signed_at TIMESTAMPTZ NOT NULL,
-			payload_hash TEXT NOT NULL,
-			signature TEXT NOT NULL,
-			nonce TEXT NOT NULL,
-			created_at TIMESTAMPTZ DEFAULT now(),
-			referer TEXT,
-			prev_hash TEXT,
-			UNIQUE (doc_id, user_sub)
-		);
-
-		CREATE TABLE expected_signers (
-			id BIGSERIAL PRIMARY KEY,
-			doc_id TEXT NOT NULL,
-			email TEXT NOT NULL,
-			name TEXT NOT NULL DEFAULT '',
-			added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			added_by TEXT NOT NULL,
-			notes TEXT,
-			UNIQUE (doc_id, email)
-		);
-
-		CREATE TABLE reminder_logs (
-			id BIGSERIAL PRIMARY KEY,
-			doc_id TEXT NOT NULL,
-			recipient_email TEXT NOT NULL,
-			sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			sent_by TEXT NOT NULL,
-			template_used TEXT NOT NULL,
-			status TEXT NOT NULL,
-			error_message TEXT
-		);
-	`
-
-	_, err := testDB.DB.Exec(schema)
-	if err != nil {
-		t.Fatalf("Failed to create test schema: %v", err)
-	}
-
 	return testDB
 }
 
