@@ -16,6 +16,13 @@ import (
 	"github.com/btouchard/ackify-ce/backend/pkg/web"
 )
 
+// Build-time variables set via ldflags
+var (
+	Version   = "dev"
+	Commit    = "unknown"
+	BuildDate = "unknown"
+)
+
 //go:embed all:web/dist
 var frontend embed.FS
 
@@ -27,9 +34,13 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	logger.SetLevel(logger.ParseLevel(cfg.Logger.Level))
+	logger.SetLevelAndFormat(logger.ParseLevel(cfg.Logger.Level), cfg.Logger.Format)
+	logger.Logger.Info("Starting Ackify Community Edition",
+		"version", Version,
+		"commit", Commit,
+		"build_date", BuildDate)
 
-	server, err := web.NewServer(ctx, cfg, frontend)
+	server, err := web.NewServer(ctx, cfg, frontend, Version)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}

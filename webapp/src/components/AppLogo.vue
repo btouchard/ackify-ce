@@ -5,13 +5,19 @@ import { computed } from 'vue'
 interface Props {
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
+  showVersion?: boolean
   textClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   showText: true,
+  showVersion: false,
   textClass: ''
+})
+
+const appVersion = computed(() => {
+  return (window as any).ACKIFY_VERSION || ''
 })
 
 const sizeClasses = computed(() => {
@@ -52,11 +58,18 @@ const sizeClasses = computed(() => {
         stroke-linejoin="round"
       />
     </svg>
-    <span
-      v-if="showText"
-      :class="[sizeClasses.text, textClass || 'font-bold text-foreground']"
-    >
-      Ackify
-    </span>
+    <div v-if="showText" class="flex flex-col">
+      <span
+        :class="[sizeClasses.text, textClass || 'font-bold text-foreground']"
+      >
+        Ackify
+      </span>
+      <span
+        v-if="showVersion && appVersion"
+        class="text-xs text-muted-foreground leading-none -mt-0.5"
+      >
+        {{ appVersion }}
+      </span>
+    </div>
   </div>
 </template>

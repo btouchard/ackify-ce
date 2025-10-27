@@ -10,13 +10,30 @@ import (
 var Logger *slog.Logger
 
 func init() {
-	SetLevel(slog.LevelInfo)
+	SetLevelAndFormat(slog.LevelInfo, "classic")
 }
 
 func SetLevel(level slog.Level) {
-	Logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	SetLevelAndFormat(level, "classic")
+}
+
+func SetLevelAndFormat(level slog.Level, format string) {
+	opts := &slog.HandlerOptions{
 		Level: level,
-	}))
+	}
+
+	var handler slog.Handler
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "json":
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	case "classic", "text":
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	default:
+		// Default to classic (text) format
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
+
+	Logger = slog.New(handler)
 }
 
 func ParseLevel(levelStr string) slog.Level {

@@ -13,11 +13,8 @@ const { t } = useI18n()
       <div class="flex flex-col items-center justify-between gap-4 sm:flex-row sm:gap-6">
         <!-- Brand & Description -->
         <div class="flex items-center gap-3 text-center sm:text-left">
-          <AppLogo size="sm" :show-text="false" />
-          <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-            <span class="font-semibold text-base text-foreground leading-none">Ackify</span>
-            <span class="text-sm text-muted-foreground leading-tight max-w-md">{{ t('footer.description') }}</span>
-          </div>
+          <AppLogo size="sm" :show-text="true" :show-version="true" />
+          <span class="text-sm text-muted-foreground leading-tight max-w-md">{{ t('footer.description') }}</span>
         </div>
 
         <!-- Links & Copyright -->

@@ -49,7 +49,8 @@ type ServerConfig struct {
 }
 
 type LoggerConfig struct {
-	Level string
+	Level  string
+	Format string // "classic" or "json"
 }
 
 type MailConfig struct {
@@ -131,6 +132,7 @@ func Load() (*Config, error) {
 	config.Server.ListenAddr = getEnv("ACKIFY_LISTEN_ADDR", ":8080")
 
 	config.Logger.Level = getEnv("ACKIFY_LOG_LEVEL", "info")
+	config.Logger.Format = getEnv("ACKIFY_LOG_FORMAT", "classic")
 
 	// Parse admin emails
 	adminEmailsStr := getEnv("ACKIFY_ADMIN_EMAILS", "")

@@ -38,7 +38,7 @@ type Server struct {
 	autoLogin     bool
 }
 
-func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Server, error) {
+func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, version string) (*Server, error) {
 	db, signer, i18nService, emailSender, err := initInfrastructure(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
@@ -145,7 +145,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 
 	router.Get("/oembed", handlers.HandleOEmbed(cfg.App.BaseURL))
 
-	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, signatureRepo))
+	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, signatureRepo))
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,

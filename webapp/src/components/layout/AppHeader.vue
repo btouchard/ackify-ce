@@ -61,7 +61,7 @@ const closeUserMenu = () => {
         <!-- Logo -->
         <div class="flex items-center">
           <router-link to="/" class="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
-            <AppLogo size="md" />
+            <AppLogo size="md" :show-version="true" />
           </router-link>
         </div>
 
