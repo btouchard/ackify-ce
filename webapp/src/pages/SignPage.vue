@@ -227,7 +227,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="relative min-h-[calc(100vh-4rem)]">
+  <div class="relative">
     <!-- Background decoration -->
     <div class="absolute inset-0 -z-10 overflow-hidden">
       <div class="absolute left-1/4 top-0 h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl"></div>
@@ -235,7 +235,7 @@ onMounted(async () => {
     </div>
 
     <!-- Main Content -->
-    <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
       <!-- Page Header -->
       <div class="mb-8 text-center">
         <h1 class="mb-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -525,6 +525,6 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 </template>

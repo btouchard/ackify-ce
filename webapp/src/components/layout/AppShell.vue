@@ -6,14 +6,14 @@ import SkipToContent from '../accessibility/SkipToContent.vue'
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-background">
+  <div class="flex min-h-screen flex-col bg-background relative">
     <SkipToContent />
-    <AppHeader />
+    <AppHeader class="flex-shrink-0" />
 
-    <main id="main-content" class="flex-1 min-h-[60vh]">
+    <main id="main-content" class="flex-grow w-full">
       <slot />
     </main>
 
-    <AppFooter />
+    <AppFooter class="flex-shrink-0" />
   </div>
 </template>
