@@ -181,19 +181,23 @@ User authenticates via OAuth2 and signs with one click.
 
 **iFrame**:
 ```html
-<iframe src="https://your-domain.com/?doc=policy_2025"
+<iframe src="https://your-domain.com/embed?doc=policy_2025"
         width="600" height="200" frameborder="0"></iframe>
 ```
 
 **oEmbed** (Notion, Outline, Confluence):
 ```
-Just paste the URL - automatic embed via oEmbed discovery
+Paste the embed URL: https://your-domain.com/embed?doc=policy_2025
+Automatic embed via oEmbed discovery
 ```
 
 **Open Graph** (Slack, Teams):
 ```
+Paste direct URL: https://your-domain.com/?doc=policy_2025
 URL unfurls automatically with signature count
 ```
+
+> **Important**: Use `/embed?doc=...` for iframe integrations (Notion, Outline) and `/?doc=...` for direct links (emails, Slack).
 
 See [docs/en/features/embedding.md](docs/en/features/embedding.md) for details.
 

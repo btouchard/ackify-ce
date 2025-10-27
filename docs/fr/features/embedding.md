@@ -2,6 +2,47 @@
 
 Intégrer Ackify dans vos outils (Notion, Outline, Google Docs, etc.).
 
+## Formats d'URL : Quand Utiliser Quoi
+
+Ackify propose deux formats d'URL selon votre cas d'usage :
+
+### `/?doc=<id>` - Expérience Page Complète
+
+**À utiliser pour** :
+- Liens directs dans emails, messages chat
+- Pages de signature autonomes
+- Quand vous voulez navigation et contexte complets
+
+**Comportement** :
+- Page complète avec en-tête, navigation et pied de page
+- Optimisé pour accès utilisateur direct
+- Contexte complet de branding et organisation
+
+**Exemple** :
+```
+https://sign.company.com/?doc=policy_2025
+```
+
+### `/embed?doc=<id>` - Vue Optimisée Embed
+
+**À utiliser pour** :
+- Embeds iFrame dans Notion, Outline, Confluence
+- Intégrations widgets dans plateformes tierces
+- Quand vous voulez une interface épurée et minimaliste
+
+**Comportement** :
+- Interface minimale sans navigation
+- Optimisé pour petits conteneurs iframe
+- Focus uniquement sur statut signature et bouton d'action
+- Pas de redirections automatiques
+
+**Exemple** :
+```
+https://sign.company.com/embed?doc=policy_2025
+```
+
+> **Important** : Pour l'embedding dans Notion/Outline, utilisez toujours `/embed?doc=...` pour éviter les redirections non désirées et obtenir l'expérience embed optimale.
+
 ## Méthodes d'Intégration
 
 ### 1. Lien Direct
@@ -27,7 +68,7 @@ https://sign.company.com/?doc=policy_2025
 Pour intégrer dans une page web :
 
 ```html
-<iframe src="https://sign.company.com/?doc=policy_2025"
+<iframe src="https://sign.company.com/embed?doc=policy_2025"
         width="600"
         height="200"
         frameborder="0"
@@ -113,25 +154,36 @@ Ackify génère automatiquement des meta tags pour les previews :
 
 ### Notion
 
+**Méthode 1 : Auto-embed (Recommandé)**
+
 1. Coller l'URL dans une page Notion :
    ```
-   https://sign.company.com/?doc=policy_2025
+   https://sign.company.com/embed?doc=policy_2025
    ```
 
 2. Notion détecte automatiquement l'oEmbed
 3. Le widget apparaît avec bouton de signature
 
-**Alternative** : Créer un embed manuel
-- `/embed` → Paste URL
+**Méthode 2 : Embed manuel**
+
+1. Taper `/embed` dans Notion
+2. Coller l'URL embed :
+   ```
+   https://sign.company.com/embed?doc=policy_2025
+   ```
+
+> **Astuce** : Utilisez `/embed?doc=...` au lieu de `/?doc=...` pour obtenir la vue embed optimale sans éléments de navigation.
 
 ### Outline
 
 1. Dans un document Outline, coller :
    ```
-   https://sign.company.com/?doc=policy_2025
+   https://sign.company.com/embed?doc=policy_2025
    ```
 
 2. Outline charge automatiquement le widget
+
+> **Note** : L'utilisation de `/embed?doc=...` garantit une vue widget propre sans redirections.
 
 ### Google Docs
 
@@ -160,8 +212,10 @@ Voir [docs/integrations/google-doc/](../integrations/google-doc/) pour plus de d
 2. Insérer macro "oEmbed" ou "HTML Embed"
 3. Coller :
    ```
-   https://sign.company.com/?doc=policy_2025
+   https://sign.company.com/embed?doc=policy_2025
    ```
+
+> **Note** : Utilisez `/embed?doc=...` pour la meilleure expérience iframe.
 
 ### Slack
 

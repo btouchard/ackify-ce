@@ -44,3 +44,18 @@ func (d *Document) GetExpectedChecksumLength() int {
 		return 0
 	}
 }
+
+// GetDocID returns the document ID
+func (d *Document) GetDocID() string {
+	return d.DocID
+}
+
+// GetTitle returns the document title
+func (d *Document) GetTitle() string {
+	return d.Title
+}
+
+// GetURL returns the document URL
+func (d *Document) GetURL() string {
+	return d.URL
+}

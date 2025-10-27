@@ -2,6 +2,47 @@
 
 Integrate Ackify into your tools (Notion, Outline, Google Docs, etc.).
 
+## URL Formats: When to Use What
+
+Ackify provides two URL formats depending on your use case:
+
+### `/?doc=<id>` - Full Page Experience
+
+**Use for**:
+- Direct links in emails, chat messages
+- Standalone signature pages
+- When you want full navigation and context
+
+**Behavior**:
+- Full page with header, navigation, and footer
+- Optimized for direct user access
+- Complete branding and organization context
+
+**Example**:
+```
+https://sign.company.com/?doc=policy_2025
+```
+
+### `/embed?doc=<id>` - Embed-Optimized View
+
+**Use for**:
+- iFrame embeds in Notion, Outline, Confluence
+- Widget integrations in third-party platforms
+- When you want a clean, minimal interface
+
+**Behavior**:
+- Minimal interface without navigation
+- Optimized for small iframe containers
+- Focuses only on signature status and action button
+- No automatic redirects
+
+**Example**:
+```
+https://sign.company.com/embed?doc=policy_2025
+```
+
+> **Important**: For embedding in Notion/Outline, always use `/embed?doc=...` to avoid unwanted redirections and get the optimal embed experience.
+
 ## Integration Methods
 
 ### 1. Direct Link
@@ -27,7 +68,7 @@ https://sign.company.com/?doc=policy_2025
 To integrate in a web page:
 
 ```html
-<iframe src="https://sign.company.com/?doc=policy_2025"
+<iframe src="https://sign.company.com/embed?doc=policy_2025"
         width="600"
         height="200"
         frameborder="0"
@@ -113,25 +154,36 @@ Ackify automatically generates meta tags for previews:
 
 ### Notion
 
+**Method 1: Auto-embed (Recommended)**
+
 1. Paste URL in a Notion page:
    ```
-   https://sign.company.com/?doc=policy_2025
+   https://sign.company.com/embed?doc=policy_2025
    ```
 
 2. Notion auto-detects oEmbed
 3. Widget appears with signature button
 
-**Alternative**: Create manual embed
-- `/embed` → Paste URL
+**Method 2: Manual embed**
+
+1. Type `/embed` in Notion
+2. Paste the embed URL:
+   ```
+   https://sign.company.com/embed?doc=policy_2025
+   ```
+
+> **Tip**: Use `/embed?doc=...` instead of `/?doc=...` to get the optimal embed view without navigation elements.
 
 ### Outline
 
 1. In an Outline document, paste:
    ```
-   https://sign.company.com/?doc=policy_2025
+   https://sign.company.com/embed?doc=policy_2025
    ```
 
 2. Outline automatically loads the widget
+
+> **Note**: Using `/embed?doc=...` ensures you get the clean widget view without redirects.
 
 ### Google Docs
 
@@ -160,8 +212,10 @@ See [docs/integrations/google-doc/](../integrations/google-doc/) for more detail
 2. Insert "oEmbed" or "HTML Embed" macro
 3. Paste:
    ```
-   https://sign.company.com/?doc=policy_2025
+   https://sign.company.com/embed?doc=policy_2025
    ```
+
+> **Note**: Use `/embed?doc=...` for the best iframe experience.
 
 ### Slack
 

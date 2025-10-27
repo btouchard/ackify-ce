@@ -181,19 +181,23 @@ L'utilisateur s'authentifie via OAuth2 et signe en un clic.
 
 **iFrame** :
 ```html
-<iframe src="https://votre-domaine.com/?doc=politique_2025"
+<iframe src="https://votre-domaine.com/embed?doc=politique_2025"
         width="600" height="200" frameborder="0"></iframe>
 ```
 
 **oEmbed** (Notion, Outline, Confluence) :
 ```
-Collez simplement l'URL - embed automatique via oEmbed discovery
+Collez l'URL embed : https://votre-domaine.com/embed?doc=politique_2025
+Embed automatique via oEmbed discovery
 ```
 
 **Open Graph** (Slack, Teams) :
 ```
+Collez l'URL directe : https://votre-domaine.com/?doc=politique_2025
 L'URL se déploie automatiquement avec le nombre de signatures
 ```
+
+> **Important** : Utilisez `/embed?doc=...` pour les intégrations iframe (Notion, Outline) et `/?doc=...` pour les liens directs (emails, Slack).
 
 Voir [docs/fr/features/embedding.md](docs/fr/features/embedding.md) pour les détails.
 

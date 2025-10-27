@@ -126,6 +126,13 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 
 	router.Use(i18n.Middleware(i18nService))
 
+	// Embed middleware: intercepts /embed to ensure document exists (with strict rate limit)
+	// This runs BEFORE the SPA is served, allowing Notion/Outline embeds to work
+	router.Use(EmbedDocumentMiddleware(
+		documentService,
+		webhookPublisher,
+	))
+
 	apiConfig := api.RouterConfig{
 		AuthService:               authService,
 		SignatureService:          signatureService,
