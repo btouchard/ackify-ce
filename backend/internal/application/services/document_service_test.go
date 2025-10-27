@@ -98,6 +98,62 @@ func TestExtractTitleFromURL(t *testing.T) {
 			url:      "https://docs.example.com/v2/api/reference.json",
 			expected: "reference",
 		},
+		// New tests for hash suffix cleaning
+		{
+			name:     "Notion-style long hex suffix (32 chars)",
+			url:      "https://notion.so/Introduction-to-Cybersecurity-26b2915834718093a062f54c798d63c5",
+			expected: "Introduction-to-Cybersecurity",
+		},
+		{
+			name:     "Notion-style long hex suffix (30 chars)",
+			url:      "https://notion.so/My-Document-abc123def456789012345678901234",
+			expected: "My-Document",
+		},
+		{
+			name:     "GitHub-style UUID suffix",
+			url:      "https://github.com/repo/File-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+			expected: "File",
+		},
+		{
+			name:     "Short alphanumeric hash (12 chars)",
+			url:      "https://example.com/Report-abc123def456",
+			expected: "Report",
+		},
+		{
+			name:     "Numeric timestamp ID (10 digits)",
+			url:      "https://example.com/Article-1234567890",
+			expected: "Article",
+		},
+		{
+			name:     "Base64-like suffix",
+			url:      "https://example.com/Page-aGVsbG93b3JsZA",
+			expected: "Page",
+		},
+		{
+			name:     "Valid year should NOT be removed (4 digits)",
+			url:      "https://example.com/Report-2024",
+			expected: "Report-2024",
+		},
+		{
+			name:     "Valid version should NOT be removed (alphanumeric but short)",
+			url:      "https://example.com/Doc-v2",
+			expected: "Doc-v2",
+		},
+		{
+			name:     "Valid date should NOT be removed (letters only)",
+			url:      "https://example.com/Meeting-Notes-January",
+			expected: "Meeting-Notes-January",
+		},
+		{
+			name:     "Multiple dashes with hash at end",
+			url:      "https://example.com/My-Long-Document-Title-abc123def456789",
+			expected: "My-Long-Document-Title",
+		},
+		{
+			name:     "No hash suffix should remain unchanged",
+			url:      "https://example.com/Simple-Title",
+			expected: "Simple-Title",
+		},
 	}
 
 	for _, tt := range tests {
@@ -107,6 +163,183 @@ func TestExtractTitleFromURL(t *testing.T) {
 				t.Errorf("extractTitleFromURL(%q) = %q, want %q", tt.url, result, tt.expected)
 			}
 		})
+	}
+}
+
+// Test cleanHashSuffix function directly
+func TestCleanHashSuffix(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Notion 32-char hex",
+			input:    "Introduction-to-Cybersecurity-26b2915834718093a062f54c798d63c5",
+			expected: "Introduction-to-Cybersecurity",
+		},
+		{
+			name:     "UUID with dashes",
+			input:    "Document-a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+			expected: "Document",
+		},
+		{
+			name:     "Short hash 10 chars",
+			input:    "File-abc123def4",
+			expected: "File",
+		},
+		{
+			name:     "Numeric timestamp",
+			input:    "Article-1234567890",
+			expected: "Article",
+		},
+		{
+			name:     "Base64-like",
+			input:    "Page-aGVsbG93b3JsZA",
+			expected: "Page",
+		},
+		{
+			name:     "Year should NOT be removed",
+			input:    "Report-2024",
+			expected: "Report-2024",
+		},
+		{
+			name:     "Version should NOT be removed",
+			input:    "Doc-v3",
+			expected: "Doc-v3",
+		},
+		{
+			name:     "No suffix",
+			input:    "Simple-Title",
+			expected: "Simple-Title",
+		},
+		{
+			name:     "Multiple words preserved",
+			input:    "My-Long-Document-abc123def456",
+			expected: "My-Long-Document",
+		},
+		{
+			name:     "Hex but too short (6 chars)",
+			input:    "Title-abc123",
+			expected: "Title-abc123",
+		},
+		{
+			name:     "Numbers but too short (6 digits)",
+			input:    "Doc-123456",
+			expected: "Doc-123456",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := cleanHashSuffix(tt.input)
+			if result != tt.expected {
+				t.Errorf("cleanHashSuffix(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+// Test helper functions
+func TestIsHexString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"abc123", true},
+		{"ABC123", true},
+		{"0123456789abcdef", true},
+		{"xyz", false},
+		{"abc12g", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		result := isHexString(tt.input)
+		if result != tt.expected {
+			t.Errorf("isHexString(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestIsAlphanumeric(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"abc123", true},
+		{"ABC123", true},
+		{"abc", true},
+		{"123", true},
+		{"abc-123", false},
+		{"abc_123", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		result := isAlphanumeric(tt.input)
+		if result != tt.expected {
+			t.Errorf("isAlphanumeric(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestHasLettersAndNumbers(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"abc123", true},
+		{"a1", true},
+		{"abc", false},
+		{"123", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		result := hasLettersAndNumbers(tt.input)
+		if result != tt.expected {
+			t.Errorf("hasLettersAndNumbers(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestIsNumericString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"123", true},
+		{"0123456789", true},
+		{"12a3", false},
+		{"abc", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		result := isNumericString(tt.input)
+		if result != tt.expected {
+			t.Errorf("isNumericString(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
+	}
+}
+
+func TestIsBase64Like(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"aGVsbG93b3JsZA", true},
+		{"abc123_-", true},
+		{"abc!@#", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		result := isBase64Like(tt.input)
+		if result != tt.expected {
+			t.Errorf("isBase64Like(%q) = %v, want %v", tt.input, result, tt.expected)
+		}
 	}
 }
 

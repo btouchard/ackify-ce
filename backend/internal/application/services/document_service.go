@@ -163,19 +163,152 @@ func extractTitleFromURL(urlStr string) string {
 		return urlStr
 	}
 
+	// Remove query parameters
 	if idx := strings.Index(lastSegment, "?"); idx >= 0 {
 		lastSegment = lastSegment[:idx]
 	}
 
+	// Remove fragment
 	if idx := strings.Index(lastSegment, "#"); idx >= 0 {
 		lastSegment = lastSegment[:idx]
 	}
 
+	// Remove file extension
 	if idx := strings.LastIndex(lastSegment, "."); idx > 0 {
-		return lastSegment[:idx]
+		lastSegment = lastSegment[:idx]
 	}
 
+	// Clean up hash/ID suffixes (Notion, GitHub, GitLab, etc.)
+	lastSegment = cleanHashSuffix(lastSegment)
+
 	return lastSegment
+}
+
+// cleanHashSuffix removes common hash/ID patterns appended by various platforms
+// Examples:
+//   - "Introduction-to-Cybersecurity-26b2915834718093a062f54c798d63c5" -> "Introduction-to-Cybersecurity"
+//   - "My-Document-abc123def456" -> "My-Document"
+//   - "Report-2024-1a2b3c4d5e6f" -> "Report-2024"
+func cleanHashSuffix(title string) string {
+	// Pattern 1: Remove UUID-like suffixes (with dashes) - check this first before splitting
+	// Example: "Title-a1b2c3d4-e5f6-7890-abcd-ef1234567890" -> "Title"
+	// UUID format: 8-4-4-4-12 = 36 chars total with dashes
+	parts := strings.Split(title, "-")
+	if len(parts) >= 6 {
+		// Check if last 5 segments form a UUID pattern
+		potentialUUID := strings.Join(parts[len(parts)-5:], "-")
+		cleanUUID := strings.ReplaceAll(potentialUUID, "-", "")
+		if len(cleanUUID) == 32 && isHexString(cleanUUID) {
+			return strings.Join(parts[:len(parts)-5], "-")
+		}
+	}
+
+	// Pattern 2: Remove long hexadecimal suffixes (24+ chars) - Notion style
+	// Example: "Title-26b2915834718093a062f54c798d63c5" -> "Title"
+	if idx := strings.LastIndex(title, "-"); idx > 0 {
+		suffix := title[idx+1:]
+		if len(suffix) >= 24 && isHexString(suffix) {
+			return title[:idx]
+		}
+	}
+
+	// Pattern 3: Remove short hash suffixes (8-16 chars) only if alphanumeric
+	// Example: "Document-abc123def" -> "Document"
+	if idx := strings.LastIndex(title, "-"); idx > 0 {
+		suffix := title[idx+1:]
+		if len(suffix) >= 8 && len(suffix) <= 16 && isAlphanumeric(suffix) && hasLettersAndNumbers(suffix) {
+			return title[:idx]
+		}
+	}
+
+	// Pattern 4: Remove numeric-only suffixes (timestamps, IDs) 8+ digits
+	// Example: "Article-1234567890" -> "Article"
+	if idx := strings.LastIndex(title, "-"); idx > 0 {
+		suffix := title[idx+1:]
+		if len(suffix) >= 8 && isNumericString(suffix) {
+			return title[:idx]
+		}
+	}
+
+	// Pattern 5: Remove base64-like suffixes (URL-safe base64)
+	// Example: "Page-aGVsbG93b3JsZA" -> "Page"
+	if idx := strings.LastIndex(title, "-"); idx > 0 {
+		suffix := title[idx+1:]
+		if len(suffix) >= 12 && isBase64Like(suffix) {
+			return title[:idx]
+		}
+	}
+
+	return title
+}
+
+// isHexString checks if a string contains only hexadecimal characters (0-9, a-f, A-F)
+func isHexString(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, ch := range s {
+		if !((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+// isAlphanumeric checks if string contains only letters and numbers
+func isAlphanumeric(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, ch := range s {
+		if !((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
+			return false
+		}
+	}
+	return true
+}
+
+// hasLettersAndNumbers checks if string contains both letters AND numbers (likely a hash)
+func hasLettersAndNumbers(s string) bool {
+	hasLetter := false
+	hasNumber := false
+	for _, ch := range s {
+		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') {
+			hasLetter = true
+		}
+		if ch >= '0' && ch <= '9' {
+			hasNumber = true
+		}
+	}
+	return hasLetter && hasNumber
+}
+
+// isNumericString checks if string contains only digits
+func isNumericString(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, ch := range s {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// isBase64Like checks if string looks like base64 encoding
+func isBase64Like(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	base64Chars := 0
+	for _, ch := range s {
+		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_' || ch == '-' {
+			base64Chars++
+		}
+	}
+	// If 90%+ of chars are base64-compatible, likely base64
+	return float64(base64Chars)/float64(len(s)) >= 0.9
 }
 
 // computeChecksumForURL attempts to compute the checksum for a remote URL
