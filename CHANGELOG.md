@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2025-10-16
+## [1.2.0] - 2025-10-27
 
-### 🎉 Major Release: API-First Vue Migration
+### 🎉 Major Release: API-First Vue Migration with Enhanced Security
 
-Complete architectural overhaul to a modern API-first architecture with Vue 3 SPA frontend.
+Complete architectural overhaul to a modern API-first architecture with Vue 3 SPA frontend, signed webhooks, and improved security.
 
 ### Added
 
@@ -29,7 +29,15 @@ Complete architectural overhaul to a modern API-first architecture with Vue 3 SP
   - Vue Router for client-side routing
   - Tailwind CSS for utility-first styling
   - Responsive design with mobile support
+  - Version number display in footer for better traceability
+  - Enhanced footer visibility with improved UX
   - Pages: Home, Sign, Signatures, Embed, Admin Dashboard, Document Details
+
+- **Signed Webhooks Support**
+  - Webhook signature verification for secure event notifications
+  - HMAC-based authentication for webhook endpoints
+  - Prevents unauthorized webhook injection
+  - Configurable webhook endpoints for document events
 
 - **Comprehensive Logging System**
   - Structured JSON logging with `slog` package
@@ -43,15 +51,19 @@ Complete architectural overhaul to a modern API-first architecture with Vue 3 SP
   - OAuth flow progression logging
 
 - **Enhanced Security**
+  - OAuth 2.0 Authorization Code Flow with PKCE (Proof Key for Code Exchange)
   - CSRF token protection for all state-changing operations
   - Rate limiting (5 auth attempts/min, 100 general requests/min)
+  - Hard rate limiting on embed document creation endpoint
   - CORS configuration for development and production
   - Security headers (CSP, X-Content-Type-Options, X-Frame-Options, etc.)
   - Session-based authentication with secure cookies
   - Request ID propagation for distributed tracing
+  - Authorization middleware for embed endpoints
 
 - **Public Embed Route**
-  - `/embed/{docId}` route for public embedding (no authentication required)
+  - `/embed?doc={docId}` route for public embedding (no authentication required)
+  - Protected document creation with rate limiting and authorization
   - oEmbed protocol support for unfurl functionality
   - CSP headers configured to allow iframe embedding on embed routes
   - Suitable for integration in documentation tools and wikis
@@ -64,6 +76,7 @@ Complete architectural overhaul to a modern API-first architecture with Vue 3 SP
 
 - **Docker Multi-Stage Build**
   - Optimized Dockerfile with separate Node and Go build stages
+  - Improved build stage efficiency
   - Smaller final image size
   - SPA assets built during Docker build process
   - Production-ready containerized deployment
@@ -99,6 +112,12 @@ Complete architectural overhaul to a modern API-first architecture with Vue 3 SP
 - Consistent error handling across all API endpoints
 - Proper HTTP status codes for all responses
 - CORS issues in development environment
+- Integration tests concurrency issues and database collisions
+- Random hex generation for test database names to prevent collisions
+- Migrations directory discovery in CI environment
+- Missing hardcoded database struct columns removed
+- Split unit and integration test coverage for better reliability
+- CI/CD pipeline now pushes releases to latest tag on DockerHub
 
 ### Technical Details
 
@@ -139,17 +158,18 @@ Complete architectural overhaul to a modern API-first architecture with Vue 3 SP
 
 ### Migration Guide
 
-For users upgrading from v1.x to v2.0:
+For users upgrading from v1.1.x to v1.2.0:
 
 1. **Environment Variables**: Add optional `ACKIFY_LOG_LEVEL` and `ACKIFY_OAUTH_AUTO_LOGIN` if desired
-2. **Docker**: Rebuild images to include Vue SPA build
-3. **API Clients**: Consider migrating to new API v1 endpoints for better structure
-4. **Embed URLs**: Update to use `/embed/{docId}` instead of token-based system
+2. **Docker**: Rebuild images to include Vue SPA build with multi-stage optimization
+3. **API Clients**: Consider migrating to new API v1 endpoints for better structure and consistency
+4. **Embed URLs**: Update to use `/embed?doc={docId}` for public document embedding
+5. **Webhooks**: Configure webhook endpoints if you want to receive signed event notifications
 
 ### Breaking Changes
 
-- None - v2.0 maintains backward compatibility with all v1.x features
-- Template-based admin interface remains functional
+- None - v1.2.0 maintains backward compatibility with all v1.1.x features
+- Template-based admin interface remains functional alongside new Vue SPA
 - Legacy endpoints continue to work
 
 ## [1.1.3] - 2025-10-08
@@ -263,7 +283,7 @@ For users upgrading from v1.x to v2.0:
 - NULL UserName handling in database operations
 - Proper string conversion for UserName field
 
-[2.0.0]: https://github.com/btouchard/ackify-ce/compare/v1.1.3...v2.0.0
+[1.2.0]: https://github.com/btouchard/ackify-ce/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/btouchard/ackify-ce/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/btouchard/ackify-ce/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/btouchard/ackify-ce/compare/v1.1.0...v1.1.1
