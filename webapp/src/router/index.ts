@@ -6,6 +6,8 @@ const SignPage = () => import('@/pages/SignPage.vue')
 const SignaturesPage = () => import('@/pages/SignaturesPage.vue')
 const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
 const AdminDocumentDetail = () => import('@/pages/admin/AdminDocumentDetail.vue')
+const AdminWebhooks = () => import('@/pages/admin/AdminWebhooks.vue')
+const AdminWebhookEdit = () => import('@/pages/admin/AdminWebhookEdit.vue')
 const EmbedPage = () => import('@/pages/EmbedPage.vue')
 const NotFoundPage = () => import('@/pages/NotFoundPage.vue')
 
@@ -26,6 +28,24 @@ const routes: RouteRecordRaw[] = [
     path: '/admin',
     name: 'admin',
     component: AdminDashboard,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/webhooks',
+    name: 'admin-webhooks',
+    component: AdminWebhooks,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/webhooks/new',
+    name: 'admin-webhook-new',
+    component: AdminWebhookEdit,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/webhooks/:id',
+    name: 'admin-webhook-edit',
+    component: AdminWebhookEdit,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {

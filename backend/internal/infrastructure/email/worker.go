@@ -27,6 +27,7 @@ type Worker struct {
 	queueRepo QueueRepository
 	sender    Sender
 	renderer  *Renderer
+	publisher EventPublisher
 
 	// Worker configuration
 	batchSize       int
@@ -99,6 +100,14 @@ func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, con
 		stopChan:        make(chan struct{}),
 	}
 }
+
+// EventPublisher publishes webhook-like events ( decoupled interface )
+type EventPublisher interface {
+	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
+}
+
+// SetPublisher injects an optional event publisher (e.g., webhooks)
+func (w *Worker) SetPublisher(p EventPublisher) { w.publisher = p }
 
 // Start begins processing emails from the queue
 func (w *Worker) Start() error {
@@ -292,6 +301,18 @@ func (w *Worker) processEmail(ctx context.Context, item *models.EmailQueueItem) 
 				"id", item.ID,
 				"error", markErr.Error())
 		}
+
+		// Publish reminder.failed event
+		if w.publisher != nil {
+			payload := map[string]interface{}{
+				"template": item.Template,
+				"to":       item.ToAddresses,
+			}
+			if item.ReferenceType != nil && item.ReferenceID != nil && *item.ReferenceType == "signature_reminder" {
+				payload["doc_id"] = *item.ReferenceID
+			}
+			_ = w.publisher.Publish(ctx, "reminder.failed", payload)
+		}
 		return
 	}
 
@@ -308,6 +329,18 @@ func (w *Worker) processEmail(ctx context.Context, item *models.EmailQueueItem) 
 		"id", item.ID,
 		"template", item.Template,
 		"to", item.ToAddresses)
+
+	// Publish reminder.sent event
+	if w.publisher != nil {
+		payload := map[string]interface{}{
+			"template": item.Template,
+			"to":       item.ToAddresses,
+		}
+		if item.ReferenceType != nil && item.ReferenceID != nil && *item.ReferenceType == "signature_reminder" {
+			payload["doc_id"] = *item.ReferenceID
+		}
+		_ = w.publisher.Publish(ctx, "reminder.sent", payload)
+	}
 }
 
 // cleanupLoop periodically cleans up old emails

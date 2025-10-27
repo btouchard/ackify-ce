@@ -205,6 +205,57 @@
       "delete": "Delete",
       "empty": "No documents found"
     },
+    "webhooks": {
+      "title": "Webhooks",
+      "subtitle": "Notify third-party apps of events",
+      "manage": "Manage webhooks",
+      "new": "New webhook",
+      "edit": "Edit",
+      "delete": "Delete",
+      "enable": "Enable",
+      "disable": "Disable",
+      "status": { "enabled": "Enabled", "disabled": "Disabled" },
+      "confirmDelete": "Delete this webhook?",
+      "empty": "No webhooks",
+      "listTitle": "Webhooks list",
+      "listSubtitle": "A webhook can subscribe to several events",
+      "columns": {
+        "title": "Name",
+        "url": "URL",
+        "events": "Events",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "form": {
+        "title": "Webhook settings",
+        "subtitle": "Provide URL, secret and events",
+        "nameLabel": "Webhook name",
+        "namePlaceholder": "CRM webhook",
+        "urlLabel": "Target URL",
+        "secretLabel": "HMAC secret",
+        "secretPlaceholder": "Enter a secret (required)",
+        "secretKeep": "Leave empty to keep current",
+        "eventsLabel": "Events to subscribe",
+        "descriptionLabel": "Description (optional)",
+        "descriptionPlaceholder": "Internal note…",
+        "validation": "Please fill name, URL, secret and at least one event."
+      },
+      "editTitle": "Edit webhook",
+      "events": {
+        "documentCreated": "Document created",
+        "signatureCreated": "Signature created",
+        "documentCompleted": "Document completed",
+        "reminderSent": "Reminder sent",
+        "reminderFailed": "Reminder failed"
+      },
+      "eventsMap": {
+        "document.created": "Document created",
+        "signature.created": "Signature created",
+        "document.completed": "Document completed",
+        "reminder.sent": "Reminder sent",
+        "reminder.failed": "Reminder failed"
+      }
+    },
     "documentDetail": {
       "title": "Document details",
       "metadata": "Document metadata and checksum",

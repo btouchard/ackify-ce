@@ -32,9 +32,10 @@ const handleSubmit = async () => {
 
   try {
     isSubmitting.value = true
-    const response = await documentService.createDocument({
-      reference: documentUrl.value.trim(),
-    })
+
+    // Use findOrCreateDocument instead of createDocument to avoid duplicates
+    // This will search for existing document by reference first, then create if not found
+    const response = await documentService.findOrCreateDocument(documentUrl.value.trim())
 
     const homeRoute = `/?doc=${response.docId}`
     if (isAuthenticated.value) {

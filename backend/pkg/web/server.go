@@ -18,6 +18,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	whworker "github.com/btouchard/ackify-ce/backend/internal/infrastructure/webhook"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
@@ -29,6 +30,7 @@ type Server struct {
 	router        *chi.Mux
 	emailSender   email.Sender
 	emailWorker   *email.Worker
+	webhookWorker *whworker.Worker
 	sessionWorker *auth.SessionWorker
 	baseURL       string
 	adminEmails   []string
@@ -48,6 +50,13 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 	expectedSignerRepo := database.NewExpectedSignerRepository(db)
 	reminderRepo := database.NewReminderRepository(db)
 	emailQueueRepo := database.NewEmailQueueRepository(db)
+	webhookRepo := database.NewWebhookRepository(db)
+	webhookDeliveryRepo := database.NewWebhookDeliveryRepository(db)
+
+	// Initialize webhook publisher and worker
+	webhookPublisher := services.NewWebhookPublisher(webhookRepo, webhookDeliveryRepo)
+	whCfg := whworker.DefaultWorkerConfig()
+	webhookWorker := whworker.NewWorker(webhookDeliveryRepo, &http.Client{}, whCfg)
 	oauthSessionRepo := database.NewOAuthSessionRepository(db)
 
 	// Initialize OAuth auth service with session repository
@@ -77,10 +86,19 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 		renderer := email.NewRenderer(getTemplatesDir(), cfg.App.BaseURL, cfg.App.Organisation, cfg.Mail.FromName, cfg.Mail.From, "fr", i18nService)
 		workerConfig := email.DefaultWorkerConfig()
 		emailWorker = email.NewWorker(emailQueueRepo, emailSender, renderer, workerConfig)
+		// Attach webhook event publisher so reminder events can be emitted
+		if webhookPublisher != nil {
+			emailWorker.SetPublisher(webhookPublisher)
+		}
 		// Start the worker
 		if err := emailWorker.Start(); err != nil {
 			return nil, fmt.Errorf("failed to start email worker: %w", err)
 		}
+	}
+
+	// Start webhook worker
+	if err := webhookWorker.Start(); err != nil {
+		return nil, fmt.Errorf("failed to start webhook worker: %w", err)
 	}
 
 	// Initialize reminder service with async support
@@ -109,15 +127,18 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 	router.Use(i18n.Middleware(i18nService))
 
 	apiConfig := api.RouterConfig{
-		AuthService:              authService,
-		SignatureService:         signatureService,
-		DocumentService:          documentService,
-		DocumentRepository:       documentRepo,
-		ExpectedSignerRepository: expectedSignerRepo,
-		ReminderService:          reminderService,
-		BaseURL:                  cfg.App.BaseURL,
-		AdminEmails:              cfg.App.AdminEmails,
-		AutoLogin:                cfg.OAuth.AutoLogin,
+		AuthService:               authService,
+		SignatureService:          signatureService,
+		DocumentService:           documentService,
+		DocumentRepository:        documentRepo,
+		ExpectedSignerRepository:  expectedSignerRepo,
+		ReminderService:           reminderService,
+		WebhookRepository:         webhookRepo,
+		WebhookDeliveryRepository: webhookDeliveryRepo,
+		WebhookPublisher:          webhookPublisher,
+		BaseURL:                   cfg.App.BaseURL,
+		AdminEmails:               cfg.App.AdminEmails,
+		AutoLogin:                 cfg.OAuth.AutoLogin,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)
@@ -137,6 +158,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS) (*Ser
 		router:        router,
 		emailSender:   emailSender,
 		emailWorker:   emailWorker,
+		webhookWorker: webhookWorker,
 		sessionWorker: sessionWorker,
 		baseURL:       cfg.App.BaseURL,
 		adminEmails:   cfg.App.AdminEmails,
@@ -162,6 +184,13 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		if err := s.emailWorker.Stop(); err != nil {
 			// Log but don't fail shutdown
 			fmt.Printf("Warning: failed to stop email worker: %v\n", err)
+		}
+	}
+
+	// Stop webhook worker
+	if s.webhookWorker != nil {
+		if err := s.webhookWorker.Stop(); err != nil {
+			fmt.Printf("Warning: failed to stop webhook worker: %v\n", err)
 		}
 	}
 

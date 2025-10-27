@@ -25,15 +25,18 @@ import (
 
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
-	AuthService              *auth.OauthService
-	SignatureService         *services.SignatureService
-	DocumentService          *services.DocumentService
-	DocumentRepository       *database.DocumentRepository
-	ExpectedSignerRepository *database.ExpectedSignerRepository
-	ReminderService          *services.ReminderAsyncService // Now using async service
-	BaseURL                  string
-	AdminEmails              []string
-	AutoLogin                bool
+	AuthService               *auth.OauthService
+	SignatureService          *services.SignatureService
+	DocumentService           *services.DocumentService
+	DocumentRepository        *database.DocumentRepository
+	ExpectedSignerRepository  *database.ExpectedSignerRepository
+	ReminderService           *services.ReminderAsyncService // Now using async service
+	WebhookRepository         *database.WebhookRepository
+	WebhookDeliveryRepository *database.WebhookDeliveryRepository
+	WebhookPublisher          *services.WebhookPublisher
+	BaseURL                   string
+	AdminEmails               []string
+	AutoLogin                 bool
 }
 
 // NewRouter creates and configures the API v1 router
@@ -62,8 +65,8 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	healthHandler := health.NewHandler()
 	authHandler := apiAuth.NewHandler(cfg.AuthService, apiMiddleware, cfg.BaseURL)
 	usersHandler := users.NewHandler(cfg.AdminEmails)
-	documentsHandler := documents.NewHandler(cfg.SignatureService, cfg.DocumentService)
-	signaturesHandler := signatures.NewHandler(cfg.SignatureService)
+	documentsHandler := documents.NewHandlerWithPublisher(cfg.SignatureService, cfg.DocumentService, cfg.WebhookPublisher)
+	signaturesHandler := signatures.NewHandlerWithDeps(cfg.SignatureService, cfg.ExpectedSignerRepository, cfg.WebhookPublisher)
 
 	// Public routes
 	r.Group(func(r chi.Router) {
@@ -136,6 +139,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 		// Initialize admin handler
 		adminHandler := apiAdmin.NewHandler(cfg.DocumentRepository, cfg.ExpectedSignerRepository, cfg.ReminderService, cfg.SignatureService, cfg.BaseURL)
+		webhooksHandler := apiAdmin.NewWebhooksHandler(cfg.WebhookRepository, cfg.WebhookDeliveryRepository)
 
 		r.Route("/admin", func(r chi.Router) {
 			// Document management
@@ -158,6 +162,17 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 				// Reminder management
 				r.Post("/{docId}/reminders", adminHandler.HandleSendReminders)
 				r.Get("/{docId}/reminders", adminHandler.HandleGetReminderHistory)
+			})
+
+			// Webhooks management
+			r.Route("/webhooks", func(r chi.Router) {
+				r.Get("/", webhooksHandler.HandleListWebhooks)
+				r.Post("/", webhooksHandler.HandleCreateWebhook)
+				r.Get("/{id}", webhooksHandler.HandleGetWebhook)
+				r.Put("/{id}", webhooksHandler.HandleUpdateWebhook)
+				r.Patch("/{id}/{action}", webhooksHandler.HandleToggleWebhook) // action: enable|disable
+				r.Delete("/{id}", webhooksHandler.HandleDeleteWebhook)
+				r.Get("/{id}/deliveries", webhooksHandler.HandleListDeliveries)
 			})
 		})
 	})

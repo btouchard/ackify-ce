@@ -23,18 +23,27 @@ type documentService interface {
 	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
 }
 
+// webhookPublisher defines minimal publish capability
+type webhookPublisher interface {
+	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
+}
+
 // Handler handles document API requests
 type Handler struct {
 	signatureService *services.SignatureService
 	documentService  documentService
+	webhookPublisher webhookPublisher
 }
 
 // NewHandler creates a new documents handler
+// Backward-compatible constructor used by tests and existing code
 func NewHandler(signatureService *services.SignatureService, documentService documentService) *Handler {
-	return &Handler{
-		signatureService: signatureService,
-		documentService:  documentService,
-	}
+	return &Handler{signatureService: signatureService, documentService: documentService}
+}
+
+// Extended constructor with webhook publisher
+func NewHandlerWithPublisher(signatureService *services.SignatureService, documentService documentService, publisher webhookPublisher) *Handler {
+	return &Handler{signatureService: signatureService, documentService: documentService, webhookPublisher: publisher}
 }
 
 // DocumentDTO represents a document data transfer object
@@ -123,6 +132,17 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		"doc_id", doc.DocID,
 		"title", doc.Title,
 		"has_url", doc.URL != "")
+
+	// Publish webhook event
+	if h.webhookPublisher != nil {
+		_ = h.webhookPublisher.Publish(ctx, "document.created", map[string]interface{}{
+			"doc_id":             doc.DocID,
+			"title":              doc.Title,
+			"url":                doc.URL,
+			"checksum":           doc.Checksum,
+			"checksum_algorithm": doc.ChecksumAlgorithm,
+		})
+	}
 
 	// Return the created document
 	response := CreateDocumentResponse{

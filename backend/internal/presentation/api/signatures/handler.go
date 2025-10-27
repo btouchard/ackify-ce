@@ -9,6 +9,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/go-chi/chi/v5"
+	"time"
 )
 
 // signatureService defines the interface for signature operations
@@ -20,16 +21,32 @@ type signatureService interface {
 	GetUserSignatures(ctx context.Context, user *models.User) ([]*models.Signature, error)
 }
 
+// expectedSignerStatsRepo defines minimal stats access
+type expectedSignerStatsRepo interface {
+	GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+}
+
+// webhookPublisher defines minimal publish capability
+type webhookPublisher interface {
+	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
+}
+
 // Handler handles signature-related requests
 type Handler struct {
-	signatureService signatureService
+	signatureService   signatureService
+	expectedSignerRepo expectedSignerStatsRepo
+	webhookPublisher   webhookPublisher
 }
 
 // NewHandler creates a new signature handler
+// Backward-compatible base constructor
 func NewHandler(signatureService signatureService) *Handler {
-	return &Handler{
-		signatureService: signatureService,
-	}
+	return &Handler{signatureService: signatureService}
+}
+
+// Extended constructor to inject expected signers repo and webhook publisher
+func NewHandlerWithDeps(signatureService signatureService, expectedRepo expectedSignerStatsRepo, publisher webhookPublisher) *Handler {
+	return &Handler{signatureService: signatureService, expectedSignerRepo: expectedRepo, webhookPublisher: publisher}
 }
 
 // CreateSignatureRequest represents the request body for creating a signature
@@ -128,6 +145,29 @@ func (h *Handler) HandleCreateSignature(w http.ResponseWriter, r *http.Request) 
 
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to create signature", map[string]interface{}{"error": err.Error()})
 		return
+	}
+
+	// Publish signature.created webhook
+	if h.webhookPublisher != nil {
+		_ = h.webhookPublisher.Publish(ctx, "signature.created", map[string]interface{}{
+			"doc_id":     req.DocID,
+			"user_email": user.Email,
+			"user_name":  user.Name,
+		})
+	}
+
+	// If expected signers completed -> publish document.completed
+	if h.expectedSignerRepo != nil && h.webhookPublisher != nil {
+		if stats, err := h.expectedSignerRepo.GetStats(ctx, req.DocID); err == nil {
+			if stats.ExpectedCount > 0 && stats.PendingCount == 0 {
+				_ = h.webhookPublisher.Publish(ctx, "document.completed", map[string]interface{}{
+					"doc_id":         req.DocID,
+					"completed_at":   time.Now().UTC().Format("2006-01-02T15:04:05Z07:00"),
+					"expected_count": stats.ExpectedCount,
+					"signed_count":   stats.SignedCount,
+				})
+			}
+		}
 	}
 
 	// Get the created signature to return it

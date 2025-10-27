@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: testpassword
       POSTGRES_DB: ackify_test
     volumes:
-      - ackify_data:/var/lib/postgresql/data
+      - ackify_test:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -28,4 +28,4 @@ services:
       - "8025:8025"
 
 volumes:
-  ackify_data:
+  ackify_test:

@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { listDocuments, type Document } from '@/services/admin'
 import { extractError } from '@/services/http'
-import { FileText, Users, CheckCircle, ExternalLink, Settings, Loader2, Plus, Search } from 'lucide-vue-next'
+import { FileText, Users, CheckCircle, ExternalLink, Settings, Loader2, Plus, Search, Webhook } from 'lucide-vue-next'
 import Card from '@/components/ui/Card.vue'
 import CardHeader from '@/components/ui/CardHeader.vue'
 import CardTitle from '@/components/ui/CardTitle.vue'
@@ -137,13 +137,21 @@ onMounted(() => {
     <!-- Main Content -->
     <main class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <!-- Page Header -->
-      <div class="mb-8">
-        <h1 class="mb-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          {{ t('admin.title') }}
-        </h1>
-        <p class="text-lg text-muted-foreground">
-          {{ t('admin.subtitle') }}
-        </p>
+      <div class="mb-8 flex items-start justify-between">
+        <div>
+          <h1 class="mb-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            {{ t('admin.title') }}
+          </h1>
+          <p class="text-lg text-muted-foreground">
+            {{ t('admin.subtitle') }}
+          </p>
+        </div>
+        <router-link :to="{ name: 'admin-webhooks' }">
+          <Button variant="outline">
+            <Webhook :size="16" class="mr-2" />
+            {{ t('admin.webhooks.manage') }}
+          </Button>
+        </router-link>
       </div>
 
       <!-- Create Document Section -->
@@ -295,14 +303,10 @@ onMounted(() => {
         <!-- Documents Table -->
         <Card class="clay-card">
           <CardHeader>
-            <div class="flex items-center justify-between">
-              <div>
-                <CardTitle>{{ t('admin.documents.title') }}</CardTitle>
-                <CardDescription class="mt-2">
-                  {{ t('admin.subtitle') }}
-                </CardDescription>
-              </div>
-            </div>
+            <CardTitle>{{ t('admin.documents.title') }}</CardTitle>
+            <CardDescription class="mt-2">
+              {{ t('admin.subtitle') }}
+            </CardDescription>
           </CardHeader>
 
           <CardContent>

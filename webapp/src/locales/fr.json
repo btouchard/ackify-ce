@@ -205,6 +205,57 @@
       "delete": "Supprimer",
       "empty": "Aucun document trouvé"
     },
+    "webhooks": {
+      "title": "Webhooks",
+      "subtitle": "Configurer les notifications vers des applications tierces",
+      "manage": "Gérer les webhooks",
+      "new": "Nouveau webhook",
+      "edit": "Éditer",
+      "delete": "Supprimer",
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "status": { "enabled": "Actif", "disabled": "Inactif" },
+      "confirmDelete": "Supprimer ce webhook ?",
+      "empty": "Aucun webhook",
+      "listTitle": "Liste des webhooks",
+      "listSubtitle": "Un webhook peut écouter plusieurs événements",
+      "columns": {
+        "title": "Nom",
+        "url": "URL",
+        "events": "Événements",
+        "status": "Statut",
+        "actions": "Actions"
+      },
+      "form": {
+        "title": "Paramètres du webhook",
+        "subtitle": "Renseignez l'URL, le secret et les événements",
+        "nameLabel": "Nom du webhook",
+        "namePlaceholder": "Webhook CRM",
+        "urlLabel": "URL de destination",
+        "secretLabel": "Secret HMAC",
+        "secretPlaceholder": "Saisissez un secret (requis)",
+        "secretKeep": "Laisser vide pour conserver",
+        "eventsLabel": "Événements à écouter",
+        "descriptionLabel": "Description (optionnel)",
+        "descriptionPlaceholder": "Note interne…",
+        "validation": "Veuillez compléter le nom, l'URL, le secret et au moins un événement."
+      },
+      "editTitle": "Éditer le webhook",
+      "events": {
+        "documentCreated": "Document créé",
+        "signatureCreated": "Signature créée",
+        "documentCompleted": "Document complété",
+        "reminderSent": "Rappel envoyé",
+        "reminderFailed": "Rappel échoué"
+      },
+      "eventsMap": {
+        "document.created": "Document créé",
+        "signature.created": "Signature créée",
+        "document.completed": "Document complété",
+        "reminder.sent": "Rappel envoyé",
+        "reminder.failed": "Rappel échoué"
+      }
+    },
     "documentDetail": {
       "title": "Détails du document",
       "metadata": "Métadonnées et checksum du document",
