@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -19,23 +20,26 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	whworker "github.com/btouchard/ackify-ce/backend/internal/infrastructure/webhook"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/workers"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 type Server struct {
-	httpServer    *http.Server
-	db            *sql.DB
-	router        *chi.Mux
-	emailSender   email.Sender
-	emailWorker   *email.Worker
-	webhookWorker *whworker.Worker
-	sessionWorker *auth.SessionWorker
-	baseURL       string
-	adminEmails   []string
-	authService   *auth.OauthService
-	autoLogin     bool
+	httpServer      *http.Server
+	db              *sql.DB
+	router          *chi.Mux
+	emailSender     email.Sender
+	emailWorker     *email.Worker
+	webhookWorker   *whworker.Worker
+	sessionWorker   *auth.SessionWorker
+	magicLinkWorker *workers.MagicLinkCleanupWorker
+	baseURL         string
+	adminEmails     []string
+	authService     *auth.OauthService
+	autoLogin       bool
 }
 
 func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, version string) (*Server, error) {
@@ -52,6 +56,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	emailQueueRepo := database.NewEmailQueueRepository(db)
 	webhookRepo := database.NewWebhookRepository(db)
 	webhookDeliveryRepo := database.NewWebhookDeliveryRepository(db)
+	magicLinkRepo := database.NewMagicLinkRepository(db)
 
 	// Initialize webhook publisher and worker
 	webhookPublisher := services.NewWebhookPublisher(webhookRepo, webhookDeliveryRepo)
@@ -60,6 +65,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	oauthSessionRepo := database.NewOAuthSessionRepository(db)
 
 	// Initialize OAuth auth service with session repository
+	// Note: SessionService is ALWAYS created, OAuthProvider is OPTIONAL (based on credentials)
 	authService := auth.NewOAuthService(auth.Config{
 		BaseURL:       cfg.App.BaseURL,
 		ClientID:      cfg.OAuth.ClientID,
@@ -74,6 +80,13 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		SecureCookies: cfg.App.SecureCookies,
 		SessionRepo:   oauthSessionRepo,
 	})
+
+	// Log authentication method status
+	if cfg.Auth.OAuthEnabled {
+		logger.Logger.Info("OAuth authentication enabled")
+	} else {
+		logger.Logger.Info("OAuth authentication disabled")
+	}
 
 	// Initialize services
 	signatureService := services.NewSignatureService(signatureRepo, documentRepo, signer)
@@ -122,6 +135,27 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		}
 	}
 
+	// Initialize Magic Link service (only if enabled)
+	var magicLinkService *services.MagicLinkService
+	if cfg.Auth.MagicLinkEnabled && emailSender != nil {
+		magicLinkService = services.NewMagicLinkService(services.MagicLinkServiceConfig{
+			Repository:  magicLinkRepo,
+			EmailSender: emailSender,
+			BaseURL:     cfg.App.BaseURL,
+			AppName:     cfg.App.Organisation,
+		})
+		logger.Logger.Info("Magic Link authentication enabled")
+	} else if !cfg.Auth.MagicLinkEnabled {
+		logger.Logger.Info("Magic Link authentication disabled")
+	}
+
+	// Initialize Magic Link cleanup worker
+	var magicLinkWorker *workers.MagicLinkCleanupWorker
+	if magicLinkService != nil {
+		magicLinkWorker = workers.NewMagicLinkCleanupWorker(magicLinkService, 1*time.Hour)
+		go magicLinkWorker.Start(ctx)
+	}
+
 	router := chi.NewRouter()
 
 	router.Use(i18n.Middleware(i18nService))
@@ -135,6 +169,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 
 	apiConfig := api.RouterConfig{
 		AuthService:               authService,
+		MagicLinkService:          magicLinkService,
 		SignatureService:          signatureService,
 		DocumentService:           documentService,
 		DocumentRepository:        documentRepo,
@@ -146,13 +181,15 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		BaseURL:                   cfg.App.BaseURL,
 		AdminEmails:               cfg.App.AdminEmails,
 		AutoLogin:                 cfg.OAuth.AutoLogin,
+		OAuthEnabled:              cfg.Auth.OAuthEnabled,
+		MagicLinkEnabled:          cfg.Auth.MagicLinkEnabled,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)
 
 	router.Get("/oembed", handlers.HandleOEmbed(cfg.App.BaseURL))
 
-	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, signatureRepo))
+	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, cfg.Auth.OAuthEnabled, cfg.Auth.MagicLinkEnabled, signatureRepo))
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,
@@ -160,17 +197,18 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	}
 
 	return &Server{
-		httpServer:    httpServer,
-		db:            db,
-		router:        router,
-		emailSender:   emailSender,
-		emailWorker:   emailWorker,
-		webhookWorker: webhookWorker,
-		sessionWorker: sessionWorker,
-		baseURL:       cfg.App.BaseURL,
-		adminEmails:   cfg.App.AdminEmails,
-		authService:   authService,
-		autoLogin:     cfg.OAuth.AutoLogin,
+		httpServer:      httpServer,
+		db:              db,
+		router:          router,
+		emailSender:     emailSender,
+		emailWorker:     emailWorker,
+		webhookWorker:   webhookWorker,
+		sessionWorker:   sessionWorker,
+		magicLinkWorker: magicLinkWorker,
+		baseURL:         cfg.App.BaseURL,
+		adminEmails:     cfg.App.AdminEmails,
+		authService:     authService,
+		autoLogin:       cfg.OAuth.AutoLogin,
 	}, nil
 }
 
@@ -179,6 +217,11 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	// Stop Magic Link cleanup worker if it exists
+	if s.magicLinkWorker != nil {
+		s.magicLinkWorker.Stop()
+	}
+
 	// Stop OAuth session worker first if it exists
 	if s.sessionWorker != nil {
 		if err := s.sessionWorker.Stop(); err != nil {

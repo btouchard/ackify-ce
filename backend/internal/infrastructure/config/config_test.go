@@ -556,8 +556,6 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 		"ACKIFY_BASE_URL",
 		"ACKIFY_ORGANISATION",
 		"ACKIFY_DB_DSN",
-		"ACKIFY_OAUTH_CLIENT_ID",
-		"ACKIFY_OAUTH_CLIENT_SECRET",
 	}
 
 	for _, missingVar := range requiredVars {
@@ -1202,4 +1200,233 @@ func TestGetEnvBool(t *testing.T) {
 			}
 		})
 	}
+}
+func TestConfig_AuthValidation(t *testing.T) {
+	// Save original env vars
+	origOAuthClientID := os.Getenv("ACKIFY_OAUTH_CLIENT_ID")
+	origOAuthClientSecret := os.Getenv("ACKIFY_OAUTH_CLIENT_SECRET")
+	origMailHost := os.Getenv("ACKIFY_MAIL_HOST")
+	origAuthOAuthEnabled := os.Getenv("ACKIFY_AUTH_OAUTH_ENABLED")
+	origAuthMagicLinkEnabled := os.Getenv("ACKIFY_AUTH_MAGICLINK_ENABLED")
+	origBaseURL := os.Getenv("ACKIFY_BASE_URL")
+	origOrg := os.Getenv("ACKIFY_ORGANISATION")
+	origDBDSN := os.Getenv("ACKIFY_DB_DSN")
+	origCookieSecret := os.Getenv("ACKIFY_OAUTH_COOKIE_SECRET")
+
+	// Cleanup function
+	defer func() {
+		os.Setenv("ACKIFY_OAUTH_CLIENT_ID", origOAuthClientID)
+		os.Setenv("ACKIFY_OAUTH_CLIENT_SECRET", origOAuthClientSecret)
+		os.Setenv("ACKIFY_MAIL_HOST", origMailHost)
+		os.Setenv("ACKIFY_AUTH_OAUTH_ENABLED", origAuthOAuthEnabled)
+		os.Setenv("ACKIFY_AUTH_MAGICLINK_ENABLED", origAuthMagicLinkEnabled)
+		os.Setenv("ACKIFY_BASE_URL", origBaseURL)
+		os.Setenv("ACKIFY_ORGANISATION", origOrg)
+		os.Setenv("ACKIFY_DB_DSN", origDBDSN)
+		os.Setenv("ACKIFY_OAUTH_COOKIE_SECRET", origCookieSecret)
+	}()
+
+	tests := []struct {
+		name          string
+		envVars       map[string]string
+		expectError   bool
+		errorContains string
+		checkAuth     func(*testing.T, *Config)
+	}{
+		{
+			name: "OAuth only (auto-detected)",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":            "http://localhost:8080",
+				"ACKIFY_ORGANISATION":        "Test Org",
+				"ACKIFY_DB_DSN":              "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET": "test-secret",
+				"ACKIFY_OAUTH_PROVIDER":      "google",
+			},
+			expectError: false,
+			checkAuth: func(t *testing.T, cfg *Config) {
+				if !cfg.Auth.OAuthEnabled {
+					t.Error("OAuth should be enabled")
+				}
+				if cfg.Auth.MagicLinkEnabled {
+					t.Error("MagicLink should be disabled")
+				}
+			},
+		},
+		{
+			name: "MagicLink only (auto-detected)",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":            "http://localhost:8080",
+				"ACKIFY_ORGANISATION":        "Test Org",
+				"ACKIFY_DB_DSN":              "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_MAIL_HOST":           "smtp.example.com",
+			},
+			expectError: false,
+			checkAuth: func(t *testing.T, cfg *Config) {
+				if cfg.Auth.OAuthEnabled {
+					t.Error("OAuth should be disabled")
+				}
+				if !cfg.Auth.MagicLinkEnabled {
+					t.Error("MagicLink should be enabled")
+				}
+			},
+		},
+		{
+			name: "Both OAuth and MagicLink enabled",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":            "http://localhost:8080",
+				"ACKIFY_ORGANISATION":        "Test Org",
+				"ACKIFY_DB_DSN":              "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET": "test-secret",
+				"ACKIFY_OAUTH_PROVIDER":      "google",
+				"ACKIFY_MAIL_HOST":           "smtp.example.com",
+			},
+			expectError: false,
+			checkAuth: func(t *testing.T, cfg *Config) {
+				if !cfg.Auth.OAuthEnabled {
+					t.Error("OAuth should be enabled")
+				}
+				if !cfg.Auth.MagicLinkEnabled {
+					t.Error("MagicLink should be enabled")
+				}
+			},
+		},
+		{
+			name: "No authentication method (should fail)",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":            "http://localhost:8080",
+				"ACKIFY_ORGANISATION":        "Test Org",
+				"ACKIFY_DB_DSN":              "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+			},
+			expectError:   true,
+			errorContains: "at least one authentication method must be enabled",
+		},
+		{
+			name: "Manual override - OAuth enabled despite missing client ID",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":            "http://localhost:8080",
+				"ACKIFY_ORGANISATION":        "Test Org",
+				"ACKIFY_DB_DSN":              "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_AUTH_OAUTH_ENABLED":  "true",
+				"ACKIFY_OAUTH_PROVIDER":      "google",
+			},
+			expectError: false,
+			checkAuth: func(t *testing.T, cfg *Config) {
+				if !cfg.Auth.OAuthEnabled {
+					t.Error("OAuth should be force-enabled via ACKIFY_AUTH_OAUTH_ENABLED")
+				}
+			},
+		},
+		{
+			name: "Manual override - disable OAuth even with credentials",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":            "http://localhost:8080",
+				"ACKIFY_ORGANISATION":        "Test Org",
+				"ACKIFY_DB_DSN":              "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET": "test-secret",
+				"ACKIFY_MAIL_HOST":           "smtp.example.com",
+				"ACKIFY_AUTH_OAUTH_ENABLED":  "false",
+			},
+			expectError: false,
+			checkAuth: func(t *testing.T, cfg *Config) {
+				if cfg.Auth.OAuthEnabled {
+					t.Error("OAuth should be disabled via ACKIFY_AUTH_OAUTH_ENABLED=false")
+				}
+				if !cfg.Auth.MagicLinkEnabled {
+					t.Error("MagicLink should still be enabled")
+				}
+			},
+		},
+		{
+			name: "Manual override - disable MagicLink even with SMTP configured",
+			envVars: map[string]string{
+				"ACKIFY_BASE_URL":               "http://localhost:8080",
+				"ACKIFY_ORGANISATION":           "Test Org",
+				"ACKIFY_DB_DSN":                 "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET":    base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_OAUTH_CLIENT_ID":        "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET":    "test-secret",
+				"ACKIFY_OAUTH_PROVIDER":         "google",
+				"ACKIFY_MAIL_HOST":              "smtp.example.com",
+				"ACKIFY_AUTH_MAGICLINK_ENABLED": "false",
+			},
+			expectError: false,
+			checkAuth: func(t *testing.T, cfg *Config) {
+				if !cfg.Auth.OAuthEnabled {
+					t.Error("OAuth should still be enabled")
+				}
+				if cfg.Auth.MagicLinkEnabled {
+					t.Error("MagicLink should be disabled via ACKIFY_AUTH_MAGICLINK_ENABLED=false")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear all auth-related env vars
+			os.Unsetenv("ACKIFY_OAUTH_CLIENT_ID")
+			os.Unsetenv("ACKIFY_OAUTH_CLIENT_SECRET")
+			os.Unsetenv("ACKIFY_OAUTH_PROVIDER")
+			os.Unsetenv("ACKIFY_MAIL_HOST")
+			os.Unsetenv("ACKIFY_AUTH_OAUTH_ENABLED")
+			os.Unsetenv("ACKIFY_AUTH_MAGICLINK_ENABLED")
+			os.Unsetenv("ACKIFY_BASE_URL")
+			os.Unsetenv("ACKIFY_ORGANISATION")
+			os.Unsetenv("ACKIFY_DB_DSN")
+			os.Unsetenv("ACKIFY_OAUTH_COOKIE_SECRET")
+
+			// Set test env vars
+			for k, v := range tt.envVars {
+				os.Setenv(k, v)
+			}
+
+			// Try to load config
+			cfg, err := Load()
+
+			// Check error expectation
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error containing '%s', got nil", tt.errorContains)
+					return
+				}
+				if tt.errorContains != "" && !contains(err.Error(), tt.errorContains) {
+					t.Errorf("Expected error containing '%s', got: %v", tt.errorContains, err)
+				}
+				return
+			}
+
+			// Should not error
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Run auth check if provided
+			if tt.checkAuth != nil {
+				tt.checkAuth(t, cfg)
+			}
+		})
+	}
+}
+
+// Helper function to check if string contains substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsMiddle(s, substr)))
+}
+
+func containsMiddle(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

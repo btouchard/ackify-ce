@@ -8,7 +8,7 @@ usePageTitle('notFound.title')
 </script>
 
 <template>
-  <div class="min-h-screen bg-background text-foreground flex items-center justify-center">
+  <div class="min-h-full box-border bg-background text-foreground flex items-center justify-center">
     <div class="text-center">
       <h1 class="text-6xl font-bold text-muted-foreground">404</h1>
       <p class="text-xl text-foreground mt-4">{{ t('notFound.title') }}</p>

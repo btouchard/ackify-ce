@@ -26,6 +26,31 @@
   "auth": {
     "user": {
       "connectedAs": "Angemeldet als"
+    },
+    "choice": {
+      "title": "Bei Ackify anmelden",
+      "subtitle": "Wählen Sie Ihre bevorzugte Authentifizierungsmethode",
+      "privacy": "Ihre Authentifizierung ist sicher und verschlüsselt"
+    },
+    "oauth": {
+      "title": "Anmeldung mit OAuth",
+      "description": "Verwenden Sie Ihr bestehendes Konto",
+      "button": "Mit OAuth fortfahren",
+      "error": "OAuth-Anmeldung fehlgeschlagen"
+    },
+    "magiclink": {
+      "title": "Anmeldung per E-Mail",
+      "description": "Wir senden Ihnen einen magischen Link",
+      "email_label": "E-Mail-Adresse",
+      "email_placeholder": "sie{'@'}beispiel.de",
+      "button": "Magischen Link senden",
+      "sent": {
+        "title": "Überprüfen Sie Ihre E-Mail",
+        "message": "Wir haben Ihnen einen magischen Link geschickt. Klicken Sie darauf, um sich anzumelden.",
+        "expire": "Der Link läuft in 15 Minuten ab."
+      },
+      "error_invalid_email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "error_send": "Fehler beim Senden des magischen Links"
     }
   },
   "sign": {
@@ -225,9 +250,9 @@
       "addExpectedSigner": "Erwarteten Unterzeichner hinzufügen",
       "addSigners": "Erwartete Leser hinzufügen",
       "emailsLabel": "E-Mails (eine pro Zeile)",
-      "emailsPlaceholder": "Maria Schmidt <maria.schmidt@example.com>\njohn.mueller@example.com\nSophie Weber <sophie@example.com>",
+      "emailsPlaceholder": "Maria Schmidt <maria.schmidt{'@'}example.com>\njohn.mueller{'@'}example.com\nSophie Weber <sophie{'@'}example.com>",
       "emailLabel": "E-Mail *",
-      "emailPlaceholder": "email@example.com",
+      "emailPlaceholder": "email{'@'}example.com",
       "nameLabel": "Name",
       "namePlaceholder": "Vollständiger Name",
       "reader": "Leser",

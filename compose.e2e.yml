@@ -1,0 +1,78 @@
+name: ackify-ce
+
+services:
+  ackify-migrate:
+    image: btouchard/ackify-ce
+    container_name: ackify-migrate
+    environment:
+      ACKIFY_DB_DSN: "postgres://postgres:testpassword@ackify-db:5432/ackify_test?sslmode=disable"
+    depends_on:
+      ackify-db:
+        condition: service_healthy
+    command: ["/app/migrate", "up"]
+    entrypoint: []
+    restart: "no"
+
+  ackify-ce:
+    build:
+      context: .
+      args:
+        VERSION: "v0.0.0-dev"
+    image: btouchard/ackify-ce
+    container_name: ackify-ce
+    restart: unless-stopped
+    environment:
+      ACKIFY_LOG_LEVEL: "debug"
+      ACKIFY_LOG_FORMAT: "classic"
+      ACKIFY_BASE_URL: "http://localhost:8080"
+      ACKIFY_ORGANISATION: "Superkloud"
+      ACKIFY_DB_DSN: "postgres://postgres:testpassword@ackify-db:5432/ackify_test?sslmode=disable"
+      ACKIFY_OAUTH_PROVIDER: "none"
+      ACKIFY_OAUTH_COOKIE_SECRET: "Fk7eiBaG0sOhGn5+nWB6Ipl7TqbGfeLSdhwrEKjOPPM="
+      ACKIFY_AUTH_OAUTH_ENABLED: "true"
+      ACKIFY_AUTH_MAGICLINK_ENABLED: "true"
+      ACKIFY_ED25519_PRIVATE_KEY: "1aK7vTp7hiqM9Z3Xbj7QDfPlYyWy740l9Fu+Fdom5ck="
+      ACKIFY_LISTEN_ADDR: ":8080"
+      ACKIFY_ADMIN_EMAILS: "benjamin@kolapsis.com"
+      ACKIFY_MAIL_HOST: "mailhog"
+      ACKIFY_MAIL_PORT: "1025"
+      ACKIFY_MAIL_TLS: "false"
+      ACKIFY_MAIL_STARTTLS: "false"
+      ACKIFY_MAIL_FROM: "noreply@ackify.local"
+      ACKIFY_MAIL_FROM_NAME: "Ackify"
+    depends_on:
+      ackify-migrate:
+        condition: service_completed_successfully
+      ackify-db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+
+  ackify-db:
+    image: postgres:16-alpine
+    container_name: ackify-db-test
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: ackify_test
+    volumes:
+      - ackify_test:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ackify_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ackify-mailhog-test
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  ackify_test:

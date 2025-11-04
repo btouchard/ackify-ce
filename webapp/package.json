@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "lint:i18n": "node scripts/check-i18n.js"
+    "lint:i18n": "node scripts/check-i18n.js",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:headless": "cypress run --headless",
+    "test:e2e": "cypress run --headless",
+    "test:e2e:open": "cypress open"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -27,6 +32,7 @@
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cypress": "^15.5.0",
     "postcss": "^8.5.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.14",

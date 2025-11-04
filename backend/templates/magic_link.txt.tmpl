@@ -1,0 +1,18 @@
+{{define "content"}}
+{{T "email.magic_link.title"}}
+
+{{T "email.magic_link.greeting"}}
+
+{{T "email.magic_link.intro" (dict "Organisation" .Organisation "Email" .Data.Email)}}
+
+{{T "email.magic_link.instructions"}}
+
+{{.Data.MagicLink}}
+
+{{T "email.magic_link.warning_title"}} {{T "email.magic_link.warning_text" (dict "ExpiresIn" .Data.ExpiresIn)}}
+
+{{T "email.magic_link.not_requested"}}
+
+---
+{{T "email.magic_link.footer" (dict "Organisation" .Organisation "BaseURL" .Data.BaseURL)}}
+{{end}}

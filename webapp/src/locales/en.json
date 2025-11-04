@@ -26,6 +26,31 @@
   "auth": {
     "user": {
       "connectedAs": "Connected as"
+    },
+    "choice": {
+      "title": "Sign in to Ackify",
+      "subtitle": "Choose your preferred authentication method",
+      "privacy": "Your authentication is secure and encrypted"
+    },
+    "oauth": {
+      "title": "Sign in with OAuth",
+      "description": "Use your entreprise account",
+      "button": "Continue with OAuth",
+      "error": "OAuth login failed"
+    },
+    "magiclink": {
+      "title": "Sign in with Email",
+      "description": "We'll send you a magic link",
+      "email_label": "Email address",
+      "email_placeholder": "you{'@'}example.com",
+      "button": "Send Magic Link",
+      "sent": {
+        "title": "Check your email",
+        "message": "We sent you a magic link. Click on it to sign in.",
+        "expire": "The link expires in 15 minutes."
+      },
+      "error_invalid_email": "Please enter a valid email address",
+      "error_send": "Failed to send magic link"
     }
   },
   "sign": {
@@ -276,9 +301,9 @@
       "addExpectedSigner": "Add expected signer",
       "addSigners": "Add expected readers",
       "emailsLabel": "Emails (one per line)",
-      "emailsPlaceholder": "Mary Smith <mary.smith@example.com>\njohn.doe@example.com\nSophie Johnson <sophie@example.com>",
+      "emailsPlaceholder": "Mary Smith <mary.smith{'@'}example.com>\njohn.doe{'@'}example.com\nSophie Johnson <sophie{'@'}example.com>",
       "emailLabel": "Email *",
-      "emailPlaceholder": "email@example.com",
+      "emailPlaceholder": "email{'@'}example.com",
       "nameLabel": "Name",
       "namePlaceholder": "Full name",
       "reader": "Reader",

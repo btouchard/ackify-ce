@@ -58,46 +58,60 @@ func TestNewOAuthService(t *testing.T) {
 				t.Fatal("NewOAuthService() returned nil")
 			}
 
-			// Test that OAuth config is properly initialized
-			if service.oauthConfig == nil {
-				t.Error("OAuth config should not be nil")
-			}
-			if service.oauthConfig.ClientID != tt.config.ClientID {
-				t.Errorf("ClientID = %v, expected %v", service.oauthConfig.ClientID, tt.config.ClientID)
-			}
-			if service.oauthConfig.ClientSecret != tt.config.ClientSecret {
-				t.Errorf("ClientSecret = %v, expected %v", service.oauthConfig.ClientSecret, tt.config.ClientSecret)
+			// Test that SessionService is always present
+			if service.SessionService == nil {
+				t.Fatal("SessionService should not be nil")
 			}
 
-			expectedRedirectURL := tt.config.BaseURL + "/api/v1/auth/callback"
-			if service.oauthConfig.RedirectURL != expectedRedirectURL {
-				t.Errorf("RedirectURL = %v, expected %v", service.oauthConfig.RedirectURL, expectedRedirectURL)
+			// Test that OAuthProvider is created when OAuth credentials are provided
+			if tt.config.ClientID != "" && tt.config.ClientSecret != "" {
+				if service.OAuthProvider == nil {
+					t.Error("OAuthProvider should not be nil when credentials are provided")
+				}
+
+				// Test OAuth provider config
+				if service.OAuthProvider.oauthConfig == nil {
+					t.Error("OAuth config should not be nil")
+				}
+				if service.OAuthProvider.oauthConfig.ClientID != tt.config.ClientID {
+					t.Errorf("ClientID = %v, expected %v", service.OAuthProvider.oauthConfig.ClientID, tt.config.ClientID)
+				}
+				if service.OAuthProvider.oauthConfig.ClientSecret != tt.config.ClientSecret {
+					t.Errorf("ClientSecret = %v, expected %v", service.OAuthProvider.oauthConfig.ClientSecret, tt.config.ClientSecret)
+				}
+
+				expectedRedirectURL := tt.config.BaseURL + "/api/v1/auth/callback"
+				if service.OAuthProvider.oauthConfig.RedirectURL != expectedRedirectURL {
+					t.Errorf("RedirectURL = %v, expected %v", service.OAuthProvider.oauthConfig.RedirectURL, expectedRedirectURL)
+				}
+
+				if len(service.OAuthProvider.oauthConfig.Scopes) != len(tt.config.Scopes) {
+					t.Errorf("Scopes length = %v, expected %v", len(service.OAuthProvider.oauthConfig.Scopes), len(tt.config.Scopes))
+				}
+
+				if service.OAuthProvider.oauthConfig.Endpoint.AuthURL != tt.config.AuthURL {
+					t.Errorf("AuthURL = %v, expected %v", service.OAuthProvider.oauthConfig.Endpoint.AuthURL, tt.config.AuthURL)
+				}
+				if service.OAuthProvider.oauthConfig.Endpoint.TokenURL != tt.config.TokenURL {
+					t.Errorf("TokenURL = %v, expected %v", service.OAuthProvider.oauthConfig.Endpoint.TokenURL, tt.config.TokenURL)
+				}
+
+				// Test OAuth provider fields
+				if service.OAuthProvider.userInfoURL != tt.config.UserInfoURL {
+					t.Errorf("userInfoURL = %v, expected %v", service.OAuthProvider.userInfoURL, tt.config.UserInfoURL)
+				}
+				if service.OAuthProvider.allowedDomain != tt.config.AllowedDomain {
+					t.Errorf("allowedDomain = %v, expected %v", service.OAuthProvider.allowedDomain, tt.config.AllowedDomain)
+				}
 			}
 
-			if len(service.oauthConfig.Scopes) != len(tt.config.Scopes) {
-				t.Errorf("Scopes length = %v, expected %v", len(service.oauthConfig.Scopes), len(tt.config.Scopes))
-			}
-
-			if service.oauthConfig.Endpoint.AuthURL != tt.config.AuthURL {
-				t.Errorf("AuthURL = %v, expected %v", service.oauthConfig.Endpoint.AuthURL, tt.config.AuthURL)
-			}
-			if service.oauthConfig.Endpoint.TokenURL != tt.config.TokenURL {
-				t.Errorf("TokenURL = %v, expected %v", service.oauthConfig.Endpoint.TokenURL, tt.config.TokenURL)
-			}
-
-			// Test service fields
-			if service.userInfoURL != tt.config.UserInfoURL {
-				t.Errorf("userInfoURL = %v, expected %v", service.userInfoURL, tt.config.UserInfoURL)
-			}
-			if service.allowedDomain != tt.config.AllowedDomain {
-				t.Errorf("allowedDomain = %v, expected %v", service.allowedDomain, tt.config.AllowedDomain)
-			}
-			if service.secureCookies != tt.config.SecureCookies {
-				t.Errorf("secureCookies = %v, expected %v", service.secureCookies, tt.config.SecureCookies)
+			// Test session service fields
+			if service.SessionService.secureCookies != tt.config.SecureCookies {
+				t.Errorf("secureCookies = %v, expected %v", service.SessionService.secureCookies, tt.config.SecureCookies)
 			}
 
 			// Test session store
-			if service.sessionStore == nil {
+			if service.SessionService.sessionStore == nil {
 				t.Error("Session store should not be nil")
 			}
 		})
@@ -143,7 +157,7 @@ func TestOauthService_GetUser(t *testing.T) {
 		{
 			name: "invalid JSON in session",
 			setupSession: func(w *httptest.ResponseRecorder, r *http.Request) {
-				session, _ := service.sessionStore.Get(r, sessionName)
+				session, _ := service.SessionService.sessionStore.Get(r, sessionName)
 				session.Values["user"] = "invalid-json"
 				session.Save(r, w)
 			},
@@ -152,7 +166,7 @@ func TestOauthService_GetUser(t *testing.T) {
 		{
 			name: "empty user value in session",
 			setupSession: func(w *httptest.ResponseRecorder, r *http.Request) {
-				session, _ := service.sessionStore.Get(r, sessionName)
+				session, _ := service.SessionService.sessionStore.Get(r, sessionName)
 				session.Values["user"] = ""
 				session.Save(r, w)
 			},
@@ -302,8 +316,8 @@ func TestOauthService_SetUser(t *testing.T) {
 			if sessionCookie.HttpOnly != true {
 				t.Error("Cookie should be HttpOnly")
 			}
-			if sessionCookie.Secure != tt.service.secureCookies {
-				t.Errorf("Cookie Secure = %v, expected %v", sessionCookie.Secure, tt.service.secureCookies)
+			if sessionCookie.Secure != tt.service.SessionService.secureCookies {
+				t.Errorf("Cookie Secure = %v, expected %v", sessionCookie.Secure, tt.service.SessionService.secureCookies)
 			}
 			if sessionCookie.SameSite != http.SameSiteLaxMode {
 				t.Errorf("Cookie SameSite = %v, expected %v", sessionCookie.SameSite, http.SameSiteLaxMode)
@@ -393,7 +407,9 @@ func TestOauthService_GetAuthURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			authURL := service.GetAuthURL(tt.nextURL)
+			w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", "/", nil)
+			authURL := service.CreateAuthURL(w, r, tt.nextURL)
 
 			if authURL == "" {
 				t.Error("Auth URL should not be empty")
@@ -496,9 +512,20 @@ func TestOauthService_IsAllowedDomain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			service := &OauthService{
-				allowedDomain: tt.allowedDomain,
-			}
+			// Create service with custom allowed domain
+			service := NewOAuthService(Config{
+				BaseURL:       "http://localhost:8080",
+				ClientID:      "test-client-id",
+				ClientSecret:  "test-client-secret",
+				AuthURL:       "https://accounts.google.com/o/oauth2/auth",
+				TokenURL:      "https://oauth2.googleapis.com/token",
+				UserInfoURL:   "https://www.googleapis.com/oauth2/v1/userinfo",
+				Scopes:        []string{"openid", "email", "profile"},
+				AllowedDomain: tt.allowedDomain,
+				CookieSecret:  []byte("test-cookie-secret-32-bytes-long!"),
+				SecureCookies: false,
+				SessionRepo:   &mockSessionRepository{},
+			})
 
 			result := service.IsAllowedDomain(tt.email)
 			if result != tt.expected {
@@ -671,7 +698,7 @@ func TestOauthService_parseUserInfo(t *testing.T) {
 				Body:       io.NopCloser(bytes.NewReader(jsonBody)),
 			}
 
-			user, err := service.parseUserInfo(resp)
+			user, err := service.OAuthProvider.parseUserInfo(resp)
 
 			if tt.expectError {
 				if err == nil {
@@ -711,7 +738,7 @@ func TestOauthService_parseUserInfo_InvalidJSON(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader("invalid json")),
 	}
 
-	_, err := service.parseUserInfo(resp)
+	_, err := service.OAuthProvider.parseUserInfo(resp)
 	if err == nil {
 		t.Error("Expected error for invalid JSON")
 	}
@@ -909,7 +936,7 @@ func TestOauthService_VerifyState_Success(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 
 	// First, create a session with an oauth_state
-	session, _ := service.sessionStore.Get(r, sessionName)
+	session, _ := service.SessionService.sessionStore.Get(r, sessionName)
 	session.Values["oauth_state"] = "test-state-token-123"
 	_ = session.Save(r, w)
 
@@ -936,7 +963,7 @@ func TestOauthService_VerifyState_Mismatch(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 
 	// Set state in session
-	session, _ := service.sessionStore.Get(r, sessionName)
+	session, _ := service.SessionService.sessionStore.Get(r, sessionName)
 	session.Values["oauth_state"] = "correct-state"
 	_ = session.Save(r, w)
 
@@ -977,7 +1004,7 @@ func TestOauthService_VerifyState_EmptyToken(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 
 	// Set state in session
-	session, _ := service.sessionStore.Get(r, sessionName)
+	session, _ := service.SessionService.sessionStore.Get(r, sessionName)
 	session.Values["oauth_state"] = "some-state"
 	_ = session.Save(r, w)
 
@@ -1094,7 +1121,7 @@ func BenchmarkVerifyState(b *testing.B) {
 	r := httptest.NewRequest("GET", "/", nil)
 
 	// Setup session
-	session, _ := service.sessionStore.Get(r, sessionName)
+	session, _ := service.SessionService.sessionStore.Get(r, sessionName)
 	session.Values["oauth_state"] = "test-state-token"
 	_ = session.Save(r, w)
 

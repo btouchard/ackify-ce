@@ -13,5 +13,17 @@
   "email.reminder.explanation": "Votre confirmation cryptographique fournira une preuve vérifiable que vous avez lu et pris connaissance de ce document.",
   "email.reminder.contact": "Si vous avez des questions, veuillez contacter votre administrateur.",
   "email.reminder.regards": "Cordialement,",
-  "email.reminder.team": "L'équipe {{.Organisation}}"
+  "email.reminder.team": "L'équipe {{.Organisation}}",
+
+  "email.magic_link.subject": "Votre lien de connexion",
+  "email.magic_link.title": "🔐 Votre lien de connexion",
+  "email.magic_link.greeting": "Bonjour,",
+  "email.magic_link.intro": "Vous avez demandé à vous connecter à {{.Organisation}} avec l'adresse email {{.Email}}.",
+  "email.magic_link.instructions": "Cliquez sur le bouton ci-dessous pour vous connecter instantanément :",
+  "email.magic_link.cta_button": "🚀 Se connecter maintenant",
+  "email.magic_link.warning_title": "Attention :",
+  "email.magic_link.warning_text": "Ce lien expire dans {{.ExpiresIn}} minutes et ne peut être utilisé qu'une seule fois.",
+  "email.magic_link.not_requested": "Si vous n'avez pas demandé ce lien, vous pouvez ignorer cet email en toute sécurité.",
+  "email.magic_link.button_not_working": "Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :",
+  "email.magic_link.footer": "Cet email a été envoyé par {{.Organisation}} – {{.BaseURL}}"
 }

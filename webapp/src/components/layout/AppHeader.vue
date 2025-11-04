@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { Menu, X, ChevronDown, User, LogOut, Shield, FileSignature } from 'lucide-vue-next'
 import Button from '@/components/ui/Button.vue'
@@ -14,6 +14,7 @@ const { t } = useI18n()
 
 const authStore = useAuthStore()
 const route = useRoute()
+const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const userMenuOpen = ref(false)
@@ -35,7 +36,7 @@ const toggleUserMenu = () => {
 }
 
 const login = () => {
-  authStore.startOAuthLogin()
+  router.push({name: 'auth-choice'})
 }
 
 const logout = async () => {

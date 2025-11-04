@@ -26,6 +26,7 @@ import (
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
 	AuthService               *auth.OauthService
+	MagicLinkService          *services.MagicLinkService
 	SignatureService          *services.SignatureService
 	DocumentService           *services.DocumentService
 	DocumentRepository        *database.DocumentRepository
@@ -37,6 +38,8 @@ type RouterConfig struct {
 	BaseURL                   string
 	AdminEmails               []string
 	AutoLogin                 bool
+	OAuthEnabled              bool
+	MagicLinkEnabled          bool
 }
 
 // NewRouter creates and configures the API v1 router
@@ -63,7 +66,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 	// Initialize handlers
 	healthHandler := health.NewHandler()
-	authHandler := apiAuth.NewHandler(cfg.AuthService, apiMiddleware, cfg.BaseURL)
+	authHandler := apiAuth.NewHandler(cfg.AuthService, cfg.MagicLinkService, apiMiddleware, cfg.BaseURL, cfg.OAuthEnabled, cfg.MagicLinkEnabled)
 	usersHandler := users.NewHandler(cfg.AdminEmails)
 	documentsHandler := documents.NewHandlerWithPublisher(cfg.SignatureService, cfg.DocumentService, cfg.WebhookPublisher)
 	signaturesHandler := signatures.NewHandlerWithDeps(cfg.SignatureService, cfg.ExpectedSignerRepository, cfg.WebhookPublisher)
@@ -78,15 +81,30 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 		// Auth endpoints
 		r.Route("/auth", func(r chi.Router) {
-			r.Use(authRateLimit.Middleware)
+			// Public endpoint to expose available authentication methods
+			r.Get("/config", authHandler.HandleGetAuthConfig)
 
-			r.Post("/start", authHandler.HandleStartOAuth)
-			r.Get("/callback", authHandler.HandleOAuthCallback)
-			r.Get("/logout", authHandler.HandleLogout)
+			// Apply rate limiting to auth endpoints (except /config which should be fast)
+			r.Group(func(r chi.Router) {
+				r.Use(authRateLimit.Middleware)
 
-			if cfg.AutoLogin {
-				r.Get("/check", authHandler.HandleAuthCheck)
-			}
+				// OAuth endpoints (conditional)
+				if cfg.OAuthEnabled {
+					r.Post("/start", authHandler.HandleStartOAuth)
+					r.Get("/callback", authHandler.HandleOAuthCallback)
+					r.Get("/logout", authHandler.HandleLogout)
+
+					if cfg.AutoLogin {
+						r.Get("/check", authHandler.HandleAuthCheck)
+					}
+				}
+
+				// Magic Link endpoints (conditional)
+				if cfg.MagicLinkEnabled {
+					r.Post("/magic-link/request", authHandler.HandleRequestMagicLink)
+					r.Get("/magic-link/verify", authHandler.HandleVerifyMagicLink)
+				}
+			})
 		})
 
 		// Public document endpoints

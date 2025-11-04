@@ -2,8 +2,9 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const SignPage = () => import('@/pages/SignPage.vue')
+const HomePage = () => import('@/pages/HomePage.vue')
 const SignaturesPage = () => import('@/pages/SignaturesPage.vue')
+const AuthChoicePage = () => import('@/pages/AuthChoicePage.vue')
 const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
 const AdminDocumentDetail = () => import('@/pages/admin/AdminDocumentDetail.vue')
 const AdminWebhooks = () => import('@/pages/admin/AdminWebhooks.vue')
@@ -14,8 +15,14 @@ const NotFoundPage = () => import('@/pages/NotFoundPage.vue')
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    name: 'sign',
-    component: SignPage,
+    name: 'home',
+    component: HomePage,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/auth',
+    name: 'auth-choice',
+    component: AuthChoicePage,
     meta: { requiresAuth: false }
   },
   {
@@ -90,12 +97,12 @@ router.beforeEach(async (to, from, next) => {
 
       if (!authStore.isAuthenticated) {
         sessionStorage.setItem('redirectAfterLogin', to.fullPath)
-        await authStore.startOAuthLogin(to.fullPath)
-        return false
+        next({ name: 'auth-choice', query: { redirect: to.fullPath } })
+        return
       }
 
       if (to.meta.requiresAdmin && !authStore.isAdmin) {
-        next({ name: 'sign' })
+        next({ name: 'home' })
         return
       }
     }

@@ -26,6 +26,31 @@
   "auth": {
     "user": {
       "connectedAs": "Connecté en tant que"
+    },
+    "choice": {
+      "title": "Connexion à Ackify",
+      "subtitle": "Choisissez votre méthode d'authentification préférée",
+      "privacy": "Votre authentification est sécurisée et chiffrée"
+    },
+    "oauth": {
+      "title": "Connexion avec OAuth",
+      "description": "Utilisez votre compte entreprise",
+      "button": "Continuer avec OAuth",
+      "error": "Échec de la connexion OAuth"
+    },
+    "magiclink": {
+      "title": "Connexion par Email",
+      "description": "Nous vous enverrons un lien magique",
+      "email_label": "Adresse email",
+      "email_placeholder": "vous{'@'}exemple.com",
+      "button": "Envoyer le lien magique",
+      "sent": {
+        "title": "Consultez vos emails",
+        "message": "Nous vous avons envoyé un lien magique. Cliquez dessus pour vous connecter.",
+        "expire": "Le lien expire dans 15 minutes."
+      },
+      "error_invalid_email": "Veuillez entrer une adresse email valide",
+      "error_send": "Échec de l'envoi du lien magique"
     }
   },
   "sign": {
@@ -276,9 +301,9 @@
       "addExpectedSigner": "Ajouter un signataire attendu",
       "addSigners": "Ajouter des lecteurs attendus",
       "emailsLabel": "Emails (un par ligne)",
-      "emailsPlaceholder": "Marie Dupont <marie.dupont@example.com>\njean.martin@example.com\nSophie Bernard <sophie@example.com>",
+      "emailsPlaceholder": "Marie Dupont <marie.dupont{'@'}example.com>\njean.martin{'@'}example.com\nSophie Bernard <sophie{'@'}example.com>",
       "emailLabel": "Email *",
-      "emailPlaceholder": "email@example.com",
+      "emailPlaceholder": "email{'@'}example.com",
       "nameLabel": "Nom",
       "namePlaceholder": "Nom complet",
       "reader": "Lecteur",

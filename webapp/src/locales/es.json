@@ -26,6 +26,31 @@
   "auth": {
     "user": {
       "connectedAs": "Conectado como"
+    },
+    "choice": {
+      "title": "Iniciar sesión en Ackify",
+      "subtitle": "Elija su método de autenticación preferido",
+      "privacy": "Su autenticación es segura y cifrada"
+    },
+    "oauth": {
+      "title": "Iniciar sesión con OAuth",
+      "description": "Use su cuenta existente",
+      "button": "Continuar con OAuth",
+      "error": "Error de inicio de sesión OAuth"
+    },
+    "magiclink": {
+      "title": "Iniciar sesión por correo electrónico",
+      "description": "Le enviaremos un enlace mágico",
+      "email_label": "Dirección de correo electrónico",
+      "email_placeholder": "usted{'@'}ejemplo.com",
+      "button": "Enviar enlace mágico",
+      "sent": {
+        "title": "Revise su correo electrónico",
+        "message": "Le hemos enviado un enlace mágico. Haga clic en él para iniciar sesión.",
+        "expire": "El enlace caduca en 15 minutos."
+      },
+      "error_invalid_email": "Por favor ingrese una dirección de correo electrónico válida",
+      "error_send": "Error al enviar el enlace mágico"
     }
   },
   "sign": {
@@ -225,9 +250,9 @@
       "addExpectedSigner": "Agregar firmante esperado",
       "addSigners": "Agregar lectores esperados",
       "emailsLabel": "Correos electrónicos (uno por línea)",
-      "emailsPlaceholder": "María García <maria.garcia@example.com>\njuan.martinez@example.com\nSofía Rodríguez <sofia@example.com>",
+      "emailsPlaceholder": "María García <maria.garcia{'@'}example.com>\njuan.martinez{'@'}example.com\nSofía Rodríguez <sofia{'@'}example.com>",
       "emailLabel": "Correo electrónico *",
-      "emailPlaceholder": "email@example.com",
+      "emailPlaceholder": "email{'@'}example.com",
       "nameLabel": "Nombre",
       "namePlaceholder": "Nombre completo",
       "reader": "Lector",

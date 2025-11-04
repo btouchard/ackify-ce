@@ -29,7 +29,7 @@ Prove that collaborators have read and acknowledged important documents with **E
 
 **Key Features**:
 - ✅ Ed25519 cryptographic signatures
-- ✅ OAuth2 authentication (Google, GitHub, GitLab, custom)
+- ✅ **Flexible authentication**: OAuth2 (Google, GitHub, GitLab, custom) or MagicLink (passwordless email)
 - ✅ One signature per user/document (database enforced)
 - ✅ Immutable audit trail
 - ✅ Expected signers tracking with email reminders
@@ -45,7 +45,9 @@ Prove that collaborators have read and acknowledged important documents with **E
 ### Prerequisites
 
 - Docker & Docker Compose
-- OAuth2 credentials (Google, GitHub, or GitLab)
+- **At least ONE authentication method**:
+  - OAuth2 credentials (Google, GitHub, or GitLab), OR
+  - SMTP server for MagicLink (passwordless email authentication)
 
 ### Installation
 
@@ -111,14 +113,30 @@ POSTGRES_USER=ackifyr
 POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=ackify
 
-# OAuth2 (example with Google)
+# Security (generate with: openssl rand -base64 32)
+ACKIFY_OAUTH_COOKIE_SECRET=your_base64_secret
+
+# ============================================================================
+# Authentication (choose AT LEAST ONE method)
+# ============================================================================
+
+# Option 1: OAuth2 (Google, GitHub, GitLab, custom)
 ACKIFY_OAUTH_PROVIDER=google
 ACKIFY_OAUTH_CLIENT_ID=your_client_id
 ACKIFY_OAUTH_CLIENT_SECRET=your_client_secret
 
-# Security (generate with: openssl rand -base64 32)
-ACKIFY_OAUTH_COOKIE_SECRET=your_base64_secret
+# Option 2: MagicLink (passwordless email authentication)
+# ACKIFY_MAIL_HOST=smtp.example.com
+# ACKIFY_MAIL_PORT=587
+# ACKIFY_MAIL_USERNAME=your_smtp_username
+# ACKIFY_MAIL_PASSWORD=your_smtp_password
+# ACKIFY_MAIL_FROM=noreply@example.com
 ```
+
+**Auto-detection**:
+- OAuth is enabled automatically if `ACKIFY_OAUTH_CLIENT_ID` and `ACKIFY_OAUTH_CLIENT_SECRET` are set
+- MagicLink is enabled automatically if `ACKIFY_MAIL_HOST` is configured
+- You can use **both methods simultaneously** for maximum flexibility
 
 See [docs/en/configuration.md](docs/en/configuration.md) for all options.
 
@@ -175,7 +193,7 @@ See [docs/en/configuration.md](docs/en/configuration.md) for all options.
 https://your-domain.com/?doc=security_policy_2025
 ```
 
-User authenticates via OAuth2 and signs with one click.
+User authenticates (OAuth2 or MagicLink) and signs with one click.
 
 ### Embed in Your Tools
 

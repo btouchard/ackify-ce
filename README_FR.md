@@ -29,7 +29,7 @@ Prouvez que vos collaborateurs ont lu et pris connaissance de documents importan
 
 **Fonctionnalités clés** :
 - ✅ Signatures cryptographiques Ed25519
-- ✅ Authentification OAuth2 (Google, GitHub, GitLab, custom)
+- ✅ **Authentification flexible** : OAuth2 (Google, GitHub, GitLab, custom) ou MagicLink (email sans mot de passe)
 - ✅ Une signature par utilisateur/document (contrainte base de données)
 - ✅ Piste d'audit immutable
 - ✅ Tracking signataires attendus avec rappels email
@@ -45,7 +45,9 @@ Prouvez que vos collaborateurs ont lu et pris connaissance de documents importan
 ### Prérequis
 
 - Docker & Docker Compose
-- Credentials OAuth2 (Google, GitHub, ou GitLab)
+- **Au moins UNE méthode d'authentification** :
+  - Credentials OAuth2 (Google, GitHub, ou GitLab), OU
+  - Serveur SMTP pour MagicLink (authentification email sans mot de passe)
 
 ### Installation
 
@@ -111,14 +113,30 @@ POSTGRES_USER=ackifyr
 POSTGRES_PASSWORD=votre_mot_de_passe_securise
 POSTGRES_DB=ackify
 
-# OAuth2 (exemple avec Google)
+# Sécurité (générer avec: openssl rand -base64 32)
+ACKIFY_OAUTH_COOKIE_SECRET=votre_secret_base64
+
+# ============================================================================
+# Authentification (choisir AU MOINS UNE méthode)
+# ============================================================================
+
+# Option 1 : OAuth2 (Google, GitHub, GitLab, custom)
 ACKIFY_OAUTH_PROVIDER=google
 ACKIFY_OAUTH_CLIENT_ID=votre_client_id
 ACKIFY_OAUTH_CLIENT_SECRET=votre_client_secret
 
-# Sécurité (générer avec: openssl rand -base64 32)
-ACKIFY_OAUTH_COOKIE_SECRET=votre_secret_base64
+# Option 2 : MagicLink (authentification email sans mot de passe)
+# ACKIFY_MAIL_HOST=smtp.example.com
+# ACKIFY_MAIL_PORT=587
+# ACKIFY_MAIL_USERNAME=votre_utilisateur_smtp
+# ACKIFY_MAIL_PASSWORD=votre_mot_de_passe_smtp
+# ACKIFY_MAIL_FROM=noreply@example.com
 ```
+
+**Auto-détection** :
+- OAuth activé automatiquement si `ACKIFY_OAUTH_CLIENT_ID` et `ACKIFY_OAUTH_CLIENT_SECRET` sont définis
+- MagicLink activé automatiquement si `ACKIFY_MAIL_HOST` est configuré
+- Vous pouvez utiliser **les deux méthodes simultanément** pour une flexibilité maximale
 
 Voir [docs/fr/configuration.md](docs/fr/configuration.md) pour toutes les options.
 
@@ -175,7 +193,7 @@ Voir [docs/fr/configuration.md](docs/fr/configuration.md) pour toutes les option
 https://votre-domaine.com/?doc=politique_securite_2025
 ```
 
-L'utilisateur s'authentifie via OAuth2 et signe en un clic.
+L'utilisateur s'authentifie (OAuth2 ou MagicLink) et signe en un clic.
 
 ### Intégrer dans vos Outils
 

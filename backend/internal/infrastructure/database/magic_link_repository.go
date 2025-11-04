@@ -1,0 +1,163 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+package database
+
+import (
+	"context"
+	"database/sql"
+	"time"
+
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+)
+
+type magicLinkRepo struct {
+	db *sql.DB
+}
+
+func NewMagicLinkRepository(db *sql.DB) services.MagicLinkRepository {
+	return &magicLinkRepo{db: db}
+}
+
+func (r *magicLinkRepo) CreateToken(ctx context.Context, token *models.MagicLinkToken) error {
+	query := `
+		INSERT INTO magic_link_tokens
+		(token, email, expires_at, redirect_to, created_by_ip, created_by_user_agent)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, created_at
+	`
+
+	return r.db.QueryRowContext(ctx, query,
+		token.Token,
+		token.Email,
+		token.ExpiresAt,
+		token.RedirectTo,
+		token.CreatedByIP,
+		token.CreatedByUserAgent,
+	).Scan(&token.ID, &token.CreatedAt)
+}
+
+func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.MagicLinkToken, error) {
+	query := `
+		SELECT id, token, email, created_at, expires_at, used_at, used_by_ip,
+		       used_by_user_agent, redirect_to, created_by_ip, created_by_user_agent
+		FROM magic_link_tokens
+		WHERE token = $1
+	`
+
+	var t models.MagicLinkToken
+	var usedAt sql.NullTime
+	var usedByIP, usedByUserAgent sql.NullString
+
+	err := r.db.QueryRowContext(ctx, query, token).Scan(
+		&t.ID,
+		&t.Token,
+		&t.Email,
+		&t.CreatedAt,
+		&t.ExpiresAt,
+		&usedAt,
+		&usedByIP,
+		&usedByUserAgent,
+		&t.RedirectTo,
+		&t.CreatedByIP,
+		&t.CreatedByUserAgent,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if usedAt.Valid {
+		t.UsedAt = &usedAt.Time
+	}
+	if usedByIP.Valid {
+		t.UsedByIP = &usedByIP.String
+	}
+	if usedByUserAgent.Valid {
+		t.UsedByUserAgent = &usedByUserAgent.String
+	}
+
+	return &t, nil
+}
+
+func (r *magicLinkRepo) MarkAsUsed(ctx context.Context, token string, ip string, userAgent string) error {
+	query := `
+		UPDATE magic_link_tokens
+		SET used_at = now(),
+		    used_by_ip = $2,
+		    used_by_user_agent = $3
+		WHERE token = $1 AND used_at IS NULL
+	`
+
+	result, err := r.db.ExecContext(ctx, query, token, ip, userAgent)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (r *magicLinkRepo) DeleteExpired(ctx context.Context) (int64, error) {
+	query := `
+		DELETE FROM magic_link_tokens
+		WHERE expires_at < now() OR (created_at < now() - INTERVAL '7 days' AND used_at IS NULL)
+	`
+
+	result, err := r.db.ExecContext(ctx, query)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+}
+
+func (r *magicLinkRepo) LogAttempt(ctx context.Context, attempt *models.MagicLinkAuthAttempt) error {
+	query := `
+		INSERT INTO magic_link_auth_attempts
+		(email, success, failure_reason, ip_address, user_agent)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, attempted_at
+	`
+
+	return r.db.QueryRowContext(ctx, query,
+		attempt.Email,
+		attempt.Success,
+		attempt.FailureReason,
+		attempt.IPAddress,
+		attempt.UserAgent,
+	).Scan(&attempt.ID, &attempt.AttemptedAt)
+}
+
+func (r *magicLinkRepo) CountRecentAttempts(ctx context.Context, email string, since time.Time) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM magic_link_auth_attempts
+		WHERE email = $1 AND attempted_at > $2
+	`
+
+	err := r.db.QueryRowContext(ctx, query, email, since).Scan(&count)
+	return count, err
+}
+
+func (r *magicLinkRepo) CountRecentAttemptsByIP(ctx context.Context, ip string, since time.Time) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM magic_link_auth_attempts
+		WHERE ip_address = $1 AND attempted_at > $2
+	`
+
+	err := r.db.QueryRowContext(ctx, query, ip, since).Scan(&count)
+	return count, err
+}

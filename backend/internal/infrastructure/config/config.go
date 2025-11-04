@@ -13,11 +13,17 @@ import (
 type Config struct {
 	App      AppConfig
 	Database DatabaseConfig
+	Auth     AuthConfig
 	OAuth    OAuthConfig
 	Server   ServerConfig
 	Logger   LoggerConfig
 	Mail     MailConfig
 	Checksum ChecksumConfig
+}
+
+type AuthConfig struct {
+	OAuthEnabled     bool
+	MagicLinkEnabled bool
 }
 
 type AppConfig struct {
@@ -88,39 +94,54 @@ func Load() (*Config, error) {
 
 	config.Database.DSN = mustGetEnv("ACKIFY_DB_DSN")
 
-	config.OAuth.ClientID = mustGetEnv("ACKIFY_OAUTH_CLIENT_ID")
-	config.OAuth.ClientSecret = mustGetEnv("ACKIFY_OAUTH_CLIENT_SECRET")
-	config.OAuth.AllowedDomain = os.Getenv("ACKIFY_OAUTH_ALLOWED_DOMAIN")
-	config.OAuth.AutoLogin = strings.ToLower(getEnv("ACKIFY_OAUTH_AUTO_LOGIN", "false")) == "true"
+	// OAuth configuration - now OPTIONAL
+	config.OAuth.ClientID = getEnv("ACKIFY_OAUTH_CLIENT_ID", "")
+	config.OAuth.ClientSecret = getEnv("ACKIFY_OAUTH_CLIENT_SECRET", "")
+	config.OAuth.AllowedDomain = getEnv("ACKIFY_OAUTH_ALLOWED_DOMAIN", "")
+	config.OAuth.AutoLogin = getEnvBool("ACKIFY_OAUTH_AUTO_LOGIN", false)
 
-	provider := strings.ToLower(getEnv("ACKIFY_OAUTH_PROVIDER", ""))
-	switch provider {
-	case "google":
-		config.OAuth.AuthURL = "https://accounts.google.com/o/oauth2/auth"
-		config.OAuth.TokenURL = "https://oauth2.googleapis.com/token"
-		config.OAuth.UserInfoURL = "https://openidconnect.googleapis.com/v1/userinfo"
-		config.OAuth.LogoutURL = "https://accounts.google.com/Logout"
-		config.OAuth.Scopes = []string{"openid", "email", "profile"}
-	case "github":
-		config.OAuth.AuthURL = "https://github.com/login/oauth/authorize"
-		config.OAuth.TokenURL = "https://github.com/login/oauth/access_token"
-		config.OAuth.UserInfoURL = "https://api.github.com/user"
-		config.OAuth.LogoutURL = "https://github.com/logout"
-		config.OAuth.Scopes = []string{"user:email", "read:user"}
-	case "gitlab":
-		gitlabURL := getEnv("ACKIFY_OAUTH_GITLAB_URL", "https://gitlab.com")
-		config.OAuth.AuthURL = fmt.Sprintf("%s/oauth/authorize", gitlabURL)
-		config.OAuth.TokenURL = fmt.Sprintf("%s/oauth/token", gitlabURL)
-		config.OAuth.UserInfoURL = fmt.Sprintf("%s/api/v4/user", gitlabURL)
-		config.OAuth.LogoutURL = fmt.Sprintf("%s/users/sign_out", gitlabURL)
-		config.OAuth.Scopes = []string{"read_user", "profile"}
-	default:
-		config.OAuth.AuthURL = mustGetEnv("ACKIFY_OAUTH_AUTH_URL")
-		config.OAuth.TokenURL = mustGetEnv("ACKIFY_OAUTH_TOKEN_URL")
-		config.OAuth.UserInfoURL = mustGetEnv("ACKIFY_OAUTH_USERINFO_URL")
-		config.OAuth.LogoutURL = getEnv("ACKIFY_OAUTH_LOGOUT_URL", "")
-		scopesStr := getEnv("ACKIFY_OAUTH_SCOPES", "openid,email,profile")
-		config.OAuth.Scopes = strings.Split(scopesStr, ",")
+	// Auto-detect OAuth enabled: true if ClientID and ClientSecret are provided
+	oauthConfigured := config.OAuth.ClientID != "" && config.OAuth.ClientSecret != ""
+
+	// Allow manual override via environment variable
+	if oauthEnabledStr := getEnv("ACKIFY_AUTH_OAUTH_ENABLED", ""); oauthEnabledStr != "" {
+		config.Auth.OAuthEnabled = getEnvBool("ACKIFY_AUTH_OAUTH_ENABLED", false)
+	} else {
+		config.Auth.OAuthEnabled = oauthConfigured
+	}
+
+	// Only configure OAuth URLs if OAuth is enabled
+	if config.Auth.OAuthEnabled {
+		provider := strings.ToLower(getEnv("ACKIFY_OAUTH_PROVIDER", ""))
+		switch provider {
+		case "google":
+			config.OAuth.AuthURL = "https://accounts.google.com/o/oauth2/auth"
+			config.OAuth.TokenURL = "https://oauth2.googleapis.com/token"
+			config.OAuth.UserInfoURL = "https://openidconnect.googleapis.com/v1/userinfo"
+			config.OAuth.LogoutURL = "https://accounts.google.com/Logout"
+			config.OAuth.Scopes = []string{"openid", "email", "profile"}
+		case "github":
+			config.OAuth.AuthURL = "https://github.com/login/oauth/authorize"
+			config.OAuth.TokenURL = "https://github.com/login/oauth/access_token"
+			config.OAuth.UserInfoURL = "https://api.github.com/user"
+			config.OAuth.LogoutURL = "https://github.com/logout"
+			config.OAuth.Scopes = []string{"user:email", "read:user"}
+		case "gitlab":
+			gitlabURL := getEnv("ACKIFY_OAUTH_GITLAB_URL", "https://gitlab.com")
+			config.OAuth.AuthURL = fmt.Sprintf("%s/oauth/authorize", gitlabURL)
+			config.OAuth.TokenURL = fmt.Sprintf("%s/oauth/token", gitlabURL)
+			config.OAuth.UserInfoURL = fmt.Sprintf("%s/api/v4/user", gitlabURL)
+			config.OAuth.LogoutURL = fmt.Sprintf("%s/users/sign_out", gitlabURL)
+			config.OAuth.Scopes = []string{"read_user", "profile"}
+		default:
+			// Custom OAuth provider - require URLs
+			config.OAuth.AuthURL = mustGetEnv("ACKIFY_OAUTH_AUTH_URL")
+			config.OAuth.TokenURL = mustGetEnv("ACKIFY_OAUTH_TOKEN_URL")
+			config.OAuth.UserInfoURL = mustGetEnv("ACKIFY_OAUTH_USERINFO_URL")
+			config.OAuth.LogoutURL = getEnv("ACKIFY_OAUTH_LOGOUT_URL", "")
+			scopesStr := getEnv("ACKIFY_OAUTH_SCOPES", "openid,email,profile")
+			config.OAuth.Scopes = strings.Split(scopesStr, ",")
+		}
 	}
 
 	cookieSecret, err := parseCookieSecret()
@@ -178,6 +199,21 @@ func Load() (*Config, error) {
 				config.Checksum.AllowedContentType = append(config.Checksum.AllowedContentType, trimmed)
 			}
 		}
+	}
+
+	// Auto-detect MagicLink enabled: true if SMTP is configured
+	magicLinkConfigured := mailHost != ""
+
+	// Allow manual override via environment variable
+	if magicLinkEnabledStr := getEnv("ACKIFY_AUTH_MAGICLINK_ENABLED", ""); magicLinkEnabledStr != "" {
+		config.Auth.MagicLinkEnabled = getEnvBool("ACKIFY_AUTH_MAGICLINK_ENABLED", false)
+	} else {
+		config.Auth.MagicLinkEnabled = magicLinkConfigured
+	}
+
+	// Validation: At least one authentication method must be enabled
+	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {
+		return nil, fmt.Errorf("at least one authentication method must be enabled: set ACKIFY_OAUTH_CLIENT_ID/CLIENT_SECRET for OAuth or ACKIFY_MAIL_HOST for MagicLink")
 	}
 
 	return config, nil

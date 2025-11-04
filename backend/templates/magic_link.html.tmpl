@@ -1,0 +1,42 @@
+{{define "content"}}
+<h2>{{T "email.magic_link.title"}}</h2>
+
+<p>{{T "email.magic_link.greeting"}}</p>
+
+<p>{{T "email.magic_link.intro" (dict "Organisation" .Organisation "Email" .Data.Email)}}</p>
+
+<p>{{T "email.magic_link.instructions"}}</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{.Data.MagicLink}}"
+       style="background-color: #4F46E5;
+              color: white;
+              padding: 14px 40px;
+              text-decoration: none;
+              border-radius: 6px;
+              display: inline-block;
+              font-weight: bold;">
+        {{T "email.magic_link.cta_button"}}
+    </a>
+</div>
+
+<div style="background: #FEF3C7; padding: 15px; border-left: 4px solid #F59E0B; border-radius: 4px; margin: 20px 0;">
+    <p style="margin: 0;">
+        ⏱️ <strong>{{T "email.magic_link.warning_title"}}</strong>
+        {{T "email.magic_link.warning_text" (dict "ExpiresIn" .Data.ExpiresIn)}}
+    </p>
+</div>
+
+<p>{{T "email.magic_link.not_requested"}}</p>
+
+<hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+<p style="color: #666; font-size: 0.9em;">
+    {{T "email.magic_link.button_not_working"}}<br>
+    <a href="{{.Data.MagicLink}}" style="color: #4F46E5; word-break: break-all;">{{.Data.MagicLink}}</a>
+</p>
+
+<p style="color: #999; font-size: 0.8em;">
+    {{T "email.magic_link.footer" (dict "Organisation" .Organisation "BaseURL" .Data.BaseURL)}}
+</p>
+{{end}}

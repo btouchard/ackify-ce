@@ -98,7 +98,7 @@ func TestNewHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(tt.authService, tt.middleware, tt.baseURL)
+			handler := NewHandler(tt.authService, nil, tt.middleware, tt.baseURL, true, true)
 
 			assert.NotNil(t, handler)
 			assert.NotNil(t, handler.authService)
@@ -116,7 +116,7 @@ func TestHandler_HandleAuthCheck_Authenticated(t *testing.T) {
 	t.Parallel()
 
 	authService := createTestAuthService()
-	handler := NewHandler(authService, createTestMiddleware(), testBaseURL)
+	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 	rec := httptest.NewRecorder()
@@ -190,7 +190,7 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+			handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 			req = tt.setupFunc(req)
@@ -219,7 +219,7 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 func TestHandler_HandleAuthCheck_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 	rec := httptest.NewRecorder()
@@ -258,7 +258,7 @@ func TestHandler_HandleLogout_WithSSO(t *testing.T) {
 	t.Parallel()
 
 	authService := createTestAuthService()
-	handler := NewHandler(authService, createTestMiddleware(), testBaseURL)
+	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
@@ -315,7 +315,7 @@ func TestHandler_HandleLogout_WithoutSSO(t *testing.T) {
 		SecureCookies: false,
 	})
 
-	handler := NewHandler(authService, createTestMiddleware(), testBaseURL)
+	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
@@ -344,7 +344,7 @@ func TestHandler_HandleLogout_ClearsSession(t *testing.T) {
 	t.Parallel()
 
 	authService := createTestAuthService()
-	handler := NewHandler(authService, createTestMiddleware(), testBaseURL)
+	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	// Set user in session
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
@@ -413,7 +413,7 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+			handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 			body, err := json.Marshal(tt.requestBody)
 			require.NoError(t, err)
@@ -455,7 +455,7 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 func TestHandler_HandleStartOAuth_NoBody(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 	rec := httptest.NewRecorder()
@@ -483,7 +483,7 @@ func TestHandler_HandleStartOAuth_NoBody(t *testing.T) {
 func TestHandler_HandleStartOAuth_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", bytes.NewReader([]byte("invalid-json")))
 	req.Header.Set("Content-Type", "application/json")
@@ -510,7 +510,7 @@ func TestHandler_HandleStartOAuth_InvalidJSON(t *testing.T) {
 func TestHandler_HandleStartOAuth_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 	rec := httptest.NewRecorder()
@@ -549,7 +549,7 @@ func TestHandler_HandleStartOAuth_ResponseFormat(t *testing.T) {
 func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	rec := httptest.NewRecorder()
@@ -595,7 +595,7 @@ func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 func TestHandler_HandleGetCSRFToken_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	rec := httptest.NewRecorder()
@@ -635,7 +635,7 @@ func TestHandler_HandleAuthCheck_Concurrent(t *testing.T) {
 	t.Parallel()
 
 	authService := createTestAuthService()
-	handler := NewHandler(authService, createTestMiddleware(), testBaseURL)
+	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -695,7 +695,7 @@ func TestHandler_HandleAuthCheck_Concurrent(t *testing.T) {
 func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -745,7 +745,7 @@ func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -802,7 +802,7 @@ func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 // ============================================================================
 
 func BenchmarkHandler_HandleAuthCheck(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -815,7 +815,7 @@ func BenchmarkHandler_HandleAuthCheck(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleAuthCheck_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -828,7 +828,7 @@ func BenchmarkHandler_HandleAuthCheck_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleLogout(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -841,7 +841,7 @@ func BenchmarkHandler_HandleLogout(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleLogout_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -854,7 +854,7 @@ func BenchmarkHandler_HandleLogout_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleStartOAuth(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -867,7 +867,7 @@ func BenchmarkHandler_HandleStartOAuth(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleStartOAuth_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -880,7 +880,7 @@ func BenchmarkHandler_HandleStartOAuth_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleGetCSRFToken(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -893,7 +893,7 @@ func BenchmarkHandler_HandleGetCSRFToken(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleGetCSRFToken_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), createTestMiddleware(), testBaseURL)
+	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

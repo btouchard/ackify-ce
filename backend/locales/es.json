@@ -13,5 +13,17 @@
   "email.reminder.explanation": "Su confirmación criptográfica proporcionará una prueba verificable de que ha leído y reconocido este documento.",
   "email.reminder.contact": "Si tiene alguna pregunta, póngase en contacto con su administrador.",
   "email.reminder.regards": "Saludos cordiales,",
-  "email.reminder.team": "El equipo de {{.Organisation}}"
+  "email.reminder.team": "El equipo de {{.Organisation}}",
+
+  "email.magic_link.subject": "Su enlace de inicio de sesión",
+  "email.magic_link.title": "🔐 Su enlace de inicio de sesión",
+  "email.magic_link.greeting": "Hola,",
+  "email.magic_link.intro": "Ha solicitado iniciar sesión en {{.Organisation}} con la dirección de correo electrónico {{.Email}}.",
+  "email.magic_link.instructions": "Haga clic en el botón de abajo para iniciar sesión instantáneamente:",
+  "email.magic_link.cta_button": "🚀 Iniciar sesión ahora",
+  "email.magic_link.warning_title": "Atención:",
+  "email.magic_link.warning_text": "Este enlace caduca en {{.ExpiresIn}} minutos y solo se puede usar una vez.",
+  "email.magic_link.not_requested": "Si no solicitó este enlace, puede ignorar este correo electrónico de forma segura.",
+  "email.magic_link.button_not_working": "Si el botón no funciona, copie y pegue este enlace en su navegador:",
+  "email.magic_link.footer": "Este correo electrónico fue enviado por {{.Organisation}} – {{.BaseURL}}"
 }

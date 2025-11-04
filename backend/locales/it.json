@@ -13,5 +13,17 @@
   "email.reminder.explanation": "La tua conferma crittografica fornirà una prova verificabile che hai letto e preso atto di questo documento.",
   "email.reminder.contact": "Se hai domande, contatta il tuo amministratore.",
   "email.reminder.regards": "Cordiali saluti,",
-  "email.reminder.team": "Il team {{.Organisation}}"
+  "email.reminder.team": "Il team {{.Organisation}}",
+
+  "email.magic_link.subject": "Il tuo link di accesso",
+  "email.magic_link.title": "🔐 Il tuo link di accesso",
+  "email.magic_link.greeting": "Ciao,",
+  "email.magic_link.intro": "Hai richiesto l'accesso a {{.Organisation}} con l'indirizzo email {{.Email}}.",
+  "email.magic_link.instructions": "Fai clic sul pulsante qui sotto per accedere immediatamente:",
+  "email.magic_link.cta_button": "🚀 Accedi ora",
+  "email.magic_link.warning_title": "Attenzione:",
+  "email.magic_link.warning_text": "Questo link scade tra {{.ExpiresIn}} minuti e può essere utilizzato solo una volta.",
+  "email.magic_link.not_requested": "Se non hai richiesto questo link, puoi ignorare questa email in tutta sicurezza.",
+  "email.magic_link.button_not_working": "Se il pulsante non funziona, copia e incolla questo link nel tuo browser:",
+  "email.magic_link.footer": "Questa email è stata inviata da {{.Organisation}} – {{.BaseURL}}"
 }

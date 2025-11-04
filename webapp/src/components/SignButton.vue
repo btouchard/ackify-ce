@@ -65,7 +65,7 @@
         </svg>
         <span class="font-semibold">Lecture confirmée</span>
       </div>
-      <p v-if="signedAt" class="mt-2 text-sm text-gray-600 text-center">
+      <p v-if="signedAt" class="mt-2 text-sm text-muted-foreground text-center">
         Le {{ formatDate(signedAt) }}
       </p>
     </div>

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
@@ -16,17 +17,23 @@ import (
 
 // Handler handles authentication API requests
 type Handler struct {
-	authService *auth.OauthService
-	middleware  *shared.Middleware
-	baseURL     string
+	authService      *auth.OauthService
+	magicLinkService *services.MagicLinkService
+	middleware       *shared.Middleware
+	baseURL          string
+	oauthEnabled     bool
+	magicLinkEnabled bool
 }
 
 // NewHandler creates a new auth handler
-func NewHandler(authService *auth.OauthService, middleware *shared.Middleware, baseURL string) *Handler {
+func NewHandler(authService *auth.OauthService, magicLinkService *services.MagicLinkService, middleware *shared.Middleware, baseURL string, oauthEnabled bool, magicLinkEnabled bool) *Handler {
 	return &Handler{
-		authService: authService,
-		middleware:  middleware,
-		baseURL:     baseURL,
+		authService:      authService,
+		magicLinkService: magicLinkService,
+		middleware:       middleware,
+		baseURL:          baseURL,
+		oauthEnabled:     oauthEnabled,
+		magicLinkEnabled: magicLinkEnabled,
 	}
 }
 
@@ -51,6 +58,15 @@ func (h *Handler) HandleGetCSRFToken(w http.ResponseWriter, r *http.Request) {
 
 	shared.WriteJSON(w, http.StatusOK, map[string]string{
 		"token": token,
+	})
+}
+
+// HandleGetAuthConfig handles GET /api/v1/auth/config
+// Returns available authentication methods
+func (h *Handler) HandleGetAuthConfig(w http.ResponseWriter, r *http.Request) {
+	shared.WriteJSON(w, http.StatusOK, map[string]bool{
+		"oauth":     h.oauthEnabled,
+		"magiclink": h.magicLinkEnabled,
 	})
 }
 

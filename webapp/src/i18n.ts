@@ -33,7 +33,7 @@ const getInitialLocale = (): string => {
     return browserLocale
   }
 
-  return 'fr'
+  return 'en'
 }
 
 export const i18n = createI18n({

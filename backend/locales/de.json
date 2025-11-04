@@ -13,5 +13,17 @@
   "email.reminder.explanation": "Ihre kryptographische Bestätigung liefert einen überprüfbaren Nachweis, dass Sie dieses Dokument gelesen und zur Kenntnis genommen haben.",
   "email.reminder.contact": "Bei Fragen wenden Sie sich bitte an Ihren Administrator.",
   "email.reminder.regards": "Mit freundlichen Grüßen,",
-  "email.reminder.team": "Das {{.Organisation}}-Team"
+  "email.reminder.team": "Das {{.Organisation}}-Team",
+
+  "email.magic_link.subject": "Ihr Anmeldelink",
+  "email.magic_link.title": "🔐 Ihr Anmeldelink",
+  "email.magic_link.greeting": "Hallo,",
+  "email.magic_link.intro": "Sie haben die Anmeldung bei {{.Organisation}} mit der E-Mail-Adresse {{.Email}} angefordert.",
+  "email.magic_link.instructions": "Klicken Sie auf die Schaltfläche unten, um sich sofort anzumelden:",
+  "email.magic_link.cta_button": "🚀 Jetzt anmelden",
+  "email.magic_link.warning_title": "Achtung:",
+  "email.magic_link.warning_text": "Dieser Link läuft in {{.ExpiresIn}} Minuten ab und kann nur einmal verwendet werden.",
+  "email.magic_link.not_requested": "Wenn Sie diesen Link nicht angefordert haben, können Sie diese E-Mail sicher ignorieren.",
+  "email.magic_link.button_not_working": "Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:",
+  "email.magic_link.footer": "Diese E-Mail wurde von {{.Organisation}} gesendet – {{.BaseURL}}"
 }
