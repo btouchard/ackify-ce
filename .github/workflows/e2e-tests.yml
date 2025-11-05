@@ -75,6 +75,11 @@ jobs:
             echo "test_private_key_base64_encoded_here" > /tmp/ed25519.key
           fi
 
+      - name: Copy locales and templates
+        run: |
+          cp -r backend/locales .
+          cp -r backend/templates .
+
       - name: Start Ackify server
         env:
           ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
