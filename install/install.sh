@@ -363,12 +363,13 @@ ACKIFY_DB_DSN=postgres://ackifyr:${DB_PASSWORD}@postgres:5432/ackify?sslmode=dis
 # Security Configuration (Auto-generated)
 # ==========================================
 ACKIFY_OAUTH_COOKIE_SECRET=${COOKIE_SECRET}
-ACKIFY_ED25519_PRIVATE_KEY_B64=${ED25519_KEY}
+ACKIFY_ED25519_PRIVATE_KEY=${ED25519_KEY}
 
 # ==========================================
 # Server Configuration
 # ==========================================
 ACKIFY_LISTEN_ADDR=:8080
+ACKIFY_LOG_LEVEL=info
 
 EOF
 
