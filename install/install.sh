@@ -113,6 +113,12 @@ APP_BASE_URL=$(prompt_input "Application Base URL (e.g., https://ackify.example.
 APP_ORGANISATION=$(prompt_input "Organization Name" "My Organization")
 APP_DNS=$(echo "$APP_BASE_URL" | sed -E 's|https?://||')
 
+# Extract domain for email addresses (remove subdomain if present, remove port)
+APP_DOMAIN=$(echo "$APP_DNS" | sed 's/:.*//' | sed -E 's/^[^.]*\.//')
+if [ -z "$APP_DOMAIN" ]; then
+    APP_DOMAIN=$(echo "$APP_DNS" | sed 's/:.*//')
+fi
+
 print_success "Base configuration set"
 echo ""
 
@@ -238,7 +244,7 @@ if prompt_yes_no "Enable SMTP for email notifications and MagicLink?" "y"; then
     MAIL_PASSWORD=$(prompt_password "SMTP Password")
 
     echo ""
-    MAIL_FROM=$(prompt_input "From Email Address" "noreply@${APP_DNS}")
+    MAIL_FROM=$(prompt_input "From Email Address" "noreply@${APP_DOMAIN}")
     MAIL_FROM_NAME=$(prompt_input "From Name" "$APP_ORGANISATION")
 
     echo ""
@@ -297,7 +303,7 @@ echo ""
 
 ADMIN_EMAILS=""
 while [ -z "$ADMIN_EMAILS" ]; do
-    ADMIN_EMAILS=$(prompt_input "Admin email addresses (comma-separated)" "admin@${APP_DNS}")
+    ADMIN_EMAILS=$(prompt_input "Admin email addresses (comma-separated)" "admin@${APP_DOMAIN}")
 
     if [ -z "$ADMIN_EMAILS" ]; then
         print_error "At least one admin email is required!"
