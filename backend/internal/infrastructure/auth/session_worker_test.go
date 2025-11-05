@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -366,10 +367,10 @@ func TestSessionWorker_GracefulShutdown(t *testing.T) {
 }
 
 func TestSessionWorker_ContextCancellation(t *testing.T) {
-	cleanupCalled := false
+	var cleanupCalled atomic.Bool
 	repo := &mockSessionRepoForWorker{
 		deleteExpiredFn: func(ctx context.Context, olderThan time.Duration) (int64, error) {
-			cleanupCalled = true
+			cleanupCalled.Store(true)
 			// Check if context is cancelled during cleanup
 			select {
 			case <-ctx.Done():
@@ -395,7 +396,7 @@ func TestSessionWorker_ContextCancellation(t *testing.T) {
 	// Wait for immediate cleanup
 	time.Sleep(50 * time.Millisecond)
 
-	if !cleanupCalled {
+	if !cleanupCalled.Load() {
 		t.Error("Cleanup should have been called")
 	}
 

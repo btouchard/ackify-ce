@@ -15,7 +15,7 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: ackify
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword
           POSTGRES_DB: ackify_test
         options: >-
@@ -62,7 +62,7 @@ jobs:
 
       - name: Run database migrations
         env:
-          ACKIFY_DB_DSN: "postgres://ackify:testpassword@localhost:5432/ackify_test?sslmode=disable"
+          ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
         run: |
           go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up
 
@@ -77,14 +77,14 @@ jobs:
 
       - name: Start Ackify server
         env:
-          ACKIFY_DB_DSN: "postgres://ackify:testpassword@localhost:5432/ackify_test?sslmode=disable"
+          ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
           ACKIFY_BASE_URL: "http://localhost:8080"
           ACKIFY_ORGANISATION: "Ackify Test"
           ACKIFY_OAUTH_PROVIDER: "github"
           ACKIFY_OAUTH_CLIENT_ID: "test_client_id"
           ACKIFY_OAUTH_CLIENT_SECRET: "test_client_secret"
           ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdF9jb29raWVfc2VjcmV0X2Zvcl90ZXN0aW5nXzEyMzQ1Njc4OTA="
-          ACKIFY_ED25519_PRIVATE_KEY: "dGVzdF9wcml2YXRlX2tleV9mb3JfdGVzdGluZ19vbmx5XzEyMzQ1Njc4OTA="
+          ACKIFY_ED25519_PRIVATE_KEY: "kKjNo0cTUOdXcamyxYCcmGfUm7zXzeI8T2jaLEjvbcpA0IIO7HbR3ANBlUlqlWuV3D+RjDT+8p5o37n98+Wu5A=="
           ACKIFY_LISTEN_ADDR: ":8080"
           ACKIFY_ADMIN_EMAILS: "admin@test.com"
           ACKIFY_MAIL_HOST: "localhost"
