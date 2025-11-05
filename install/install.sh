@@ -329,7 +329,7 @@ print_success "Cookie secret generated"
 ED25519_KEY=$(openssl rand 64 | base64 -w 0)
 print_success "Ed25519 private key generated"
 
-DB_PASSWORD=$(openssl rand -base64 24)
+DB_PASSWORD=$(openssl rand -hex 24)
 print_success "Database password generated"
 echo ""
 
