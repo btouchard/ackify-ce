@@ -149,6 +149,10 @@ describe('Magic Link Authentication', () => {
         cy.contains('Check your email', { timeout: 5000 }).should('be.visible')
         cy.wait(1000) // Small delay between requests
         cy.visitWithLocale('/auth') // Reload page to send another request
+
+        // Wait for page to be fully loaded before next iteration
+        cy.get('#app', { timeout: 10000 }).should('not.be.empty')
+        cy.contains('Sign in to Ackify', { timeout: 10000 }).should('be.visible')
       } else {
         // 4th request should fail due to rate limiting
         // Note: This depends on backend rate limiting implementation
