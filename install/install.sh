@@ -402,6 +402,12 @@ EOF
     fi
 
     echo "ACKIFY_OAUTH_AUTO_LOGIN=${OAUTH_AUTO_LOGIN}" >> .env
+    echo "ACKIFY_AUTH_OAUTH_ENABLED=true" >> .env
+    echo "" >> .env
+else
+    # OAuth not configured - explicitly disable
+    echo "# OAuth2 not configured" >> .env
+    echo "ACKIFY_AUTH_OAUTH_ENABLED=false" >> .env
     echo "" >> .env
 fi
 
@@ -427,8 +433,12 @@ EOF
 fi
 
 # MagicLink configuration
-if [ "$ENABLE_MAGICLINK" = "false" ] && [ "$ENABLE_SMTP" = true ]; then
-    echo "# Disable MagicLink even though SMTP is configured" >> .env
+if [ "$ENABLE_MAGICLINK" = true ]; then
+    echo "# MagicLink authentication enabled" >> .env
+    echo "ACKIFY_AUTH_MAGICLINK_ENABLED=true" >> .env
+    echo "" >> .env
+else
+    echo "# MagicLink authentication disabled" >> .env
     echo "ACKIFY_AUTH_MAGICLINK_ENABLED=false" >> .env
     echo "" >> .env
 fi
