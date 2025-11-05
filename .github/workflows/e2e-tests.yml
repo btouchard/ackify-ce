@@ -64,7 +64,7 @@ jobs:
         env:
           ACKIFY_DB_DSN: "postgres://ackify:testpassword@localhost:5432/ackify_test?sslmode=disable"
         run: |
-          go run ./backend/cmd/migrate/main.go up
+          go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up
 
       - name: Generate Ed25519 keys
         run: |
