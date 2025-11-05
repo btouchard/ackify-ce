@@ -339,8 +339,8 @@ cat > .env <<EOF
 # ==========================================
 # Application Configuration
 # ==========================================
-APP_BASE_URL=${APP_BASE_URL}
-APP_ORGANISATION=${APP_ORGANISATION}
+ACKIFY_BASE_URL=${APP_BASE_URL}
+ACKIFY_ORGANISATION=${APP_ORGANISATION}
 
 # ==========================================
 # Database Configuration
@@ -348,17 +348,18 @@ APP_ORGANISATION=${APP_ORGANISATION}
 POSTGRES_USER=ackifyr
 POSTGRES_PASSWORD=${DB_PASSWORD}
 POSTGRES_DB=ackify
+ACKIFY_DB_DSN=postgres://ackifyr:${DB_PASSWORD}@postgres:5432/ackify?sslmode=disable
 
 # ==========================================
 # Security Configuration (Auto-generated)
 # ==========================================
-OAUTH_COOKIE_SECRET=${COOKIE_SECRET}
-ED25519_PRIVATE_KEY_B64=${ED25519_KEY}
+ACKIFY_OAUTH_COOKIE_SECRET=${COOKIE_SECRET}
+ACKIFY_ED25519_PRIVATE_KEY_B64=${ED25519_KEY}
 
 # ==========================================
 # Server Configuration
 # ==========================================
-LISTEN_ADDR=:8080
+ACKIFY_LISTEN_ADDR=:8080
 
 EOF
 
@@ -368,29 +369,29 @@ if [ "$ENABLE_OAUTH" = true ]; then
 # ==========================================
 # OAuth2 Configuration
 # ==========================================
-OAUTH_PROVIDER=${OAUTH_PROVIDER}
-OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
-OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
+ACKIFY_OAUTH_PROVIDER=${OAUTH_PROVIDER}
+ACKIFY_OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
+ACKIFY_OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
 EOF
 
     if [ -n "$OAUTH_ALLOWED_DOMAIN" ]; then
-        echo "OAUTH_ALLOWED_DOMAIN=${OAUTH_ALLOWED_DOMAIN}" >> .env
+        echo "ACKIFY_OAUTH_ALLOWED_DOMAIN=${OAUTH_ALLOWED_DOMAIN}" >> .env
     fi
 
     if [ "$OAUTH_PROVIDER" = "custom" ]; then
         cat >> .env <<EOF
-OAUTH_AUTH_URL=${OAUTH_AUTH_URL}
-OAUTH_TOKEN_URL=${OAUTH_TOKEN_URL}
-OAUTH_USERINFO_URL=${OAUTH_USERINFO_URL}
-OAUTH_SCOPES=${OAUTH_SCOPES}
+ACKIFY_OAUTH_AUTH_URL=${OAUTH_AUTH_URL}
+ACKIFY_OAUTH_TOKEN_URL=${OAUTH_TOKEN_URL}
+ACKIFY_OAUTH_USERINFO_URL=${OAUTH_USERINFO_URL}
+ACKIFY_OAUTH_SCOPES=${OAUTH_SCOPES}
 EOF
     fi
 
     if [ -n "$OAUTH_GITLAB_URL" ]; then
-        echo "OAUTH_GITLAB_URL=${OAUTH_GITLAB_URL}" >> .env
+        echo "ACKIFY_OAUTH_GITLAB_URL=${OAUTH_GITLAB_URL}" >> .env
     fi
 
-    echo "OAUTH_AUTO_LOGIN=${OAUTH_AUTO_LOGIN}" >> .env
+    echo "ACKIFY_OAUTH_AUTO_LOGIN=${OAUTH_AUTO_LOGIN}" >> .env
     echo "" >> .env
 fi
 
@@ -400,17 +401,17 @@ if [ "$ENABLE_SMTP" = true ]; then
 # ==========================================
 # SMTP Configuration (Email Service)
 # ==========================================
-MAIL_HOST=${MAIL_HOST}
-MAIL_PORT=${MAIL_PORT}
-MAIL_USERNAME=${MAIL_USERNAME}
-MAIL_PASSWORD=${MAIL_PASSWORD}
-MAIL_FROM=${MAIL_FROM}
-MAIL_FROM_NAME=${MAIL_FROM_NAME}
-MAIL_TLS=${MAIL_TLS}
-MAIL_STARTTLS=${MAIL_STARTTLS}
-MAIL_TIMEOUT=10s
-MAIL_TEMPLATE_DIR=templates/emails
-MAIL_DEFAULT_LOCALE=en
+ACKIFY_MAIL_HOST=${MAIL_HOST}
+ACKIFY_MAIL_PORT=${MAIL_PORT}
+ACKIFY_MAIL_USERNAME=${MAIL_USERNAME}
+ACKIFY_MAIL_PASSWORD=${MAIL_PASSWORD}
+ACKIFY_MAIL_FROM=${MAIL_FROM}
+ACKIFY_MAIL_FROM_NAME=${MAIL_FROM_NAME}
+ACKIFY_MAIL_TLS=${MAIL_TLS}
+ACKIFY_MAIL_STARTTLS=${MAIL_STARTTLS}
+ACKIFY_MAIL_TIMEOUT=10s
+ACKIFY_MAIL_TEMPLATE_DIR=templates/emails
+ACKIFY_MAIL_DEFAULT_LOCALE=en
 
 EOF
 fi
@@ -418,7 +419,7 @@ fi
 # MagicLink configuration
 if [ "$ENABLE_MAGICLINK" = "false" ] && [ "$ENABLE_SMTP" = true ]; then
     echo "# Disable MagicLink even though SMTP is configured" >> .env
-    echo "AUTH_MAGICLINK_ENABLED=false" >> .env
+    echo "ACKIFY_AUTH_MAGICLINK_ENABLED=false" >> .env
     echo "" >> .env
 fi
 
@@ -428,7 +429,7 @@ if [ -n "$ADMIN_EMAILS" ]; then
 # ==========================================
 # Admin Configuration
 # ==========================================
-ADMIN_EMAILS=${ADMIN_EMAILS}
+ACKIFY_ADMIN_EMAILS=${ADMIN_EMAILS}
 
 EOF
 fi
