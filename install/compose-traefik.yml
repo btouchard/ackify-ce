@@ -48,10 +48,15 @@ services:
         condition: service_completed_successfully
       ackify-db:
         condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${APP_NAME}.entrypoints=websecure
+      - traefik.http.routers.${APP_NAME}.rule=Host(`${APP_DNS}`)
+      - traefik.http.routers.${APP_NAME}.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+      - traefik.http.services.${APP_NAME}.loadbalancer.server.port=8080
     networks:
       - internal
-    ports:
-      - "8080:8080"
+      - traefik
 
   ackify-db:
     image: postgres:16-alpine
@@ -73,6 +78,9 @@ services:
 
 networks:
   internal:
+  traefik:
+    name: ${TRAEFIK_NETWORK:-traefik}
+    external: true
 
 volumes:
   ackify_data:

@@ -5,6 +5,142 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-11-05
+
+### 🔐 Passwordless Authentication & Enhanced Installation
+
+Minor release adding Magic Link authentication, improved metadata extraction, and professional installation tooling.
+
+### Added
+
+- **Magic Link Authentication (Passwordless)**
+  - Email-based passwordless authentication system
+  - No password required - users receive a secure link via email
+  - Multi-method support: configure OAuth and/or MagicLink independently
+  - Intelligent authentication method selection page
+  - Auto-redirect to login when only one method is configured
+  - Secure token generation with crypto/rand (32 bytes)
+  - 15-minute expiration with automatic cleanup
+  - HTML and text email templates for magic links
+  - New migration `0012_magic_link_authentication` with `magic_links` table
+  - Indexes on token, email, and expires_at for optimal performance
+  - Background worker for cleaning expired magic links
+
+- **Enhanced Installation Experience**
+  - Interactive installation script with step-by-step guidance
+  - Automatic environment detection (Docker, PostgreSQL, etc.)
+  - System prerequisites validation
+  - Assisted configuration of environment variables
+  - Support for multi-authentication method setup
+  - Complete installation documentation in `install/README.md`
+  - Comprehensive `.env.example` with detailed comments
+  - Docker Compose templates for quick deployment
+
+- **E2E Testing with Cypress**
+  - Complete end-to-end test suite for Magic Link authentication
+  - MailHog integration for email testing in development
+  - GitHub Actions workflow for automated E2E tests
+  - Dedicated `compose.e2e.yml` for isolated test environment
+  - Test utilities for email verification and link extraction
+
+- **Smart Document Title Extraction**
+  - Enhanced automatic title detection from HTML metadata
+  - Support for Open Graph tags (`og:title`)
+  - Support for Twitter Card tags (`twitter:title`)
+  - Intelligent fallback hierarchy: OG → Twitter → title → h1
+  - Comprehensive unit tests (233 test cases)
+  - Better handling of edge cases and malformed HTML
+
+### Changed
+
+- **Architecture Improvements**
+  - Refactored OAuth code into reusable `OAuthProvider` component
+  - New `SessionService` for centralized session management
+  - New `MagicLinkService` for passwordless authentication logic
+  - Better separation of concerns between authentication methods
+  - Cleaner dependency injection in main.go
+
+- **Configuration System**
+  - Auto-detection of available authentication methods
+  - New `ACKIFY_AUTH_OAUTH_ENABLED` flag (optional, auto-detected)
+  - New `ACKIFY_AUTH_MAGICLINK_ENABLED` flag (optional, auto-detected)
+  - MagicLink enabled automatically if `ACKIFY_MAIL_HOST` is configured
+  - OAuth enabled automatically if OAuth credentials are present
+  - Enhanced email configuration with detailed SMTP options
+  - Better validation and error messages for configuration issues
+
+- **Session Management**
+  - 30-day persistent sessions (increased from 7 days)
+  - Encrypted refresh token storage with AES-256-GCM
+  - New `oauth_sessions` table for refresh token persistence
+  - Automatic cleanup of expired sessions (background worker)
+  - Session tracking with IP address and User-Agent
+
+- **User Interface**
+  - New authentication choice page when multiple methods available
+  - Auto-redirect behavior when single authentication method
+  - Window variables for dynamic config (`ACKIFY_OAUTH_ENABLED`, `ACKIFY_MAGICLINK_ENABLED`)
+  - Updated localization files (en, fr, es, de, it) with Magic Link strings
+
+### Fixed
+
+- Improved robustness of document metadata extraction
+- Better error handling in authentication flows
+- More descriptive error messages for configuration issues
+- Edge case handling in title extraction
+
+### Technical Details
+
+**New Files:**
+- `backend/internal/application/services/magic_link_service.go` - MagicLink service
+- `backend/internal/domain/models/magic_link.go` - MagicLink domain model
+- `backend/internal/infrastructure/auth/oauth_provider.go` - OAuth provider refactored
+- `backend/internal/infrastructure/auth/session_service.go` - Session management
+- `backend/internal/infrastructure/auth/session_worker_test.go` - Session cleanup tests
+- `backend/internal/infrastructure/database/magic_link_repository.go` - MagicLink repository
+- `backend/internal/infrastructure/workers/magic_link_cleanup.go` - Cleanup worker
+- `backend/internal/presentation/api/auth/magic_link_handler.go` - MagicLink endpoints
+- `backend/templates/magic_link.html.tmpl` - HTML email template
+- `backend/templates/magic_link.txt.tmpl` - Text email template
+- `backend/migrations/0012_magic_link_authentication.{up,down}.sql`
+- `webapp/src/pages/AuthChoicePage.vue` - Authentication method selection
+- `webapp/cypress/` - Complete E2E test suite
+- `.github/workflows/e2e-tests.yml` - E2E CI workflow
+- `install/README.md` - Installation documentation
+
+**Modified Files:**
+- `backend/internal/infrastructure/config/config.go` - Enhanced configuration
+- `backend/internal/infrastructure/auth/oauth.go` - Refactored to use OAuthProvider
+- `backend/internal/presentation/api/router.go` - New Magic Link endpoints
+- `backend/pkg/web/server.go` - Multi-auth method support
+- `backend/pkg/web/static.go` - New window variables injection
+- `webapp/src/router/index.ts` - Auth choice route
+- `README.md`, `README_FR.md` - Updated with Magic Link documentation
+- `.env.example` - Comprehensive email and auth configuration
+
+### Migration Guide
+
+**For users upgrading from v1.2.0 to v1.2.1:**
+
+1. **No Breaking Changes**: v1.2.1 is 100% backward compatible
+2. **Optional MagicLink**: Add email configuration to enable passwordless auth
+3. **Migrations**: Applied automatically at startup
+4. **Environment Variables**: Review new optional variables in `.env.example`
+
+**To enable Magic Link authentication:**
+```bash
+# Add SMTP configuration
+ACKIFY_MAIL_HOST="smtp.example.com"
+ACKIFY_MAIL_PORT=587
+ACKIFY_MAIL_USERNAME="user"
+ACKIFY_MAIL_PASSWORD="pass"
+ACKIFY_MAIL_FROM="noreply@example.com"
+
+# Optional: explicitly control auth methods
+ACKIFY_AUTH_OAUTH_ENABLED=true
+ACKIFY_AUTH_MAGICLINK_ENABLED=true
+```
+
 ## [1.2.0] - 2025-10-27
 
 ### 🎉 Major Release: API-First Vue Migration with Enhanced Security
@@ -283,6 +419,7 @@ For users upgrading from v1.1.x to v1.2.0:
 - NULL UserName handling in database operations
 - Proper string conversion for UserName field
 
+[1.2.1]: https://github.com/btouchard/ackify-ce/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/btouchard/ackify-ce/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/btouchard/ackify-ce/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/btouchard/ackify-ce/compare/v1.1.1...v1.1.2
