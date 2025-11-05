@@ -71,7 +71,7 @@ prompt_password() {
     local response
 
     read -sp "$(echo -e ${BLUE}"$prompt: "${NC})" response
-    echo ""
+    echo "" >&2
     echo "$response"
 }
 
@@ -114,9 +114,12 @@ APP_ORGANISATION=$(prompt_input "Organization Name" "My Organization")
 APP_DNS=$(echo "$APP_BASE_URL" | sed -E 's|https?://||')
 
 # Extract domain for email addresses (remove subdomain if present, remove port)
-APP_DOMAIN=$(echo "$APP_DNS" | sed 's/:.*//' | sed -E 's/^[^.]*\.//')
-if [ -z "$APP_DOMAIN" ]; then
-    APP_DOMAIN=$(echo "$APP_DNS" | sed 's/:.*//')
+APP_DOMAIN=$(echo "$APP_DNS" | sed 's/:.*//')
+# Count dots to detect subdomain
+dot_count=$(echo "$APP_DOMAIN" | tr -cd '.' | wc -c)
+# If 2+ dots (subdomain.domain.tld), remove first part to keep domain.tld
+if [ "$dot_count" -ge 2 ]; then
+    APP_DOMAIN=$(echo "$APP_DOMAIN" | cut -d. -f2-)
 fi
 
 print_success "Base configuration set"
