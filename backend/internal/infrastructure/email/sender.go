@@ -92,12 +92,14 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) error {
 
 	d := mail.NewDialer(s.config.Host, s.config.Port, s.config.Username, s.config.Password)
 
+	// Configure TLS: either SSL (port 465) or STARTTLS (port 587), not both
 	if s.config.TLS {
+		// Implicit TLS/SSL (typically port 465)
 		d.SSL = true
-	}
-
-	if s.config.StartTLS {
+	} else if s.config.StartTLS {
+		// Explicit TLS via STARTTLS (typically port 587)
 		d.TLSConfig = &tls.Config{ServerName: s.config.Host}
+		d.StartTLSPolicy = mail.MandatoryStartTLS
 	}
 
 	d.Timeout = timeout

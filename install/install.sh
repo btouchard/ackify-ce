@@ -251,16 +251,27 @@ if prompt_yes_no "Enable SMTP for email notifications and MagicLink?" "y"; then
     MAIL_FROM_NAME=$(prompt_input "From Name" "$APP_ORGANISATION")
 
     echo ""
-    if prompt_yes_no "Use TLS?" "y"; then
+    # Auto-configure TLS based on port
+    if [ "$MAIL_PORT" = "465" ]; then
+        print_info "Port 465 detected - using TLS (implicit SSL)"
         MAIL_TLS="true"
-    else
+        MAIL_STARTTLS="false"
+    elif [ "$MAIL_PORT" = "587" ]; then
+        print_info "Port 587 detected - using STARTTLS (explicit TLS)"
         MAIL_TLS="false"
-    fi
-
-    if prompt_yes_no "Use STARTTLS?" "y"; then
         MAIL_STARTTLS="true"
     else
-        MAIL_STARTTLS="false"
+        print_warning "Non-standard port detected, please configure TLS manually"
+        if prompt_yes_no "Use TLS (implicit SSL, typically port 465)?" "n"; then
+            MAIL_TLS="true"
+            MAIL_STARTTLS="false"
+        elif prompt_yes_no "Use STARTTLS (explicit TLS, typically port 587)?" "y"; then
+            MAIL_TLS="false"
+            MAIL_STARTTLS="true"
+        else
+            MAIL_TLS="false"
+            MAIL_STARTTLS="false"
+        fi
     fi
 
     print_success "SMTP configuration completed"
