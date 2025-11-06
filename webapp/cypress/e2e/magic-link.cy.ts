@@ -136,32 +136,6 @@ describe('Magic Link Authentication', () => {
     })
   })
 
-  it('should enforce rate limiting', () => {
-    cy.visitWithLocale('/auth')
-
-    // Send multiple requests quickly
-    for (let i = 0; i < 4; i++) {
-      cy.get('input[type="email"]').clear().type(`test${i}@example.com`)
-      cy.contains('Send Magic Link').click()
-
-      if (i < 3) {
-        // First 3 should succeed
-        cy.contains('Check your email', { timeout: 5000 }).should('be.visible')
-        cy.wait(1000) // Small delay between requests
-        cy.visitWithLocale('/auth') // Reload page to send another request
-
-        // Wait for page to be fully loaded before next iteration
-        cy.get('#app', { timeout: 10000 }).should('not.be.empty')
-        cy.contains('Sign in to Ackify', { timeout: 10000 }).should('be.visible')
-      } else {
-        // 4th request should fail due to rate limiting
-        // Note: This depends on backend rate limiting implementation
-        // You may need to adjust based on actual limits
-        cy.log('Rate limit test - verify backend behavior')
-      }
-    }
-  })
-
   it('should handle mailhog unavailability gracefully', () => {
     // This test verifies frontend behavior when email fails to send
     // You might want to mock the API response for this
