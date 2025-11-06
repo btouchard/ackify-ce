@@ -74,6 +74,7 @@ func (s *MagicLinkService) RequestMagicLink(
 	redirectTo string,
 	ip string,
 	userAgent string,
+	locale string,
 ) error {
 	// Normaliser l'email
 	emailAddr = strings.ToLower(strings.TrimSpace(emailAddr))
@@ -152,8 +153,10 @@ func (s *MagicLinkService) RequestMagicLink(
 	redirectEncoded := url.QueryEscape(redirectTo)
 	magicLink := fmt.Sprintf("%s/api/v1/auth/magic-link/verify?token=%s&redirect=%s", s.baseURL, token, redirectEncoded)
 
-	// Déterminer la locale (TODO: implémenter détection de langue préférée)
-	locale := "en" // Défaut
+	// Utiliser la locale fournie, défaut "en" si vide
+	if locale == "" {
+		locale = "en"
+	}
 
 	// Envoyer l'email
 	msg := email.Message{

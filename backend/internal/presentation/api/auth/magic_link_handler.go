@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -35,8 +36,11 @@ func (h *Handler) HandleRequestMagicLink(w http.ResponseWriter, r *http.Request)
 	ip := shared.GetClientIP(r)
 	userAgent := r.UserAgent()
 
+	// Extraire la locale depuis la requête (comme pour les reminders)
+	locale := i18n.GetLangFromRequest(r)
+
 	// Demander le Magic Link
-	err := h.magicLinkService.RequestMagicLink(r.Context(), req.Email, req.RedirectTo, ip, userAgent)
+	err := h.magicLinkService.RequestMagicLink(r.Context(), req.Email, req.RedirectTo, ip, userAgent, locale)
 
 	// IMPORTANT: Ne jamais révéler si l'email existe ou non (protection contre énumération)
 	// Toujours retourner succès, même en cas d'erreur de rate limiting

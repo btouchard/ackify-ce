@@ -16,7 +16,7 @@ compose.local.yml
 compose.cloud.yml
 client_secret*.json
 
-/cmd/community/web/dist
+/backend/cmd/community/web/dist
 
 # Tailwind CSS
 /bin/tailwindcss
