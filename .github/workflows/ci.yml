@@ -47,6 +47,24 @@ jobs:
         cd backend
         go mod download
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: webapp/package-lock.json
+
+    - name: Build frontend
+      run: |
+        cd webapp
+        npm ci --no-audit --no-fund --no-progress
+        npm run build
+
+    - name: Copy frontend to backend embed directory
+      run: |
+        mkdir -p backend/cmd/community/web/dist
+        cp -r webapp/dist/* backend/cmd/community/web/dist/
+
     - name: Run go fmt check
       run: |
         cd backend
