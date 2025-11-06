@@ -21,6 +21,7 @@ type ReminderAsyncService struct {
 	expectedSignerRepo expectedSignerRepository
 	reminderRepo       reminderRepository
 	queueRepo          emailQueueRepository
+	magicLinkService   magicLinkService
 	baseURL            string
 	useAsyncQueue      bool // Feature flag to enable/disable async queue
 }
@@ -30,12 +31,14 @@ func NewReminderAsyncService(
 	expectedSignerRepo expectedSignerRepository,
 	reminderRepo reminderRepository,
 	queueRepo emailQueueRepository,
+	magicLinkService magicLinkService,
 	baseURL string,
 ) *ReminderAsyncService {
 	return &ReminderAsyncService{
 		expectedSignerRepo: expectedSignerRepo,
 		reminderRepo:       reminderRepo,
 		queueRepo:          queueRepo,
+		magicLinkService:   magicLinkService,
 		baseURL:            baseURL,
 		useAsyncQueue:      true, // Enable async by default
 	}
@@ -139,13 +142,29 @@ func (s *ReminderAsyncService) queueSingleReminder(
 		"recipient_name", recipientName,
 		"sent_by", sentBy)
 
-	signURL := fmt.Sprintf("%s/?doc=%s", s.baseURL, docID)
+	// Générer un token d'authentification pour ce lecteur
+	token, err := s.magicLinkService.CreateReminderAuthToken(ctx, recipientEmail, docID)
+	if err != nil {
+		logger.Logger.Error("Failed to create reminder auth token",
+			"doc_id", docID,
+			"recipient_email", recipientEmail,
+			"error", err.Error())
+		return fmt.Errorf("failed to create auth token: %w", err)
+	}
+
+	// Construire l'URL d'authentification qui redirigera vers la page de signature
+	authSignURL := fmt.Sprintf("%s/api/v1/auth/reminder-link/verify?token=%s", s.baseURL, token)
+
+	logger.Logger.Debug("Generated auth sign URL for reminder",
+		"doc_id", docID,
+		"recipient_email", recipientEmail,
+		"url", authSignURL)
 
 	// Prepare email data (keys must match template variables)
 	data := map[string]interface{}{
 		"DocID":         docID,
 		"DocURL":        docURL,
-		"SignURL":       signURL,
+		"SignURL":       authSignURL,
 		"RecipientName": recipientName,
 		"Locale":        locale,
 	}

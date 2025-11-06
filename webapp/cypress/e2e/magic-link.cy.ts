@@ -27,7 +27,7 @@ describe('Magic Link Authentication', () => {
 
     // Should show success message
     cy.contains('Check your email', { timeout: 10000 }).should('be.visible')
-    cy.contains('We sent you a magic link').should('be.visible')
+    cy.contains('We\'ve sent you a magic link. Click on it to sign in.').should('be.visible')
     cy.contains('The link expires in 15 minutes').should('be.visible')
 
     // Wait for email to arrive in Mailhog

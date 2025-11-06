@@ -189,6 +189,52 @@ func (s *MagicLinkService) RequestMagicLink(
 	return nil
 }
 
+// CreateReminderAuthToken génère un token d'authentification pour un email de reminder
+// Ce token a une durée de validité de 24 heures (vs 15 min pour magic link classique)
+// Il ne valide pas les domaines autorisés et n'envoie pas d'email (géré par ReminderService)
+func (s *MagicLinkService) CreateReminderAuthToken(
+	ctx context.Context,
+	emailAddr string,
+	docID string,
+) (string, error) {
+	// Normaliser l'email
+	emailAddr = strings.ToLower(strings.TrimSpace(emailAddr))
+
+	// Valider le format email
+	if _, err := mail.ParseAddress(emailAddr); err != nil {
+		return "", fmt.Errorf("invalid email format")
+	}
+
+	// Générer un token cryptographiquement sécurisé
+	token, err := s.generateSecureToken()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	// Créer le token en DB avec purpose='reminder_auth' et durée 24h
+	magicToken := &models.MagicLinkToken{
+		Token:              token,
+		Email:              emailAddr,
+		ExpiresAt:          time.Now().Add(24 * time.Hour), // 24 heures pour reminder
+		RedirectTo:         "/?doc=" + docID,               // Redirection vers la page de signature
+		CreatedByIP:        "127.0.0.1",                    // Localhost = système (reminder)
+		CreatedByUserAgent: "reminder-service",
+		Purpose:            "reminder_auth",
+		DocID:              &docID,
+	}
+
+	if err := s.repo.CreateToken(ctx, magicToken); err != nil {
+		return "", fmt.Errorf("failed to create reminder auth token: %w", err)
+	}
+
+	logger.Logger.Info("Reminder auth token created",
+		"email", emailAddr,
+		"doc_id", docID,
+		"expires_in", "24h")
+
+	return token, nil
+}
+
 // VerifyMagicLink vérifie et consomme un token Magic Link
 func (s *MagicLinkService) VerifyMagicLink(
 	ctx context.Context,
@@ -225,6 +271,58 @@ func (s *MagicLinkService) VerifyMagicLink(
 
 	logger.Logger.Info("Magic Link verified successfully",
 		"email", magicToken.Email,
+		"ip", ip)
+
+	return magicToken, nil
+}
+
+// VerifyReminderAuthToken vérifie et consomme un token de reminder auth
+func (s *MagicLinkService) VerifyReminderAuthToken(
+	ctx context.Context,
+	token string,
+	ip string,
+	userAgent string,
+) (*models.MagicLinkToken, error) {
+	// Récupérer le token
+	magicToken, err := s.repo.GetByToken(ctx, token)
+	if err != nil {
+		logger.Logger.Warn("Reminder auth token not found", "token_prefix", token[:min(8, len(token))])
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	// Vérifier que c'est bien un token de type reminder_auth
+	if magicToken.Purpose != "reminder_auth" {
+		logger.Logger.Warn("Token is not a reminder_auth token",
+			"purpose", magicToken.Purpose,
+			"email", magicToken.Email)
+		return nil, fmt.Errorf("invalid token type")
+	}
+
+	// Vérifier la validité
+	if !magicToken.IsValid() {
+		if magicToken.UsedAt != nil {
+			logger.Logger.Warn("Reminder auth token already used",
+				"email", magicToken.Email,
+				"doc_id", magicToken.DocID,
+				"used_at", magicToken.UsedAt)
+			return nil, fmt.Errorf("token already used")
+		}
+		logger.Logger.Warn("Reminder auth token expired",
+			"email", magicToken.Email,
+			"doc_id", magicToken.DocID,
+			"expires_at", magicToken.ExpiresAt)
+		return nil, fmt.Errorf("token expired")
+	}
+
+	// Marquer comme utilisé
+	if err := s.repo.MarkAsUsed(ctx, token, ip, userAgent); err != nil {
+		logger.Logger.Error("Failed to mark reminder auth token as used", "error", err)
+		return nil, fmt.Errorf("failed to mark token as used: %w", err)
+	}
+
+	logger.Logger.Info("Reminder auth token verified successfully",
+		"email", magicToken.Email,
+		"doc_id", magicToken.DocID,
 		"ip", ip)
 
 	return magicToken, nil

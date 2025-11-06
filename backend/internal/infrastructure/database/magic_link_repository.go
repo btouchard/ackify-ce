@@ -21,10 +21,16 @@ func NewMagicLinkRepository(db *sql.DB) services.MagicLinkRepository {
 func (r *magicLinkRepo) CreateToken(ctx context.Context, token *models.MagicLinkToken) error {
 	query := `
 		INSERT INTO magic_link_tokens
-		(token, email, expires_at, redirect_to, created_by_ip, created_by_user_agent)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		(token, email, expires_at, redirect_to, created_by_ip, created_by_user_agent, purpose, doc_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at
 	`
+
+	// Set default purpose if empty
+	purpose := token.Purpose
+	if purpose == "" {
+		purpose = "login"
+	}
 
 	return r.db.QueryRowContext(ctx, query,
 		token.Token,
@@ -33,20 +39,23 @@ func (r *magicLinkRepo) CreateToken(ctx context.Context, token *models.MagicLink
 		token.RedirectTo,
 		token.CreatedByIP,
 		token.CreatedByUserAgent,
+		purpose,
+		token.DocID,
 	).Scan(&token.ID, &token.CreatedAt)
 }
 
 func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.MagicLinkToken, error) {
 	query := `
 		SELECT id, token, email, created_at, expires_at, used_at, used_by_ip,
-		       used_by_user_agent, redirect_to, created_by_ip, created_by_user_agent
+		       used_by_user_agent, redirect_to, created_by_ip, created_by_user_agent,
+		       purpose, doc_id
 		FROM magic_link_tokens
 		WHERE token = $1
 	`
 
 	var t models.MagicLinkToken
 	var usedAt sql.NullTime
-	var usedByIP, usedByUserAgent sql.NullString
+	var usedByIP, usedByUserAgent, docID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, token).Scan(
 		&t.ID,
@@ -60,6 +69,8 @@ func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.M
 		&t.RedirectTo,
 		&t.CreatedByIP,
 		&t.CreatedByUserAgent,
+		&t.Purpose,
+		&docID,
 	)
 
 	if err == sql.ErrNoRows {
@@ -77,6 +88,9 @@ func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.M
 	}
 	if usedByUserAgent.Valid {
 		t.UsedByUserAgent = &usedByUserAgent.String
+	}
+	if docID.Valid {
+		t.DocID = &docID.String
 	}
 
 	return &t, nil

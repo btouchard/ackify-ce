@@ -103,6 +103,8 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 				if cfg.MagicLinkEnabled {
 					r.Post("/magic-link/request", authHandler.HandleRequestMagicLink)
 					r.Get("/magic-link/verify", authHandler.HandleVerifyMagicLink)
+					// Reminder auth link (authentification via email de reminder)
+					r.Get("/reminder-link/verify", authHandler.HandleVerifyReminderAuthLink)
 				}
 			})
 		})

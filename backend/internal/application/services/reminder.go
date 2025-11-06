@@ -23,11 +23,17 @@ type reminderRepository interface {
 	GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error)
 }
 
+// magicLinkService defines minimal interface for creating reminder auth tokens
+type magicLinkService interface {
+	CreateReminderAuthToken(ctx context.Context, email string, docID string) (string, error)
+}
+
 // ReminderService manages email notifications to pending signers with delivery tracking
 type ReminderService struct {
 	expectedSignerRepo expectedSignerRepository
 	reminderRepo       reminderRepository
 	emailSender        email.Sender
+	magicLinkService   magicLinkService
 	baseURL            string
 }
 
@@ -36,12 +42,14 @@ func NewReminderService(
 	expectedSignerRepo expectedSignerRepository,
 	reminderRepo reminderRepository,
 	emailSender email.Sender,
+	magicLinkService magicLinkService,
 	baseURL string,
 ) *ReminderService {
 	return &ReminderService{
 		expectedSignerRepo: expectedSignerRepo,
 		reminderRepo:       reminderRepo,
 		emailSender:        emailSender,
+		magicLinkService:   magicLinkService,
 		baseURL:            baseURL,
 	}
 }
@@ -142,7 +150,23 @@ func (s *ReminderService) sendSingleReminder(
 		"recipient_name", recipientName,
 		"sent_by", sentBy)
 
-	signURL := fmt.Sprintf("%s/?doc=%s", s.baseURL, docID)
+	// Générer un token d'authentification pour ce lecteur
+	token, err := s.magicLinkService.CreateReminderAuthToken(ctx, recipientEmail, docID)
+	if err != nil {
+		logger.Logger.Error("Failed to create reminder auth token",
+			"doc_id", docID,
+			"recipient_email", recipientEmail,
+			"error", err.Error())
+		return fmt.Errorf("failed to create auth token: %w", err)
+	}
+
+	// Construire l'URL d'authentification qui redirigera vers la page de signature
+	authSignURL := fmt.Sprintf("%s/api/v1/auth/reminder-link/verify?token=%s", s.baseURL, token)
+
+	logger.Logger.Debug("Generated auth sign URL for reminder",
+		"doc_id", docID,
+		"recipient_email", recipientEmail,
+		"url", authSignURL)
 
 	log := &models.ReminderLog{
 		DocID:          docID,
@@ -153,7 +177,7 @@ func (s *ReminderService) sendSingleReminder(
 		Status:         "sent",
 	}
 
-	err := email.SendSignatureReminderEmail(ctx, s.emailSender, []string{recipientEmail}, locale, docID, docURL, signURL, recipientName)
+	err = email.SendSignatureReminderEmail(ctx, s.emailSender, []string{recipientEmail}, locale, docID, docURL, authSignURL, recipientName)
 	if err != nil {
 		log.Status = "failed"
 		errMsg := err.Error()

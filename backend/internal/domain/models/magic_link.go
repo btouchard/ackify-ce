@@ -16,6 +16,8 @@ type MagicLinkToken struct {
 	RedirectTo         string     `json:"redirect_to" db:"redirect_to"` // URL destination après auth (ex: /?doc=xxx)
 	CreatedByIP        string     `json:"created_by_ip" db:"created_by_ip"`
 	CreatedByUserAgent string     `json:"created_by_user_agent" db:"created_by_user_agent"`
+	Purpose            string     `json:"purpose" db:"purpose"`         // 'login' or 'reminder_auth'
+	DocID              *string    `json:"doc_id,omitempty" db:"doc_id"` // Document ID for reminder_auth (NULL for login)
 }
 
 // IsValid vérifie si le token est valide (non expiré, non utilisé)

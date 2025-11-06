@@ -114,28 +114,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		return nil, fmt.Errorf("failed to start webhook worker: %w", err)
 	}
 
-	// Initialize reminder service with async support
-	var reminderService *services.ReminderAsyncService
-	if emailQueueRepo != nil {
-		reminderService = services.NewReminderAsyncService(
-			expectedSignerRepo,
-			reminderRepo,
-			emailQueueRepo,
-			cfg.App.BaseURL,
-		)
-	}
-
-	// Initialize OAuth session cleanup worker
-	var sessionWorker *auth.SessionWorker
-	if oauthSessionRepo != nil {
-		workerConfig := auth.DefaultSessionWorkerConfig()
-		sessionWorker = auth.NewSessionWorker(oauthSessionRepo, workerConfig)
-		if err := sessionWorker.Start(); err != nil {
-			return nil, fmt.Errorf("failed to start OAuth session worker: %w", err)
-		}
-	}
-
-	// Initialize Magic Link service (only if enabled)
+	// Initialize Magic Link service (only if enabled) - MUST be before ReminderService
 	var magicLinkService *services.MagicLinkService
 	if cfg.Auth.MagicLinkEnabled && emailSender != nil {
 		magicLinkService = services.NewMagicLinkService(services.MagicLinkServiceConfig{
@@ -154,6 +133,28 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	if magicLinkService != nil {
 		magicLinkWorker = workers.NewMagicLinkCleanupWorker(magicLinkService, 1*time.Hour)
 		go magicLinkWorker.Start(ctx)
+	}
+
+	// Initialize reminder service with async support (needs magicLinkService)
+	var reminderService *services.ReminderAsyncService
+	if emailQueueRepo != nil && magicLinkService != nil {
+		reminderService = services.NewReminderAsyncService(
+			expectedSignerRepo,
+			reminderRepo,
+			emailQueueRepo,
+			magicLinkService,
+			cfg.App.BaseURL,
+		)
+	}
+
+	// Initialize OAuth session cleanup worker
+	var sessionWorker *auth.SessionWorker
+	if oauthSessionRepo != nil {
+		workerConfig := auth.DefaultSessionWorkerConfig()
+		sessionWorker = auth.NewSessionWorker(oauthSessionRepo, workerConfig)
+		if err := sessionWorker.Start(); err != nil {
+			return nil, fmt.Errorf("failed to start OAuth session worker: %w", err)
+		}
 	}
 
 	router := chi.NewRouter()
