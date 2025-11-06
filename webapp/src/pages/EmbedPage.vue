@@ -17,7 +17,7 @@
       <div v-if="documentData.signatures.length > 0">
         <div class="mb-6">
           <h2 class="text-xl font-bold text-foreground mb-2">
-            Document: {{ documentData.title }}
+            {{ t('embed.document') }} {{ documentData.title }}
           </h2>
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-4 text-sm text-muted-foreground">
@@ -25,7 +25,7 @@
                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                {{ documentData.signatures.length }} confirmation(s)
+                {{ t('embed.confirmationsCount', { count: documentData.signatures.length }) }}
               </span>
               <span v-if="documentData.metadata?.title">{{ documentData.metadata.title }}</span>
             </div>
@@ -38,7 +38,7 @@
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
               </svg>
-              Signer
+              {{ t('embed.sign') }}
             </a>
           </div>
         </div>
@@ -66,7 +66,7 @@
         <svg class="w-16 h-16 mx-auto mb-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <p class="text-sm text-muted-foreground mb-4">Aucune signature pour ce document</p>
+        <p class="text-sm text-muted-foreground mb-4">{{ t('embed.noSignatures') }}</p>
         <a
           :href="signUrl"
           target="_blank"
@@ -75,7 +75,7 @@
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
           </svg>
-          Signer ce document
+          {{ t('embed.signDocument') }}
         </a>
       </div>
 
@@ -86,7 +86,7 @@
           target="_blank"
           class="text-xs text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded"
         >
-          Powered by Ackify
+          {{ t('embed.poweredBy') }}
         </a>
       </div>
     </div>
@@ -96,12 +96,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { documentService } from '@/services/documents'
 import http, { extractError } from '@/services/http'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 usePageTitle('embed.title')
 
 // State
@@ -130,7 +132,7 @@ function formatDateCompact(dateString: string): string {
 
 async function loadDocument() {
   if (!docRef.value) {
-    error.value = 'ID de document manquant'
+    error.value = t('embed.missingDocId')
     loading.value = false
     return
   }

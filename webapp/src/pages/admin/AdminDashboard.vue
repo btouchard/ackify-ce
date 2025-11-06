@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { listDocuments, type Document } from '@/services/admin'
+import { documentService } from '@/services/documents'
 import { extractError } from '@/services/http'
 import { FileText, Users, CheckCircle, ExternalLink, Settings, Loader2, Plus, Search, Webhook } from 'lucide-vue-next'
 import Card from '@/components/ui/Card.vue'
@@ -102,8 +103,12 @@ async function createDocument() {
   try {
     creating.value = true
     error.value = ''
-    // Navigate to document detail page (will be created next)
-    await router.push({ name: 'admin-document', params: { docId: newDocId.value.trim() } })
+
+    // Use findOrCreateDocument to handle URL, path, or ID
+    const response = await documentService.findOrCreateDocument(newDocId.value.trim())
+
+    // Navigate to document detail page with the returned docId
+    await router.push({ name: 'admin-document', params: { docId: response.docId } })
   } catch (err) {
     error.value = extractError(err)
     console.error('Failed to create document:', err)
@@ -175,7 +180,6 @@ onMounted(() => {
                   id="newDocId"
                   type="text"
                   required
-                  pattern="[a-zA-Z0-9\-_]+"
                   :placeholder="t('admin.documents.idPlaceholder')"
                   class="w-full"
                 />
@@ -203,7 +207,6 @@ onMounted(() => {
                   id="newDocIdMobile"
                   type="text"
                   required
-                  pattern="[a-zA-Z0-9\-_]+"
                   :placeholder="t('admin.documents.idPlaceholder')"
                   class="flex-1"
                 />
@@ -213,7 +216,7 @@ onMounted(() => {
                 </Button>
               </div>
               <p class="text-xs text-muted-foreground">
-                {{ t('admin.documents.idHelper') }}
+                {{ t('admin.documents.idHelperShort') }}
               </p>
             </div>
           </form>
@@ -365,7 +368,7 @@ onMounted(() => {
                       >
                         <Button variant="ghost" size="sm">
                           <Settings :size="16" class="mr-1" />
-                          Gérer
+                          {{ t('admin.documents.manage') }}
                         </Button>
                       </router-link>
                     </TableCell>
@@ -417,7 +420,7 @@ onMounted(() => {
                     >
                       <Button variant="outline" size="sm" class="w-full">
                         <Settings :size="16" class="mr-2" />
-                        Gérer
+                        {{ t('admin.documents.manage') }}
                       </Button>
                     </router-link>
                   </div>
@@ -431,10 +434,10 @@ onMounted(() => {
                 <FileText :size="28" class="text-muted-foreground" />
               </div>
               <h3 class="mb-2 text-lg font-semibold text-foreground">
-                {{ searchQuery ? 'Aucun résultat' : 'Aucun document' }}
+                {{ searchQuery ? t('admin.documents.noResults') : t('admin.documents.noDocuments') }}
               </h3>
               <p class="text-sm text-muted-foreground">
-                {{ searchQuery ? 'Essayez une autre recherche' : 'Les documents apparaîtront ici une fois créés' }}
+                {{ searchQuery ? t('admin.documents.tryAnotherSearch') : t('admin.documents.willAppear') }}
               </p>
             </div>
 
@@ -448,10 +451,10 @@ onMounted(() => {
                   :disabled="currentPage === 1"
                   @click="prevPage"
                 >
-                  Précédent
+                  {{ t('common.previous') }}
                 </Button>
                 <span class="text-sm text-muted-foreground">
-                  Page {{ currentPage }}/{{ totalPages }}
+                  {{ t('admin.documents.pagination.page', { current: currentPage, total: totalPages }) }}
                 </span>
                 <Button
                   variant="outline"
@@ -459,14 +462,14 @@ onMounted(() => {
                   :disabled="currentPage >= totalPages"
                   @click="nextPage"
                 >
-                  Suivant
+                  {{ t('common.next') }}
                 </Button>
               </div>
 
               <!-- Desktop Pagination -->
               <div class="hidden md:flex items-center justify-between w-full">
                 <div class="text-sm text-muted-foreground">
-                  {{ totalDocuments }} document{{ totalDocuments > 1 ? 's' : '' }} au total
+                  {{ t('admin.documents.totalCount', totalDocuments) }}
                 </div>
                 <div class="flex items-center gap-2">
                   <Button
@@ -475,10 +478,10 @@ onMounted(() => {
                     :disabled="currentPage === 1"
                     @click="prevPage"
                   >
-                    Précédent
+                    {{ t('common.previous') }}
                   </Button>
                   <span class="text-sm text-muted-foreground">
-                    Page {{ currentPage }} sur {{ totalPages }}
+                    {{ t('admin.documents.pagination.pageOf', { current: currentPage, total: totalPages }) }}
                   </span>
                   <Button
                     variant="outline"
@@ -486,7 +489,7 @@ onMounted(() => {
                     :disabled="currentPage >= totalPages"
                     @click="nextPage"
                   >
-                    Suivant
+                    {{ t('common.next') }}
                   </Button>
                 </div>
               </div>

@@ -39,7 +39,7 @@
           d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
         />
       </svg>
-      <p class="mt-2 text-muted-foreground">{{ emptyMessage || 'Aucune confirmation trouvée' }}</p>
+      <p class="mt-2 text-muted-foreground">{{ emptyMessage || $t('signatureList.empty') }}</p>
     </div>
 
     <div v-else class="space-y-4">
@@ -75,7 +75,7 @@
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                Confirmé
+                {{ $t('signatureList.confirmed') }}
               </span>
               <span
                 v-else
@@ -95,28 +95,28 @@
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-                Document supprimé{{ signature.docDeletedAt ? ` le ${formatDate(signature.docDeletedAt)}` : '' }}
+                {{ $t('signatureList.documentDeleted') }}{{ signature.docDeletedAt ? ` ${formatDate(signature.docDeletedAt)}` : '' }}
               </span>
             </div>
 
             <div class="mt-2 space-y-1 text-sm text-muted-foreground">
               <p v-if="signature.docTitle">
-                <span class="font-medium">ID:</span> {{ signature.docId }}
+                <span class="font-medium">{{ $t('signatureList.fields.id') }}</span> {{ signature.docId }}
               </p>
               <p v-if="signature.docUrl">
-                <span class="font-medium">Document:</span>
+                <span class="font-medium">{{ $t('signatureList.fields.document') }}</span>
                 <a :href="signature.docUrl" target="_blank" rel="noopener noreferrer" class="text-primary hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded">
                   {{ signature.docUrl }}
                 </a>
               </p>
               <p v-if="showUserInfo">
-                <span class="font-medium">Lecteur:</span> {{ signature.userName || signature.userEmail }}
+                <span class="font-medium">{{ $t('signatureList.fields.reader') }}</span> {{ signature.userName || signature.userEmail }}
               </p>
               <p>
-                <span class="font-medium">Date:</span> {{ formatDate(signature.signedAt) }}
+                <span class="font-medium">{{ $t('signatureList.fields.date') }}</span> {{ formatDate(signature.signedAt) }}
               </p>
               <p v-if="signature.serviceInfo" class="flex items-center">
-                <span class="font-medium mr-2">Origine:</span>
+                <span class="font-medium mr-2">{{ $t('signatureList.fields.source') }}</span>
                 <span class="inline-flex items-center space-x-1">
                   <span v-html="signature.serviceInfo.icon"></span>
                   <span>{{ signature.serviceInfo.name }}</span>
@@ -127,20 +127,20 @@
             <div v-if="showDetails" class="mt-3 pt-3 border-t border-border">
               <details class="text-xs text-muted-foreground">
                 <summary class="cursor-pointer hover:text-foreground font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded">
-                  Détails de vérification
+                  {{ $t('signatureList.verificationDetails') }}
                 </summary>
                 <div class="mt-2 space-y-1 font-mono bg-muted p-2 rounded border border-border">
-                  <p><span class="font-semibold">ID:</span> {{ signature.id }}</p>
-                  <p><span class="font-semibold">Nonce:</span> {{ signature.nonce }}</p>
+                  <p><span class="font-semibold">{{ $t('signatureList.fields.id') }}</span> {{ signature.id }}</p>
+                  <p><span class="font-semibold">{{ $t('signatureList.fields.nonce') }}</span> {{ signature.nonce }}</p>
                   <p class="break-all">
-                    <span class="font-semibold">Hash:</span> {{ signature.payloadHash }}
+                    <span class="font-semibold">{{ $t('signatureList.fields.hash') }}</span> {{ signature.payloadHash }}
                   </p>
                   <p class="break-all">
-                    <span class="font-semibold">Confirmation:</span>
+                    <span class="font-semibold">{{ $t('signatureList.confirmation') }}</span>
                     {{ signature.signature.substring(0, 64) }}...
                   </p>
                   <p v-if="signature.prevHash" class="break-all">
-                    <span class="font-semibold">Hash précédent:</span> {{ signature.prevHash }}
+                    <span class="font-semibold">{{ $t('signatureList.previousHash') }}</span> {{ signature.prevHash }}
                   </p>
                 </div>
               </details>
@@ -152,7 +152,7 @@
               @click="$emit('view-details', signature)"
               class="text-primary hover:text-primary/80 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded px-2 py-1"
             >
-              Voir détails
+              {{ $t('signatureList.viewDetails') }}
             </button>
           </div>
         </div>

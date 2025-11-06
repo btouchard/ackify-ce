@@ -177,7 +177,7 @@ async function saveMetadata() {
     success.value = ''
     showMetadataWarningModal.value = false
     await updateDocumentMetadata(docId.value, metadataForm.value)
-    success.value = 'Métadonnées enregistrées avec succès'
+    success.value = t('admin.documentDetail.metadataSaved')
     await loadDocumentStatus()
     setTimeout(() => (success.value = ''), 3000)
   } catch (err) {
@@ -216,7 +216,7 @@ async function addSigners() {
 
     showAddSignersModal.value = false
     signersEmails.value = ''
-    success.value = `${addedCount} lecteur(s) ajouté(s) avec succès`
+    success.value = t('admin.documentDetail.signersAdded', { count: addedCount })
     await loadDocumentStatus()
     setTimeout(() => (success.value = ''), 3000)
   } catch (err) {
@@ -240,7 +240,7 @@ async function removeSigner() {
     error.value = ''
     success.value = ''
     await removeExpectedSigner(docId.value, email)
-    success.value = `${email} retiré avec succès`
+    success.value = t('admin.documentDetail.signerRemoved', { email })
     showRemoveSignerModal.value = false
     signerToRemove.value = ''
     await loadDocumentStatus()
@@ -259,8 +259,8 @@ function cancelRemoveSigner() {
 function confirmSendReminders() {
   remindersMessage.value =
     sendMode.value === 'all'
-      ? `Envoyer des relances à ${reminderStats.value?.pendingCount || 0} lecteur(s) en attente de confirmation ?`
-      : `Envoyer des relances à ${selectedEmails.value.length} lecteur(s) sélectionné(s) ?`
+      ? t('admin.documentDetail.confirmSendReminders', { count: reminderStats.value?.pendingCount || 0 })
+      : t('admin.documentDetail.confirmSendRemindersSelected', { count: selectedEmails.value.length })
   showSendRemindersModal.value = true
 }
 
@@ -288,12 +288,12 @@ async function sendRemindersAction() {
     if (response.data.result) {
       const result = response.data.result
       if (result.failed > 0) {
-        success.value = `${result.successfullySent} relance(s) envoyée(s), ${result.failed} échec(s)`
+        success.value = t('admin.documentDetail.remindersSentPartial', { sent: result.successfullySent, failed: result.failed })
       } else {
-        success.value = `${result.successfullySent} relance(s) envoyée(s) avec succès`
+        success.value = t('admin.documentDetail.remindersSentSuccess', { count: result.successfullySent })
       }
     } else {
-      success.value = 'Relances envoyées avec succès'
+      success.value = t('admin.documentDetail.remindersSentGeneric')
     }
 
     await loadDocumentStatus()
@@ -312,7 +312,7 @@ function cancelSendReminders() {
 
 function copyToClipboard(text: string) {
   navigator.clipboard.writeText(text)
-  success.value = 'Copié dans le presse-papiers'
+  success.value = t('admin.documentDetail.copiedToClipboard')
   setTimeout(() => (success.value = ''), 2000)
 }
 
@@ -370,16 +370,16 @@ onMounted(() => {
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center space-x-3 mb-2">
-          <Button variant="ghost" size="icon" @click="router.push('/admin')" aria-label="Retour">
+          <Button variant="ghost" size="icon" @click="router.push('/admin')" :aria-label="t('admin.documentDetail.back')">
             <ArrowLeft :size="20" />
           </Button>
           <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Document {{ docId }}
+            {{ t('admin.documentDetail.title') }} {{ docId }}
           </h1>
         </div>
         <div class="flex items-center gap-3 ml-14">
           <p class="text-sm text-muted-foreground font-mono">{{ shareLink }}</p>
-          <Button @click="copyToClipboard(shareLink)" variant="ghost" size="icon" aria-label="Copier le lien">
+          <Button @click="copyToClipboard(shareLink)" variant="ghost" size="icon" :aria-label="t('signatureList.copy')">
             <Copy :size="16" />
           </Button>
         </div>
@@ -397,7 +397,7 @@ onMounted(() => {
       <!-- Loading -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
         <Loader2 :size="48" class="animate-spin text-primary" />
-        <p class="mt-4 text-muted-foreground">Chargement...</p>
+        <p class="mt-4 text-muted-foreground">{{ t('common.loading') }}</p>
       </div>
 
       <!-- Content -->
@@ -411,7 +411,7 @@ onMounted(() => {
                   <Users :size="24" class="text-blue-600" />
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-muted-foreground">Attendus</p>
+                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.expected') }}</p>
                   <p class="text-2xl font-bold text-foreground">{{ stats.expectedCount }}</p>
                 </div>
               </div>
@@ -425,7 +425,7 @@ onMounted(() => {
                   <CheckCircle :size="24" class="text-green-600" />
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-muted-foreground">Confirmés</p>
+                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.signed') }}</p>
                   <p class="text-2xl font-bold text-foreground">{{ stats.signedCount }}</p>
                 </div>
               </div>
@@ -439,7 +439,7 @@ onMounted(() => {
                   <Clock :size="24" class="text-orange-600" />
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-muted-foreground">En attente</p>
+                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.pending') }}</p>
                   <p class="text-2xl font-bold text-foreground">{{ stats.pendingCount }}</p>
                 </div>
               </div>
@@ -453,7 +453,7 @@ onMounted(() => {
                   <Shield :size="24" class="text-purple-600" />
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-muted-foreground">Complétion</p>
+                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.completion') }}</p>
                   <p class="text-2xl font-bold text-foreground">{{ Math.round(stats.completionRate) }}%</p>
                 </div>
               </div>
@@ -465,8 +465,8 @@ onMounted(() => {
         <Card class="clay-card">
           <CardHeader>
             <div>
-              <CardTitle>📄 Informations sur le document</CardTitle>
-              <CardDescription>Métadonnées et checksum du document</CardDescription>
+              <CardTitle>{{ t('admin.documentDetail.metadata') }}</CardTitle>
+              <CardDescription>{{ t('admin.documentDetail.metadataDescription') }}</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
@@ -474,23 +474,23 @@ onMounted(() => {
               <!-- Titre et URL côte à côte -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium mb-2">Titre</label>
-                  <Input v-model="metadataForm.title" placeholder="Politique de sécurité 2025" />
+                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.titleLabel') }}</label>
+                  <Input v-model="metadataForm.title" :placeholder="t('admin.documentDetail.titlePlaceholder')" />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium mb-2">URL</label>
-                  <Input v-model="metadataForm.url" type="url" placeholder="https://example.com/doc.pdf" />
+                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.urlLabel') }}</label>
+                  <Input v-model="metadataForm.url" type="url" :placeholder="t('admin.documentDetail.urlPlaceholder')" />
                 </div>
               </div>
 
               <!-- Checksum et Algorithme côte à côte -->
               <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
                 <div>
-                  <label class="block text-sm font-medium mb-2">Checksum</label>
-                  <Input v-model="metadataForm.checksum" placeholder="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" class="font-mono text-sm" />
+                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.checksumLabel') }}</label>
+                  <Input v-model="metadataForm.checksum" :placeholder="t('admin.documentDetail.checksumPlaceholder')" class="font-mono text-sm" />
                 </div>
                 <div class="md:min-w-[140px]">
-                  <label class="block text-sm font-medium mb-2">Algorithme</label>
+                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.algorithmLabel') }}</label>
                   <select v-model="metadataForm.checksumAlgorithm" class="flex h-10 w-full rounded-md clay-input px-3 py-2 text-sm">
                     <option value="SHA-256">SHA-256</option>
                     <option value="SHA-512">SHA-512</option>
@@ -500,15 +500,15 @@ onMounted(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium mb-2">Description</label>
-                <Textarea v-model="metadataForm.description" :rows="4" placeholder="Description du document..." />
+                <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.descriptionLabel') }}</label>
+                <Textarea v-model="metadataForm.description" :rows="4" :placeholder="t('admin.documentDetail.descriptionPlaceholder')" />
               </div>
               <div v-if="documentMetadata" class="text-xs text-muted-foreground pt-2 border-t">
-                Créé par {{ documentMetadata.createdBy }} le {{ formatDate(documentMetadata.createdAt) }}
+                {{ t('admin.documentDetail.createdBy', { by: documentMetadata.createdBy, date: formatDate(documentMetadata.createdAt) }) }}
               </div>
               <div class="flex justify-end">
                 <Button type="submit" :disabled="savingMetadata">
-                  {{ savingMetadata ? 'Enregistrement...' : 'Enregistrer' }}
+                  {{ savingMetadata ? t('admin.documentDetail.saving') : t('common.save') }}
                 </Button>
               </div>
             </form>
@@ -520,12 +520,12 @@ onMounted(() => {
           <CardHeader>
             <div class="flex items-center justify-between">
               <div>
-                <CardTitle>✓ Lecteurs attendus</CardTitle>
-                <CardDescription v-if="stats">{{ stats.signedCount }} / {{ stats.expectedCount }} confirmés</CardDescription>
+                <CardTitle>{{ t('admin.documentDetail.readers') }}</CardTitle>
+                <CardDescription v-if="stats">{{ stats.signedCount }} / {{ stats.expectedCount }} {{ t('admin.dashboard.stats.signed').toLowerCase() }}</CardDescription>
               </div>
               <Button @click="showAddSignersModal = true" size="sm">
                 <Plus :size="16" class="mr-2" />
-                Ajouter
+                {{ t('admin.documentDetail.addButton') }}
               </Button>
             </div>
           </CardHeader>
@@ -539,10 +539,10 @@ onMounted(() => {
                       <input type="checkbox" class="rounded"
                              @change="(e: any) => selectedEmails = e.target.checked ? expectedSigners.filter(s => !s.hasSigned).map(s => s.email) : []" />
                     </TableHead>
-                    <TableHead>Lecteur</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Confirmé le</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{{ t('admin.documentDetail.reader') }}</TableHead>
+                    <TableHead>{{ t('admin.documentDetail.status') }}</TableHead>
+                    <TableHead>{{ t('admin.documentDetail.confirmedOn') }}</TableHead>
+                    <TableHead>{{ t('common.actions') }}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -560,7 +560,7 @@ onMounted(() => {
                     </TableCell>
                     <TableCell>
                       <Badge :variant="signer.hasSigned ? 'default' : 'secondary'">
-                        {{ signer.hasSigned ? '✓ Confirmé' : '⏳ En attente' }}
+                        {{ signer.hasSigned ? t('admin.documentDetail.statusConfirmed') : t('admin.documentDetail.statusPending') }}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -577,24 +577,24 @@ onMounted(() => {
             </div>
             <div v-else class="text-center py-8 text-muted-foreground">
               <Users :size="48" class="mx-auto mb-4 opacity-50" />
-              <p>Aucun lecteur attendu</p>
+              <p>{{ t('admin.documentDetail.noExpectedSigners') }}</p>
             </div>
 
             <!-- Confirmations complémentaires (toujours visible si présents) -->
             <div v-if="unexpectedSignatures.length > 0" class="mt-8 pt-8 border-t border-border">
               <h3 class="text-lg font-semibold mb-4 flex items-center">
                 <span class="mr-2">⚠</span>
-                Confirmations de lecture complémentaires
+                {{ t('admin.documentDetail.unexpectedSignatures') }}
                 <Badge variant="secondary" class="ml-2">{{ unexpectedSignatures.length }}</Badge>
               </h3>
               <p class="text-sm text-muted-foreground mb-4">
-                Utilisateurs ayant confirmé mais non présents dans la liste des lecteurs attendus
+                {{ t('admin.documentDetail.unexpectedDescription') }}
               </p>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Utilisateur</TableHead>
-                    <TableHead>Confirmé le</TableHead>
+                    <TableHead>{{ t('admin.documentDetail.user') }}</TableHead>
+                    <TableHead>{{ t('admin.documentDetail.confirmedOn') }}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -616,22 +616,22 @@ onMounted(() => {
         <!-- Email Reminders -->
         <Card v-if="reminderStats && stats && stats.expectedCount > 0" class="clay-card">
           <CardHeader>
-            <CardTitle>📧 Relances par email</CardTitle>
-            <CardDescription>Envoyer des rappels aux lecteurs en attente de confirmation</CardDescription>
+            <CardTitle>{{ t('admin.documentDetail.reminders') }}</CardTitle>
+            <CardDescription>{{ t('admin.documentDetail.remindersDescription') }}</CardDescription>
           </CardHeader>
           <CardContent class="space-y-6">
             <!-- Stats -->
             <div class="grid gap-4 sm:grid-cols-3">
               <div class="bg-muted rounded-lg p-4">
-                <p class="text-sm text-muted-foreground">Relances envoyées</p>
+                <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.remindersSent') }}</p>
                 <p class="text-2xl font-bold">{{ reminderStats.totalSent }}</p>
               </div>
               <div class="bg-muted rounded-lg p-4">
-                <p class="text-sm text-muted-foreground">À relancer</p>
+                <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.toRemind') }}</p>
                 <p class="text-2xl font-bold">{{ reminderStats.pendingCount }}</p>
               </div>
               <div v-if="reminderStats.lastSentAt" class="bg-muted rounded-lg p-4">
-                <p class="text-sm text-muted-foreground">Dernière relance</p>
+                <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.lastReminder') }}</p>
                 <p class="text-sm font-bold">{{ formatDate(reminderStats.lastSentAt) }}</p>
               </div>
             </div>
@@ -641,20 +641,20 @@ onMounted(() => {
               <div class="space-y-2">
                 <label class="flex items-center space-x-2">
                   <input type="radio" v-model="sendMode" value="all" class="rounded-full" />
-                  <span>Envoyer à tous les lecteurs en attente ({{ reminderStats.pendingCount }})</span>
+                  <span>{{ t('admin.documentDetail.sendToAll', { count: reminderStats.pendingCount }) }}</span>
                 </label>
                 <label class="flex items-center space-x-2">
                   <input type="radio" v-model="sendMode" value="selected" class="rounded-full" />
-                  <span>Envoyer uniquement aux sélectionnés ({{ selectedEmails.length }})</span>
+                  <span>{{ t('admin.documentDetail.sendToSelected', { count: selectedEmails.length }) }}</span>
                 </label>
               </div>
               <Button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)">
                 <Mail :size="16" class="mr-2" />
-                {{ sendingReminders ? 'Envoi...' : 'Envoyer les relances' }}
+                {{ sendingReminders ? t('admin.documentDetail.sending') : t('admin.documentDetail.sendReminders') }}
               </Button>
             </div>
             <div v-else class="text-center py-4 text-muted-foreground">
-              ✓ Tous les lecteurs attendus ont été contactés ou ont confirmé
+              {{ t('admin.documentDetail.allContacted') }}
             </div>
           </CardContent>
         </Card>
@@ -662,16 +662,15 @@ onMounted(() => {
         <!-- Danger Zone -->
         <Card class="clay-card border-destructive/50">
           <CardHeader>
-            <CardTitle class="text-destructive">⚠️ Zone de danger</CardTitle>
-            <CardDescription>Actions irréversibles sur ce document</CardDescription>
+            <CardTitle class="text-destructive">{{ t('admin.documentDetail.dangerZone') }}</CardTitle>
+            <CardDescription>{{ t('admin.documentDetail.dangerZoneDescription') }}</CardDescription>
           </CardHeader>
           <CardContent>
             <div class="flex items-center justify-between p-4 bg-destructive/5 rounded-lg">
               <div class="flex-1">
-                <h3 class="font-semibold text-foreground mb-1">Supprimer ce document</h3>
+                <h3 class="font-semibold text-foreground mb-1">{{ t('admin.documentDetail.deleteDocument') }}</h3>
                 <p class="text-sm text-muted-foreground">
-                  Cette action supprimera définitivement le document, ses métadonnées, les lecteurs attendus et toutes les confirmations associées.<br>
-                  Cette action est irréversible.
+                  {{ t('admin.documentDetail.deleteDocumentDescription') }}
                 </p>
               </div>
               <Button
@@ -680,7 +679,7 @@ onMounted(() => {
                 class="ml-4"
               >
                 <Trash2 :size="16" class="mr-2" />
-                Supprimer
+                {{ t('common.delete') }}
               </Button>
             </div>
           </CardContent>
@@ -696,7 +695,7 @@ onMounted(() => {
       <Card class="max-w-2xl w-full">
         <CardHeader>
           <div class="flex items-center justify-between">
-            <CardTitle>Ajouter des lecteurs attendus</CardTitle>
+            <CardTitle>{{ t('admin.documentDetail.addSigners') }}</CardTitle>
             <Button variant="ghost" size="icon" @click="showAddSignersModal = false">
               <X :size="20" />
             </Button>
@@ -705,17 +704,17 @@ onMounted(() => {
         <CardContent>
           <form @submit.prevent="addSigners" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Emails (un par ligne)</label>
+              <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.emailsLabel') }}</label>
               <Textarea v-model="signersEmails" :rows="8"
-                        placeholder="Marie Dupont <marie.dupont@example.com>&#10;jean.martin@example.com&#10;Sophie Bernard <sophie@example.com>" />
+                        :placeholder="t('admin.documentDetail.emailsPlaceholder')" />
               <p class="text-xs text-muted-foreground mt-2">
-                Formats acceptés : "Nom Prénom &lt;email@example.com&gt;" ou "email@example.com"
+                {{ t('admin.documentDetail.emailsHelper') }}
               </p>
             </div>
             <div class="flex justify-end space-x-3">
-              <Button type="button" variant="outline" @click="showAddSignersModal = false">Annuler</Button>
+              <Button type="button" variant="outline" @click="showAddSignersModal = false">{{ t('common.cancel') }}</Button>
               <Button type="submit" :disabled="addingSigners || !signersEmails.trim()">
-                {{ addingSigners ? 'Ajout...' : 'Ajouter' }}
+                {{ addingSigners ? t('admin.documentDetail.adding') : t('admin.documentDetail.addButton') }}
               </Button>
             </div>
           </form>
@@ -728,7 +727,7 @@ onMounted(() => {
       <Card class="max-w-md w-full border-destructive">
         <CardHeader>
           <div class="flex items-center justify-between">
-            <CardTitle class="text-destructive">⚠️ Confirmer la suppression</CardTitle>
+            <CardTitle class="text-destructive">{{ t('admin.documentDetail.deleteConfirmTitle') }}</CardTitle>
             <Button variant="ghost" size="icon" @click="showDeleteConfirmModal = false">
               <X :size="20" />
             </Button>
@@ -738,28 +737,26 @@ onMounted(() => {
           <div class="space-y-4">
             <Alert variant="destructive" class="border-destructive">
               <AlertDescription>
-                <p class="font-semibold mb-2">Cette action est irréversible !</p>
+                <p class="font-semibold mb-2">{{ t('admin.documentDetail.deleteWarning') }}</p>
                 <p class="text-sm">
-                  La suppression de ce document entraînera la perte définitive de :
+                  {{ t('admin.documentDetail.deleteWillRemove') }}
                 </p>
                 <ul class="text-sm list-disc list-inside mt-2 space-y-1">
-                  <li>Toutes les métadonnées du document</li>
-                  <li>La liste des lecteurs attendus</li>
-                  <li>Toutes les confirmations cryptographiques</li>
-                  <li>L'historique des relances</li>
+                  <li>{{ t('admin.documentDetail.deleteItem1') }}</li>
+                  <li>{{ t('admin.documentDetail.deleteItem2') }}</li>
+                  <li>{{ t('admin.documentDetail.deleteItem3') }}</li>
+                  <li>{{ t('admin.documentDetail.deleteItem4') }}</li>
                 </ul>
               </AlertDescription>
             </Alert>
 
             <div class="bg-muted p-3 rounded-lg">
-              <p class="text-sm font-mono text-muted-foreground">
-                Document ID: <span class="text-foreground font-semibold">{{ docId }}</span>
-              </p>
+              <p class="text-sm font-mono text-muted-foreground" v-html="t('admin.documentDetail.documentId') + ' ' + docId"></p>
             </div>
 
             <div class="flex justify-end space-x-3 pt-4">
               <Button type="button" variant="outline" @click="showDeleteConfirmModal = false">
-                Annuler
+                {{ t('common.cancel') }}
               </Button>
               <Button
                 @click="handleDeleteDocument"
@@ -768,7 +765,7 @@ onMounted(() => {
               >
                 <Trash2 v-if="!deletingDocument" :size="16" class="mr-2" />
                 <Loader2 v-else :size="16" class="mr-2 animate-spin" />
-                {{ deletingDocument ? 'Suppression...' : 'Supprimer définitivement' }}
+                {{ deletingDocument ? t('admin.documentDetail.deleting') : t('admin.documentDetail.deleteConfirmButton') }}
               </Button>
             </div>
           </div>
@@ -838,10 +835,10 @@ onMounted(() => {
     <!-- Remove Signer Confirmation Dialog -->
     <ConfirmDialog
       v-if="showRemoveSignerModal"
-      title="⚠️ Retirer le lecteur attendu"
-      :message="`Retirer ${signerToRemove} de la liste des lecteurs attendus ?`"
-      confirm-text="Retirer"
-      cancel-text="Annuler"
+      :title="t('admin.documentDetail.removeSignerTitle')"
+      :message="t('admin.documentDetail.removeSignerMessage', { email: signerToRemove })"
+      :confirm-text="t('common.delete')"
+      :cancel-text="t('common.cancel')"
       variant="warning"
       @confirm="removeSigner"
       @cancel="cancelRemoveSigner"
@@ -850,10 +847,10 @@ onMounted(() => {
     <!-- Send Reminders Confirmation Dialog -->
     <ConfirmDialog
       v-if="showSendRemindersModal"
-      title="📧 Envoyer des relances"
+      :title="t('admin.documentDetail.confirmSendRemindersTitle')"
       :message="remindersMessage"
-      confirm-text="Envoyer"
-      cancel-text="Annuler"
+      :confirm-text="t('common.confirm')"
+      :cancel-text="t('common.cancel')"
       variant="default"
       :loading="sendingReminders"
       @confirm="sendRemindersAction"

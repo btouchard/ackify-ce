@@ -64,7 +64,7 @@ const handleSubmit = async () => {
       <Input
         v-model="documentUrl"
         type="text"
-        placeholder="URL, PATH ou RÉFÉRENCE du document à lire (optionnel)"
+        :placeholder="$t('admin.documentForm.placeholder')"
         class="flex-1 h-11"
         :disabled="isSubmitting"
         @keyup.enter="handleSubmit"
@@ -75,8 +75,8 @@ const handleSubmit = async () => {
         class="group whitespace-nowrap"
         :disabled="isSubmitting"
       >
-        <span v-if="isSubmitting">Chargement...</span>
-        <span v-else>Commencer</span>
+        <span v-if="isSubmitting">{{ $t('admin.documentForm.submitting') }}</span>
+        <span v-else>{{ $t('admin.documentForm.submit') }}</span>
         <ArrowRight v-if="!isSubmitting" :size="16" class="ml-2 transition-transform group-hover:translate-x-1" />
       </Button>
     </div>

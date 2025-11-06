@@ -44,7 +44,7 @@
           d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
         />
       </svg>
-      {{ loading ? 'Confirmation en cours...' : 'Confirmer la lecture' }}
+      {{ loading ? $t('signButton.signing') : $t('signButton.confirmAction') }}
     </button>
 
     <div v-else class="signed-status">
@@ -63,10 +63,10 @@
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <span class="font-semibold">Lecture confirmée</span>
+        <span class="font-semibold">{{ $t('signButton.confirmed') }}</span>
       </div>
       <p v-if="signedAt" class="mt-2 text-sm text-muted-foreground text-center">
-        Le {{ formatDate(signedAt) }}
+        {{ $t('signButton.on') }} {{ formatDate(signedAt) }}
       </p>
     </div>
 
@@ -78,6 +78,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSignatureStore } from '@/stores/signatures'
 import { useAuthStore } from '@/stores/auth'
 
@@ -100,6 +101,7 @@ const emit = defineEmits<{
   error: [error: string]
 }>()
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const signatureStore = useSignatureStore()
 const loading = ref(false)
@@ -146,7 +148,7 @@ const buttonClasses = computed(() => {
 
 async function handleSign() {
   if (!props.docId) {
-    error.value = 'Document ID manquant'
+    error.value = t('signButton.error.missingDocId')
     return
   }
 
@@ -164,7 +166,7 @@ async function handleSign() {
     try {
       await authStore.startOAuthLogin(window.location.pathname + window.location.search)
     } catch (err: any) {
-      error.value = 'Impossible de démarrer l\'authentification'
+      error.value = t('signButton.error.authFailed')
       emit('error', error.value)
     }
     return

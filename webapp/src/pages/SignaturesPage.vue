@@ -106,7 +106,7 @@ onMounted(() => {
         </div>
         <div class="flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
           <Clock :size="18" />
-          <span class="text-sm font-bold">{{ lastSignatureDate || 'N/A' }}</span>
+          <span class="text-sm font-bold">{{ lastSignatureDate || t('signatures.stats.notAvailable') }}</span>
           <span class="text-xs whitespace-nowrap">{{ t('signatures.stats.last') }}</span>
         </div>
       </div>
@@ -155,7 +155,7 @@ onMounted(() => {
               <div class="flex-1">
                 <p class="text-sm font-medium text-muted-foreground">{{ t('signatures.stats.lastConfirmation') }}</p>
                 <p class="text-lg font-semibold text-foreground">
-                  {{ lastSignatureDate || 'N/A' }}
+                  {{ lastSignatureDate || t('signatures.stats.notAvailable') }}
                 </p>
               </div>
             </div>
@@ -212,7 +212,7 @@ onMounted(() => {
             >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p class="mt-2 text-muted-foreground">Vous n'avez pas encore confirmé la lecture de documents</p>
+            <p class="mt-2 text-muted-foreground">{{ t('signatures.empty.alternative') }}</p>
           </div>
 
           <div v-else class="space-y-4">
@@ -231,7 +231,7 @@ onMounted(() => {
             <div v-if="activeSignatures.length > 0 && deletedSignatures.length > 0" class="py-4">
               <hr class="border-border" />
               <p class="text-center text-sm text-muted-foreground mt-4 mb-2">
-                Documents supprimés
+                {{ t('signatures.deletedDocuments') }}
               </p>
             </div>
 

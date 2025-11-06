@@ -7,8 +7,8 @@
     "myConfirmations": "My confirmations",
     "admin": "Admin",
     "administration": "Administration",
-    "login": "Log in",
-    "logout": "Log out",
+    "login": "Sign in",
+    "logout": "Sign out",
     "mobileMenu": "Mobile menu",
     "mainNavigation": "Main navigation"
   },
@@ -34,19 +34,19 @@
     },
     "oauth": {
       "title": "Sign in with OAuth",
-      "description": "Use your entreprise account",
+      "description": "Use your company account",
       "button": "Continue with OAuth",
-      "error": "OAuth login failed"
+      "error": "OAuth sign in failed"
     },
     "magiclink": {
-      "title": "Sign in with Email",
+      "title": "Sign in by Email",
       "description": "We'll send you a magic link",
       "email_label": "Email address",
       "email_placeholder": "you{'@'}example.com",
-      "button": "Send Magic Link",
+      "button": "Send magic link",
       "sent": {
         "title": "Check your email",
-        "message": "We sent you a magic link. Click on it to sign in.",
+        "message": "We've sent you a magic link. Click on it to sign in.",
         "expire": "The link expires in 15 minutes."
       },
       "error_invalid_email": "Please enter a valid email address",
@@ -67,13 +67,13 @@
     },
     "success": {
       "title": "Reading confirmed successfully!",
-      "description": "Your confirmation has been recorded cryptographically and securely."
+      "description": "Your confirmation has been cryptographically and securely recorded."
     },
     "error": {
       "title": "An error occurred",
-      "authRequired": "You must be logged in to create a document.",
+      "authRequired": "You must be signed in to create a document.",
       "loadFailed": "Failed to load document",
-      "loginButton": "Log in"
+      "loginButton": "Sign in"
     },
     "document": {
       "title": "Document to confirm",
@@ -83,7 +83,7 @@
       "description": "By confirming the reading of this document, you certify that you have read its content and agree to validate it cryptographically and non-repudiably.",
       "recorded": "Your confirmation will be recorded with the following information:",
       "email": "Your email address",
-      "timestamp": "Precise timestamp of the confirmation",
+      "timestamp": "Precise confirmation timestamp",
       "signature": "Ed25519 cryptographic confirmation",
       "hash": "SHA-256 hash of the content"
     },
@@ -98,14 +98,14 @@
     },
     "howItWorks": {
       "title": "How does it work?",
-      "subtitle": "Ackify allows you to cryptographically prove that you have read a document",
+      "subtitle": "Ackify allows you to cryptographically prove that you've read a document",
       "step1": {
         "title": "1. Access the document",
         "description": "Add {code} to this page's address"
       },
       "step2": {
         "title": "2. Authenticate",
-        "description": "Log in via OAuth2 to confirm your identity"
+        "description": "Sign in via OAuth2 to confirm your identity"
       },
       "step3": {
         "title": "3. Confirm reading",
@@ -121,7 +121,7 @@
           "description": "Two-click confirmation with immediate cryptographic verification"
         },
         "timestamp": {
-          "title": "Precise timestamp",
+          "title": "Precise timestamping",
           "description": "Each confirmation is timestamped and chained to ensure integrity"
         }
       }
@@ -129,15 +129,20 @@
   },
   "signButton": {
     "confirm": "Confirm my reading",
+    "confirmAction": "Confirm reading",
     "alreadySigned": "Already confirmed",
-    "mustLogin": "Log in to confirm",
+    "confirmed": "Reading confirmed",
+    "mustLogin": "Sign in to confirm",
     "signing": "Confirming...",
     "verified": "Verified",
+    "on": "On",
     "error": {
       "title": "Confirmation failed",
-      "notAuthenticated": "You must be logged in to confirm a document.",
+      "notAuthenticated": "You must be signed in to confirm a document.",
       "alreadySigned": "You have already confirmed this document.",
-      "generic": "An error occurred during confirmation. Please try again."
+      "generic": "An error occurred during confirmation. Please try again.",
+      "missingDocId": "Document ID missing",
+      "authFailed": "Unable to start authentication"
     }
   },
   "signatureList": {
@@ -145,16 +150,31 @@
     "email": "Email",
     "date": "Date",
     "signature": "Signature",
+    "confirmation": "Confirmation:",
     "hash": "Hash",
     "nonce": "Nonce",
     "verificationStatus": "Verification status",
     "verified": "Verified",
+    "confirmed": "Confirmed",
     "notVerified": "Not verified",
     "showDetails": "Show details",
     "hideDetails": "Hide details",
+    "viewDetails": "View details",
+    "verificationDetails": "Verification details",
     "copy": "Copy",
     "copied": "Copied!",
-    "previousHash": "Previous hash"
+    "previousHash": "Previous hash:",
+    "empty": "No confirmations found",
+    "documentDeleted": "Document deleted",
+    "fields": {
+      "id": "ID:",
+      "document": "Document:",
+      "reader": "Reader:",
+      "date": "Date:",
+      "source": "Source:",
+      "nonce": "Nonce:",
+      "hash": "Hash:"
+    }
   },
   "signatures": {
     "title": "My reading confirmations",
@@ -162,20 +182,23 @@
     "loading": "Loading your confirmations...",
     "empty": {
       "title": "No confirmations yet",
-      "description": "You haven't confirmed any documents yet. Start by confirming a document to see it appear here."
+      "description": "You haven't confirmed any documents yet. Start by confirming a document to see it appear here.",
+      "alternative": "You haven't confirmed reading any documents yet"
     },
     "count": "{count} confirmation | {count} confirmations",
     "results": "{count} result | {count} results",
     "document": "Document",
     "signedAt": "Confirmed on",
     "viewDetails": "View details",
+    "deletedDocuments": "Deleted documents",
     "stats": {
       "total": "Total",
       "totalConfirmations": "Total confirmations",
       "unique": "Unique",
       "uniqueDocuments": "Unique documents",
       "last": "Last",
-      "lastConfirmation": "Last confirmation"
+      "lastConfirmation": "Last confirmation",
+      "notAvailable": "N/A"
     },
     "allConfirmations": "All my confirmations",
     "about": {
@@ -197,6 +220,7 @@
       "totalDocuments": "Total documents",
       "totalSignatures": "Total confirmations",
       "recentActivity": "Recent activity",
+      "backToDashboard": "Back to dashboard",
       "stats": {
         "documents": "Documents",
         "readers": "Readers",
@@ -212,11 +236,12 @@
       "new": "Create new document",
       "newDescription": "Prepare a document reference to track reading confirmations",
       "search": "Search...",
-      "searchPlaceholder": "Search by ID, title, or URL...",
+      "searchPlaceholder": "Search by ID, title or URL...",
       "id": "Document ID",
-      "idLabel": "Document ID",
-      "idHelper": "Letters, numbers, dashes and underscores only",
-      "idPlaceholder": "e.g: security-policy-2025",
+      "idLabel": "Document",
+      "idHelper": "Accepts URLs, file paths or simple identifiers",
+      "idHelperShort": "Accepts URLs, paths or identifiers",
+      "idPlaceholder": "URL, PATH or document ID",
       "signatures": "Confirmations",
       "created": "Created",
       "createdOn": "Created on",
@@ -228,22 +253,34 @@
       "manage": "Manage",
       "edit": "Edit",
       "delete": "Delete",
-      "empty": "No documents found"
+      "empty": "No documents found",
+      "noResults": "No results",
+      "noDocuments": "No documents",
+      "tryAnotherSearch": "Try another search",
+      "willAppear": "Documents will appear here once created",
+      "totalCount": "{count} document in total | {count} documents in total",
+      "pagination": {
+        "page": "Page {current}/{total}",
+        "pageOf": "Page {current} of {total}"
+      }
     },
     "webhooks": {
       "title": "Webhooks",
-      "subtitle": "Notify third-party apps of events",
+      "subtitle": "Configure notifications to third-party applications",
       "manage": "Manage webhooks",
       "new": "New webhook",
       "edit": "Edit",
       "delete": "Delete",
       "enable": "Enable",
       "disable": "Disable",
-      "status": { "enabled": "Enabled", "disabled": "Disabled" },
+      "status": {
+        "enabled": "Active",
+        "disabled": "Inactive"
+      },
       "confirmDelete": "Delete this webhook?",
       "empty": "No webhooks",
       "listTitle": "Webhooks list",
-      "listSubtitle": "A webhook can subscribe to several events",
+      "listSubtitle": "A webhook can listen to multiple events",
       "columns": {
         "title": "Name",
         "url": "URL",
@@ -253,17 +290,17 @@
       },
       "form": {
         "title": "Webhook settings",
-        "subtitle": "Provide URL, secret and events",
+        "subtitle": "Fill in the URL, secret and events",
         "nameLabel": "Webhook name",
-        "namePlaceholder": "CRM webhook",
-        "urlLabel": "Target URL",
-        "secretLabel": "HMAC secret",
+        "namePlaceholder": "CRM Webhook",
+        "urlLabel": "Destination URL",
+        "secretLabel": "HMAC Secret",
         "secretPlaceholder": "Enter a secret (required)",
-        "secretKeep": "Leave empty to keep current",
-        "eventsLabel": "Events to subscribe",
+        "secretKeep": "Leave empty to keep",
+        "eventsLabel": "Events to listen to",
         "descriptionLabel": "Description (optional)",
         "descriptionPlaceholder": "Internal note…",
-        "validation": "Please fill name, URL, secret and at least one event."
+        "validation": "Please complete the name, URL, secret and at least one event."
       },
       "editTitle": "Edit webhook",
       "events": {
@@ -282,8 +319,9 @@
       }
     },
     "documentDetail": {
-      "title": "Document details",
-      "metadata": "Document metadata and checksum",
+      "title": "Document",
+      "metadata": "📄 Document information",
+      "metadataDescription": "Document metadata and checksum",
       "checksum": "Checksum",
       "algorithm": "Algorithm",
       "titleLabel": "Title",
@@ -296,61 +334,102 @@
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Document description...",
       "signatures": "Confirmations",
-      "back": "Back to list",
+      "back": "Back",
       "expectedSigners": "Expected signers",
       "addExpectedSigner": "Add expected signer",
       "addSigners": "Add expected readers",
+      "addButton": "Add",
+      "adding": "Adding...",
       "emailsLabel": "Emails (one per line)",
-      "emailsPlaceholder": "Mary Smith <mary.smith{'@'}example.com>\njohn.doe{'@'}example.com\nSophie Johnson <sophie{'@'}example.com>",
+      "emailsPlaceholder": "Jane Doe <jane.doe{'@'}example.com>\njohn.smith{'@'}example.com\nSarah Johnson <sarah{'@'}example.com>",
+      "emailsHelper": "Accepted formats: \"First Last <email{'@'}example.com>\" or \"email{'@'}example.com\"",
       "emailLabel": "Email *",
       "emailPlaceholder": "email{'@'}example.com",
       "nameLabel": "Name",
       "namePlaceholder": "Full name",
       "reader": "Reader",
+      "readers": "✓ Expected readers",
       "user": "User",
       "status": "Status",
+      "statusConfirmed": "✓ Confirmed",
+      "statusPending": "⏳ Pending",
       "confirmedOn": "Confirmed on",
       "noExpectedSigners": "No expected readers",
       "noSignatures": "No confirmations",
-      "reminders": "Email reminders",
+      "reminders": "📧 Email reminders",
+      "remindersDescription": "Send reminders to readers awaiting confirmation",
       "remindersSent": "Reminders sent",
       "toRemind": "To remind",
       "lastReminder": "Last reminder",
       "sendReminder": "Send reminder",
+      "sending": "Sending...",
+      "sendReminders": "Send reminders",
+      "sendToAll": "Send to all pending readers ({count})",
+      "sendToSelected": "Send to selected only ({count})",
+      "allContacted": "✓ All expected readers have been contacted or confirmed",
+      "unexpectedSignatures": "⚠ Additional reading confirmations",
+      "unexpectedDescription": "Users who confirmed but are not on the expected readers list",
+      "createdBy": "Created by {by} on {date}",
+      "saving": "Saving...",
+      "deleting": "Deleting...",
+      "copiedToClipboard": "Copied to clipboard",
+      "metadataSaved": "Metadata saved successfully",
+      "signersAdded": "{count} reader(s) added successfully",
+      "signerRemoved": "{email} removed successfully",
+      "remindersSentSuccess": "{count} reminder(s) sent successfully",
+      "remindersSentPartial": "{sent} reminder(s) sent, {failed} failed",
+      "remindersSentGeneric": "Reminders sent successfully",
+      "confirmSendReminders": "Send reminders to {count} reader(s) awaiting confirmation?",
+      "confirmSendRemindersSelected": "Send reminders to {count} selected reader(s)?",
+      "confirmSendRemindersTitle": "📧 Send reminders",
+      "removeSignerTitle": "⚠️ Remove expected reader",
+      "removeSignerMessage": "Remove {email} from the expected readers list?",
       "metadataWarning": {
         "title": "⚠️ Warning: Signature invalidation",
-        "description": "You are about to modify critical document information (URL, checksum, algorithm, or description).",
+        "description": "You are about to modify critical document information (URL, checksum, algorithm or description).",
         "warning": "This modification will invalidate all existing signatures, as they are cryptographically linked to the current document content.",
         "currentSignatures": "Current signatures that will be invalidated:",
         "confirm": "I understand, continue",
         "cancel": "Cancel"
       },
-      "dangerZone": "Danger zone",
+      "dangerZone": "⚠️ Danger zone",
       "dangerZoneDescription": "Irreversible actions on this document",
       "deleteDocument": "Delete this document",
+      "deleteDocumentDescription": "This action will permanently delete the document, its metadata, expected readers and all associated confirmations.\nThis action is irreversible.",
       "deleteWarning": "This action is irreversible!",
-      "deleteWillRemove": "This action will permanently remove:",
+      "deleteWillRemove": "Deleting this document will result in the permanent loss of:",
       "deleteItem1": "All document metadata",
       "deleteItem2": "The list of expected readers",
       "deleteItem3": "All cryptographic confirmations",
-      "deleteItem4": "The reminder history"
+      "deleteItem4": "The reminder history",
+      "deleteConfirmTitle": "⚠️ Confirm deletion",
+      "deleteConfirmButton": "Delete permanently",
+      "documentId": "Document ID:"
     },
     "documentForm": {
       "title": "Document reference",
       "label": "Reference (URL, path or ID)",
-      "placeholder": "https://example.com/doc.pdf or /path/to/doc",
-      "submit": "Confirm",
+      "placeholder": "URL, PATH or REFERENCE of the document to read (optional)",
+      "submit": "Start",
+      "submitting": "Loading...",
       "creating": "Creating..."
     }
   },
   "embed": {
     "loading": "Loading signature information...",
     "title": "Signature for",
+    "document": "Document:",
     "signedBy": "Signed by",
     "on": "on",
     "verified": "Verified",
     "viewAll": "View all confirmations",
-    "error": "Unable to load signature information"
+    "error": "Unable to load signature information",
+    "sign": "Sign",
+    "signDocument": "Sign this document",
+    "noSignatures": "No signatures for this document",
+    "confirmationsCount": "{count} confirmation(s)",
+    "poweredBy": "Powered by Ackify",
+    "missingDocId": "Document ID missing"
   },
   "notFound": {
     "title": "Page not found",
@@ -358,7 +437,7 @@
     "home": "Back to home"
   },
   "footer": {
-    "description": "Open-source cryptographic document reading confirmation solution with non-repudiable Ed25519 signatures.",
+    "description": "Open-source solution for cryptographic confirmation of document reading with non-repudiable Ed25519 signatures.",
     "navigation": {
       "title": "Navigation"
     },
@@ -370,12 +449,12 @@
     },
     "legal": {
       "title": "Legal",
-      "terms": "Terms of Service",
-      "privacy": "Privacy Policy",
+      "terms": "Terms of use",
+      "privacy": "Privacy policy",
       "contact": "Contact"
     },
     "copyright": "All rights reserved.",
-    "license": "Licensed under AGPL-3.0-or-later",
+    "license": "AGPL-3.0-or-later License",
     "madeWith": "Made with",
     "by": "by",
     "links": {
