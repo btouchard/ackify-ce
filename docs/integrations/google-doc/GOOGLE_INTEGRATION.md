@@ -52,7 +52,7 @@ function onOpen() {
  * Redirige vers la page de validation Ackify
  */
 function validateReading() {
-  const signUrl = `${ACKIFY_BASE_URL}/sign?doc=${DOCUMENT_ID}&referrer=${encodeURIComponent(getDocumentUrl())}`;
+  const signUrl = `${ACKIFY_BASE_URL}/?doc=${DOCUMENT_ID}&referrer=${encodeURIComponent(getDocumentUrl())}`;
   
   const html = `
     <div style="padding: 20px; font-family: Arial, sans-serif;">

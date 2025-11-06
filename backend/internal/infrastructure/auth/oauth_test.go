@@ -393,7 +393,7 @@ func TestOauthService_GetAuthURL(t *testing.T) {
 		},
 		{
 			name:    "specific page next URL",
-			nextURL: "/sign?doc=test-doc",
+			nextURL: "/?doc=test-doc",
 		},
 		{
 			name:    "empty next URL",
@@ -401,7 +401,7 @@ func TestOauthService_GetAuthURL(t *testing.T) {
 		},
 		{
 			name:    "complex next URL with parameters",
-			nextURL: "/sign?doc=test-doc&referrer=github",
+			nextURL: "/?doc=test-doc&referrer=github",
 		},
 	}
 
@@ -757,8 +757,8 @@ func TestOauthService_HandleCallback_StateDecoding(t *testing.T) {
 	}{
 		{
 			name:        "valid state with next URL",
-			state:       "randomstate:L3NpZ24_ZG9jPXRlc3Q", // base64 for "/sign?doc=test"
-			expectedURL: "/sign?doc=test",
+			state:       "randomstate:Lz9kb2M9dGVzdA", // base64 for "/?doc=test"
+			expectedURL: "/?doc=test",
 		},
 		{
 			name:        "state without separator",

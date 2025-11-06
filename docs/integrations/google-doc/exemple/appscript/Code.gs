@@ -19,7 +19,7 @@ function getSidebarHtml() {
 function openSignature() {
   var doc = DocumentApp.getActiveDocument();
   var docId = doc.getId();
-  var url = "https://sign.neodtx.com/sign?doc=" + encodeURIComponent(docId);
+  var url = "https://sign.kolapsis.com/?doc=" + encodeURIComponent(docId);
 
   var html = '<style>html,body{height:100%;margin:0;padding:0}</style>' +
             '<iframe src="' + url + '" ' +
