@@ -139,7 +139,7 @@ func (s *ReminderAsyncService) queueSingleReminder(
 		"recipient_name", recipientName,
 		"sent_by", sentBy)
 
-	signURL := fmt.Sprintf("%s/sign?doc=%s", s.baseURL, docID)
+	signURL := fmt.Sprintf("%s/?doc=%s", s.baseURL, docID)
 
 	// Prepare email data (keys must match template variables)
 	data := map[string]interface{}{

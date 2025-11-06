@@ -142,7 +142,7 @@ func (s *ReminderService) sendSingleReminder(
 		"recipient_name", recipientName,
 		"sent_by", sentBy)
 
-	signURL := fmt.Sprintf("%s/sign?doc=%s", s.baseURL, docID)
+	signURL := fmt.Sprintf("%s/?doc=%s", s.baseURL, docID)
 
 	log := &models.ReminderLog{
 		DocID:          docID,
