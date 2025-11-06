@@ -184,13 +184,14 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		AutoLogin:                 cfg.OAuth.AutoLogin,
 		OAuthEnabled:              cfg.Auth.OAuthEnabled,
 		MagicLinkEnabled:          cfg.Auth.MagicLinkEnabled,
+		OnlyAdminCanCreate:        cfg.App.OnlyAdminCanCreate,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)
 
 	router.Get("/oembed", handlers.HandleOEmbed(cfg.App.BaseURL))
 
-	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, cfg.Auth.OAuthEnabled, cfg.Auth.MagicLinkEnabled, signatureRepo))
+	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, cfg.Auth.OAuthEnabled, cfg.Auth.MagicLinkEnabled, cfg.App.OnlyAdminCanCreate, signatureRepo))
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,

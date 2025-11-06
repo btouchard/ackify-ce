@@ -75,6 +75,9 @@
       "loadFailed": "Failed to load document",
       "loginButton": "Sign in"
     },
+    "documentCreation": {
+      "restrictedToAdmins": "Only administrators can create documents."
+    },
     "document": {
       "title": "Document to confirm",
       "id": "ID"

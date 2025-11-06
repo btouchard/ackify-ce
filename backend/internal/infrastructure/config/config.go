@@ -27,10 +27,11 @@ type AuthConfig struct {
 }
 
 type AppConfig struct {
-	BaseURL       string
-	Organisation  string
-	SecureCookies bool
-	AdminEmails   []string
+	BaseURL            string
+	Organisation       string
+	SecureCookies      bool
+	AdminEmails        []string
+	OnlyAdminCanCreate bool
 }
 
 type DatabaseConfig struct {
@@ -166,6 +167,9 @@ func Load() (*Config, error) {
 			}
 		}
 	}
+
+	// Parse admin-only document creation flag
+	config.App.OnlyAdminCanCreate = getEnvBool("ACKIFY_ONLY_ADMIN_CAN_CREATE", false)
 
 	// Parse mail config (optional, service disabled if MAIL_HOST not set)
 	mailHost := getEnv("ACKIFY_MAIL_HOST", "")

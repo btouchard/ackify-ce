@@ -75,6 +75,9 @@
       "loadFailed": "Caricamento del documento fallito",
       "loginButton": "Accedi"
     },
+    "documentCreation": {
+      "restrictedToAdmins": "Solo gli amministratori possono creare documenti."
+    },
     "document": {
       "title": "Documento da confermare",
       "id": "ID"

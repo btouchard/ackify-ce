@@ -192,6 +192,7 @@ ADMIN_EMAILS=admin@your-domain.com
 - `OAUTH_AUTO_LOGIN` - Automatically log in if OAuth session exists
 - `MAIL_*` - SMTP configuration for email features
 - `AUTH_MAGICLINK_ENABLED` - Force enable/disable MagicLink
+- `ONLY_ADMIN_CAN_CREATE` - Restrict document creation to admins only (default: false)
 
 ## Troubleshooting
 

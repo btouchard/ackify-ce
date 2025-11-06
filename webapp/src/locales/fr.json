@@ -75,6 +75,9 @@
       "loadFailed": "Échec du chargement du document",
       "loginButton": "Se connecter"
     },
+    "documentCreation": {
+      "restrictedToAdmins": "Seuls les administrateurs peuvent créer des documents."
+    },
     "document": {
       "title": "Document à confirmer",
       "id": "ID"

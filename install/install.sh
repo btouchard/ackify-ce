@@ -328,6 +328,21 @@ done
 print_success "Admin users configured: $ADMIN_EMAILS"
 echo ""
 
+# Document Creation Restriction
+echo ""
+print_info "By default, any authenticated user can create documents."
+print_info "You can restrict document creation to admins only."
+echo ""
+
+ONLY_ADMIN_CAN_CREATE=false
+if prompt_yes_no "Restrict document creation to admins only?" "n"; then
+    ONLY_ADMIN_CAN_CREATE=true
+    print_success "Document creation restricted to admins"
+else
+    print_success "All authenticated users can create documents"
+fi
+echo ""
+
 # ==========================================
 # Generate Secrets
 # ==========================================
@@ -462,6 +477,9 @@ if [ -n "$ADMIN_EMAILS" ]; then
 # ==========================================
 ACKIFY_ADMIN_EMAILS=${ADMIN_EMAILS}
 
+# Restrict document creation to admins only (default: false)
+ACKIFY_ONLY_ADMIN_CAN_CREATE=${ONLY_ADMIN_CAN_CREATE}
+
 EOF
 fi
 
@@ -514,6 +532,11 @@ fi
 echo ""
 
 print_success "Admin Users: ${ADMIN_EMAILS}"
+if [ "$ONLY_ADMIN_CAN_CREATE" = true ]; then
+    print_info "Document Creation: Restricted to admins only"
+else
+    print_info "Document Creation: All authenticated users"
+fi
 echo ""
 
 if [ "$ENABLE_TRAEFIK" = true ]; then

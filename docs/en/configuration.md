@@ -61,6 +61,9 @@ ACKIFY_OAUTH_SCOPES=openid,email,profile
 ```bash
 # Admin email list (comma-separated)
 ACKIFY_ADMIN_EMAILS=admin@company.com,admin2@company.com
+
+# Restrict document creation to admins only (default: false)
+ACKIFY_ONLY_ADMIN_CAN_CREATE=false
 ```
 
 Admins have access to:
@@ -69,6 +72,11 @@ Admins have access to:
 - Expected signers tracking
 - Email reminders sending
 - Document deletion
+
+When `ACKIFY_ONLY_ADMIN_CAN_CREATE` is enabled:
+- ✅ Only admin users can create new documents
+- ✅ Non-admin users will see an error message when attempting to create documents
+- ✅ Both API endpoints (`POST /documents` and `GET /documents/find-or-create`) are protected
 
 ### Document Checksum (Optional)
 

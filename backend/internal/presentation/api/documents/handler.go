@@ -30,20 +30,33 @@ type webhookPublisher interface {
 
 // Handler handles document API requests
 type Handler struct {
-	signatureService *services.SignatureService
-	documentService  documentService
-	webhookPublisher webhookPublisher
+	signatureService   *services.SignatureService
+	documentService    documentService
+	webhookPublisher   webhookPublisher
+	adminEmails        []string
+	onlyAdminCanCreate bool
 }
 
 // NewHandler creates a new documents handler
 // Backward-compatible constructor used by tests and existing code
 func NewHandler(signatureService *services.SignatureService, documentService documentService) *Handler {
-	return &Handler{signatureService: signatureService, documentService: documentService}
+	return &Handler{
+		signatureService:   signatureService,
+		documentService:    documentService,
+		adminEmails:        []string{},
+		onlyAdminCanCreate: false,
+	}
 }
 
 // Extended constructor with webhook publisher
-func NewHandlerWithPublisher(signatureService *services.SignatureService, documentService documentService, publisher webhookPublisher) *Handler {
-	return &Handler{signatureService: signatureService, documentService: documentService, webhookPublisher: publisher}
+func NewHandlerWithPublisher(signatureService *services.SignatureService, documentService documentService, publisher webhookPublisher, adminEmails []string, onlyAdminCanCreate bool) *Handler {
+	return &Handler{
+		signatureService:   signatureService,
+		documentService:    documentService,
+		webhookPublisher:   publisher,
+		adminEmails:        adminEmails,
+		onlyAdminCanCreate: onlyAdminCanCreate,
+	}
 }
 
 // DocumentDTO represents a document data transfer object
@@ -88,6 +101,34 @@ type CreateDocumentResponse struct {
 // HandleCreateDocument handles POST /api/v1/documents
 func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// Check if only admins can create documents
+	if h.onlyAdminCanCreate {
+		user, authenticated := shared.GetUserFromContext(ctx)
+		if !authenticated {
+			logger.Logger.Warn("Unauthenticated user attempted to create document",
+				"remote_addr", r.RemoteAddr)
+			shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
+			return
+		}
+
+		// Check if user is admin
+		isAdmin := false
+		for _, adminEmail := range h.adminEmails {
+			if strings.ToLower(user.Email) == strings.ToLower(adminEmail) {
+				isAdmin = true
+				break
+			}
+		}
+
+		if !isAdmin {
+			logger.Logger.Warn("Non-admin user attempted to create document",
+				"user_email", user.Email,
+				"remote_addr", r.RemoteAddr)
+			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Only administrators can create documents", nil)
+			return
+		}
+	}
 
 	// Parse request body
 	var req CreateDocumentRequest
@@ -345,6 +386,26 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 			"remote_addr", r.RemoteAddr)
 		shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
 		return
+	}
+
+	// Check if only admins can create documents
+	if h.onlyAdminCanCreate {
+		isAdmin := false
+		for _, adminEmail := range h.adminEmails {
+			if strings.ToLower(user.Email) == strings.ToLower(adminEmail) {
+				isAdmin = true
+				break
+			}
+		}
+
+		if !isAdmin {
+			logger.Logger.Warn("Non-admin user attempted to create document via find-or-create",
+				"user_email", user.Email,
+				"reference", ref,
+				"remote_addr", r.RemoteAddr)
+			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Only administrators can create documents", nil)
+			return
+		}
 	}
 
 	// User is authenticated, create the document

@@ -75,6 +75,9 @@
       "loadFailed": "Error al cargar el documento",
       "loginButton": "Iniciar sesión"
     },
+    "documentCreation": {
+      "restrictedToAdmins": "Solo los administradores pueden crear documentos."
+    },
     "document": {
       "title": "Documento a confirmar",
       "id": "ID"

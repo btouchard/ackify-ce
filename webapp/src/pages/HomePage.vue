@@ -35,6 +35,11 @@ const signatureStore = useSignatureStore()
 
 const docId = ref<string | undefined>(undefined)
 const user = computed(() => authStore.user)
+const isAdmin = computed(() => authStore.isAdmin)
+
+// Check if document creation is restricted to admins
+const onlyAdminCanCreate = (window as any).ACKIFY_ONLY_ADMIN_CAN_CREATE || false
+const canCreateDocument = computed(() => !onlyAdminCanCreate || isAdmin.value)
 const currentDocument = ref<FindOrCreateDocumentResponse | null>(null)
 
 const documentSignatures = ref<any[]>([])
@@ -295,7 +300,15 @@ onMounted(async () => {
             <code class="block px-3 py-2 bg-muted rounded text-xs">/?doc=https://example.com/policy.pdf</code>
             <code class="block px-3 py-2 bg-muted rounded text-xs">/?doc=/path/to/document</code>
             <code class="block px-3 py-2 bg-muted rounded text-xs">/?doc=my-unique-ref</code>
-            <DocumentForm />
+            <DocumentForm v-if="canCreateDocument" />
+            <Alert v-else variant="warning" class="mt-4">
+              <div class="flex items-start">
+                <AlertTriangle :size="18" class="mr-3 mt-0.5"/>
+                <div class="flex-1 text-sm">
+                  <p>{{ t('sign.documentCreation.restrictedToAdmins') }}</p>
+                </div>
+              </div>
+            </Alert>
           </div>
         </CardContent>
       </Card>

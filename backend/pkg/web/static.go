@@ -22,8 +22,9 @@ import (
 // For index.html, it replaces __ACKIFY_BASE_URL__ placeholder with the actual base URL,
 // __ACKIFY_VERSION__ with the application version,
 // __ACKIFY_OAUTH_ENABLED__ and __ACKIFY_MAGICLINK_ENABLED__ with auth method flags,
+// __ACKIFY_ONLY_ADMIN_CAN_CREATE__ with document creation restriction flag,
 // and __META_TAGS__ with dynamic meta tags based on query parameters
-func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, signatureRepo *database.SignatureRepository) http.HandlerFunc {
+func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, onlyAdminCanCreate bool, signatureRepo *database.SignatureRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fsys, err := fs.Sub(fsEmbed, targetPath)
 		if err != nil {
@@ -62,7 +63,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 		defer file.Close()
 
 		if shouldServeIndex || strings.HasSuffix(cleanPath, "index.html") {
-			serveIndexTemplate(w, r, file, baseURL, version, oauthEnabled, magicLinkEnabled, signatureRepo)
+			serveIndexTemplate(w, r, file, baseURL, version, oauthEnabled, magicLinkEnabled, onlyAdminCanCreate, signatureRepo)
 			return
 		}
 
@@ -71,7 +72,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 	}
 }
 
-func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, signatureRepo *database.SignatureRepository) {
+func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, onlyAdminCanCreate bool, signatureRepo *database.SignatureRepository) {
 	content, err := io.ReadAll(file)
 	if err != nil {
 		logger.Logger.Error("Failed to read index.html", "error", err.Error())
@@ -91,9 +92,14 @@ func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, ba
 	if magicLinkEnabled {
 		magicLinkEnabledStr = "true"
 	}
+	onlyAdminCanCreateStr := "false"
+	if onlyAdminCanCreate {
+		onlyAdminCanCreateStr = "true"
+	}
 
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_OAUTH_ENABLED__", oauthEnabledStr)
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_MAGICLINK_ENABLED__", magicLinkEnabledStr)
+	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_ONLY_ADMIN_CAN_CREATE__", onlyAdminCanCreateStr)
 
 	metaTags := generateMetaTags(r, baseURL, signatureRepo)
 	processedContent = strings.ReplaceAll(processedContent, "__META_TAGS__", metaTags)

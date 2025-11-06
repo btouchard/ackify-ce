@@ -75,6 +75,9 @@
       "loadFailed": "Fehler beim Laden des Dokuments",
       "loginButton": "Anmelden"
     },
+    "documentCreation": {
+      "restrictedToAdmins": "Nur Administratoren können Dokumente erstellen."
+    },
     "document": {
       "title": "Zu bestätigendes Dokument",
       "id": "ID"

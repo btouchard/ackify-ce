@@ -703,6 +703,138 @@ func TestHandler_HandleCreateDocument_Concurrent(t *testing.T) {
 }
 
 // ============================================================================
+// ADMIN-ONLY DOCUMENT CREATION TESTS
+// ============================================================================
+
+func TestHandler_HandleCreateDocument_AdminOnlyEnabled_AdminUser(t *testing.T) {
+	t.Parallel()
+
+	handler := &Handler{
+		signatureService:   &services.SignatureService{},
+		documentService:    &mockDocumentService{},
+		adminEmails:        []string{"admin@example.com"},
+		onlyAdminCanCreate: true,
+	}
+
+	reqBody := CreateDocumentRequest{
+		Reference: "https://example.com/doc.pdf",
+		Title:     "Admin Document",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	// Add admin user to context
+	adminUser := &models.User{
+		Sub:   "oauth2|admin",
+		Email: "admin@example.com",
+		Name:  "Admin User",
+	}
+	ctx := context.WithValue(req.Context(), shared.ContextKeyUser, adminUser)
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.HandleCreateDocument(rec, req)
+
+	assert.Equal(t, http.StatusCreated, rec.Code)
+	assert.Contains(t, rec.Body.String(), "test-doc-123")
+}
+
+func TestHandler_HandleCreateDocument_AdminOnlyEnabled_NonAdminUser(t *testing.T) {
+	t.Parallel()
+
+	handler := &Handler{
+		signatureService:   &services.SignatureService{},
+		documentService:    &mockDocumentService{},
+		adminEmails:        []string{"admin@example.com"},
+		onlyAdminCanCreate: true,
+	}
+
+	reqBody := CreateDocumentRequest{
+		Reference: "https://example.com/doc.pdf",
+		Title:     "User Document",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+
+	// Add non-admin user to context
+	regularUser := &models.User{
+		Sub:   "oauth2|user",
+		Email: "user@example.com",
+		Name:  "Regular User",
+	}
+	ctx := context.WithValue(req.Context(), shared.ContextKeyUser, regularUser)
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	handler.HandleCreateDocument(rec, req)
+
+	assert.Equal(t, http.StatusForbidden, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Only administrators can create documents")
+}
+
+func TestHandler_HandleCreateDocument_AdminOnlyEnabled_Unauthenticated(t *testing.T) {
+	t.Parallel()
+
+	handler := &Handler{
+		signatureService:   &services.SignatureService{},
+		documentService:    &mockDocumentService{},
+		adminEmails:        []string{"admin@example.com"},
+		onlyAdminCanCreate: true,
+	}
+
+	reqBody := CreateDocumentRequest{
+		Reference: "https://example.com/doc.pdf",
+		Title:     "Unauthenticated Document",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	// No user in context (unauthenticated)
+
+	rec := httptest.NewRecorder()
+	handler.HandleCreateDocument(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
+	assert.Contains(t, rec.Body.String(), "Authentication required")
+}
+
+func TestHandler_HandleCreateDocument_AdminOnlyDisabled_AnyUser(t *testing.T) {
+	t.Parallel()
+
+	handler := &Handler{
+		signatureService:   &services.SignatureService{},
+		documentService:    &mockDocumentService{},
+		adminEmails:        []string{"admin@example.com"},
+		onlyAdminCanCreate: false, // Disabled
+	}
+
+	reqBody := CreateDocumentRequest{
+		Reference: "https://example.com/doc.pdf",
+		Title:     "Public Document",
+	}
+	body, err := json.Marshal(reqBody)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	// No authentication needed when admin-only is disabled
+
+	rec := httptest.NewRecorder()
+	handler.HandleCreateDocument(rec, req)
+
+	assert.Equal(t, http.StatusCreated, rec.Code)
+	assert.Contains(t, rec.Body.String(), "test-doc-123")
+}
+
+// ============================================================================
 // BENCHMARKS
 // ============================================================================
 
