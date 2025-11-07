@@ -142,22 +142,22 @@ Voir [docs/fr/configuration.md](docs/fr/configuration.md) pour toutes les option
 
 ---
 
-## 📸 Captures d'écran
+## 📸 Screenshots
 
 <table>
 <tr>
-<td align="center"><strong>Accueil</strong><br><a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200"></a></td>
-<td align="center"><strong>Signature</strong><br><a href="screenshots/2-signing-request.png"><img src="screenshots/2-signing-request.png" width="200"></a></td>
-<td align="center"><strong>Confirmée</strong><br><a href="screenshots/3-signing-ok.png"><img src="screenshots/3-signing-ok.png" width="200"></a></td>
+<td align="center"><strong>Home</strong><br><a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200"></a></td>
+<td align="center"><strong>Signing</strong><br><a href="screenshots/3-signing-request.png"><img src="screenshots/3-signing-request.png" width="200"></a></td>
+<td align="center"><strong>Confirmed</strong><br><a href="screenshots/4-signing-ok.png"><img src="screenshots/4-signing-ok.png" width="200"></a></td>
+<td align="center"><strong>Confirmations</strong><br><a href="screenshots/5-my-confirm-list.png"><img src="screenshots/5-my-confirm-list.png" width="200"></a></td>
 </tr>
 <tr>
-<td align="center"><strong>Signatures</strong><br><a href="screenshots/4-sign-list.png"><img src="screenshots/4-sign-list.png" width="200"></a></td>
-<td align="center"><strong>Outline</strong><br><a href="screenshots/5-integrated-to-outline.png"><img src="screenshots/5-integrated-to-outline.png" width="200"></a></td>
-<td align="center"><strong>Google Docs</strong><br><a href="screenshots/6-integrated-to-google-doc.png"><img src="screenshots/6-integrated-to-google-doc.png" width="200"></a></td>
+<td align="center"><strong>Admin dashboard</strong><br><a href="screenshots/6-admin.png"><img src="screenshots/6-admin.png" width="200"></a></td>
+<td align="center"><strong>Admin document</strong><br><a href="screenshots/7-admin-doc.png"><img src="screenshots/7-admin-doc.png" width="200"></a></td>
+<td align="center"><strong>Outline</strong><br><a href="screenshots/8-outline.png"><img src="screenshots/8-outline.png" width="200"></a></td>
+<td align="center"></td>
 </tr>
 </table>
-
-**Vidéos** : [1-initialize-sign.webm](screenshots/videos/1-initialize-sign.webm) | [2-user-sign-flow.webm](screenshots/videos/2-user-sign-flow.webm)
 
 ---
 
