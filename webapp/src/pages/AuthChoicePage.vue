@@ -133,21 +133,29 @@ function isValidEmail(email: string): boolean {
       </div>
 
       <Alert v-if="errorMessage" variant="destructive">
-        <AlertCircle class="h-4 w-4" />
-        <AlertTitle>{{ t('common.error') }}</AlertTitle>
-        <AlertDescription>{{ errorMessage }}</AlertDescription>
+        <div class="flex items-start">
+          <AlertCircle :size="20" class="mr-3 mt-0.5" />
+          <div class="flex-1">
+            <AlertTitle>{{ t('common.error') }}</AlertTitle>
+            <AlertDescription>{{ errorMessage }}</AlertDescription>
+          </div>
+        </div>
       </Alert>
 
       <Alert v-if="magicLinkSent" variant="default" class="border-green-200 bg-green-50">
-        <CheckCircle2 class="h-4 w-4 text-green-600" />
-        <AlertTitle class="text-green-800">{{ t('auth.magiclink.sent.title') }}</AlertTitle>
-        <AlertDescription class="text-green-700">
-          {{ t('auth.magiclink.sent.message') }}
-          <br>
-          <span class="text-xs text-green-600">
-            {{ t('auth.magiclink.sent.expire') }}
-          </span>
-        </AlertDescription>
+        <div class="flex items-start">
+          <CheckCircle2 :size="20" class="mr-3 mt-0.5 text-green-600" />
+          <div class="flex-1">
+            <AlertTitle class="text-green-800">{{ t('auth.magiclink.sent.title') }}</AlertTitle>
+            <AlertDescription class="text-green-700">
+              {{ t('auth.magiclink.sent.message') }}
+              <br>
+              <span class="text-xs text-green-600">
+                {{ t('auth.magiclink.sent.expire') }}
+              </span>
+            </AlertDescription>
+          </div>
+        </div>
       </Alert>
 
       <!-- OAuth Login -->

@@ -93,7 +93,6 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 				if cfg.OAuthEnabled {
 					r.Post("/start", authHandler.HandleStartOAuth)
 					r.Get("/callback", authHandler.HandleOAuthCallback)
-					r.Get("/logout", authHandler.HandleLogout)
 
 					if cfg.AutoLogin {
 						r.Get("/check", authHandler.HandleAuthCheck)
@@ -106,6 +105,11 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 					r.Get("/magic-link/verify", authHandler.HandleVerifyMagicLink)
 					// Reminder auth link (authentification via email de reminder)
 					r.Get("/reminder-link/verify", authHandler.HandleVerifyReminderAuthLink)
+				}
+
+				// Logout endpoint (available for both OAuth and MagicLink)
+				if cfg.OAuthEnabled || cfg.MagicLinkEnabled {
+					r.Get("/logout", authHandler.HandleLogout)
 				}
 			})
 		})
