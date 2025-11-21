@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -255,7 +257,15 @@ func (h *Handler) HandleAddExpectedSigner(w http.ResponseWriter, r *http.Request
 func (h *Handler) HandleRemoveExpectedSigner(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := chi.URLParam(r, "docId")
-	email := chi.URLParam(r, "email")
+	emailEncoded := chi.URLParam(r, "email")
+
+	// Decode URL-encoded email (e.g., al%40bundy.com -> al@bundy.com)
+	email, err := url.QueryUnescape(emailEncoded)
+	if err != nil {
+		logger.Logger.Error("failed to decode email from URL", "error", err, "email_encoded", emailEncoded)
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Invalid email format", nil)
+		return
+	}
 
 	if docID == "" || email == "" {
 		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Document ID and email are required", nil)
@@ -263,8 +273,9 @@ func (h *Handler) HandleRemoveExpectedSigner(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Remove expected signer
-	err := h.expectedSignerRepo.Remove(ctx, docID, email)
+	err = h.expectedSignerRepo.Remove(ctx, docID, email)
 	if err != nil {
+		logger.Logger.Error("failed to remove expected signer", "error", err, "doc_id", docID, "email", email)
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to remove expected signer", nil)
 		return
 	}
@@ -598,7 +609,8 @@ func (h *Handler) HandleGetDocumentStatus(w http.ResponseWriter, r *http.Request
 
 	// Get reminder stats if service available
 	if h.reminderService != nil {
-		if reminderStats, err := h.reminderService.GetReminderStats(ctx, docID); err == nil {
+		reminderStats, err := h.reminderService.GetReminderStats(ctx, docID)
+		if err == nil && reminderStats != nil {
 			var lastSentAt *string
 			if reminderStats.LastSentAt != nil {
 				formatted := reminderStats.LastSentAt.Format("2006-01-02T15:04:05Z07:00")
@@ -609,6 +621,8 @@ func (h *Handler) HandleGetDocumentStatus(w http.ResponseWriter, r *http.Request
 				PendingCount: reminderStats.PendingCount,
 				LastSentAt:   lastSentAt,
 			}
+		} else if err != nil {
+			logger.Logger.Debug("Failed to get reminder stats", "doc_id", docID, "error", err.Error())
 		}
 	}
 

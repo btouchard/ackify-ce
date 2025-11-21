@@ -370,6 +370,7 @@
       "sendToAll": "Send to all pending readers ({count})",
       "sendToSelected": "Send to selected only ({count})",
       "allContacted": "✓ All expected readers have been contacted or confirmed",
+      "emailServiceDisabled": "⚠️ The email service is currently disabled. Reminder history remains visible, but sending new reminders is not available.",
       "unexpectedSignatures": "⚠ Additional reading confirmations",
       "unexpectedDescription": "Users who confirmed but are not on the expected readers list",
       "createdBy": "Created by {by} on {date}",

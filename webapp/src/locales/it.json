@@ -370,6 +370,7 @@
       "sendToAll": "Invia a tutti i lettori in attesa ({count})",
       "sendToSelected": "Invia solo ai selezionati ({count})",
       "allContacted": "✓ Tutti i lettori previsti sono stati contattati o hanno confermato",
+      "emailServiceDisabled": "⚠️ Il servizio di posta elettronica è attualmente disabilitato. La cronologia dei promemoria rimane visibile, ma l'invio di nuovi promemoria non è disponibile.",
       "unexpectedSignatures": "⚠ Conferme di lettura aggiuntive",
       "unexpectedDescription": "Utenti che hanno confermato ma non presenti nell'elenco dei lettori previsti",
       "createdBy": "Creato da {by} il {date}",

@@ -370,6 +370,7 @@
       "sendToAll": "An alle wartenden Leser senden ({count})",
       "sendToSelected": "Nur an Ausgewählte senden ({count})",
       "allContacted": "✓ Alle erwarteten Leser wurden kontaktiert oder haben bestätigt",
+      "emailServiceDisabled": "⚠️ Der E-Mail-Dienst ist derzeit deaktiviert. Der Verlauf der Erinnerungen bleibt sichtbar, aber das Senden neuer Erinnerungen ist nicht verfügbar.",
       "unexpectedSignatures": "⚠ Zusätzliche Lesebestätigungen",
       "unexpectedDescription": "Benutzer, die bestätigt haben, aber nicht in der Liste der erwarteten Leser stehen",
       "createdBy": "Erstellt von {by} am {date}",

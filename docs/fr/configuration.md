@@ -56,6 +56,28 @@ ACKIFY_OAUTH_LOGOUT_URL=https://your-provider.com/logout
 ACKIFY_OAUTH_SCOPES=openid,email,profile
 ```
 
+### Méthodes d'Authentification
+
+**Important** : Au moins UNE méthode d'authentification doit être activée (OAuth ou MagicLink).
+
+```bash
+# Forcer l'activation/désactivation d'OAuth (défaut: auto-détecté depuis les credentials)
+ACKIFY_AUTH_OAUTH_ENABLED=true
+
+# Activer l'authentification MagicLink sans mot de passe (défaut: false)
+# Nécessite que ACKIFY_MAIL_HOST soit configuré
+ACKIFY_AUTH_MAGICLINK_ENABLED=true
+```
+
+**Auto-détection** :
+- **OAuth** est automatiquement activé si `ACKIFY_OAUTH_CLIENT_ID` et `ACKIFY_OAUTH_CLIENT_SECRET` sont définis
+- **MagicLink** nécessite une activation explicite avec `ACKIFY_AUTH_MAGICLINK_ENABLED=true` + configuration SMTP
+- **Service SMTP/Email** est automatiquement activé quand `ACKIFY_MAIL_HOST` est configuré (indépendant de MagicLink)
+
+**Note** : SMTP et MagicLink sont deux fonctionnalités distinctes :
+- **SMTP** = Service d'envoi de rappels email aux signataires attendus (auto-détecté)
+- **MagicLink** = Authentification sans mot de passe par email (nécessite activation explicite + SMTP)
+
 ### Administration
 
 ```bash

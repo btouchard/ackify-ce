@@ -110,6 +110,7 @@ const shareLink = computed(() => {
 
 const stats = computed(() => documentStatus.value?.stats)
 const reminderStats = computed(() => documentStatus.value?.reminderStats)
+const smtpEnabled = computed(() => (window as any).ACKIFY_SMTP_ENABLED || false)
 const expectedSigners = computed(() => documentStatus.value?.expectedSigners || [])
 const unexpectedSignatures = computed(() => documentStatus.value?.unexpectedSignatures || [])
 const documentMetadata = computed(() => documentStatus.value?.document)
@@ -567,9 +568,10 @@ onMounted(() => {
                       {{ signer.signedAt ? formatDate(signer.signedAt) : '-' }}
                     </TableCell>
                     <TableCell>
-                      <Button @click="confirmRemoveSigner(signer.email)" variant="ghost" size="sm">
+                      <Button v-if="!signer.hasSigned" @click="confirmRemoveSigner(signer.email)" variant="ghost" size="sm">
                         <Trash2 :size="14" class="text-destructive" />
                       </Button>
+                      <span v-else class="text-xs text-muted-foreground">-</span>
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -614,7 +616,7 @@ onMounted(() => {
         </Card>
 
         <!-- Email Reminders -->
-        <Card v-if="reminderStats && stats && stats.expectedCount > 0" class="clay-card">
+        <Card v-if="reminderStats && stats && stats.expectedCount > 0 && (smtpEnabled || reminderStats.totalSent > 0)" class="clay-card">
           <CardHeader>
             <CardTitle>{{ t('admin.documentDetail.reminders') }}</CardTitle>
             <CardDescription>{{ t('admin.documentDetail.remindersDescription') }}</CardDescription>
@@ -636,8 +638,15 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Send Form -->
-            <div v-if="reminderStats.pendingCount > 0" class="space-y-4">
+            <!-- Alert if SMTP disabled but reminders exist -->
+            <Alert v-if="!smtpEnabled" class="border-orange-500 bg-orange-50 dark:bg-orange-900/20">
+              <AlertDescription class="text-orange-800 dark:text-orange-200">
+                {{ t('admin.documentDetail.emailServiceDisabled') }}
+              </AlertDescription>
+            </Alert>
+
+            <!-- Send Form - Only shown if SMTP is enabled -->
+            <div v-if="smtpEnabled" class="space-y-4">
               <div class="space-y-2">
                 <label class="flex items-center space-x-2">
                   <input type="radio" v-model="sendMode" value="all" class="rounded-full" />
@@ -653,7 +662,7 @@ onMounted(() => {
                 {{ sendingReminders ? t('admin.documentDetail.sending') : t('admin.documentDetail.sendReminders') }}
               </Button>
             </div>
-            <div v-else class="text-center py-4 text-muted-foreground">
+            <div v-else-if="smtpEnabled && reminderStats.pendingCount === 0" class="text-center py-4 text-muted-foreground">
               {{ t('admin.documentDetail.allContacted') }}
             </div>
           </CardContent>
