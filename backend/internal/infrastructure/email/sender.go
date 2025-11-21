@@ -96,9 +96,16 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) error {
 	if s.config.TLS {
 		// Implicit TLS/SSL (typically port 465)
 		d.SSL = true
+		d.TLSConfig = &tls.Config{
+			ServerName:         s.config.Host,
+			InsecureSkipVerify: s.config.InsecureSkipVerify,
+		}
 	} else if s.config.StartTLS {
 		// Explicit TLS via STARTTLS (typically port 587)
-		d.TLSConfig = &tls.Config{ServerName: s.config.Host}
+		d.TLSConfig = &tls.Config{
+			ServerName:         s.config.Host,
+			InsecureSkipVerify: s.config.InsecureSkipVerify,
+		}
 		d.StartTLSPolicy = mail.MandatoryStartTLS
 	}
 

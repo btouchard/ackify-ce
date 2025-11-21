@@ -61,18 +61,19 @@ type LoggerConfig struct {
 }
 
 type MailConfig struct {
-	Host          string
-	Port          int
-	Username      string
-	Password      string
-	TLS           bool
-	StartTLS      bool
-	Timeout       string
-	From          string
-	FromName      string
-	SubjectPrefix string
-	TemplateDir   string
-	DefaultLocale string
+	Host               string
+	Port               int
+	Username           string
+	Password           string
+	TLS                bool
+	StartTLS           bool
+	InsecureSkipVerify bool
+	Timeout            string
+	From               string
+	FromName           string
+	SubjectPrefix      string
+	TemplateDir        string
+	DefaultLocale      string
 }
 
 type ChecksumConfig struct {
@@ -180,6 +181,7 @@ func Load() (*Config, error) {
 		config.Mail.Password = getEnv("ACKIFY_MAIL_PASSWORD", "")
 		config.Mail.TLS = getEnvBool("ACKIFY_MAIL_TLS", true)
 		config.Mail.StartTLS = getEnvBool("ACKIFY_MAIL_STARTTLS", true)
+		config.Mail.InsecureSkipVerify = getEnvBool("ACKIFY_MAIL_INSECURE_SKIP_VERIFY", false)
 		config.Mail.Timeout = getEnv("ACKIFY_MAIL_TIMEOUT", "10s")
 		config.Mail.From = getEnv("ACKIFY_MAIL_FROM", "")
 		config.Mail.FromName = getEnv("ACKIFY_MAIL_FROM_NAME", config.App.Organisation)
