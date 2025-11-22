@@ -4,6 +4,7 @@ package shared
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 // Response represents a standardized API response
@@ -18,6 +19,74 @@ type PaginationMeta struct {
 	Limit      int `json:"limit"`
 	Total      int `json:"total"`
 	TotalPages int `json:"totalPages"`
+}
+
+// PaginationParams represents pagination query parameters
+type PaginationParams struct {
+	Page     int `json:"page" schema:"page"`
+	PageSize int `json:"page_size" schema:"page_size"`
+	Offset   int `json:"-"`
+}
+
+// NewPaginationParams creates pagination parameters with default values
+func NewPaginationParams(defaultPage, defaultPageSize, maxPageSize int) *PaginationParams {
+	if defaultPage < 1 {
+		defaultPage = 1
+	}
+	if defaultPageSize < 1 {
+		defaultPageSize = 20
+	}
+	if maxPageSize < 1 {
+		maxPageSize = 100
+	}
+
+	return &PaginationParams{
+		Page:     defaultPage,
+		PageSize: defaultPageSize,
+	}
+}
+
+// ParsePaginationParams parses pagination parameters from HTTP request query string
+// and validates them against min/max constraints
+func ParsePaginationParams(r *http.Request, defaultPageSize, maxPageSize int) *PaginationParams {
+	params := NewPaginationParams(1, defaultPageSize, maxPageSize)
+
+	// Parse page parameter
+	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
+		if page, err := strconv.Atoi(pageStr); err == nil && page > 0 {
+			params.Page = page
+		}
+	}
+
+	// Parse limit/page_size parameter (support both names)
+	pageSizeStr := r.URL.Query().Get("limit")
+	if pageSizeStr == "" {
+		pageSizeStr = r.URL.Query().Get("page_size")
+	}
+	if pageSizeStr != "" {
+		if pageSize, err := strconv.Atoi(pageSizeStr); err == nil && pageSize > 0 {
+			params.PageSize = pageSize
+		}
+	}
+
+	// Validate and calculate
+	params.Validate(maxPageSize)
+
+	return params
+}
+
+// Validate validates pagination parameters and calculates offset
+func (p *PaginationParams) Validate(maxPageSize int) {
+	if p.Page < 1 {
+		p.Page = 1
+	}
+	if p.PageSize < 1 {
+		p.PageSize = 20
+	}
+	if maxPageSize > 0 && p.PageSize > maxPageSize {
+		p.PageSize = maxPageSize
+	}
+	p.Offset = (p.Page - 1) * p.PageSize
 }
 
 // WriteJSON writes a JSON response

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
@@ -118,39 +117,24 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// Parse pagination and search parameters
-	page := 1
-	limit := 100
+	pagination := shared.ParsePaginationParams(r, 100, 200)
 	searchQuery := r.URL.Query().Get("search")
-
-	if p := r.URL.Query().Get("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 200 {
-			limit = parsed
-		}
-	}
-
-	offset := (page - 1) * limit
 
 	// Fetch documents with or without search
 	var documents []*models.Document
 	var err error
 
 	if searchQuery != "" {
-		documents, err = h.documentRepo.Search(ctx, searchQuery, limit, offset)
+		documents, err = h.documentRepo.Search(ctx, searchQuery, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Admin document search",
 			"query", searchQuery,
-			"limit", limit,
-			"offset", offset)
+			"limit", pagination.PageSize,
+			"offset", pagination.Offset)
 	} else {
-		documents, err = h.documentRepo.List(ctx, limit, offset)
+		documents, err = h.documentRepo.List(ctx, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Admin document list",
-			"limit", limit,
-			"offset", offset)
+			"limit", pagination.PageSize,
+			"offset", pagination.Offset)
 	}
 
 	if err != nil {
@@ -176,9 +160,9 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	meta := map[string]interface{}{
 		"total":  totalCount,     // Total matching documents in DB
 		"count":  len(documents), // Count in this page
-		"limit":  limit,
-		"offset": offset,
-		"page":   page,
+		"limit":  pagination.PageSize,
+		"offset": pagination.Offset,
+		"page":   pagination.Page,
 	}
 
 	if searchQuery != "" {

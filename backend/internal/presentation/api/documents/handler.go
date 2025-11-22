@@ -215,29 +215,13 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Parse query parameters
-	page := 1
-	limit := 20
+	// Parse pagination and search parameters
+	pagination := shared.ParsePaginationParams(r, 20, 100)
 	searchQuery := r.URL.Query().Get("search")
-
-	if p := r.URL.Query().Get("page"); p != "" {
-		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
-			page = parsed
-		}
-	}
-
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
-			limit = parsed
-		}
-	}
-
-	// Calculate offset for pagination
-	offset := (page - 1) * limit
 
 	// If no document repository is available, return empty list (backward compat)
 	if h.documentRepo == nil {
-		shared.WritePaginatedJSON(w, []DocumentDTO{}, page, limit, 0)
+		shared.WritePaginatedJSON(w, []DocumentDTO{}, pagination.Page, pagination.PageSize, 0)
 		return
 	}
 
@@ -247,17 +231,17 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 
 	if searchQuery != "" {
 		// Use search if query is provided
-		docs, err = h.documentRepo.Search(ctx, searchQuery, limit, offset)
+		docs, err = h.documentRepo.Search(ctx, searchQuery, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Public document search request",
 			"query", searchQuery,
-			"limit", limit,
-			"offset", offset)
+			"limit", pagination.PageSize,
+			"offset", pagination.Offset)
 	} else {
 		// Otherwise, list all documents
-		docs, err = h.documentRepo.List(ctx, limit, offset)
+		docs, err = h.documentRepo.List(ctx, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Public document list request",
-			"limit", limit,
-			"offset", offset)
+			"limit", pagination.PageSize,
+			"offset", pagination.Offset)
 	}
 
 	if err != nil {
@@ -303,7 +287,7 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 		documents = append(documents, dto)
 	}
 
-	shared.WritePaginatedJSON(w, documents, page, limit, totalCount)
+	shared.WritePaginatedJSON(w, documents, pagination.Page, pagination.PageSize, totalCount)
 }
 
 // HandleGetDocument handles GET /api/v1/documents/{docId}
