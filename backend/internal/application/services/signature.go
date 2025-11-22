@@ -27,7 +27,7 @@ type repository interface {
 }
 
 type cryptoSigner interface {
-	CreateSignature(docID string, user *models.User, timestamp time.Time, nonce string, docChecksum string) (string, string, error)
+	CreateSignature(ctx context.Context, docID string, user *models.User, timestamp time.Time, nonce string, docChecksum string) (string, string, error)
 }
 
 // SignatureService orchestrates signature creation with Ed25519 cryptography and hash chain linking
@@ -129,7 +129,7 @@ func (s *SignatureService) CreateSignature(ctx context.Context, request *models.
 	}
 
 	timestamp := time.Now().UTC()
-	payloadHash, signatureB64, err := s.signer.CreateSignature(request.DocID, request.User, timestamp, nonce, docChecksum)
+	payloadHash, signatureB64, err := s.signer.CreateSignature(ctx, request.DocID, request.User, timestamp, nonce, docChecksum)
 	if err != nil {
 		logger.Logger.Error("Signature creation failed: cryptographic signature error",
 			"doc_id", request.DocID,

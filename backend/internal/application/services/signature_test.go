@@ -158,7 +158,7 @@ func newFakeCryptoSigner() *fakeCryptoSigner {
 	return &fakeCryptoSigner{}
 }
 
-func (f *fakeCryptoSigner) CreateSignature(docID string, user *models.User, _ time.Time, _ string, _ string) (string, string, error) {
+func (f *fakeCryptoSigner) CreateSignature(ctx context.Context, docID string, user *models.User, _ time.Time, _ string, _ string) (string, string, error) {
 	if f.shouldFail {
 		return "", "", errors.New("crypto signing failed")
 	}

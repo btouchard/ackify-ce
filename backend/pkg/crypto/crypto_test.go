@@ -2,6 +2,7 @@
 package crypto
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"testing"
@@ -28,7 +29,7 @@ func TestCryptoIntegration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create signature with generated nonce
-		hash, sig, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash, sig, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		assert.NotEmpty(t, hash)
@@ -63,10 +64,10 @@ func TestCryptoIntegration(t *testing.T) {
 		assert.NotEqual(t, nonce1, nonce2, "Nonces should be different")
 
 		// Create signatures with different nonces
-		hash1, sig1, err := signer.CreateSignature(docID, user, timestamp, nonce1, "")
+		hash1, sig1, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce1, "")
 		require.NoError(t, err)
 
-		hash2, sig2, err := signer.CreateSignature(docID, user, timestamp, nonce2, "")
+		hash2, sig2, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce2, "")
 		require.NoError(t, err)
 
 		// Different nonces should produce different signatures
@@ -96,7 +97,7 @@ func TestCryptoIntegration(t *testing.T) {
 			nonces[nonce] = true
 
 			// Create signature
-			hash, sig, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+			hash, sig, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 			require.NoError(t, err)
 
 			// Verify signature is unique
@@ -125,10 +126,10 @@ func TestSHA256Hashing(t *testing.T) {
 		nonce := "consistent-nonce"
 
 		// Create signature multiple times
-		hash1, _, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash1, _, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
-		hash2, _, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash2, _, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		assert.Equal(t, hash1, hash2, "Same input should produce same hash")
@@ -140,28 +141,28 @@ func TestSHA256Hashing(t *testing.T) {
 		baseNonce := "base-nonce"
 
 		// Base signature
-		baseHash, _, err := signer.CreateSignature("base-doc", user, baseTimestamp, baseNonce, "")
+		baseHash, _, err := signer.CreateSignature(context.Background(), "base-doc", user, baseTimestamp, baseNonce, "")
 		require.NoError(t, err)
 
 		// Test different document ID
-		hash1, _, err := signer.CreateSignature("different-doc", user, baseTimestamp, baseNonce, "")
+		hash1, _, err := signer.CreateSignature(context.Background(), "different-doc", user, baseTimestamp, baseNonce, "")
 		require.NoError(t, err)
 		assert.NotEqual(t, baseHash, hash1, "Different docID should produce different hash")
 
 		// Test different user
 		differentUser := testUserCharlie
-		hash2, _, err := signer.CreateSignature("base-doc", differentUser, baseTimestamp, baseNonce, "")
+		hash2, _, err := signer.CreateSignature(context.Background(), "base-doc", differentUser, baseTimestamp, baseNonce, "")
 		require.NoError(t, err)
 		assert.NotEqual(t, baseHash, hash2, "Different user should produce different hash")
 
 		// Test different timestamp
 		differentTime := baseTimestamp.Add(time.Hour)
-		hash3, _, err := signer.CreateSignature("base-doc", user, differentTime, baseNonce, "")
+		hash3, _, err := signer.CreateSignature(context.Background(), "base-doc", user, differentTime, baseNonce, "")
 		require.NoError(t, err)
 		assert.NotEqual(t, baseHash, hash3, "Different timestamp should produce different hash")
 
 		// Test different nonce
-		hash4, _, err := signer.CreateSignature("base-doc", user, baseTimestamp, "different-nonce", "")
+		hash4, _, err := signer.CreateSignature(context.Background(), "base-doc", user, baseTimestamp, "different-nonce", "")
 		require.NoError(t, err)
 		assert.NotEqual(t, baseHash, hash4, "Different nonce should produce different hash")
 	})
@@ -172,7 +173,7 @@ func TestSHA256Hashing(t *testing.T) {
 		timestamp := time.Now().UTC()
 		nonce := "props-nonce"
 
-		hashB64, _, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hashB64, _, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Decode hash
@@ -203,11 +204,11 @@ func TestSHA256Hashing(t *testing.T) {
 		nonce := "avalanche-test"
 
 		// Base hash
-		baseHash, _, err := signer.CreateSignature("testdoc", user, timestamp, nonce, "")
+		baseHash, _, err := signer.CreateSignature(context.Background(), "testdoc", user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Change one character in docID
-		modHash, _, err := signer.CreateSignature("testdoC", user, timestamp, nonce, "") // Changed 'c' to 'C'
+		modHash, _, err := signer.CreateSignature(context.Background(), "testdoC", user, timestamp, nonce, "") // Changed 'c' to 'C'
 		require.NoError(t, err)
 
 		// Decode both hashes
@@ -248,7 +249,7 @@ func TestCorruptionDetection(t *testing.T) {
 		timestamp := time.Now().UTC()
 		nonce := "corruption-nonce"
 
-		originalHash, originalSig, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		originalHash, originalSig, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Corrupt the hash
@@ -271,7 +272,7 @@ func TestCorruptionDetection(t *testing.T) {
 		timestamp := time.Now().UTC()
 		nonce := "sig-corruption-nonce"
 
-		originalHash, originalSig, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		originalHash, originalSig, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Corrupt the signature
@@ -292,11 +293,11 @@ func TestCorruptionDetection(t *testing.T) {
 		nonce := "tamper-nonce"
 
 		// Original signature
-		originalHash, originalSig, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		originalHash, originalSig, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Create signature for tampered data (different docID)
-		tamperedHash, tamperedSig, err := signer.CreateSignature("tampered-doc", user, timestamp, nonce, "")
+		tamperedHash, tamperedSig, err := signer.CreateSignature(context.Background(), "tampered-doc", user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Tampered data produces different hash and signature
@@ -322,10 +323,10 @@ func TestBusinessRuleEnforcement(t *testing.T) {
 		nonce2, err := GenerateNonce()
 		require.NoError(t, err)
 
-		hash1, sig1, err := signer.CreateSignature(docID, user, timestamp, nonce1, "")
+		hash1, sig1, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce1, "")
 		require.NoError(t, err)
 
-		hash2, sig2, err := signer.CreateSignature(docID, user, timestamp, nonce2, "")
+		hash2, sig2, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce2, "")
 		require.NoError(t, err)
 
 		// Different nonces create different signatures
@@ -355,10 +356,10 @@ func TestBusinessRuleEnforcement(t *testing.T) {
 		timestamp := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 		nonce := "case-nonce"
 
-		hash1, sig1, err := signer.CreateSignature(docID, user1, timestamp, nonce, "")
+		hash1, sig1, err := signer.CreateSignature(context.Background(), docID, user1, timestamp, nonce, "")
 		require.NoError(t, err)
 
-		hash2, sig2, err := signer.CreateSignature(docID, user2, timestamp, nonce, "")
+		hash2, sig2, err := signer.CreateSignature(context.Background(), docID, user2, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Should produce same signature due to email normalization
@@ -378,10 +379,10 @@ func TestBusinessRuleEnforcement(t *testing.T) {
 		timestamp1 := time.Date(2024, 7, 1, 10, 30, 15, 123456789, time.UTC)
 		timestamp2 := time.Date(2024, 7, 1, 10, 30, 15, 123456790, time.UTC) // 1 nanosecond different
 
-		hash1, sig1, err := signer.CreateSignature(docID, user, timestamp1, nonce, "")
+		hash1, sig1, err := signer.CreateSignature(context.Background(), docID, user, timestamp1, nonce, "")
 		require.NoError(t, err)
 
-		hash2, sig2, err := signer.CreateSignature(docID, user, timestamp2, nonce, "")
+		hash2, sig2, err := signer.CreateSignature(context.Background(), docID, user, timestamp2, nonce, "")
 		require.NoError(t, err)
 
 		// Even 1 nanosecond difference should produce different signatures

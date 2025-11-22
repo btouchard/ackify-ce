@@ -74,7 +74,7 @@ func (m *mockSignatureRepository) UpdatePrevHash(ctx context.Context, id int64, 
 // mockCryptoSigner for testing
 type mockCryptoSigner struct{}
 
-func (m *mockCryptoSigner) CreateSignature(docID string, user *models.User, timestamp time.Time, nonce string, docChecksum string) (string, string, error) {
+func (m *mockCryptoSigner) CreateSignature(ctx context.Context, docID string, user *models.User, timestamp time.Time, nonce string, docChecksum string) (string, string, error) {
 	return "payload_hash", "signature_base64", nil
 }
 

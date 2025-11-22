@@ -2,6 +2,7 @@
 package crypto
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/base64"
@@ -103,7 +104,7 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 		timestamp := time.Date(2024, 1, 15, 12, 30, 0, 0, time.UTC)
 		nonce := "test-nonce-123"
 
-		hashB64, sigB64, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hashB64, sigB64, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 
 		require.NoError(t, err)
 		assert.NotEmpty(t, hashB64)
@@ -125,10 +126,10 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 		nonce := "consistent-nonce"
 
 		// Create signature twice with same parameters
-		hash1, sig1, err1 := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash1, sig1, err1 := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err1)
 
-		hash2, sig2, err2 := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash2, sig2, err2 := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err2)
 
 		// Should produce identical results
@@ -142,24 +143,24 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 		nonce := "test-nonce"
 
 		// Same user, different documents
-		hash1, sig1, err := signer.CreateSignature("doc1", user, timestamp, nonce, "")
+		hash1, sig1, err := signer.CreateSignature(context.Background(), "doc1", user, timestamp, nonce, "")
 		require.NoError(t, err)
 
-		hash2, sig2, err := signer.CreateSignature("doc2", user, timestamp, nonce, "")
+		hash2, sig2, err := signer.CreateSignature(context.Background(), "doc2", user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		assert.NotEqual(t, hash1, hash2)
 		assert.NotEqual(t, sig1, sig2)
 
 		// Same document, different users
-		hash3, sig3, err := signer.CreateSignature("doc1", testUserAlice, timestamp, nonce, "")
+		hash3, sig3, err := signer.CreateSignature(context.Background(), "doc1", testUserAlice, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		assert.NotEqual(t, hash1, hash3)
 		assert.NotEqual(t, sig1, sig3)
 
 		// Same everything, different nonces
-		hash4, sig4, err := signer.CreateSignature("doc1", user, timestamp, "different-nonce", "")
+		hash4, sig4, err := signer.CreateSignature(context.Background(), "doc1", user, timestamp, "different-nonce", "")
 		require.NoError(t, err)
 
 		assert.NotEqual(t, hash1, hash4)
@@ -186,7 +187,7 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-				hash, sig, err := signer.CreateSignature(docID, user, tc.timestamp, nonce, "")
+				hash, sig, err := signer.CreateSignature(context.Background(), docID, user, tc.timestamp, nonce, "")
 				require.NoError(t, err)
 
 				// Each timestamp should produce unique signature
@@ -232,7 +233,7 @@ func TestEd25519Signer_CreateSignature(t *testing.T) {
 					}
 				}
 
-				hash, sig, err := signer.CreateSignature(tc.docID, testUserAlice, timestamp, tc.nonce, "")
+				hash, sig, err := signer.CreateSignature(context.Background(), tc.docID, testUserAlice, timestamp, tc.nonce, "")
 
 				// Should not fail on edge case inputs
 				require.NoError(t, err)
@@ -253,7 +254,7 @@ func TestEd25519Signer_SignatureVerification(t *testing.T) {
 		timestamp := time.Date(2024, 3, 1, 9, 15, 30, 0, time.UTC)
 		nonce := "verify-nonce"
 
-		hashB64, sigB64, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hashB64, sigB64, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Decode signature and hash
@@ -281,7 +282,7 @@ func TestEd25519Signer_SignatureVerification(t *testing.T) {
 		timestamp := time.Now().UTC()
 		nonce := "corrupt-nonce"
 
-		hashB64, sigB64, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hashB64, sigB64, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		// Corrupt the signature
@@ -318,7 +319,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		timestamp := time.Date(2024, 4, 1, 12, 0, 0, 0, time.UTC)
 		nonce := "payload-nonce"
 
-		hash1, _, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash1, _, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		expectedPayload := []byte("doc_id=payload-test\nuser_sub=user-123-alice\nuser_email=alice@example.com\nsigned_at=2024-04-01T12:00:00Z\nnonce=payload-nonce\n")
@@ -340,7 +341,7 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		timestamp := time.Date(2024, 5, 1, 10, 0, 0, 0, time.UTC)
 		nonce := "email-nonce"
 
-		hash, _, err := signer.CreateSignature(docID, user, timestamp, nonce, "")
+		hash, _, err := signer.CreateSignature(context.Background(), docID, user, timestamp, nonce, "")
 		require.NoError(t, err)
 
 		expectedPayload := []byte("doc_id=email-test\nuser_sub=user-email-test\nuser_email=test.user@example.com\nsigned_at=2024-05-01T10:00:00Z\nnonce=email-nonce\n")
@@ -358,10 +359,10 @@ func TestEd25519Signer_PayloadGeneration(t *testing.T) {
 		utcTime := time.Date(2024, 6, 1, 15, 30, 45, 123456789, time.UTC)
 		localTime := utcTime.In(time.Local)
 
-		hash1, _, err := signer.CreateSignature(docID, user, utcTime, nonce, "")
+		hash1, _, err := signer.CreateSignature(context.Background(), docID, user, utcTime, nonce, "")
 		require.NoError(t, err)
 
-		hash2, _, err := signer.CreateSignature(docID, user, localTime, nonce, "")
+		hash2, _, err := signer.CreateSignature(context.Background(), docID, user, localTime, nonce, "")
 		require.NoError(t, err)
 
 		assert.Equal(t, hash1, hash2, "Different timezone representations of same moment should produce same hash")
@@ -424,7 +425,7 @@ func TestEd25519Signer_InterfaceCompliance(t *testing.T) {
 		assert.NotEmpty(t, pubKey)
 
 		user := testUserAlice
-		hash, sig, err := signer.CreateSignature("test", user, time.Now(), "nonce", "")
+		hash, sig, err := signer.CreateSignature(context.Background(), "test", user, time.Now(), "nonce", "")
 		assert.NoError(t, err)
 		assert.NotEmpty(t, hash)
 		assert.NotEmpty(t, sig)

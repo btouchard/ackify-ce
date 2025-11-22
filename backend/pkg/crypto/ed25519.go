@@ -2,6 +2,7 @@
 package crypto
 
 import (
+	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
@@ -35,7 +36,13 @@ func NewEd25519Signer() (*Ed25519Signer, error) {
 }
 
 // CreateSignature generates SHA-256 payload hash and Ed25519 signature for non-repudiation proof
-func (s *Ed25519Signer) CreateSignature(docID string, user *models.User, timestamp time.Time, nonce string, docChecksum string) (string, string, error) {
+// The context is used for tracing and cancellation propagation.
+func (s *Ed25519Signer) CreateSignature(ctx context.Context, docID string, user *models.User, timestamp time.Time, nonce string, docChecksum string) (string, string, error) {
+	// Check if context has been cancelled before performing cryptographic operations
+	if err := ctx.Err(); err != nil {
+		return "", "", fmt.Errorf("context cancelled before signature creation: %w", err)
+	}
+
 	payload := canonicalPayload(docID, user, timestamp, nonce, docChecksum)
 	hash := sha256.Sum256(payload)
 	signature := ed25519.Sign(s.privateKey, hash[:])
