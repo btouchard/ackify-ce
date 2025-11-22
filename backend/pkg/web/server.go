@@ -114,38 +114,29 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		return nil, fmt.Errorf("failed to start webhook worker: %w", err)
 	}
 
-	// Initialize Magic Link service (only if enabled) - MUST be before ReminderService
-	var magicLinkService *services.MagicLinkService
-	if cfg.Auth.MagicLinkEnabled && emailSender != nil {
-		magicLinkService = services.NewMagicLinkService(services.MagicLinkServiceConfig{
-			Repository:  magicLinkRepo,
-			EmailSender: emailSender,
-			BaseURL:     cfg.App.BaseURL,
-			AppName:     cfg.App.Organisation,
-		})
-		logger.Logger.Info("Magic Link authentication enabled")
-	} else if !cfg.Auth.MagicLinkEnabled {
-		logger.Logger.Info("Magic Link authentication disabled")
-	}
+	magicLinkService := services.NewMagicLinkService(services.MagicLinkServiceConfig{
+		Repository:  magicLinkRepo,
+		EmailSender: emailSender,
+		BaseURL:     cfg.App.BaseURL,
+		AppName:     cfg.App.Organisation,
+	})
+	logger.Logger.Info("Magic Link authentication enabled")
 
 	// Initialize Magic Link cleanup worker
 	var magicLinkWorker *workers.MagicLinkCleanupWorker
-	if magicLinkService != nil {
+	if cfg.Auth.MagicLinkEnabled {
 		magicLinkWorker = workers.NewMagicLinkCleanupWorker(magicLinkService, 1*time.Hour)
 		go magicLinkWorker.Start(ctx)
 	}
 
 	// Initialize reminder service with async support (needs magicLinkService)
-	var reminderService *services.ReminderAsyncService
-	if emailQueueRepo != nil && magicLinkService != nil {
-		reminderService = services.NewReminderAsyncService(
-			expectedSignerRepo,
-			reminderRepo,
-			emailQueueRepo,
-			magicLinkService,
-			cfg.App.BaseURL,
-		)
-	}
+	reminderService := services.NewReminderAsyncService(
+		expectedSignerRepo,
+		reminderRepo,
+		emailQueueRepo,
+		magicLinkService,
+		cfg.App.BaseURL,
+	)
 
 	// Initialize OAuth session cleanup worker
 	var sessionWorker *auth.SessionWorker
@@ -191,7 +182,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 
 	router.Get("/oembed", handlers.HandleOEmbed(cfg.App.BaseURL))
 
-	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, cfg.Auth.OAuthEnabled, cfg.Auth.MagicLinkEnabled, cfg.App.OnlyAdminCanCreate, signatureRepo))
+	router.NotFound(EmbedFolder(frontend, "web/dist", cfg.App.BaseURL, version, cfg.Auth.OAuthEnabled, cfg.Auth.MagicLinkEnabled, cfg.App.SMTPEnabled, cfg.App.OnlyAdminCanCreate, signatureRepo))
 
 	httpServer := &http.Server{
 		Addr:    cfg.Server.ListenAddr,

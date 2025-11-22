@@ -370,6 +370,7 @@
       "sendToAll": "Enviar a todos los lectores en espera ({count})",
       "sendToSelected": "Enviar solo a los seleccionados ({count})",
       "allContacted": "✓ Todos los lectores esperados han sido contactados o han confirmado",
+      "emailServiceDisabled": "⚠️ El servicio de correo electrónico está actualmente desactivado. El historial de recordatorios permanece visible, pero el envío de nuevos recordatorios no está disponible.",
       "unexpectedSignatures": "⚠ Confirmaciones de lectura complementarias",
       "unexpectedDescription": "Usuarios que han confirmado pero no están presentes en la lista de lectores esperados",
       "createdBy": "Creado por {by} el {date}",

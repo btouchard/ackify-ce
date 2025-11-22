@@ -32,6 +32,7 @@ type AppConfig struct {
 	SecureCookies      bool
 	AdminEmails        []string
 	OnlyAdminCanCreate bool
+	SMTPEnabled        bool // True if SMTP is configured (for email reminders)
 }
 
 type DatabaseConfig struct {
@@ -207,15 +208,9 @@ func Load() (*Config, error) {
 		}
 	}
 
-	// Auto-detect MagicLink enabled: true if SMTP is configured
-	magicLinkConfigured := mailHost != ""
-
-	// Allow manual override via environment variable
-	if magicLinkEnabledStr := getEnv("ACKIFY_AUTH_MAGICLINK_ENABLED", ""); magicLinkEnabledStr != "" {
-		config.Auth.MagicLinkEnabled = getEnvBool("ACKIFY_AUTH_MAGICLINK_ENABLED", false)
-	} else {
-		config.Auth.MagicLinkEnabled = magicLinkConfigured
-	}
+	smtpConfigured := mailHost != ""
+	config.App.SMTPEnabled = smtpConfigured
+	config.Auth.MagicLinkEnabled = getEnvBool("ACKIFY_AUTH_MAGICLINK_ENABLED", false) && smtpConfigured
 
 	// Validation: At least one authentication method must be enabled
 	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {

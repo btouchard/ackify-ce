@@ -1257,11 +1257,12 @@ func TestConfig_AuthValidation(t *testing.T) {
 		{
 			name: "MagicLink only (auto-detected)",
 			envVars: map[string]string{
-				"ACKIFY_BASE_URL":            "http://localhost:8080",
-				"ACKIFY_ORGANISATION":        "Test Org",
-				"ACKIFY_DB_DSN":              "postgres://localhost/test",
-				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
-				"ACKIFY_MAIL_HOST":           "smtp.example.com",
+				"ACKIFY_BASE_URL":               "http://localhost:8080",
+				"ACKIFY_ORGANISATION":           "Test Org",
+				"ACKIFY_DB_DSN":                 "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET":    base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_MAIL_HOST":              "smtp.example.com",
+				"ACKIFY_AUTH_MAGICLINK_ENABLED": "true",
 			},
 			expectError: false,
 			checkAuth: func(t *testing.T, cfg *Config) {
@@ -1271,19 +1272,23 @@ func TestConfig_AuthValidation(t *testing.T) {
 				if !cfg.Auth.MagicLinkEnabled {
 					t.Error("MagicLink should be enabled")
 				}
+				if !cfg.App.SMTPEnabled {
+					t.Error("SMTP should be enabled")
+				}
 			},
 		},
 		{
 			name: "Both OAuth and MagicLink enabled",
 			envVars: map[string]string{
-				"ACKIFY_BASE_URL":            "http://localhost:8080",
-				"ACKIFY_ORGANISATION":        "Test Org",
-				"ACKIFY_DB_DSN":              "postgres://localhost/test",
-				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
-				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
-				"ACKIFY_OAUTH_CLIENT_SECRET": "test-secret",
-				"ACKIFY_OAUTH_PROVIDER":      "google",
-				"ACKIFY_MAIL_HOST":           "smtp.example.com",
+				"ACKIFY_BASE_URL":               "http://localhost:8080",
+				"ACKIFY_ORGANISATION":           "Test Org",
+				"ACKIFY_DB_DSN":                 "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET":    base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_OAUTH_CLIENT_ID":        "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET":    "test-secret",
+				"ACKIFY_OAUTH_PROVIDER":         "google",
+				"ACKIFY_MAIL_HOST":              "smtp.example.com",
+				"ACKIFY_AUTH_MAGICLINK_ENABLED": "true",
 			},
 			expectError: false,
 			checkAuth: func(t *testing.T, cfg *Config) {
@@ -1292,6 +1297,9 @@ func TestConfig_AuthValidation(t *testing.T) {
 				}
 				if !cfg.Auth.MagicLinkEnabled {
 					t.Error("MagicLink should be enabled")
+				}
+				if !cfg.App.SMTPEnabled {
+					t.Error("SMTP should be enabled")
 				}
 			},
 		},
@@ -1326,14 +1334,15 @@ func TestConfig_AuthValidation(t *testing.T) {
 		{
 			name: "Manual override - disable OAuth even with credentials",
 			envVars: map[string]string{
-				"ACKIFY_BASE_URL":            "http://localhost:8080",
-				"ACKIFY_ORGANISATION":        "Test Org",
-				"ACKIFY_DB_DSN":              "postgres://localhost/test",
-				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
-				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
-				"ACKIFY_OAUTH_CLIENT_SECRET": "test-secret",
-				"ACKIFY_MAIL_HOST":           "smtp.example.com",
-				"ACKIFY_AUTH_OAUTH_ENABLED":  "false",
+				"ACKIFY_BASE_URL":               "http://localhost:8080",
+				"ACKIFY_ORGANISATION":           "Test Org",
+				"ACKIFY_DB_DSN":                 "postgres://localhost/test",
+				"ACKIFY_OAUTH_COOKIE_SECRET":    base64.StdEncoding.EncodeToString([]byte("test-secret-32-bytes-long!!!!!!")),
+				"ACKIFY_OAUTH_CLIENT_ID":        "test-client-id",
+				"ACKIFY_OAUTH_CLIENT_SECRET":    "test-secret",
+				"ACKIFY_MAIL_HOST":              "smtp.example.com",
+				"ACKIFY_AUTH_OAUTH_ENABLED":     "false",
+				"ACKIFY_AUTH_MAGICLINK_ENABLED": "true",
 			},
 			expectError: false,
 			checkAuth: func(t *testing.T, cfg *Config) {
