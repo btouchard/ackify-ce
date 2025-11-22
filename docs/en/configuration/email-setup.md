@@ -45,6 +45,11 @@ ACKIFY_MAIL_TLS=true
 # Enable STARTTLS (default: true)
 ACKIFY_MAIL_STARTTLS=true
 
+# Disable TLS certificate verification (default: false)
+# Useful for self-signed certificates in development/testing
+# /!\ DO NOT USE IN PRODUCTION
+ACKIFY_MAIL_INSECURE_SKIP_VERIFY=false
+
 # Connection timeout (default: 10s)
 ACKIFY_MAIL_TIMEOUT=10s
 
@@ -120,6 +125,8 @@ ACKIFY_MAIL_PASSWORD=secure_password
 ACKIFY_MAIL_FROM=ackify@company.com
 ACKIFY_MAIL_TLS=true
 ACKIFY_MAIL_STARTTLS=true
+# For self-signed certificates only (/!\ not in production)
+# ACKIFY_MAIL_INSECURE_SKIP_VERIFY=true
 ```
 
 ## Email Templates
@@ -289,6 +296,16 @@ Verify:
 - `ACKIFY_MAIL_HOST` and `ACKIFY_MAIL_PORT` are correct
 - Your server allows outgoing connections on the SMTP port
 - `ACKIFY_MAIL_TLS=true` if the server requires TLS
+
+### Error "tls: failed to verify certificate: x509: certificate signed by unknown authority"
+
+This error occurs with self-signed certificates. **For development/testing environments only**:
+
+```bash
+ACKIFY_MAIL_INSECURE_SKIP_VERIFY=true
+```
+
+/!\ **Warning**: This option disables TLS certificate verification. NEVER use in production!
 
 ### Error "Authentication failed"
 
