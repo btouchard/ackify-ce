@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // Ed25519Signer provides cryptographic signature operations using Ed25519 elliptic curve algorithm
@@ -85,8 +86,7 @@ func loadOrGenerateKeys() (ed25519.PrivateKey, ed25519.PublicKey, error) {
 		return nil, nil, fmt.Errorf("failed to generate keys: %w", err)
 	}
 
-	// Do not print private keys. Warn about ephemeral key usage only.
-	fmt.Println("[WARN] Generated ephemeral Ed25519 keypair. Set ACKIFY_ED25519_PRIVATE_KEY to persist across restarts.")
+	logger.Logger.Warn("Ed25519 private key not set, signatures will be different on restart")
 
 	return privateKey, publicKey, nil
 }

@@ -56,10 +56,7 @@ func NewOAuthProvider(config OAuthProviderConfig) *OAuthProvider {
 		},
 	}
 
-	logger.Logger.Info("OAuth provider configured",
-		"client_id", config.ClientID,
-		"auth_url", config.AuthURL,
-		"redirect_url", oauthConfig.RedirectURL)
+	logger.Logger.Info("OAuth provider configured successfully")
 
 	return &OAuthProvider{
 		oauthConfig:   oauthConfig,
@@ -289,23 +286,17 @@ func (p *OAuthProvider) HandleCallback(ctx context.Context, w http.ResponseWrite
 	}
 
 	if !p.IsAllowedDomain(user.Email) {
-		logger.Logger.Warn("User domain not allowed",
-			"user_email", user.Email,
-			"allowed_domain", p.allowedDomain)
+		logger.Logger.Warn("User domain not allowed")
 		return nil, nextURL, models.ErrDomainNotAllowed
 	}
 
-	logger.Logger.Info("OAuth callback successful",
-		"user_email", user.Email,
-		"user_name", user.Name)
+	logger.Logger.Info("OAuth callback successful")
 
 	// Store refresh token if available
 	if token.RefreshToken != "" && p.sessionSvc.sessionRepo != nil {
 		if err := p.sessionSvc.StoreRefreshToken(ctx, w, r, token, user); err != nil {
 			// Log error but don't fail the authentication
-			logger.Logger.Error("Failed to store refresh token (non-fatal)",
-				"user_sub", user.Sub,
-				"error", err.Error())
+			logger.Logger.Error("Failed to store refresh token (non-fatal)", "error", err.Error())
 		}
 	}
 
@@ -379,12 +370,12 @@ func (p *OAuthProvider) parseUserInfo(resp *http.Response) (*models.User, error)
 	user.Name = name
 
 	logger.Logger.Debug("Extracted OAuth user identifiers",
-		"sub", user.Sub,
-		"email_present", user.Email != "",
-		"name_present", user.Name != "")
+		"has_sub", user.Sub != "",
+		"has_email", user.Email != "",
+		"has_name", user.Name != "")
 
 	if !user.IsValid() {
-		return nil, fmt.Errorf("invalid user data extracted: sub=%s, email=%s", user.Sub, user.Email)
+		return nil, fmt.Errorf("invalid user data extracted")
 	}
 
 	return user, nil

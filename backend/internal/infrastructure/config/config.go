@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/gorilla/securecookie"
 )
 
@@ -240,7 +241,7 @@ func parseCookieSecret() ([]byte, error) {
 	raw := os.Getenv("ACKIFY_OAUTH_COOKIE_SECRET")
 	if raw == "" {
 		secret := securecookie.GenerateRandomKey(32)
-		fmt.Println("[WARN] ACKIFY_OAUTH_COOKIE_SECRET not set, generated volatile secret (sessions reset on restart)")
+		logger.Logger.Warn("OAuth cookie secret not set, sessions will reset on restart")
 		return secret, nil
 	}
 

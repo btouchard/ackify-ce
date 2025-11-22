@@ -120,13 +120,15 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		BaseURL:     cfg.App.BaseURL,
 		AppName:     cfg.App.Organisation,
 	})
-	logger.Logger.Info("Magic Link authentication enabled")
 
 	// Initialize Magic Link cleanup worker
 	var magicLinkWorker *workers.MagicLinkCleanupWorker
 	if cfg.Auth.MagicLinkEnabled {
+		logger.Logger.Info("Magic Link authentication enabled")
 		magicLinkWorker = workers.NewMagicLinkCleanupWorker(magicLinkService, 1*time.Hour)
 		go magicLinkWorker.Start(ctx)
+	} else {
+		logger.Logger.Info("Magic Link authentication disabled")
 	}
 
 	// Initialize reminder service with async support (needs magicLinkService)
@@ -218,22 +220,21 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	// Stop OAuth session worker first if it exists
 	if s.sessionWorker != nil {
 		if err := s.sessionWorker.Stop(); err != nil {
-			fmt.Printf("Warning: failed to stop OAuth session worker: %v\n", err)
+			logger.Logger.Warn("Failed to stop OAuth session worker", "error", err)
 		}
 	}
 
 	// Stop email worker if it exists
 	if s.emailWorker != nil {
 		if err := s.emailWorker.Stop(); err != nil {
-			// Log but don't fail shutdown
-			fmt.Printf("Warning: failed to stop email worker: %v\n", err)
+			logger.Logger.Warn("Failed to stop email worker", "error", err)
 		}
 	}
 
 	// Stop webhook worker
 	if s.webhookWorker != nil {
 		if err := s.webhookWorker.Stop(); err != nil {
-			fmt.Printf("Warning: failed to stop webhook worker: %v\n", err)
+			logger.Logger.Warn("Failed to stop webhook worker", "error", err)
 		}
 	}
 
