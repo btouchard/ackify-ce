@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
@@ -18,6 +19,8 @@ import (
 type documentRepository interface {
 	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
 	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	Count(ctx context.Context, searchQuery string) (int, error)
 	CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
 	Delete(ctx context.Context, docID string) error
 }
@@ -114,14 +117,55 @@ type UnexpectedSignatureResponse struct {
 func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// TODO: Add pagination parameters
+	// Parse pagination and search parameters
+	page := 1
 	limit := 100
-	offset := 0
+	searchQuery := r.URL.Query().Get("search")
 
-	documents, err := h.documentRepo.List(ctx, limit, offset)
+	if p := r.URL.Query().Get("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 200 {
+			limit = parsed
+		}
+	}
+
+	offset := (page - 1) * limit
+
+	// Fetch documents with or without search
+	var documents []*models.Document
+	var err error
+
+	if searchQuery != "" {
+		documents, err = h.documentRepo.Search(ctx, searchQuery, limit, offset)
+		logger.Logger.Debug("Admin document search",
+			"query", searchQuery,
+			"limit", limit,
+			"offset", offset)
+	} else {
+		documents, err = h.documentRepo.List(ctx, limit, offset)
+		logger.Logger.Debug("Admin document list",
+			"limit", limit,
+			"offset", offset)
+	}
+
 	if err != nil {
+		logger.Logger.Error("Failed to fetch documents", "error", err.Error(), "search", searchQuery)
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to list documents", nil)
 		return
+	}
+
+	// Get total count of documents (with or without search filter)
+	totalCount, err := h.documentRepo.Count(ctx, searchQuery)
+	if err != nil {
+		logger.Logger.Warn("Failed to count documents, using result count",
+			"error", err.Error(),
+			"search", searchQuery)
+		totalCount = len(documents)
 	}
 
 	response := make([]*DocumentResponse, 0, len(documents))
@@ -130,9 +174,15 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meta := map[string]interface{}{
-		"total":  len(documents), // For now, just return count of results
+		"total":  totalCount,     // Total matching documents in DB
+		"count":  len(documents), // Count in this page
 		"limit":  limit,
 		"offset": offset,
+		"page":   page,
+	}
+
+	if searchQuery != "" {
+		meta["search"] = searchQuery
 	}
 
 	shared.WriteJSONWithMeta(w, http.StatusOK, response, meta)

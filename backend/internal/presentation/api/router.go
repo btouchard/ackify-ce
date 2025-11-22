@@ -69,8 +69,16 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	healthHandler := health.NewHandler()
 	authHandler := apiAuth.NewHandler(cfg.AuthService, cfg.MagicLinkService, apiMiddleware, cfg.BaseURL, cfg.OAuthEnabled, cfg.MagicLinkEnabled)
 	usersHandler := users.NewHandler(cfg.AdminEmails)
-	documentsHandler := documents.NewHandlerWithPublisher(cfg.SignatureService, cfg.DocumentService, cfg.WebhookPublisher, cfg.AdminEmails, cfg.OnlyAdminCanCreate)
-	signaturesHandler := signatures.NewHandlerWithDeps(cfg.SignatureService, cfg.ExpectedSignerRepository, cfg.WebhookPublisher)
+	documentsHandler := documents.NewHandler(
+		cfg.SignatureService,
+		cfg.DocumentService,
+		cfg.DocumentRepository,
+		cfg.ExpectedSignerRepository,
+		cfg.WebhookPublisher,
+		cfg.AdminEmails,
+		cfg.OnlyAdminCanCreate,
+	)
+	signaturesHandler := signatures.NewHandler(cfg.SignatureService, cfg.ExpectedSignerRepository, cfg.WebhookPublisher)
 
 	// Public routes
 	r.Group(func(r chi.Router) {

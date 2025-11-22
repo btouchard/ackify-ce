@@ -23,6 +23,20 @@ type documentService interface {
 	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
 }
 
+// documentRepository defines the interface for document repository operations
+type documentRepository interface {
+	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	Count(ctx context.Context, searchQuery string) (int, error)
+	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
+}
+
+// expectedSignerRepository defines the interface for expected signer operations
+type expectedSignerRepository interface {
+	ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+}
+
 // webhookPublisher defines minimal publish capability
 type webhookPublisher interface {
 	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
@@ -32,27 +46,28 @@ type webhookPublisher interface {
 type Handler struct {
 	signatureService   *services.SignatureService
 	documentService    documentService
+	documentRepo       documentRepository
+	expectedSignerRepo expectedSignerRepository
 	webhookPublisher   webhookPublisher
 	adminEmails        []string
 	onlyAdminCanCreate bool
 }
 
-// NewHandler creates a new documents handler
-// Backward-compatible constructor used by tests and existing code
-func NewHandler(signatureService *services.SignatureService, documentService documentService) *Handler {
+// NewHandler creates a handler with all dependencies for full functionality
+func NewHandler(
+	signatureService *services.SignatureService,
+	documentService documentService,
+	documentRepo documentRepository,
+	expectedSignerRepo expectedSignerRepository,
+	publisher webhookPublisher,
+	adminEmails []string,
+	onlyAdminCanCreate bool,
+) *Handler {
 	return &Handler{
 		signatureService:   signatureService,
 		documentService:    documentService,
-		adminEmails:        []string{},
-		onlyAdminCanCreate: false,
-	}
-}
-
-// Extended constructor with webhook publisher
-func NewHandlerWithPublisher(signatureService *services.SignatureService, documentService documentService, publisher webhookPublisher, adminEmails []string, onlyAdminCanCreate bool) *Handler {
-	return &Handler{
-		signatureService:   signatureService,
-		documentService:    documentService,
+		documentRepo:       documentRepo,
+		expectedSignerRepo: expectedSignerRepo,
 		webhookPublisher:   publisher,
 		adminEmails:        adminEmails,
 		onlyAdminCanCreate: onlyAdminCanCreate,
@@ -198,10 +213,12 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 
 // HandleListDocuments handles GET /api/v1/documents
 func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	// Parse query parameters
 	page := 1
 	limit := 20
-	_ = r.URL.Query().Get("search") // TODO: implement search
+	searchQuery := r.URL.Query().Get("search")
 
 	if p := r.URL.Query().Get("page"); p != "" {
 		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
@@ -215,42 +232,139 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// For now, return empty list (we'll implement document listing later)
-	documents := []DocumentDTO{}
+	// Calculate offset for pagination
+	offset := (page - 1) * limit
 
-	// TODO: Implement actual document listing from database
-	// This would require adding a document repository and service
+	// If no document repository is available, return empty list (backward compat)
+	if h.documentRepo == nil {
+		shared.WritePaginatedJSON(w, []DocumentDTO{}, page, limit, 0)
+		return
+	}
 
-	total := 0
-	shared.WritePaginatedJSON(w, documents, page, limit, total)
+	// Fetch documents from repository
+	var docs []*models.Document
+	var err error
+
+	if searchQuery != "" {
+		// Use search if query is provided
+		docs, err = h.documentRepo.Search(ctx, searchQuery, limit, offset)
+		logger.Logger.Debug("Public document search request",
+			"query", searchQuery,
+			"limit", limit,
+			"offset", offset)
+	} else {
+		// Otherwise, list all documents
+		docs, err = h.documentRepo.List(ctx, limit, offset)
+		logger.Logger.Debug("Public document list request",
+			"limit", limit,
+			"offset", offset)
+	}
+
+	if err != nil {
+		logger.Logger.Error("Failed to fetch documents",
+			"search", searchQuery,
+			"error", err.Error())
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to fetch documents", nil)
+		return
+	}
+
+	// Get total count of documents (with or without search filter)
+	totalCount, err := h.documentRepo.Count(ctx, searchQuery)
+	if err != nil {
+		logger.Logger.Warn("Failed to count documents, using result count",
+			"error", err.Error(),
+			"search", searchQuery)
+		totalCount = len(docs)
+	}
+
+	// Convert to DTOs (enriched with counts)
+	documents := make([]DocumentDTO, 0, len(docs))
+	for _, doc := range docs {
+		dto := DocumentDTO{
+			ID:          doc.DocID,
+			Title:       doc.Title,
+			Description: doc.Description,
+			CreatedAt:   doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:   doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+
+		// Get signature count
+		if sigs, err := h.signatureService.GetDocumentSignatures(ctx, doc.DocID); err == nil {
+			dto.SignatureCount = len(sigs)
+		}
+
+		// Get expected signer count
+		if h.expectedSignerRepo != nil {
+			if stats, err := h.expectedSignerRepo.GetStats(ctx, doc.DocID); err == nil {
+				dto.ExpectedSignerCount = stats.ExpectedCount
+			}
+		}
+
+		documents = append(documents, dto)
+	}
+
+	shared.WritePaginatedJSON(w, documents, page, limit, totalCount)
 }
 
 // HandleGetDocument handles GET /api/v1/documents/{docId}
 func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	docID := chi.URLParam(r, "docId")
+
 	if docID == "" {
 		shared.WriteValidationError(w, "Document ID is required", nil)
 		return
 	}
 
+	// Get document from DB if repository available
+	var doc *models.Document
+	if h.documentRepo != nil {
+		var err error
+		doc, err = h.documentRepo.GetByDocID(ctx, docID)
+		if err != nil {
+			logger.Logger.Error("Failed to get document", "doc_id", docID, "error", err.Error())
+			shared.WriteInternalError(w)
+			return
+		}
+		if doc == nil {
+			shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
+			return
+		}
+	}
+
 	// Get signatures for the document
-	signatures, err := h.signatureService.GetDocumentSignatures(r.Context(), docID)
+	signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID)
 	if err != nil {
+		logger.Logger.Error("Failed to get signatures", "doc_id", docID, "error", err.Error())
 		shared.WriteInternalError(w)
 		return
 	}
 
-	// Build document response
-	// TODO: Get actual document metadata from database
-	document := DocumentDTO{
+	// Build response
+	response := DocumentDTO{
 		ID:             docID,
-		Title:          "Document " + docID, // Placeholder
-		Description:    "",
 		SignatureCount: len(signatures),
-		// ExpectedSignerCount will be populated when we have the expected signers repository
 	}
 
-	shared.WriteJSON(w, http.StatusOK, document)
+	// Fill with document data if available
+	if doc != nil {
+		response.Title = doc.Title
+		response.Description = doc.Description
+		response.CreatedAt = doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00")
+		response.UpdatedAt = doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
+	} else {
+		// Fallback for backward compat (when no repo)
+		response.Title = "Document " + docID
+	}
+
+	// Get expected signer count
+	if h.expectedSignerRepo != nil {
+		if stats, err := h.expectedSignerRepo.GetStats(ctx, docID); err == nil {
+			response.ExpectedSignerCount = stats.ExpectedCount
+		}
+	}
+
+	shared.WriteJSON(w, http.StatusOK, response)
 }
 
 // HandleGetDocumentSignatures handles GET /api/v1/documents/{docId}/signatures
@@ -281,18 +395,46 @@ func (h *Handler) HandleGetDocumentSignatures(w http.ResponseWriter, r *http.Req
 	shared.WriteJSON(w, http.StatusOK, dtos)
 }
 
+// PublicExpectedSigner represents an expected signer in public API (minimal info)
+type PublicExpectedSigner struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
 // HandleGetExpectedSigners handles GET /api/v1/documents/{docId}/expected-signers
 func (h *Handler) HandleGetExpectedSigners(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	docID := chi.URLParam(r, "docId")
+
 	if docID == "" {
 		shared.WriteValidationError(w, "Document ID is required", nil)
 		return
 	}
 
-	// TODO: Implement with expected signers repository
-	expectedSigners := []interface{}{}
+	// If no repository, return empty list (backward compat)
+	if h.expectedSignerRepo == nil {
+		shared.WriteJSON(w, http.StatusOK, []PublicExpectedSigner{})
+		return
+	}
 
-	shared.WriteJSON(w, http.StatusOK, expectedSigners)
+	// Get expected signers (public version - without internal notes/metadata)
+	signers, err := h.expectedSignerRepo.ListByDocID(ctx, docID)
+	if err != nil {
+		logger.Logger.Error("Failed to get expected signers", "doc_id", docID, "error", err.Error())
+		shared.WriteInternalError(w)
+		return
+	}
+
+	// Convert to public DTO (minimal info - no notes, no internal metadata)
+	response := make([]PublicExpectedSigner, 0, len(signers))
+	for _, signer := range signers {
+		response = append(response, PublicExpectedSigner{
+			Email: signer.Email,
+			Name:  signer.Name,
+		})
+	}
+
+	shared.WriteJSON(w, http.StatusOK, response)
 }
 
 // Helper function to convert signature model to DTO

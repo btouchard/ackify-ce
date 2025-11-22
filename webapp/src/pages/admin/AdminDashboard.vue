@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
@@ -28,29 +28,20 @@ const router = useRouter()
 const { t } = useI18n()
 usePageTitle('admin.title')
 const documents = ref<Document[]>([])
-const loading = ref(true)
+const loading = ref(true)        // Initial page load
+const searching = ref(false)     // Search/pagination in progress
 const error = ref('')
 const newDocId = ref('')
 const creating = ref(false)
 
-// Pagination & Filter
+// Pagination & Search (server-side)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const perPage = ref(20)
 const totalDocsCount = ref(0)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 // Computed
-const filteredDocuments = computed(() => {
-  if (!searchQuery.value.trim()) return documents.value
-
-  const query = searchQuery.value.toLowerCase()
-  return documents.value.filter(doc =>
-    doc.docId.toLowerCase().includes(query) ||
-    doc.title?.toLowerCase().includes(query) ||
-    doc.url?.toLowerCase().includes(query)
-  )
-})
-
 const totalPages = computed(() => Math.ceil(totalDocsCount.value / perPage.value) || 1)
 
 // Computed KPIs
@@ -61,15 +52,28 @@ const totalSigners = computed(() => {
 })
 const activeDocuments = computed(() => documents.value.length)
 
-async function loadDocuments() {
+async function loadDocuments(isInitialLoad = false) {
   try {
-    loading.value = true
+    // Use different loading state depending on context
+    if (isInitialLoad) {
+      loading.value = true
+    } else {
+      searching.value = true
+    }
+
     error.value = ''
     const offset = (currentPage.value - 1) * perPage.value
-    const response = await listDocuments(perPage.value, offset)
+
+    // Pass search query to API
+    const response = await listDocuments(
+      perPage.value,
+      offset,
+      searchQuery.value || undefined
+    )
+
     documents.value = response.data
 
-    // Extract pagination metadata if available
+    // Extract pagination metadata
     if (response.meta) {
       totalDocsCount.value = response.meta.total || documents.value.length
     } else {
@@ -80,8 +84,27 @@ async function loadDocuments() {
     console.error('Failed to load documents:', err)
   } finally {
     loading.value = false
+    searching.value = false
   }
 }
+
+// Debounced search: wait 300ms after user stops typing
+function handleSearchInput() {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  searchTimeout = setTimeout(() => {
+    // Reset to page 1 when searching
+    currentPage.value = 1
+    loadDocuments()
+  }, 300)
+}
+
+// Watch searchQuery for changes
+watch(searchQuery, () => {
+  handleSearchInput()
+})
 
 function nextPage() {
   if (currentPage.value < totalPages.value) {
@@ -127,7 +150,7 @@ function formatDate(dateString: string): string {
 }
 
 onMounted(() => {
-  loadDocuments()
+  loadDocuments(true)  // Initial load with full loading screen
 })
 </script>
 
@@ -315,7 +338,8 @@ onMounted(() => {
           <CardContent>
             <!-- Search Filter -->
             <div class="mb-6 relative">
-              <Search :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Search v-if="!searching" :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Loader2 v-else :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground animate-spin" />
               <Input
                 v-model="searchQuery"
                 type="text"
@@ -324,7 +348,7 @@ onMounted(() => {
               />
             </div>
             <!-- Desktop Table (hidden on mobile) -->
-            <div v-if="filteredDocuments.length > 0" class="hidden md:block rounded-md border border-border/40">
+            <div v-if="documents.length > 0" class="hidden md:block rounded-md border border-border/40">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -336,7 +360,7 @@ onMounted(() => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-for="doc in filteredDocuments" :key="doc.docId">
+                  <TableRow v-for="doc in documents" :key="doc.docId">
                     <TableCell>
                       <div class="space-y-1">
                         <div class="font-medium text-foreground">{{ doc.title }}</div>
@@ -378,8 +402,8 @@ onMounted(() => {
             </div>
 
             <!-- Mobile Cards (hidden on desktop) -->
-            <div v-if="filteredDocuments.length > 0" class="md:hidden space-y-4">
-              <Card v-for="doc in filteredDocuments" :key="doc.docId" class="clay-card-hover">
+            <div v-if="documents.length > 0" class="md:hidden space-y-4">
+              <Card v-for="doc in documents" :key="doc.docId" class="clay-card-hover">
                 <CardContent class="p-4">
                   <!-- Document Title & ID -->
                   <div class="mb-3">
@@ -441,8 +465,8 @@ onMounted(() => {
               </p>
             </div>
 
-            <!-- Pagination -->
-            <div v-if="filteredDocuments.length > 0 && !searchQuery && totalPages > 1" class="flex items-center justify-between mt-6 pt-4 border-t border-border/40">
+            <!-- Pagination (now works with search too!) -->
+            <div v-if="documents.length > 0 && totalPages > 1" class="flex items-center justify-between mt-6 pt-4 border-t border-border/40">
               <!-- Mobile Pagination -->
               <div class="md:hidden flex items-center justify-between w-full">
                 <Button

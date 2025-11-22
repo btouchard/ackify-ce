@@ -353,3 +353,104 @@ func (r *DocumentRepository) List(ctx context.Context, limit, offset int) ([]*mo
 
 	return documents, nil
 }
+
+// Search retrieves paginated documents matching the search query (excluding soft-deleted)
+// Searches in doc_id, title, url, and description fields using case-insensitive pattern matching
+func (r *DocumentRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
+	searchQuery := `
+		SELECT doc_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
+		FROM documents
+		WHERE deleted_at IS NULL
+		AND (
+			doc_id ILIKE $1
+			OR title ILIKE $1
+			OR url ILIKE $1
+			OR description ILIKE $1
+		)
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`
+
+	searchPattern := "%" + query + "%"
+	rows, err := r.db.QueryContext(ctx, searchQuery, searchPattern, limit, offset)
+	if err != nil {
+		logger.Logger.Error("Failed to search documents", "error", err.Error(), "query", query)
+		return nil, fmt.Errorf("failed to search documents: %w", err)
+	}
+	defer rows.Close()
+
+	documents := []*models.Document{}
+	for rows.Next() {
+		doc := &models.Document{}
+		err := rows.Scan(
+			&doc.DocID,
+			&doc.Title,
+			&doc.URL,
+			&doc.Checksum,
+			&doc.ChecksumAlgorithm,
+			&doc.Description,
+			&doc.CreatedAt,
+			&doc.UpdatedAt,
+			&doc.CreatedBy,
+			&doc.DeletedAt,
+		)
+		if err != nil {
+			logger.Logger.Error("Failed to scan document row", "error", err.Error())
+			return nil, fmt.Errorf("failed to scan document: %w", err)
+		}
+		documents = append(documents, doc)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating documents: %w", err)
+	}
+
+	logger.Logger.Debug("Document search completed",
+		"query", query,
+		"results", len(documents),
+		"limit", limit,
+		"offset", offset)
+
+	return documents, nil
+}
+
+// Count returns the total number of documents matching the optional search query (excluding soft-deleted)
+func (r *DocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
+	var query string
+	var args []interface{}
+
+	if searchQuery != "" {
+		// Count with search filter
+		query = `
+			SELECT COUNT(*)
+			FROM documents
+			WHERE deleted_at IS NULL
+			AND (
+				doc_id ILIKE $1
+				OR title ILIKE $1
+				OR url ILIKE $1
+				OR description ILIKE $1
+			)
+		`
+		searchPattern := "%" + searchQuery + "%"
+		args = []interface{}{searchPattern}
+	} else {
+		// Count all documents
+		query = `
+			SELECT COUNT(*)
+			FROM documents
+			WHERE deleted_at IS NULL
+		`
+		args = []interface{}{}
+	}
+
+	var count int
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	if err != nil {
+		logger.Logger.Error("Failed to count documents", "error", err.Error(), "search", searchQuery)
+		return 0, fmt.Errorf("failed to count documents: %w", err)
+	}
+
+	logger.Logger.Debug("Document count completed", "count", count, "search", searchQuery)
+	return count, nil
+}

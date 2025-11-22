@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"time"
+
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/go-chi/chi/v5"
-	"time"
 )
 
 // signatureService defines the interface for signature operations
@@ -38,14 +39,8 @@ type Handler struct {
 	webhookPublisher   webhookPublisher
 }
 
-// NewHandler creates a new signature handler
-// Backward-compatible base constructor
-func NewHandler(signatureService signatureService) *Handler {
-	return &Handler{signatureService: signatureService}
-}
-
-// Extended constructor to inject expected signers repo and webhook publisher
-func NewHandlerWithDeps(signatureService signatureService, expectedRepo expectedSignerStatsRepo, publisher webhookPublisher) *Handler {
+// NewHandler constructor to inject expected signers repo and webhook publisher
+func NewHandler(signatureService signatureService, expectedRepo expectedSignerStatsRepo, publisher webhookPublisher) *Handler {
 	return &Handler{signatureService: signatureService, expectedSignerRepo: expectedRepo, webhookPublisher: publisher}
 }
 

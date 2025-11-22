@@ -68,11 +68,20 @@ export interface DocumentStatus {
 // DOCUMENTS
 // ============================================================================
 
-// List all documents
-export async function listDocuments(limit = 100, offset = 0): Promise<ApiResponse<Document[]>> {
-  const response = await http.get('/admin/documents', {
-    params: { limit, offset },
-  })
+// List all documents with optional search
+export async function listDocuments(
+  limit = 20,
+  offset = 0,
+  search?: string
+): Promise<ApiResponse<Document[]>> {
+  const params: Record<string, any> = { limit, offset }
+
+  // Add search parameter if provided and not empty
+  if (search && search.trim()) {
+    params.search = search.trim()
+  }
+
+  const response = await http.get('/admin/documents', { params })
   return response.data
 }
 

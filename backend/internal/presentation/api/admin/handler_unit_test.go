@@ -26,6 +26,8 @@ import (
 type mockDocumentRepository struct {
 	getByDocIDFunc     func(ctx context.Context, docID string) (*models.Document, error)
 	listFunc           func(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	searchFunc         func(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	countFunc          func(ctx context.Context, searchQuery string) (int, error)
 	createOrUpdateFunc func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
 	deleteFunc         func(ctx context.Context, docID string) error
 }
@@ -42,6 +44,20 @@ func (m *mockDocumentRepository) List(ctx context.Context, limit, offset int) ([
 		return m.listFunc(ctx, limit, offset)
 	}
 	return nil, errors.New("not implemented")
+}
+
+func (m *mockDocumentRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
+	if m.searchFunc != nil {
+		return m.searchFunc(ctx, query, limit, offset)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func (m *mockDocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
+	if m.countFunc != nil {
+		return m.countFunc(ctx, searchQuery)
+	}
+	return 0, errors.New("not implemented")
 }
 
 func (m *mockDocumentRepository) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {

@@ -134,7 +134,7 @@ func TestNewHandler(t *testing.T) {
 
 	sigService := &mockSignatureService{}
 
-	handler := NewHandler(sigService)
+	handler := NewHandler(sigService, nil, nil)
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, sigService, handler.signatureService)

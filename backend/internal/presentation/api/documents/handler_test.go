@@ -124,7 +124,7 @@ func TestNewHandler(t *testing.T) {
 	sigService := &services.SignatureService{}
 	docService := &mockDocumentService{}
 
-	handler := NewHandler(sigService, docService)
+	handler := NewHandler(sigService, docService, nil, nil, nil, nil, false)
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, sigService, handler.signatureService)
@@ -363,14 +363,6 @@ func TestHandler_HandleListDocuments_Success(t *testing.T) {
 // ============================================================================
 // TESTS - HandleGetDocument
 // ============================================================================
-
-// TestHandler_HandleGetDocument_Success is skipped because SignatureService
-// cannot be mocked without significant refactoring. The service requires
-// a repository interface that we cannot inject in tests.
-// TODO: Refactor to use interface for signature service
-func TestHandler_HandleGetDocument_Success(t *testing.T) {
-	t.Skip("SignatureService is not mockable - needs refactoring")
-}
 
 func TestHandler_HandleGetDocument_MissingDocID(t *testing.T) {
 	t.Parallel()
