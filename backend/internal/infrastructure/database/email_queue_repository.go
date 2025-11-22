@@ -218,7 +218,13 @@ func (r *EmailQueueRepository) MarkAsSent(ctx context.Context, id int64) error {
 }
 
 // MarkAsFailed marks an email as failed with error details
+// This method uses the default PostgreSQL exponential backoff calculation
 func (r *EmailQueueRepository) MarkAsFailed(ctx context.Context, id int64, err error, shouldRetry bool) error {
+	return r.MarkAsFailedWithDelay(ctx, id, err, shouldRetry, 0)
+}
+
+// MarkAsFailedWithDelay marks an email as failed with error details and custom retry delay
+func (r *EmailQueueRepository) MarkAsFailedWithDelay(ctx context.Context, id int64, err error, shouldRetry bool, retryDelay time.Duration) error {
 	errorMsg := err.Error()
 
 	errorDetails := map[string]interface{}{
@@ -233,17 +239,34 @@ func (r *EmailQueueRepository) MarkAsFailed(ctx context.Context, id int64, err e
 	var args []interface{}
 
 	if shouldRetry {
-		// If retrying, increment retry count and calculate next retry time
-		query = `
-			UPDATE email_queue
-			SET status = 'pending',
-			    retry_count = retry_count + 1,
-			    last_error = $1,
-			    error_details = $2,
-			    scheduled_for = calculate_next_retry_time(retry_count + 1)
-			WHERE id = $3 AND retry_count < max_retries
-		`
-		args = []interface{}{errorMsg, errorDetailsJSON, id}
+		// If retrying, increment retry count and set next retry time
+		// If retryDelay is 0, use PostgreSQL function for default exponential backoff
+		// Otherwise, use the custom delay provided by the caller
+		if retryDelay > 0 {
+			nextRetry := time.Now().Add(retryDelay)
+			query = `
+				UPDATE email_queue
+				SET status = 'pending',
+				    retry_count = retry_count + 1,
+				    last_error = $1,
+				    error_details = $2,
+				    scheduled_for = $3
+				WHERE id = $4 AND retry_count < max_retries
+			`
+			args = []interface{}{errorMsg, errorDetailsJSON, nextRetry, id}
+		} else {
+			// Use default PostgreSQL function
+			query = `
+				UPDATE email_queue
+				SET status = 'pending',
+				    retry_count = retry_count + 1,
+				    last_error = $1,
+				    error_details = $2,
+				    scheduled_for = calculate_next_retry_time(retry_count + 1)
+				WHERE id = $3 AND retry_count < max_retries
+			`
+			args = []interface{}{errorMsg, errorDetailsJSON, id}
+		}
 	} else {
 		// If not retrying, mark as failed
 		query = `
@@ -284,7 +307,10 @@ func (r *EmailQueueRepository) MarkAsFailed(ctx context.Context, id int64, err e
 		logger.Logger.Warn("Email max retries reached, marked as failed", "id", id)
 	}
 
-	logger.Logger.Debug("Email marked as failed", "id", id, "should_retry", shouldRetry)
+	logger.Logger.Debug("Email marked as failed",
+		"id", id,
+		"should_retry", shouldRetry,
+		"retry_delay", retryDelay)
 	return nil
 }
 
