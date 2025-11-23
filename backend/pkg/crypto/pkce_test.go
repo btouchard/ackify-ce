@@ -170,18 +170,3 @@ func TestValidateCodeVerifier(t *testing.T) {
 		})
 	}
 }
-
-func BenchmarkGenerateCodeVerifier(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_, _ = GenerateCodeVerifier()
-	}
-}
-
-func BenchmarkGenerateCodeChallenge(b *testing.B) {
-	verifier, _ := GenerateCodeVerifier()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_ = GenerateCodeChallenge(verifier)
-	}
-}

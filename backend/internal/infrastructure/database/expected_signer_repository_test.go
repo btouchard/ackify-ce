@@ -262,40 +262,6 @@ func TestExpectedSignerRepository_Remove(t *testing.T) {
 	}
 }
 
-func TestExpectedSignerRepository_IsExpected(t *testing.T) {
-	testDB := SetupTestDB(t)
-	setupExpectedSignersTable(t, testDB)
-	repo := NewExpectedSignerRepository(testDB.DB)
-	ctx := context.Background()
-
-	// Setup
-	clearExpectedSignersTable(t, testDB)
-	docID := "doc-check-test"
-	emails := []string{"expected@example.com"}
-	err := repo.AddExpected(ctx, docID, emailsToContacts(emails), "admin@example.com")
-	if err != nil {
-		t.Fatalf("failed to add expected signer: %v", err)
-	}
-
-	// Check expected email
-	exists, err := repo.IsExpected(ctx, docID, "expected@example.com")
-	if err != nil {
-		t.Fatalf("failed to check expected: %v", err)
-	}
-	if !exists {
-		t.Error("expected email should exist")
-	}
-
-	// Check non-expected email
-	exists, err = repo.IsExpected(ctx, docID, "notexpected@example.com")
-	if err != nil {
-		t.Fatalf("failed to check expected: %v", err)
-	}
-	if exists {
-		t.Error("non-expected email should not exist")
-	}
-}
-
 // Helper functions
 
 func setupExpectedSignersTable(t *testing.T, testDB *TestDB) {

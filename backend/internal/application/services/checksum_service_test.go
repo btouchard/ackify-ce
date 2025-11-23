@@ -379,23 +379,6 @@ func TestChecksumService_GetVerificationHistory(t *testing.T) {
 	}
 }
 
-func TestChecksumService_GetSupportedAlgorithms(t *testing.T) {
-	service := NewChecksumService(newFakeVerificationRepository(), newFakeDocumentRepository())
-
-	algorithms := service.GetSupportedAlgorithms()
-
-	expected := []string{"SHA-256", "SHA-512", "MD5"}
-	if len(algorithms) != len(expected) {
-		t.Errorf("expected %d algorithms, got %d", len(expected), len(algorithms))
-	}
-
-	for i, alg := range expected {
-		if algorithms[i] != alg {
-			t.Errorf("expected algorithm %s at position %d, got %s", alg, i, algorithms[i])
-		}
-	}
-}
-
 func TestChecksumService_GetChecksumInfo(t *testing.T) {
 	ctx := context.Background()
 

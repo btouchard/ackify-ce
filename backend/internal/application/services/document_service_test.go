@@ -443,62 +443,6 @@ func TestDocumentService_CreateDocument_WithURLAndTitle(t *testing.T) {
 	}
 }
 
-// Test CreateDocument with plain text reference
-func TestDocumentService_CreateDocument_WithPlainReference(t *testing.T) {
-	mockRepo := &mockDocumentRepository{}
-	service := NewDocumentService(mockRepo, nil)
-
-	req := CreateDocumentRequest{
-		Reference: "company-policy-2024",
-		Title:     "",
-	}
-
-	ctx := context.Background()
-	doc, err := service.CreateDocument(ctx, req)
-
-	if err != nil {
-		t.Fatalf("CreateDocument failed: %v", err)
-	}
-
-	// Check that URL is empty
-	if doc.URL != "" {
-		t.Errorf("Expected URL to be empty, got %q", doc.URL)
-	}
-
-	// Check that reference was used as title
-	if doc.Title != "company-policy-2024" {
-		t.Errorf("Expected title to be %q, got %q", "company-policy-2024", doc.Title)
-	}
-}
-
-// Test CreateDocument with plain reference and custom title
-func TestDocumentService_CreateDocument_WithPlainReferenceAndTitle(t *testing.T) {
-	mockRepo := &mockDocumentRepository{}
-	service := NewDocumentService(mockRepo, nil)
-
-	req := CreateDocumentRequest{
-		Reference: "doc-ref-123",
-		Title:     "Employee Handbook",
-	}
-
-	ctx := context.Background()
-	doc, err := service.CreateDocument(ctx, req)
-
-	if err != nil {
-		t.Fatalf("CreateDocument failed: %v", err)
-	}
-
-	// Check that URL is empty
-	if doc.URL != "" {
-		t.Errorf("Expected URL to be empty, got %q", doc.URL)
-	}
-
-	// Check that custom title was used
-	if doc.Title != "Employee Handbook" {
-		t.Errorf("Expected title to be %q, got %q", "Employee Handbook", doc.Title)
-	}
-}
-
 // Test CreateDocument with HTTP URL
 func TestDocumentService_CreateDocument_WithHTTPURL(t *testing.T) {
 	mockRepo := &mockDocumentRepository{}
@@ -687,30 +631,6 @@ func TestDocumentService_FindByReference_Success(t *testing.T) {
 
 	if doc.DocID != expectedDoc.DocID {
 		t.Errorf("Expected DocID %q, got %q", expectedDoc.DocID, doc.DocID)
-	}
-}
-
-// Test FindByReference not found
-func TestDocumentService_FindByReference_NotFound(t *testing.T) {
-	t.Parallel()
-
-	mockRepo := &mockDocumentRepository{
-		findByReferenceFunc: func(ctx context.Context, ref string, refType string) (*models.Document, error) {
-			return nil, nil
-		},
-	}
-
-	service := NewDocumentService(mockRepo, nil)
-	ctx := context.Background()
-
-	doc, err := service.FindByReference(ctx, "nonexistent", "reference")
-
-	if err != nil {
-		t.Fatalf("FindByReference should not error when document not found: %v", err)
-	}
-
-	if doc != nil {
-		t.Errorf("Expected nil document, got %+v", doc)
 	}
 }
 

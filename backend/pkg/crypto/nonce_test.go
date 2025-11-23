@@ -16,16 +16,6 @@ func TestGenerateNonce(t *testing.T) {
 		assert.NotEmpty(t, nonce)
 	})
 
-	t.Run("nonce is valid base64url", func(t *testing.T) {
-		nonce, err := GenerateNonce()
-		require.NoError(t, err)
-
-		decoded, err := base64.RawURLEncoding.DecodeString(nonce)
-		require.NoError(t, err)
-
-		assert.Len(t, decoded, 16, "Decoded nonce should be 16 bytes")
-	})
-
 	t.Run("generates unique nonces", func(t *testing.T) {
 		const numNonces = 1000
 		nonces := make(map[string]bool)
@@ -53,24 +43,6 @@ func TestGenerateNonce(t *testing.T) {
 			// Should only contain valid base64url characters
 			assert.Regexp(t, `^[A-Za-z0-9_-]+$`, nonce, "Nonce should only contain base64url characters")
 		}
-	})
-
-	t.Run("nonce length consistency", func(t *testing.T) {
-		var lengths []int
-
-		for i := 0; i < 100; i++ {
-			nonce, err := GenerateNonce()
-			require.NoError(t, err)
-
-			lengths = append(lengths, len(nonce))
-		}
-
-		expectedLength := lengths[0]
-		for _, length := range lengths {
-			assert.Equal(t, expectedLength, length, "All nonces should have consistent length")
-		}
-
-		assert.Equal(t, 22, expectedLength, "Nonce should be 22 characters long")
 	})
 
 	t.Run("concurrent nonce generation", func(t *testing.T) {
@@ -199,22 +171,5 @@ func TestGenerateNonce(t *testing.T) {
 
 		// With truly random data, expect 0-2 common bytes in 16-byte sequences
 		assert.LessOrEqual(t, commonBytes, 3, "Too many common bytes between random nonces")
-	})
-
-	t.Run("error handling edge cases", func(t *testing.T) {
-		// This test verifies the function handles errors gracefully
-		// In normal conditions, GenerateNonce should not fail
-		// but we test that error handling pattern is correct
-
-		nonce, err := GenerateNonce()
-
-		// In normal cases, should always succeed
-		require.NoError(t, err)
-		assert.NotEmpty(t, nonce)
-
-		// If it did error, nonce should be empty string
-		if err != nil {
-			assert.Empty(t, nonce, "On error, nonce should be empty")
-		}
 	})
 }

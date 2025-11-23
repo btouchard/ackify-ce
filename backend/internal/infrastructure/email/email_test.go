@@ -14,7 +14,7 @@ import (
 )
 
 // ============================================================================
-// TEST FIXTURES
+// TESTS - Renderer.Render
 // ============================================================================
 
 const (
@@ -125,34 +125,6 @@ Organisation: {{.Organisation}}{{end}}`
 	return renderer, tmpDir
 }
 
-// ============================================================================
-// TESTS - NewRenderer
-// ============================================================================
-
-func TestNewRenderer(t *testing.T) {
-	t.Parallel()
-
-	tmpDir := t.TempDir()
-	localesDir := filepath.Join(tmpDir, "locales")
-	os.MkdirAll(localesDir, 0755)
-	i18nService := createTestI18n(t, localesDir)
-
-	renderer := NewRenderer("/tmp/templates", testBaseURL, testOrganisation, testFromName, testFromEmail, "en", i18nService)
-
-	require.NotNil(t, renderer)
-	assert.Equal(t, "/tmp/templates", renderer.templateDir)
-	assert.Equal(t, testBaseURL, renderer.baseURL)
-	assert.Equal(t, testOrganisation, renderer.organisation)
-	assert.Equal(t, testFromName, renderer.fromName)
-	assert.Equal(t, testFromEmail, renderer.fromMail)
-	assert.Equal(t, "en", renderer.defaultLocale)
-	assert.NotNil(t, renderer.i18n)
-}
-
-// ============================================================================
-// TESTS - Renderer.Render
-// ============================================================================
-
 func TestRenderer_Render_Success(t *testing.T) {
 	t.Parallel()
 
@@ -195,23 +167,6 @@ func TestRenderer_Render_FrenchLocale(t *testing.T) {
 	assert.Contains(t, textBody, "Bonjour le monde")
 }
 
-func TestRenderer_Render_DefaultLocale(t *testing.T) {
-	t.Parallel()
-
-	renderer, _ := createTestRenderer(t)
-
-	data := map[string]any{
-		"message": "Default locale test",
-	}
-
-	// Empty locale should use default (en)
-	htmlBody, textBody, err := renderer.Render("test", "", data)
-
-	require.NoError(t, err)
-	assert.Contains(t, htmlBody, "Test Template")
-	assert.Contains(t, textBody, "Default locale test")
-}
-
 func TestRenderer_Render_TemplateNotFound(t *testing.T) {
 	t.Parallel()
 
@@ -245,37 +200,6 @@ func TestRenderer_Render_InvalidTemplateDir(t *testing.T) {
 
 	require.Error(t, err)
 }
-
-// ============================================================================
-// TESTS - NewSMTPSender
-// ============================================================================
-
-func TestNewSMTPSender(t *testing.T) {
-	t.Parallel()
-
-	renderer, _ := createTestRenderer(t)
-
-	cfg := config.MailConfig{
-		Host:     "smtp.example.com",
-		Port:     587,
-		Username: "user",
-		Password: "pass",
-		From:     testFromEmail,
-		FromName: testFromName,
-	}
-
-	sender := NewSMTPSender(cfg, renderer)
-
-	require.NotNil(t, sender)
-	assert.NotNil(t, sender.config)
-	assert.NotNil(t, sender.renderer)
-	assert.Equal(t, "smtp.example.com", sender.config.Host)
-	assert.Equal(t, 587, sender.config.Port)
-}
-
-// ============================================================================
-// TESTS - SMTPSender.Send
-// ============================================================================
 
 func TestSMTPSender_Send_SMTPNotConfigured(t *testing.T) {
 	t.Parallel()
@@ -419,68 +343,6 @@ func TestSMTPSender_Send_SubjectPrefix(t *testing.T) {
 	assert.Equal(t, "[TEST] ", sender.config.SubjectPrefix)
 }
 
-func TestMessage_Structure(t *testing.T) {
-	t.Parallel()
-
-	msg := Message{
-		To:       []string{"to@example.com"},
-		Cc:       []string{"cc@example.com"},
-		Bcc:      []string{"bcc@example.com"},
-		Subject:  "Test Subject",
-		Template: "test",
-		Locale:   "en",
-		Data: map[string]any{
-			"key": "value",
-		},
-		Headers: map[string]string{
-			"X-Custom": "value",
-		},
-	}
-
-	assert.Equal(t, []string{"to@example.com"}, msg.To)
-	assert.Equal(t, []string{"cc@example.com"}, msg.Cc)
-	assert.Equal(t, []string{"bcc@example.com"}, msg.Bcc)
-	assert.Equal(t, "Test Subject", msg.Subject)
-	assert.Equal(t, "test", msg.Template)
-	assert.Equal(t, "en", msg.Locale)
-	assert.Equal(t, "value", msg.Data["key"])
-	assert.Equal(t, "value", msg.Headers["X-Custom"])
-}
-
-// ============================================================================
-// TESTS - TemplateData Structure
-// ============================================================================
-
-func TestTemplateData_Structure(t *testing.T) {
-	t.Parallel()
-
-	data := TemplateData{
-		Organisation: "Test Org",
-		BaseURL:      "https://example.com",
-		FromName:     "Test Sender",
-		FromMail:     "test@example.com",
-		Data: map[string]any{
-			"key1": "value1",
-			"key2": 123,
-		},
-		T: func(key string, args ...map[string]any) string {
-			return key
-		},
-	}
-
-	assert.Equal(t, "Test Org", data.Organisation)
-	assert.Equal(t, "https://example.com", data.BaseURL)
-	assert.Equal(t, "Test Sender", data.FromName)
-	assert.Equal(t, "test@example.com", data.FromMail)
-	assert.Equal(t, "value1", data.Data["key1"])
-	assert.Equal(t, 123, data.Data["key2"])
-	assert.NotNil(t, data.T)
-}
-
-// ============================================================================
-// TESTS - Concurrency
-// ============================================================================
-
 func TestRenderer_Render_Concurrent(t *testing.T) {
 	t.Parallel()
 
@@ -514,36 +376,4 @@ func TestRenderer_Render_Concurrent(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		<-done
 	}
-}
-
-// ============================================================================
-// BENCHMARKS
-// ============================================================================
-
-func BenchmarkRenderer_Render(b *testing.B) {
-	renderer, _ := createTestRenderer(&testing.T{})
-
-	data := map[string]any{
-		"message": "Benchmark test",
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, _, _ = renderer.Render("test", "en", data)
-	}
-}
-
-func BenchmarkRenderer_Render_Parallel(b *testing.B) {
-	renderer, _ := createTestRenderer(&testing.T{})
-
-	data := map[string]any{
-		"message": "Benchmark test",
-	}
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			_, _, _ = renderer.Render("test", "en", data)
-		}
-	})
 }

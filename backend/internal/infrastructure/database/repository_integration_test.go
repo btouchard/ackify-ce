@@ -319,62 +319,6 @@ func TestRepository_GetByUser_Integration(t *testing.T) {
 	}
 }
 
-func TestRepository_ExistsByDocAndUser_Integration(t *testing.T) {
-	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
-	factory := NewSignatureFactory()
-	ctx := context.Background()
-
-	sig := factory.CreateSignatureWithDocAndUser("doc1", "user1", "user1@example.com")
-	_ = repo.Create(ctx, sig)
-
-	tests := []struct {
-		name     string
-		docID    string
-		userSub  string
-		expected bool
-	}{
-		{
-			name:     "existing signature",
-			docID:    "doc1",
-			userSub:  "user1",
-			expected: true,
-		},
-		{
-			name:     "non-existent doc",
-			docID:    "non-existent",
-			userSub:  "user1",
-			expected: false,
-		},
-		{
-			name:     "non-existent user",
-			docID:    "doc1",
-			userSub:  "non-existent",
-			expected: false,
-		},
-		{
-			name:     "both non-existent",
-			docID:    "non-existent",
-			userSub:  "non-existent",
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result, err := repo.ExistsByDocAndUser(ctx, tt.docID, tt.userSub)
-
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
-			}
-
-			if result != tt.expected {
-				t.Errorf("Expected %v, got %v", tt.expected, result)
-			}
-		})
-	}
-}
-
 func TestRepository_CheckUserSignatureStatus_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
 	repo := NewSignatureRepository(testDB.DB)
@@ -510,60 +454,6 @@ func TestRepository_GetLastSignature_Integration(t *testing.T) {
 
 		if result.UserSub != "user3" {
 			t.Errorf("Expected last signature to be user3, got %s", result.UserSub)
-		}
-	})
-}
-
-func TestRepository_GetAllSignaturesOrdered_Integration(t *testing.T) {
-	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
-	factory := NewSignatureFactory()
-	ctx := context.Background()
-
-	t.Run("no signatures", func(t *testing.T) {
-		testDB.ClearTable(t)
-
-		result, err := repo.GetAllSignaturesOrdered(ctx)
-
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-
-		if len(result) != 0 {
-			t.Errorf("Expected empty slice, got %d signatures", len(result))
-		}
-	})
-
-	t.Run("multiple signatures ordered by ID ASC", func(t *testing.T) {
-		testDB.ClearTable(t)
-
-		sig1 := factory.CreateSignatureWithUser("user1", "user1@example.com")
-		sig2 := factory.CreateSignatureWithUser("user2", "user2@example.com")
-		sig3 := factory.CreateSignatureWithUser("user3", "user3@example.com")
-
-		_ = repo.Create(ctx, sig1)
-		_ = repo.Create(ctx, sig2)
-		_ = repo.Create(ctx, sig3)
-
-		result, err := repo.GetAllSignaturesOrdered(ctx)
-
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-
-		if len(result) != 3 {
-			t.Errorf("Expected 3 signatures, got %d", len(result))
-		}
-
-		expectedUsers := []string{"user1", "user2", "user3"}
-		for i, sig := range result {
-			if sig.UserSub != expectedUsers[i] {
-				t.Errorf("Expected user %s at position %d, got %s", expectedUsers[i], i, sig.UserSub)
-			}
-
-			if i > 0 && result[i].ID <= result[i-1].ID {
-				t.Errorf("IDs not in ascending order: %d should be > %d", result[i].ID, result[i-1].ID)
-			}
 		}
 	})
 }

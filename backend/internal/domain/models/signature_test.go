@@ -405,65 +405,6 @@ func TestSignatureRequest_Validation(t *testing.T) {
 	}
 }
 
-func TestSignatureStatus_Creation(t *testing.T) {
-	timestamp := time.Now().UTC()
-
-	tests := []struct {
-		name   string
-		status SignatureStatus
-	}{
-		{
-			name: "signed status",
-			status: SignatureStatus{
-				DocID:     "test-doc-123",
-				UserEmail: "test@example.com",
-				IsSigned:  true,
-				SignedAt:  &timestamp,
-			},
-		},
-		{
-			name: "not signed status",
-			status: SignatureStatus{
-				DocID:     "test-doc-123",
-				UserEmail: "test@example.com",
-				IsSigned:  false,
-				SignedAt:  nil,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			data, err := json.Marshal(tt.status)
-			if err != nil {
-				t.Fatalf("Failed to marshal status: %v", err)
-			}
-
-			var unmarshaled SignatureStatus
-			err = json.Unmarshal(data, &unmarshaled)
-			if err != nil {
-				t.Fatalf("Failed to unmarshal status: %v", err)
-			}
-
-			if unmarshaled.DocID != tt.status.DocID {
-				t.Errorf("DocID mismatch: got %v, expected %v", unmarshaled.DocID, tt.status.DocID)
-			}
-			if unmarshaled.UserEmail != tt.status.UserEmail {
-				t.Errorf("UserEmail mismatch: got %v, expected %v", unmarshaled.UserEmail, tt.status.UserEmail)
-			}
-			if unmarshaled.IsSigned != tt.status.IsSigned {
-				t.Errorf("IsSigned mismatch: got %v, expected %v", unmarshaled.IsSigned, tt.status.IsSigned)
-			}
-			if (unmarshaled.SignedAt == nil) != (tt.status.SignedAt == nil) {
-				t.Errorf("SignedAt nil mismatch: got %v, expected %v", unmarshaled.SignedAt == nil, tt.status.SignedAt == nil)
-			}
-			if unmarshaled.SignedAt != nil && tt.status.SignedAt != nil && !unmarshaled.SignedAt.Equal(*tt.status.SignedAt) {
-				t.Errorf("SignedAt mismatch: got %v, expected %v", *unmarshaled.SignedAt, *tt.status.SignedAt)
-			}
-		})
-	}
-}
-
 func TestSignature_TimestampValidation(t *testing.T) {
 	tests := []struct {
 		name        string

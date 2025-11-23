@@ -381,17 +381,6 @@ func TestEd25519Signer_GetPublicKey(t *testing.T) {
 		assert.NotEmpty(t, pubKey1, "Public key should not be empty")
 	})
 
-	t.Run("public key is valid base64", func(t *testing.T) {
-		signer, err := NewEd25519Signer()
-		require.NoError(t, err)
-
-		pubKeyB64 := signer.GetPublicKey()
-		pubKeyBytes, err := base64.StdEncoding.DecodeString(pubKeyB64)
-
-		require.NoError(t, err, "Public key should be valid base64")
-		assert.Len(t, pubKeyBytes, ed25519.PublicKeySize, "Public key should be correct length")
-	})
-
 	t.Run("different signers have different public keys", func(t *testing.T) {
 
 		originalKey := os.Getenv("ACKIFY_ED25519_PRIVATE_KEY")

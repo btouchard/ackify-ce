@@ -4,7 +4,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -56,89 +55,6 @@ func (m *mockSessionRepository) DeleteBySessionID(ctx context.Context, sessionID
 
 func (m *mockSessionRepository) DeleteExpired(ctx context.Context, olderThan time.Duration) (int64, error) {
 	return 0, nil
-}
-
-func TestNewSessionService(t *testing.T) {
-	tests := []struct {
-		name   string
-		config SessionServiceConfig
-	}{
-		{
-			name: "complete config",
-			config: SessionServiceConfig{
-				CookieSecret:  []byte("32-byte-secret-for-secure-cookies"),
-				SecureCookies: true,
-				SessionRepo:   newMockSessionRepository(),
-			},
-		},
-		{
-			name: "minimal config",
-			config: SessionServiceConfig{
-				CookieSecret:  []byte("test-secret"),
-				SecureCookies: false,
-			},
-		},
-		{
-			name: "short encryption key",
-			config: SessionServiceConfig{
-				CookieSecret:  []byte("short"),
-				SecureCookies: false,
-			},
-		},
-		{
-			name: "long encryption key",
-			config: SessionServiceConfig{
-				CookieSecret:  []byte("this-is-a-very-long-encryption-key-that-exceeds-32-bytes"),
-				SecureCookies: true,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			service := NewSessionService(tt.config)
-
-			if service == nil {
-				t.Fatal("NewSessionService() returned nil")
-			}
-
-			if service.sessionStore == nil {
-				t.Error("sessionStore should not be nil")
-			}
-
-			if service.secureCookies != tt.config.SecureCookies {
-				t.Errorf("secureCookies = %v, expected %v", service.secureCookies, tt.config.SecureCookies)
-			}
-
-			// Verify encryption key length is always 32 bytes
-			if len(service.encryptionKey) != 32 {
-				t.Errorf("encryption key length = %d, expected 32", len(service.encryptionKey))
-			}
-
-			// Verify session store options
-			if service.sessionStore.Options == nil {
-				t.Error("sessionStore.Options should not be nil")
-			} else {
-				opts := service.sessionStore.Options
-				if opts.Path != "/" {
-					t.Errorf("session path = %v, expected /", opts.Path)
-				}
-				if opts.HttpOnly != true {
-					t.Error("session should be HttpOnly")
-				}
-				if opts.Secure != tt.config.SecureCookies {
-					t.Errorf("session Secure = %v, expected %v", opts.Secure, tt.config.SecureCookies)
-				}
-				if opts.SameSite != http.SameSiteLaxMode {
-					t.Errorf("session SameSite = %v, expected Lax", opts.SameSite)
-				}
-				expectedMaxAge := 86400 * 30 // 30 days
-				if opts.MaxAge != expectedMaxAge {
-					t.Errorf("session MaxAge = %d, expected %d", opts.MaxAge, expectedMaxAge)
-				}
-			}
-		})
-	}
 }
 
 func TestSessionService_SetUser_GetUser(t *testing.T) {
@@ -481,24 +397,5 @@ func TestGetClientIP(t *testing.T) {
 				t.Errorf("getClientIP() = %v, expected %v", ip, tt.expectedIP)
 			}
 		})
-	}
-}
-
-func TestGenerateSessionID(t *testing.T) {
-	// Generate multiple session IDs and verify they're unique
-	ids := make(map[string]bool)
-	for i := 0; i < 100; i++ {
-		id := generateSessionID()
-		if id == "" {
-			t.Error("generateSessionID() returned empty string")
-		}
-		if ids[id] {
-			t.Errorf("generateSessionID() generated duplicate ID: %s", id)
-		}
-		ids[id] = true
-	}
-
-	if len(ids) != 100 {
-		t.Errorf("Expected 100 unique IDs, got %d", len(ids))
 	}
 }

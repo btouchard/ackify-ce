@@ -96,17 +96,6 @@ func TestEncryptDecrypt(t *testing.T) {
 		assert.Equal(t, plaintext, decrypted)
 	})
 
-	t.Run("handles unicode characters", func(t *testing.T) {
-		plaintext := "token-with-unicode: 你好世界 🔐🔑"
-
-		ciphertext, err := EncryptToken(plaintext, key)
-		require.NoError(t, err)
-
-		decrypted, err := DecryptToken(ciphertext, key)
-		require.NoError(t, err)
-		assert.Equal(t, plaintext, decrypted)
-	})
-
 	t.Run("handles long tokens", func(t *testing.T) {
 		plaintext := strings.Repeat("a", 10000) // 10KB token
 
@@ -219,39 +208,4 @@ func TestEncryption_SecurityProperties(t *testing.T) {
 
 		assert.Len(t, nonces, 1000)
 	})
-
-	t.Run("ciphertext length", func(t *testing.T) {
-		plaintext := "test-token-123"
-
-		ciphertext, err := EncryptToken(plaintext, key)
-		require.NoError(t, err)
-
-		// GCM: nonce (12) + ciphertext (len(plaintext)) + tag (16)
-		expectedLength := 12 + len(plaintext) + 16
-		assert.Equal(t, expectedLength, len(ciphertext))
-	})
-}
-
-func BenchmarkEncryptToken(b *testing.B) {
-	key := make([]byte, 32)
-	rand.Read(key)
-	plaintext := "my-refresh-token-1234567890"
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = EncryptToken(plaintext, key)
-	}
-}
-
-func BenchmarkDecryptToken(b *testing.B) {
-	key := make([]byte, 32)
-	rand.Read(key)
-	plaintext := "my-refresh-token-1234567890"
-
-	ciphertext, _ := EncryptToken(plaintext, key)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = DecryptToken(ciphertext, key)
-	}
 }

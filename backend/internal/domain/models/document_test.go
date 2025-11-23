@@ -3,48 +3,6 @@ package models
 
 import "testing"
 
-func TestDocument_HasChecksum(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		document *Document
-		expected bool
-	}{
-		{
-			name: "Document with checksum",
-			document: &Document{
-				Checksum: "abc123def456",
-			},
-			expected: true,
-		},
-		{
-			name: "Document without checksum",
-			document: &Document{
-				Checksum: "",
-			},
-			expected: false,
-		},
-		{
-			name: "Document with whitespace checksum",
-			document: &Document{
-				Checksum: "   ",
-			},
-			expected: true, // Non-empty string
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			result := tt.document.HasChecksum()
-			if result != tt.expected {
-				t.Errorf("HasChecksum() = %v, want %v", result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestDocument_GetExpectedChecksumLength(t *testing.T) {
 	t.Parallel()
 

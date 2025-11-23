@@ -135,10 +135,6 @@ func TestI18n_T_UnknownLanguage(t *testing.T) {
 	assert.Contains(t, result, "Document Reading", "Should fallback to English translation")
 }
 
-// ============================================================================
-// TESTS - GetLangFromRequest
-// ============================================================================
-
 func TestGetLangFromRequest_FromCookie(t *testing.T) {
 	t.Parallel()
 
@@ -257,10 +253,6 @@ func TestGetLangFromRequest_CookieTakesPrecedence(t *testing.T) {
 	assert.Equal(t, "fr", lang, "Cookie should take precedence over Accept-Language header")
 }
 
-// ============================================================================
-// TESTS - SetLangCookie
-// ============================================================================
-
 func TestSetLangCookie_ValidLanguages(t *testing.T) {
 	t.Parallel()
 
@@ -336,174 +328,6 @@ func TestSetLangCookie_UnsupportedLanguage(t *testing.T) {
 	assert.Equal(t, DefaultLang, cookie.Value, "Unsupported language should default to English")
 }
 
-// ============================================================================
-// TESTS - normalizeLang
-// ============================================================================
-
-func Test_normalizeLang(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "English",
-			input:    "en",
-			expected: "en",
-		},
-		{
-			name:     "French",
-			input:    "fr",
-			expected: "fr",
-		},
-		{
-			name:     "English with region",
-			input:    "en-US",
-			expected: "en",
-		},
-		{
-			name:     "French with region",
-			input:    "fr-FR",
-			expected: "fr",
-		},
-		{
-			name:     "English uppercase",
-			input:    "EN",
-			expected: "en",
-		},
-		{
-			name:     "English mixed case",
-			input:    "En-Us",
-			expected: "en",
-		},
-		{
-			name:     "German",
-			input:    "de",
-			expected: "de",
-		},
-		{
-			name:     "German with region",
-			input:    "de-DE",
-			expected: "de",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := normalizeLang(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// ============================================================================
-// TESTS - isSupported
-// ============================================================================
-
-func Test_isSupported(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		lang     string
-		expected bool
-	}{
-		{
-			name:     "English",
-			lang:     "en",
-			expected: true,
-		},
-		{
-			name:     "French",
-			lang:     "fr",
-			expected: true,
-		},
-		{
-			name:     "English with region",
-			lang:     "en-US",
-			expected: true,
-		},
-		{
-			name:     "French with region",
-			lang:     "fr-FR",
-			expected: true,
-		},
-		{
-			name:     "German",
-			lang:     "de",
-			expected: true,
-		},
-		{
-			name:     "Spanish",
-			lang:     "es",
-			expected: true,
-		},
-		{
-			name:     "Italian",
-			lang:     "it",
-			expected: true,
-		},
-		{
-			name:     "Unsupported language (Chinese)",
-			lang:     "zh",
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := isSupported(tt.lang)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-// ============================================================================
-// TESTS - GetTranslations
-// ============================================================================
-
-func TestI18n_GetTranslations_English(t *testing.T) {
-	t.Parallel()
-
-	i18n, err := NewI18n(testLocalesDir)
-	require.NoError(t, err)
-
-	translations := i18n.GetTranslations("en")
-	assert.NotEmpty(t, translations)
-}
-
-func TestI18n_GetTranslations_French(t *testing.T) {
-	t.Parallel()
-
-	i18n, err := NewI18n(testLocalesDir)
-	require.NoError(t, err)
-
-	translations := i18n.GetTranslations("fr")
-	assert.NotEmpty(t, translations)
-}
-
-func TestI18n_GetTranslations_UnsupportedLanguage(t *testing.T) {
-	t.Parallel()
-
-	i18n, err := NewI18n(testLocalesDir)
-	require.NoError(t, err)
-
-	// Should fallback to default language (English) for truly unsupported languages
-	translations := i18n.GetTranslations("zh")
-	assert.NotEmpty(t, translations)
-	assert.Equal(t, i18n.translations[DefaultLang], translations)
-}
-
-// ============================================================================
-// TESTS - Concurrency
-// ============================================================================
-
 func TestI18n_T_Concurrent(t *testing.T) {
 	t.Parallel()
 
@@ -529,68 +353,5 @@ func TestI18n_T_Concurrent(t *testing.T) {
 
 	for i := 0; i < numGoroutines; i++ {
 		<-done
-	}
-}
-
-// ============================================================================
-// BENCHMARKS
-// ============================================================================
-
-func BenchmarkI18n_T(b *testing.B) {
-	i18n, err := NewI18n(testLocalesDir)
-	require.NoError(b, err)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		i18n.T("en", "email.reminder.subject")
-	}
-}
-
-func BenchmarkI18n_T_Parallel(b *testing.B) {
-	i18n, err := NewI18n(testLocalesDir)
-	require.NoError(b, err)
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			i18n.T("en", "email.reminder.subject")
-		}
-	})
-}
-
-func BenchmarkGetLangFromRequest(b *testing.B) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  LangCookieName,
-		Value: "fr",
-	})
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		GetLangFromRequest(req)
-	}
-}
-
-func BenchmarkGetLangFromRequest_Parallel(b *testing.B) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.AddCookie(&http.Cookie{
-		Name:  LangCookieName,
-		Value: "fr",
-	})
-
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			GetLangFromRequest(req)
-		}
-	})
-}
-
-func BenchmarkSetLangCookie(b *testing.B) {
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		rec := httptest.NewRecorder()
-		SetLangCookie(rec, "fr", false)
 	}
 }

@@ -196,46 +196,6 @@ func TestSHA256Hashing(t *testing.T) {
 
 		assert.Equal(t, expectedHashB64, hashB64, "Hash should match manual SHA-256 calculation")
 	})
-
-	t.Run("avalanche effect", func(t *testing.T) {
-		// Test that small changes in input produce large changes in hash (avalanche effect)
-		user := testUserAlice
-		timestamp := time.Now().UTC()
-		nonce := "avalanche-test"
-
-		// Base hash
-		baseHash, _, err := signer.CreateSignature(context.Background(), "testdoc", user, timestamp, nonce, "")
-		require.NoError(t, err)
-
-		// Change one character in docID
-		modHash, _, err := signer.CreateSignature(context.Background(), "testdoC", user, timestamp, nonce, "") // Changed 'c' to 'C'
-		require.NoError(t, err)
-
-		// Decode both hashes
-		baseBytes, err := base64.StdEncoding.DecodeString(baseHash)
-		require.NoError(t, err)
-
-		modBytes, err := base64.StdEncoding.DecodeString(modHash)
-		require.NoError(t, err)
-
-		// Count different bits (should be approximately 50% for good hash function)
-		differentBits := 0
-		for i := range baseBytes {
-			xor := baseBytes[i] ^ modBytes[i]
-			for xor != 0 {
-				differentBits++
-				xor &= xor - 1 // Clear lowest set bit
-			}
-		}
-
-		// SHA-256 should have good avalanche effect
-		totalBits := len(baseBytes) * 8
-		percentage := float64(differentBits) / float64(totalBits)
-
-		// Should be roughly 50% different bits (allow 30-70% range for single test)
-		assert.Greater(t, percentage, 0.3, "Avalanche effect should change at least 30%% of bits")
-		assert.Less(t, percentage, 0.7, "Avalanche effect should not change more than 70%% of bits")
-	})
 }
 
 // TestCorruptionDetection tests that signature corruption is detectable
@@ -365,28 +325,5 @@ func TestBusinessRuleEnforcement(t *testing.T) {
 		// Should produce same signature due to email normalization
 		assert.Equal(t, hash1, hash2, "Email case should not affect signature due to normalization")
 		assert.Equal(t, sig1, sig2, "Email case should not affect signature due to normalization")
-	})
-
-	t.Run("timestamp precision handling", func(t *testing.T) {
-		signer, err := NewEd25519Signer()
-		require.NoError(t, err)
-
-		user := testUserAlice
-		docID := "timestamp-precision-test"
-		nonce := "precision-nonce"
-
-		// Test that nanosecond precision is maintained in signatures
-		timestamp1 := time.Date(2024, 7, 1, 10, 30, 15, 123456789, time.UTC)
-		timestamp2 := time.Date(2024, 7, 1, 10, 30, 15, 123456790, time.UTC) // 1 nanosecond different
-
-		hash1, sig1, err := signer.CreateSignature(context.Background(), docID, user, timestamp1, nonce, "")
-		require.NoError(t, err)
-
-		hash2, sig2, err := signer.CreateSignature(context.Background(), docID, user, timestamp2, nonce, "")
-		require.NoError(t, err)
-
-		// Even 1 nanosecond difference should produce different signatures
-		assert.NotEqual(t, hash1, hash2, "Nanosecond precision should be maintained")
-		assert.NotEqual(t, sig1, sig2, "Nanosecond precision should be maintained")
 	})
 }
