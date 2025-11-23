@@ -91,12 +91,24 @@ type ChecksumConfig struct {
 func Load() (*Config, error) {
 	config := &Config{}
 
-	baseURL := mustGetEnv("ACKIFY_BASE_URL")
+	baseURL, err := getRequiredEnv("ACKIFY_BASE_URL")
+	if err != nil {
+		return nil, err
+	}
 	config.App.BaseURL = baseURL
-	config.App.Organisation = mustGetEnv("ACKIFY_ORGANISATION")
+
+	organisation, err := getRequiredEnv("ACKIFY_ORGANISATION")
+	if err != nil {
+		return nil, err
+	}
+	config.App.Organisation = organisation
 	config.App.SecureCookies = strings.HasPrefix(strings.ToLower(baseURL), "https://")
 
-	config.Database.DSN = mustGetEnv("ACKIFY_DB_DSN")
+	dsn, err := getRequiredEnv("ACKIFY_DB_DSN")
+	if err != nil {
+		return nil, err
+	}
+	config.Database.DSN = dsn
 
 	// OAuth configuration - now OPTIONAL
 	config.OAuth.ClientID = getEnv("ACKIFY_OAUTH_CLIENT_ID", "")
@@ -139,9 +151,22 @@ func Load() (*Config, error) {
 			config.OAuth.Scopes = []string{"read_user", "profile"}
 		default:
 			// Custom OAuth provider - require URLs
-			config.OAuth.AuthURL = mustGetEnv("ACKIFY_OAUTH_AUTH_URL")
-			config.OAuth.TokenURL = mustGetEnv("ACKIFY_OAUTH_TOKEN_URL")
-			config.OAuth.UserInfoURL = mustGetEnv("ACKIFY_OAUTH_USERINFO_URL")
+			authURL, err := getRequiredEnv("ACKIFY_OAUTH_AUTH_URL")
+			if err != nil {
+				return nil, fmt.Errorf("OAuth enabled with custom provider: %w", err)
+			}
+			tokenURL, err := getRequiredEnv("ACKIFY_OAUTH_TOKEN_URL")
+			if err != nil {
+				return nil, fmt.Errorf("OAuth enabled with custom provider: %w", err)
+			}
+			userInfoURL, err := getRequiredEnv("ACKIFY_OAUTH_USERINFO_URL")
+			if err != nil {
+				return nil, fmt.Errorf("OAuth enabled with custom provider: %w", err)
+			}
+
+			config.OAuth.AuthURL = authURL
+			config.OAuth.TokenURL = tokenURL
+			config.OAuth.UserInfoURL = userInfoURL
 			config.OAuth.LogoutURL = getEnv("ACKIFY_OAUTH_LOGOUT_URL", "")
 			scopesStr := getEnv("ACKIFY_OAUTH_SCOPES", "openid,email,profile")
 			config.OAuth.Scopes = strings.Split(scopesStr, ",")
@@ -221,12 +246,12 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-func mustGetEnv(key string) string {
+func getRequiredEnv(key string) (string, error) {
 	value := strings.TrimSpace(os.Getenv(key))
 	if value == "" {
-		panic(fmt.Sprintf("missing required environment variable: %s", key))
+		return "", fmt.Errorf("missing required environment variable: %s", key)
 	}
-	return value
+	return value, nil
 }
 
 func getEnv(key, defaultValue string) string {
