@@ -12,6 +12,9 @@ COPY webapp/package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --no-audit --no-fund --no-progress
 COPY webapp/ ./
+# Enable code instrumentation for E2E coverage if requested
+ARG CYPRESS_COVERAGE=false
+ENV CYPRESS_COVERAGE=$CYPRESS_COVERAGE
 RUN npm run build
 
 FROM golang:alpine AS builder

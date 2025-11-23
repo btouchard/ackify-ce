@@ -41,7 +41,7 @@ cleanup_integration() {
     if [ "$INTEGRATION_STARTED" = "1" ]; then
         echo ""
         echo -e "${YELLOW}🧹 Cleaning up integration test environment...${NC}"
-        docker compose -f compose.test.yml down -v > /dev/null 2>&1 || true
+        docker compose -f compose.test.yml down -v --remove-orphans > /dev/null 2>&1 || true
         echo -e "${GREEN}✓ Integration test environment cleaned up${NC}"
     fi
 }
@@ -50,7 +50,7 @@ cleanup_e2e() {
     if [ "$E2E_STARTED" = "1" ]; then
         echo ""
         echo -e "${YELLOW}🧹 Cleaning up E2E test environment...${NC}"
-        docker compose -f compose.e2e.yml down -v > /dev/null 2>&1 || true
+        docker compose -f compose.e2e.yml down -v --remove-orphans > /dev/null 2>&1 || true
         echo -e "${GREEN}✓ E2E test environment cleaned up${NC}"
     fi
 }
@@ -114,10 +114,10 @@ else
     echo -e "${YELLOW}🐳 Starting PostgreSQL + MailHog (compose.test.yml)...${NC}"
 
     # Clean up previous containers
-    docker compose -f "$PROJECT_ROOT/compose.test.yml" down -v > /dev/null 2>&1 || true
+    docker compose -f "$PROJECT_ROOT/compose.test.yml" down -v --remove-orphans > /dev/null 2>&1 || true
 
     # Start services
-    if docker compose -f "$PROJECT_ROOT/compose.test.yml" up -d; then
+    if docker compose -f "$PROJECT_ROOT/compose.test.yml" up -d --remove-orphans; then
         INTEGRATION_STARTED=1
         echo -e "${GREEN}✓ Services started${NC}"
 
@@ -225,8 +225,14 @@ if npm run test:coverage; then
 
         # Calculate coverage from lcov.info
         FRONTEND_LINES_FOUND=$(grep -c "^DA:" coverage/lcov.info 2>/dev/null || echo "0")
-        FRONTEND_LINES_HIT=$(grep "^DA:" coverage/lcov.info 2>/dev/null | grep -c ",0$" || echo "0")
-        FRONTEND_LINES_HIT=$((FRONTEND_LINES_FOUND - FRONTEND_LINES_HIT))
+        FRONTEND_LINES_MISS=$(grep "^DA:" coverage/lcov.info 2>/dev/null | grep -c ",0$" || echo "0")
+        # Remove any whitespace
+        FRONTEND_LINES_FOUND=$(echo "$FRONTEND_LINES_FOUND" | tr -d '[:space:]')
+        FRONTEND_LINES_MISS=$(echo "$FRONTEND_LINES_MISS" | tr -d '[:space:]')
+        # Default to 0 if empty
+        FRONTEND_LINES_FOUND=${FRONTEND_LINES_FOUND:-0}
+        FRONTEND_LINES_MISS=${FRONTEND_LINES_MISS:-0}
+        FRONTEND_LINES_HIT=$((FRONTEND_LINES_FOUND - FRONTEND_LINES_MISS))
         if [ "$FRONTEND_LINES_FOUND" -gt 0 ]; then
             FRONTEND_COV=$(awk "BEGIN {printf \"%.1f%%\", ($FRONTEND_LINES_HIT/$FRONTEND_LINES_FOUND)*100}")
         else
@@ -263,7 +269,7 @@ if ! command -v docker &> /dev/null; then
     E2E_COV="N/A"
 else
     echo -e "${YELLOW}🧹 Cleaning up previous E2E environment...${NC}"
-    docker compose -f compose.e2e.yml down -v > /dev/null 2>&1 || true
+    docker compose -f compose.e2e.yml down -v --remove-orphans > /dev/null 2>&1 || true
     echo -e "${GREEN}✓ Cleanup complete${NC}"
     echo ""
 
@@ -331,8 +337,14 @@ else
 
                         # Calculate coverage from lcov.info
                         E2E_LINES_FOUND=$(grep -c "^DA:" coverage-e2e/lcov.info 2>/dev/null || echo "0")
-                        E2E_LINES_HIT=$(grep "^DA:" coverage-e2e/lcov.info 2>/dev/null | grep -c ",0$" || echo "0")
-                        E2E_LINES_HIT=$((E2E_LINES_FOUND - E2E_LINES_HIT))
+                        E2E_LINES_MISS=$(grep "^DA:" coverage-e2e/lcov.info 2>/dev/null | grep -c ",0$" || echo "0")
+                        # Remove any whitespace
+                        E2E_LINES_FOUND=$(echo "$E2E_LINES_FOUND" | tr -d '[:space:]')
+                        E2E_LINES_MISS=$(echo "$E2E_LINES_MISS" | tr -d '[:space:]')
+                        # Default to 0 if empty
+                        E2E_LINES_FOUND=${E2E_LINES_FOUND:-0}
+                        E2E_LINES_MISS=${E2E_LINES_MISS:-0}
+                        E2E_LINES_HIT=$((E2E_LINES_FOUND - E2E_LINES_MISS))
                         if [ "$E2E_LINES_FOUND" -gt 0 ]; then
                             E2E_COV=$(awk "BEGIN {printf \"%.1f%%\", ($E2E_LINES_HIT/$E2E_LINES_FOUND)*100}")
                         else
