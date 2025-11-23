@@ -2,6 +2,7 @@
 package checksum
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
@@ -58,7 +59,12 @@ func DefaultOptions() ComputeOptions {
 
 // ComputeRemoteChecksum downloads a remote binary file and computes its SHA-256 checksum
 // Returns nil if the file cannot be processed (too large, wrong type, network error, SSRF blocked)
-func ComputeRemoteChecksum(urlStr string, opts ComputeOptions) (*Result, error) {
+// The context is used for request cancellation and timeout propagation.
+func ComputeRemoteChecksum(ctx context.Context, urlStr string, opts ComputeOptions) (*Result, error) {
+	// Check if context is already cancelled
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("context cancelled before checksum computation: %w", err)
+	}
 	// Validate URL scheme (only HTTPS allowed)
 	if !isValidURL(urlStr) {
 		logger.Logger.Info("Checksum: URL rejected - not HTTPS", "url", urlStr)
@@ -101,7 +107,7 @@ func ComputeRemoteChecksum(urlStr string, opts ComputeOptions) (*Result, error) 
 	}
 
 	// Step 1: HEAD request to check Content-Type and Content-Length
-	headReq, err := http.NewRequest("HEAD", urlStr, nil)
+	headReq, err := http.NewRequestWithContext(ctx, "HEAD", urlStr, nil)
 	if err != nil {
 		logger.Logger.Warn("Checksum: Failed to create HEAD request", "url", urlStr, "error", err.Error())
 		return nil, nil
@@ -112,7 +118,7 @@ func ComputeRemoteChecksum(urlStr string, opts ComputeOptions) (*Result, error) 
 	if err != nil {
 		logger.Logger.Info("Checksum: HEAD request failed", "url", urlStr, "error", err.Error())
 		// Fallback: try GET with streaming if HEAD not supported
-		return computeWithStreamedGET(client, urlStr, opts)
+		return computeWithStreamedGET(ctx, client, urlStr, opts)
 	}
 	defer headResp.Body.Close()
 
@@ -133,11 +139,11 @@ func ComputeRemoteChecksum(urlStr string, opts ComputeOptions) (*Result, error) 
 	// If Content-Length is unknown (0 or -1), fallback to streamed GET
 	if contentLength <= 0 {
 		logger.Logger.Debug("Checksum: Content-Length unknown, using streamed GET", "url", urlStr)
-		return computeWithStreamedGET(client, urlStr, opts)
+		return computeWithStreamedGET(ctx, client, urlStr, opts)
 	}
 
 	// Step 2: GET request to download and compute checksum
-	getReq, err := http.NewRequest("GET", urlStr, nil)
+	getReq, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
 	if err != nil {
 		logger.Logger.Warn("Checksum: Failed to create GET request", "url", urlStr, "error", err.Error())
 		return nil, nil
@@ -161,8 +167,8 @@ func ComputeRemoteChecksum(urlStr string, opts ComputeOptions) (*Result, error) 
 }
 
 // computeWithStreamedGET performs a GET request and computes checksum with hard size limit
-func computeWithStreamedGET(client *http.Client, urlStr string, opts ComputeOptions) (*Result, error) {
-	getReq, err := http.NewRequest("GET", urlStr, nil)
+func computeWithStreamedGET(ctx context.Context, client *http.Client, urlStr string, opts ComputeOptions) (*Result, error) {
+	getReq, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
 	if err != nil {
 		logger.Logger.Warn("Checksum: Failed to create GET request (fallback)", "url", urlStr, "error", err.Error())
 		return nil, nil

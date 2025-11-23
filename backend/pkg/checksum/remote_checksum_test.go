@@ -2,6 +2,7 @@
 package checksum
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -27,7 +28,7 @@ func TestComputeRemoteChecksum_Success(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true      // For testing with httptest
 	opts.InsecureSkipVerify = true // Accept self-signed certs
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -56,7 +57,7 @@ func TestComputeRemoteChecksum_TooLarge(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -80,7 +81,7 @@ func TestComputeRemoteChecksum_WrongContentType(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -94,7 +95,7 @@ func TestComputeRemoteChecksum_WrongContentType(t *testing.T) {
 func TestComputeRemoteChecksum_HTTPNotHTTPS(t *testing.T) {
 	// Test HTTP (not HTTPS) - should be rejected
 	opts := DefaultOptions()
-	result, err := ComputeRemoteChecksum("http://example.com/file.pdf", opts)
+	result, err := ComputeRemoteChecksum(context.Background(), "http://example.com/file.pdf", opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -123,7 +124,7 @@ func TestComputeRemoteChecksum_StreamedGETFallback(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -155,7 +156,7 @@ func TestComputeRemoteChecksum_ExceedsSizeDuringStreaming(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -175,7 +176,7 @@ func TestComputeRemoteChecksum_HTTPError(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -197,7 +198,7 @@ func TestComputeRemoteChecksum_TooManyRedirects(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -298,7 +299,7 @@ func TestComputeRemoteChecksum_ImageContentType(t *testing.T) {
 	opts := DefaultOptions()
 	opts.SkipSSRFCheck = true
 	opts.InsecureSkipVerify = true
-	result, err := ComputeRemoteChecksum(server.URL, opts)
+	result, err := ComputeRemoteChecksum(context.Background(), server.URL, opts)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)

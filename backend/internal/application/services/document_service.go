@@ -89,7 +89,7 @@ func (s *DocumentService) CreateDocument(ctx context.Context, req CreateDocument
 
 	// Automatically compute checksum for remote URLs if enabled
 	if url != "" && s.checksumConfig != nil {
-		checksumResult := s.computeChecksumForURL(url)
+		checksumResult := s.computeChecksumForURL(ctx, url)
 		if checksumResult != nil {
 			input.Checksum = checksumResult.ChecksumHex
 			input.ChecksumAlgorithm = checksumResult.Algorithm
@@ -313,7 +313,7 @@ func isBase64Like(s string) bool {
 
 // computeChecksumForURL attempts to compute the checksum for a remote URL
 // Returns nil if the checksum cannot be computed (error, too large, etc.)
-func (s *DocumentService) computeChecksumForURL(url string) *checksum.Result {
+func (s *DocumentService) computeChecksumForURL(ctx context.Context, url string) *checksum.Result {
 	if s.checksumConfig == nil {
 		return nil
 	}
@@ -327,7 +327,7 @@ func (s *DocumentService) computeChecksumForURL(url string) *checksum.Result {
 		InsecureSkipVerify: s.checksumConfig.InsecureSkipVerify,
 	}
 
-	result, err := checksum.ComputeRemoteChecksum(url, opts)
+	result, err := checksum.ComputeRemoteChecksum(ctx, url, opts)
 	if err != nil {
 		logger.Logger.Warn("Failed to compute checksum for URL",
 			"url", url,
@@ -426,7 +426,7 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 	// For URL references, compute checksum before creating
 	if refType == ReferenceTypeURL && s.checksumConfig != nil {
 		logger.Logger.Debug("Computing checksum for URL reference", "url", ref)
-		checksumResult := s.computeChecksumForURL(ref)
+		checksumResult := s.computeChecksumForURL(ctx, ref)
 		if checksumResult != nil {
 			logger.Logger.Info("Automatically computed checksum for URL reference",
 				"url", ref,

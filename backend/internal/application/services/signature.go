@@ -111,7 +111,7 @@ func (s *SignatureService) CreateSignature(ctx context.Context, request *models.
 		// Continue without checksum - document metadata is optional
 	} else if doc != nil && doc.Checksum != "" {
 		// Verify document hasn't been modified before signing
-		if err := s.verifyDocumentIntegrity(doc); err != nil {
+		if err := s.verifyDocumentIntegrity(ctx, doc); err != nil {
 			logger.Logger.Warn("Document integrity check failed",
 				"doc_id", request.DocID,
 				"error", err.Error())
@@ -375,7 +375,7 @@ func (s *SignatureService) RebuildChain(ctx context.Context) error {
 }
 
 // verifyDocumentIntegrity checks if the document at the URL hasn't been modified since the checksum was stored
-func (s *SignatureService) verifyDocumentIntegrity(doc *models.Document) error {
+func (s *SignatureService) verifyDocumentIntegrity(ctx context.Context, doc *models.Document) error {
 	// Only verify if document has URL and checksum, and checksum config is available
 	if doc.URL == "" || doc.Checksum == "" || s.checksumConfig == nil {
 		logger.Logger.Debug("Skipping document integrity check",
@@ -406,7 +406,7 @@ func (s *SignatureService) verifyDocumentIntegrity(doc *models.Document) error {
 	}
 
 	// Compute current checksum
-	result, err := checksum.ComputeRemoteChecksum(doc.URL, opts)
+	result, err := checksum.ComputeRemoteChecksum(ctx, doc.URL, opts)
 	if err != nil {
 		logger.Logger.Error("Failed to compute checksum for integrity check",
 			"doc_id", doc.DocID,
