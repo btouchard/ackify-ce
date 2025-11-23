@@ -45,6 +45,11 @@ services:
       ACKIFY_MAIL_STARTTLS: "false"
       ACKIFY_MAIL_FROM: "noreply@ackify.test"
       ACKIFY_MAIL_FROM_NAME: "Ackify Test"
+      ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_EMAIL: "1000"
+      ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP: "1000"
+      ACKIFY_AUTH_RATE_LIMIT: "1000"
+      ACKIFY_DOCUMENT_RATE_LIMIT: "1000"
+      ACKIFY_GENERAL_RATE_LIMIT: "1000"
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully

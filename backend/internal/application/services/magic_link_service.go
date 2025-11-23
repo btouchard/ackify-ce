@@ -30,22 +30,28 @@ type MagicLinkRepository interface {
 
 // MagicLinkService gère l'authentification par Magic Link
 type MagicLinkService struct {
-	repo           MagicLinkRepository
-	emailSender    email.Sender
-	baseURL        string
-	appName        string
-	allowedDomains []string // Domaines email autorisés (vide = tous)
-	tokenValidity  time.Duration
+	repo              MagicLinkRepository
+	emailSender       email.Sender
+	baseURL           string
+	appName           string
+	allowedDomains    []string // Domaines email autorisés (vide = tous)
+	tokenValidity     time.Duration
+	rateLimitPerEmail int           // Nombre max de requêtes par email par fenêtre (défaut: 3)
+	rateLimitPerIP    int           // Nombre max de requêtes par IP par fenêtre (défaut: 10)
+	rateLimitWindow   time.Duration // Fenêtre de rate limit (défaut: 1h)
 }
 
 // MagicLinkServiceConfig pour le service Magic Link
 type MagicLinkServiceConfig struct {
-	Repository     MagicLinkRepository
-	EmailSender    email.Sender
-	BaseURL        string
-	AppName        string
-	AllowedDomains []string
-	TokenValidity  time.Duration // Défaut: 15 minutes
+	Repository        MagicLinkRepository
+	EmailSender       email.Sender
+	BaseURL           string
+	AppName           string
+	AllowedDomains    []string
+	TokenValidity     time.Duration // Défaut: 15 minutes
+	RateLimitPerEmail int           // Défaut: 3
+	RateLimitPerIP    int           // Défaut: 10
+	RateLimitWindow   time.Duration // Défaut: 1 heure
 }
 
 func NewMagicLinkService(cfg MagicLinkServiceConfig) *MagicLinkService {
@@ -57,13 +63,28 @@ func NewMagicLinkService(cfg MagicLinkServiceConfig) *MagicLinkService {
 		cfg.AppName = "Ackify"
 	}
 
+	if cfg.RateLimitPerEmail == 0 {
+		cfg.RateLimitPerEmail = 3
+	}
+
+	if cfg.RateLimitPerIP == 0 {
+		cfg.RateLimitPerIP = 10
+	}
+
+	if cfg.RateLimitWindow == 0 {
+		cfg.RateLimitWindow = 1 * time.Hour
+	}
+
 	return &MagicLinkService{
-		repo:           cfg.Repository,
-		emailSender:    cfg.EmailSender,
-		baseURL:        cfg.BaseURL,
-		appName:        cfg.AppName,
-		allowedDomains: cfg.AllowedDomains,
-		tokenValidity:  cfg.TokenValidity,
+		repo:              cfg.Repository,
+		emailSender:       cfg.EmailSender,
+		baseURL:           cfg.BaseURL,
+		appName:           cfg.AppName,
+		allowedDomains:    cfg.AllowedDomains,
+		tokenValidity:     cfg.TokenValidity,
+		rateLimitPerEmail: cfg.RateLimitPerEmail,
+		rateLimitPerIP:    cfg.RateLimitPerIP,
+		rateLimitWindow:   cfg.RateLimitWindow,
 	}
 }
 
@@ -100,14 +121,14 @@ func (s *MagicLinkService) RequestMagicLink(
 		}
 	}
 
-	// Rate limiting par email (max 3/heure)
-	since := time.Now().Add(-1 * time.Hour)
+	// Rate limiting par email
+	since := time.Now().Add(-1 * s.rateLimitWindow)
 	count, err := s.repo.CountRecentAttempts(ctx, emailAddr, since)
 	if err != nil {
 		logger.Logger.Error("Failed to check rate limit for email", "email", emailAddr, "error", err)
 		return fmt.Errorf("rate limit check failed")
 	}
-	if count >= 3 {
+	if count >= s.rateLimitPerEmail {
 		s.logAttempt(ctx, emailAddr, false, "rate_limit_exceeded_email", ip, userAgent)
 		// Ne pas révéler le rate limiting pour éviter l'énumération
 		logger.Logger.Warn("Magic Link rate limit exceeded", "email", emailAddr, "count", count)
@@ -115,13 +136,13 @@ func (s *MagicLinkService) RequestMagicLink(
 		return nil
 	}
 
-	// Rate limiting par IP (max 10/heure)
+	// Rate limiting par IP
 	countIP, err := s.repo.CountRecentAttemptsByIP(ctx, ip, since)
 	if err != nil {
 		logger.Logger.Error("Failed to check rate limit for IP", "ip", ip, "error", err)
 		return fmt.Errorf("rate limit check failed")
 	}
-	if countIP >= 10 {
+	if countIP >= s.rateLimitPerIP {
 		s.logAttempt(ctx, emailAddr, false, "rate_limit_exceeded_ip", ip, userAgent)
 		logger.Logger.Warn("Magic Link IP rate limit exceeded", "ip", ip, "count", countIP)
 		return nil

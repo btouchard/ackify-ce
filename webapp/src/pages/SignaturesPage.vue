@@ -227,9 +227,9 @@ onMounted(() => {
               :is-deleted="false"
             />
 
-            <!-- Separator if both active and deleted exist -->
-            <div v-if="activeSignatures.length > 0 && deletedSignatures.length > 0" class="py-4">
-              <hr class="border-border" />
+            <!-- Deleted documents section header -->
+            <div v-if="deletedSignatures.length > 0" class="py-4">
+              <hr v-if="activeSignatures.length > 0" class="border-border" />
               <p class="text-center text-sm text-muted-foreground mt-4 mb-2">
                 {{ t('signatures.deletedDocuments') }}
               </p>

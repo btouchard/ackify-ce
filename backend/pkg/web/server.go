@@ -115,10 +115,12 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	}
 
 	magicLinkService := services.NewMagicLinkService(services.MagicLinkServiceConfig{
-		Repository:  magicLinkRepo,
-		EmailSender: emailSender,
-		BaseURL:     cfg.App.BaseURL,
-		AppName:     cfg.App.Organisation,
+		Repository:        magicLinkRepo,
+		EmailSender:       emailSender,
+		BaseURL:           cfg.App.BaseURL,
+		AppName:           cfg.App.Organisation,
+		RateLimitPerEmail: cfg.Auth.MagicLinkRateLimitEmail,
+		RateLimitPerIP:    cfg.Auth.MagicLinkRateLimitIP,
 	})
 
 	// Initialize Magic Link cleanup worker
@@ -178,6 +180,9 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		OAuthEnabled:              cfg.Auth.OAuthEnabled,
 		MagicLinkEnabled:          cfg.Auth.MagicLinkEnabled,
 		OnlyAdminCanCreate:        cfg.App.OnlyAdminCanCreate,
+		AuthRateLimit:             cfg.App.AuthRateLimit,
+		DocumentRateLimit:         cfg.App.DocumentRateLimit,
+		GeneralRateLimit:          cfg.App.GeneralRateLimit,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)

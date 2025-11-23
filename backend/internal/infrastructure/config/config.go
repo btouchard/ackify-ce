@@ -23,8 +23,10 @@ type Config struct {
 }
 
 type AuthConfig struct {
-	OAuthEnabled     bool
-	MagicLinkEnabled bool
+	OAuthEnabled            bool
+	MagicLinkEnabled        bool
+	MagicLinkRateLimitEmail int // Max requests per email per window (default: 3)
+	MagicLinkRateLimitIP    int // Max requests per IP per window (default: 10)
 }
 
 type AppConfig struct {
@@ -34,6 +36,9 @@ type AppConfig struct {
 	AdminEmails        []string
 	OnlyAdminCanCreate bool
 	SMTPEnabled        bool // True if SMTP is configured (for email reminders)
+	AuthRateLimit      int  // Global auth rate limit (requests per minute), default: 5
+	DocumentRateLimit  int  // Document creation rate limit (requests per minute), default: 10
+	GeneralRateLimit   int  // General API rate limit (requests per minute), default: 100
 }
 
 type DatabaseConfig struct {
@@ -237,6 +242,15 @@ func Load() (*Config, error) {
 	smtpConfigured := mailHost != ""
 	config.App.SMTPEnabled = smtpConfigured
 	config.Auth.MagicLinkEnabled = getEnvBool("ACKIFY_AUTH_MAGICLINK_ENABLED", false) && smtpConfigured
+
+	// Magic Link rate limiting configuration
+	config.Auth.MagicLinkRateLimitEmail = getEnvInt("ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_EMAIL", 3)
+	config.Auth.MagicLinkRateLimitIP = getEnvInt("ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP", 10)
+
+	// Global API rate limiting configuration (for e2e testing)
+	config.App.AuthRateLimit = getEnvInt("ACKIFY_AUTH_RATE_LIMIT", 5)
+	config.App.DocumentRateLimit = getEnvInt("ACKIFY_DOCUMENT_RATE_LIMIT", 10)
+	config.App.GeneralRateLimit = getEnvInt("ACKIFY_GENERAL_RATE_LIMIT", 100)
 
 	// Validation: At least one authentication method must be enabled
 	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {

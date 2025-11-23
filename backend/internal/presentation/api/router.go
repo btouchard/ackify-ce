@@ -41,6 +41,9 @@ type RouterConfig struct {
 	OAuthEnabled              bool
 	MagicLinkEnabled          bool
 	OnlyAdminCanCreate        bool
+	AuthRateLimit             int // Global auth rate limit (requests per minute), default: 5
+	DocumentRateLimit         int // Document creation rate limit (requests per minute), default: 10
+	GeneralRateLimit          int // General API rate limit (requests per minute), default: 100
 }
 
 // NewRouter creates and configures the API v1 router
@@ -50,10 +53,23 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	// Initialize middleware
 	apiMiddleware := shared.NewMiddleware(cfg.AuthService, cfg.BaseURL, cfg.AdminEmails)
 
-	// Rate limiters
-	authRateLimit := shared.NewRateLimit(5, time.Minute)      // 5 attempts per minute for auth
-	documentRateLimit := shared.NewRateLimit(10, time.Minute) // 10 documents per minute
-	generalRateLimit := shared.NewRateLimit(100, time.Minute) // 100 requests per minute general
+	// Rate limiters with configurable limits
+	authLimit := cfg.AuthRateLimit
+	if authLimit == 0 {
+		authLimit = 5 // Default: 5 attempts per minute for auth
+	}
+	documentLimit := cfg.DocumentRateLimit
+	if documentLimit == 0 {
+		documentLimit = 10 // Default: 10 documents per minute
+	}
+	generalLimit := cfg.GeneralRateLimit
+	if generalLimit == 0 {
+		generalLimit = 100 // Default: 100 requests per minute general
+	}
+
+	authRateLimit := shared.NewRateLimit(authLimit, time.Minute)
+	documentRateLimit := shared.NewRateLimit(documentLimit, time.Minute)
+	generalRateLimit := shared.NewRateLimit(generalLimit, time.Minute)
 
 	// Global middleware
 	r.Use(middleware.RequestID)
