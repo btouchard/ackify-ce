@@ -1,0 +1,113 @@
+name: Backend Tests
+
+on:
+  workflow_call:
+    outputs:
+      coverage-artifact:
+        description: "Backend coverage artifact name"
+        value: ${{ jobs.test.outputs.coverage-artifact }}
+
+jobs:
+  test:
+    name: Backend Unit + Integration Tests
+    runs-on: ubuntu-latest
+    outputs:
+      coverage-artifact: backend-coverage
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: ackify_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.5'
+        cache: true
+
+    - name: Download dependencies
+      run: |
+        cd backend
+        go mod download
+
+    - name: Run go fmt check
+      run: |
+        cd backend
+        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+          echo "The following files need to be formatted:"
+          gofmt -s -l .
+          exit 1
+        fi
+
+    - name: Run go vet
+      run: |
+        cd backend
+        go vet ./...
+
+    - name: Run unit tests
+      env:
+        ACKIFY_BASE_URL: "http://localhost:8080"
+        ACKIFY_ORGANISATION: "Test Org"
+        ACKIFY_OAUTH_CLIENT_ID: "test-client-id"
+        ACKIFY_OAUTH_CLIENT_SECRET: "test-client-secret"
+        ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
+      run: |
+        cd backend
+        go test -v -race -short ./...
+
+    - name: Run integration tests
+      env:
+        ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
+        INTEGRATION_TESTS: "1"
+      run: |
+        cd backend
+        go test -v -race -tags=integration -p 1 -count=1 \
+          ./internal/infrastructure/database/... \
+          ./internal/presentation/api/admin
+
+    - name: Generate coverage report
+      env:
+        ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
+        INTEGRATION_TESTS: "1"
+        ACKIFY_BASE_URL: "http://localhost:8080"
+        ACKIFY_ORGANISATION: "Test Org"
+        ACKIFY_OAUTH_CLIENT_ID: "test-client-id"
+        ACKIFY_OAUTH_CLIENT_SECRET: "test-client-secret"
+        ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
+      run: |
+        cd backend
+        # Unit coverage
+        go test -v -race -short -covermode=atomic -coverprofile=coverage-unit.out ./...
+        # Integration coverage
+        go test -v -race -tags=integration -p 1 -count=1 \
+          -covermode=atomic -coverprofile=coverage-integration.out \
+          ./internal/infrastructure/database/... \
+          ./internal/presentation/api/admin
+        # Merge coverage
+        echo "mode: atomic" > coverage.out
+        tail -n +2 coverage-unit.out >> coverage.out
+        tail -n +2 coverage-integration.out >> coverage.out
+
+        # Display coverage summary
+        go tool cover -func=coverage.out | tail -1
+
+    - name: Upload backend coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-coverage
+        path: backend/coverage.out
+        retention-days: 1

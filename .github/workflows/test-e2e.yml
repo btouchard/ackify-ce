@@ -1,15 +1,18 @@
-# SPDX-License-Identifier: AGPL-3.0-or-later
 name: E2E Tests
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+  workflow_call:
+    outputs:
+      coverage-artifact:
+        description: "E2E coverage artifact name"
+        value: ${{ jobs.cypress.outputs.coverage-artifact }}
 
 jobs:
-  cypress-run:
+  cypress:
+    name: Cypress E2E Tests
     runs-on: ubuntu-latest
+    outputs:
+      coverage-artifact: e2e-coverage
 
     services:
       postgres:
@@ -53,8 +56,10 @@ jobs:
         working-directory: webapp
         run: npm ci
 
-      - name: Build frontend
+      - name: Build frontend (with instrumentation for coverage)
         working-directory: webapp
+        env:
+          CYPRESS_COVERAGE: "true"
         run: npm run build
 
       - name: Install backend dependencies
@@ -65,20 +70,6 @@ jobs:
           ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
         run: |
           go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up
-
-      - name: Generate Ed25519 keys
-        run: |
-          go run ./backend/cmd/community/keygen.go > /tmp/ed25519.key || true
-          if [ ! -f /tmp/ed25519.key ]; then
-            echo "Generating Ed25519 key for testing"
-            # Generate a test key if keygen doesn't exist
-            echo "test_private_key_base64_encoded_here" > /tmp/ed25519.key
-          fi
-
-      - name: Copy locales and templates
-        run: |
-          cp -r backend/locales .
-          cp -r backend/templates .
 
       - name: Copy frontend dist for embed
         run: |
@@ -104,6 +95,7 @@ jobs:
           ACKIFY_MAIL_FROM: "noreply@ackify.test"
           ACKIFY_MAIL_FROM_NAME: "Ackify Test"
           ACKIFY_LOG_LEVEL: "debug"
+          ACKIFY_AUTH_MAGICLINK_ENABLED: "true"
         run: |
           go build -o ackify ./backend/cmd/community
           ./ackify &
@@ -140,6 +132,14 @@ jobs:
           name: cypress-videos
           path: webapp/cypress/videos
           retention-days: 7
+
+      - name: Upload E2E coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-coverage
+          path: webapp/coverage-e2e/lcov.info
+          retention-days: 1
 
       - name: Stop Ackify server
         if: always()

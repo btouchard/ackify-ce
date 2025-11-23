@@ -13,226 +13,68 @@ env:
   IMAGE_NAME: btouchard/ackify-ce
 
 jobs:
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: ackify_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+  # Phase 1: Tests parallèles
+  backend-tests:
+    name: Backend Tests
+    uses: ./.github/workflows/test-backend.yml
+    secrets: inherit
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  frontend-tests:
+    name: Frontend Tests
+    uses: ./.github/workflows/test-frontend.yml
+    secrets: inherit
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24.5'
-        cache: true
+  e2e-tests:
+    name: E2E Tests
+    uses: ./.github/workflows/test-e2e.yml
+    secrets: inherit
+    needs: [backend-tests, frontend-tests]
 
-    - name: Download dependencies
-      run: |
-        cd backend
-        go mod download
+  # Phase 2: Coverage global
+  coverage-report:
+    name: Coverage Report
+    uses: ./.github/workflows/coverage-report.yml
+    needs: [backend-tests, frontend-tests, e2e-tests]
+    secrets: inherit
+    if: always()
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-        cache-dependency-path: webapp/package-lock.json
-
-    - name: Build frontend
-      run: |
-        cd webapp
-        npm ci --no-audit --no-fund --no-progress
-        npm run build
-
-    - name: Copy frontend to backend embed directory
-      run: |
-        mkdir -p backend/cmd/community/web/dist
-        cp -r webapp/dist/* backend/cmd/community/web/dist/
-
-    - name: Run go fmt check
-      run: |
-        cd backend
-        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-          echo "The following files need to be formatted:"
-          gofmt -s -l .
-          exit 1
-        fi
-
-    - name: Run go vet
-      run: |
-        cd backend
-        go vet ./...
-
-    - name: Run unit tests
-      env:
-        ACKIFY_BASE_URL: "http://localhost:8080"
-        ACKIFY_ORGANISATION: "Test Org"
-        ACKIFY_OAUTH_CLIENT_ID: "test-client-id"
-        ACKIFY_OAUTH_CLIENT_SECRET: "test-client-secret"
-        ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
-      run: |
-        cd backend
-        go test -v -race -short ./...
-
-    - name: Run integration tests
-      env:
-        ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
-        INTEGRATION_TESTS: "1"
-      run: |
-        cd backend
-        # Run DB + admin integration tests, serialized to avoid CI flakiness
-        go test -v -race -tags=integration -p 1 -count=1 ./internal/infrastructure/database/... ./internal/presentation/api/admin
-
-    - name: Generate coverage report (unit+integration)
-      env:
-        ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
-        INTEGRATION_TESTS: "1"
-        ACKIFY_BASE_URL: "http://localhost:8080"
-        ACKIFY_ORGANISATION: "Test Org"
-        ACKIFY_OAUTH_CLIENT_ID: "test-client-id"
-        ACKIFY_OAUTH_CLIENT_SECRET: "test-client-secret"
-        ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
-      run: |
-        cd backend
-        # 1) Unit coverage (no integration tag)
-        go test -v -race -short -covermode=atomic -coverprofile=coverage-unit.out ./...
-        # 2) Integration coverage only for integration packages, serialized
-        go test -v -race -tags=integration -p 1 -count=1 -covermode=atomic -coverprofile=coverage-integration.out \
-          ./internal/infrastructure/database/... \
-          ./internal/presentation/api/admin
-        # 3) Merge coverage
-        echo "mode: atomic" > coverage.out
-        tail -n +2 coverage-unit.out >> coverage.out
-        tail -n +2 coverage-integration.out >> coverage.out
-        go tool cover -func=coverage.out | tail -1
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./backend/coverage.out
-        flags: unittests,integration
-        name: codecov-ackify-ce
-        fail_ci_if_error: false
-        verbose: true
-        token: ${{ secrets.CODECOV_TOKEN }}
-
-  build:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: test
+  # Phase 3: Build & Deploy (seulement si tests OK + pas PR)
+  build-and-push:
+    name: Build and Push Docker
     if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/build-docker.yml
+    needs: [backend-tests, frontend-tests, e2e-tests]
+    secrets: inherit
+    with:
+      push: true
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Compute IMAGE_TAG
-      run: |
-        # Strip leading 'v' from tag refs; leave branches unchanged
-        echo "IMAGE_TAG=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=semver,pattern={{major}}
-          type=sha,prefix={{branch}}-,enable={{is_default_branch}}
-          type=sha,enable=false
-          type=raw,value=latest,enable=${{ github.event_name == 'release' }}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: |
-          ${{ steps.meta.outputs.tags }}
-          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          VERSION=${{ github.ref_name }}
-          COMMIT=${{ github.sha }}
-          BUILD_DATE=${{ github.event.head_commit.timestamp }}
-
-  security:
+  # Phase 4: Security scan
+  security-scan:
     name: Security Scan
-    runs-on: ubuntu-latest
-    needs: build
     if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/security.yml
+    needs: build-and-push
+    secrets: inherit
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Compute IMAGE_TAG
-      run: |
-        # Strip leading 'v' from tag refs; leave branches unchanged
-        echo "IMAGE_TAG=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
-
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-#    - name: Upload Trivy scan results to GitHub Security tab
-#      uses: github/codeql-action/upload-sarif@v2
-#      if: always()
-#      with:
-#        sarif_file: 'trivy-results.sarif'
-
+  # Notification finale
   notify:
     name: Notify
     runs-on: ubuntu-latest
-    needs: [test, build, security]
+    needs: [backend-tests, frontend-tests, e2e-tests, build-and-push, security-scan]
     if: always() && github.event_name != 'pull_request'
 
     steps:
+    - name: Compute IMAGE_TAG
+      run: echo "IMAGE_TAG=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
     - name: Notify success
-      if: needs.test.result == 'success' && needs.build.result == 'success'
+      if: needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success' && needs.e2e-tests.result == 'success' && needs.build-and-push.result == 'success'
       run: |
         echo "✅ CI/CD Pipeline completed successfully!"
         echo "🚀 Image pushed: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
-        
+
     - name: Notify failure
-      if: needs.test.result == 'failure' || needs.build.result == 'failure'
+      if: needs.backend-tests.result == 'failure' || needs.frontend-tests.result == 'failure' || needs.e2e-tests.result == 'failure' || needs.build-and-push.result == 'failure'
       run: |
         echo "❌ CI/CD Pipeline failed!"
         echo "Please check the logs above for details."

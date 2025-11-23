@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  workflow_call:
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: btouchard/ackify-ce
+
+jobs:
+  trivy:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Compute IMAGE_TAG
+      run: |
+        # Strip leading 'v' from tag refs; leave branches unchanged
+        echo "IMAGE_TAG=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+#    - name: Upload Trivy scan results to GitHub Security tab
+#      uses: github/codeql-action/upload-sarif@v3
+#      if: always()
+#      with:
+#        sarif_file: 'trivy-results.sarif'

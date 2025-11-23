@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Coverage
+coverage/
+*.lcov
+
+# E2E Coverage
+coverage-e2e/
+.nyc_output/

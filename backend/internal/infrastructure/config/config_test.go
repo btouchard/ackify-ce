@@ -343,6 +343,7 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 				"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
 				"ACKIFY_OAUTH_PROVIDER":      "google",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 			}
 
 			delete(envVars, missingVar)
@@ -358,13 +359,10 @@ func TestLoad_MissingRequiredEnvironmentVariables(t *testing.T) {
 
 			_ = os.Unsetenv(missingVar)
 
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("Load() should panic when %s is missing", missingVar)
-				}
-			}()
-
-			_, _ = Load()
+			_, err := Load()
+			if err == nil {
+				t.Errorf("Load() should return error when %s is missing", missingVar)
+			}
 		})
 	}
 }
@@ -384,6 +382,7 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 				"ACKIFY_DB_DSN":              "postgres://user:pass@localhost/test",
 				"ACKIFY_OAUTH_CLIENT_ID":     "test-client-id",
 				"ACKIFY_OAUTH_CLIENT_SECRET": "test-client-secret",
+				"ACKIFY_OAUTH_COOKIE_SECRET": base64.StdEncoding.EncodeToString(make([]byte, 32)),
 				"ACKIFY_OAUTH_AUTH_URL":      "https://auth.custom.com/oauth/authorize",
 				"ACKIFY_OAUTH_TOKEN_URL":     "https://auth.custom.com/oauth/token",
 				"ACKIFY_OAUTH_USERINFO_URL":  "https://api.custom.com/user",
@@ -402,13 +401,10 @@ func TestLoad_CustomProviderMissingRequiredVars(t *testing.T) {
 
 			_ = os.Unsetenv(missingVar)
 
-			defer func() {
-				if r := recover(); r == nil {
-					t.Errorf("Load() should panic when %s is missing for custom provider", missingVar)
-				}
-			}()
-
-			_, _ = Load()
+			_, err := Load()
+			if err == nil {
+				t.Errorf("Load() should return error when %s is missing for custom provider", missingVar)
+			}
 		})
 	}
 }

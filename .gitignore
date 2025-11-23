@@ -21,3 +21,4 @@ client_secret*.json
 # Tailwind CSS
 /bin/tailwindcss
 /static/output.css
+/.coverage-report/

@@ -1,0 +1,57 @@
+name: Coverage Report
+
+on:
+  workflow_call:
+
+jobs:
+  merge-and-upload:
+    name: Merge Coverage & Upload to Codecov
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download backend coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-coverage
+        path: coverage/backend
+
+    - name: Download frontend coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-coverage
+        path: coverage/frontend
+      continue-on-error: true
+
+    - name: Download E2E coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: e2e-coverage
+        path: coverage/e2e
+      continue-on-error: true
+
+    - name: Upload to Codecov (multi-format)
+      uses: codecov/codecov-action@v4
+      with:
+        files: |
+          coverage/backend/coverage.out
+          coverage/frontend/lcov.info
+          coverage/e2e/lcov.info
+        flags: backend,frontend,e2e
+        name: codecov-ackify-ce
+        fail_ci_if_error: false
+        verbose: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Generate coverage summary
+      run: |
+        echo "## 📊 Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Coverage reports uploaded to Codecov:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Backend (Go): coverage/backend/coverage.out" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Frontend (Vue/TS): coverage/frontend/lcov.info" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ E2E (Cypress): coverage/e2e/lcov.info" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "View detailed report: https://codecov.io/gh/${{ github.repository }}" >> $GITHUB_STEP_SUMMARY

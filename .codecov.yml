@@ -1,0 +1,58 @@
+# Codecov configuration for Ackify CE
+# Documentation: https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+        informational: false
+    patch:
+      default:
+        target: auto
+        threshold: 5%
+        informational: true
+
+  # Separate flags for different test types
+  flags:
+    backend:
+      paths:
+        - backend/
+      carryforward: true
+    frontend:
+      paths:
+        - webapp/src/
+      carryforward: true
+    e2e:
+      paths:
+        - webapp/src/
+      carryforward: true
+
+# Files to ignore
+ignore:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.cy.ts"
+  - "webapp/cypress/**"
+  - "webapp/tests/**"
+  - "backend/cmd/*/main.go"
+  - "backend/migrations/**"
+  - "backend/locales/**"
+  - "backend/templates/**"
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+  - "**/coverage-e2e/**"
+
+# Comment behavior on pull requests
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+# GitHub checks
+github_checks:
+  annotations: true
