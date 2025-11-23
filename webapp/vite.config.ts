@@ -3,18 +3,28 @@ import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 import istanbul from 'vite-plugin-istanbul'
 
+const isE2ECoverage = process.env.CYPRESS_COVERAGE === 'true'
+
 export default defineConfig({
   plugins: [
     vue(),
-    // Instrument code for E2E coverage (only in test mode)
-    istanbul({
-      include: 'src/*',
-      exclude: ['node_modules', 'tests/', 'cypress/', 'dist/'],
+    // Instrument code for E2E coverage (only when CYPRESS_COVERAGE=true)
+    ...(isE2ECoverage ? [istanbul({
+      include: 'src/**/*',
+      exclude: ['node_modules/**', 'tests/**', 'cypress/**', 'dist/**'],
       extension: ['.js', '.ts', '.vue'],
       requireEnv: false,
-      forceBuildInstrument: process.env.CYPRESS_COVERAGE === 'true'
-    })
+      forceBuildInstrument: true,
+      cypress: true
+    })] : [])
   ],
+  build: {
+    // Disable minification when instrumenting for coverage
+    ...(isE2ECoverage ? {
+      minify: false,
+      sourcemap: true
+    } : {})
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
