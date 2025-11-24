@@ -23,7 +23,21 @@ export default defineConfig({
     ...(isE2ECoverage ? {
       minify: false,
       sourcemap: true
-    } : {})
+    } : {}),
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress "currentInstance" not exported warning from vue-i18n
+        // This is a known issue with vue-i18n accessing internal Vue APIs
+        if (
+          warning.code === 'MISSING_EXPORT' &&
+          warning.exporter?.includes('vue.runtime.esm-bundler.js') &&
+          warning.message.includes('currentInstance')
+        ) {
+          return
+        }
+        warn(warning)
+      }
+    }
   },
   resolve: {
     alias: {
