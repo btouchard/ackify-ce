@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.3] - 2025-11-24
+
+### 🧪 Quality & Stability
+
+Maintenance release focused on improving code quality, test coverage, and build stability.
+
+### Added
+
+- **Frontend Test Coverage**
+  - Comprehensive unit tests for Pinia stores (documents, signatures, users)
+  - API services testing (document, signature, auth)
+  - Critical UI components testing
+  - Significant improvement in frontend code coverage
+  - Early regression detection through automated testing
+
+### Fixed
+
+- **Build & Dependencies**
+  - Eliminated vue-i18n `currentInstance` warning during build
+  - Removed deprecated npm dependencies warnings (glob, rimraf, inflight)
+  - Frontend build now completely clean without warnings
+  - Improved Node.js 20+ compatibility
+
+- **Internationalization**
+  - Fixed handling of translation keys with literal dots (e.g., `document.created`)
+  - Robust i18n file validation script
+  - Consistent translation key validation across all locales
+
+- **CI/CD Pipeline**
+  - Stabilized E2E test pipeline with proper configuration
+  - Fixed `go:embed` directive compatibility in backend tests
+  - Configured rate limits for automated test environments
+  - Improved locales and templates path handling
+  - E2E code coverage maintained and functional
+  - Multi-version Node.js compatibility (18/20/22)
+
+### Changed
+
+- **Infrastructure**
+  - More robust CI/CD pipeline configuration
+  - Optimized test execution with proper environment setup
+  - Enhanced error handling in test workflows
+
+### Technical Details
+
+**Frontend Improvements:**
+- Test coverage for stores: `useDocumentsStore`, `useSignaturesStore`, `useUsersStore`
+- Test coverage for services: `documentService`, `signatureService`, `authService`
+- Test coverage for components: `DocumentCard`, `SignatureForm`, `UserProfile`
+- Rollup configuration for suppressing vue-i18n warnings
+- npm overrides for compatible dependency versions
+
+**Backend Improvements:**
+- Rate limit configuration variables for test environments
+- Proper locales and templates directory handling
+- Empty `web/dist` directory creation for embed directive
+
+**CI/CD Fixes:**
+- Node.js 20 for E2E tests (nyc@15 compatibility)
+- Proper rate limits: `ACKIFY_*_RATE_LIMIT=1000` for tests
+- Environment variables: `ACKIFY_LOCALES_DIR`, `ACKIFY_TEMPLATES_DIR`
+- Compatible dependency versions for code coverage
+
 ## [1.2.1] - 2025-11-05
 
 ### 🔐 Passwordless Authentication & Enhanced Installation

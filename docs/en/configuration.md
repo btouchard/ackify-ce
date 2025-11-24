@@ -100,6 +100,45 @@ When `ACKIFY_ONLY_ADMIN_CAN_CREATE` is enabled:
 - ✅ Non-admin users will see an error message when attempting to create documents
 - ✅ Both API endpoints (`POST /documents` and `GET /documents/find-or-create`) are protected
 
+### Rate Limiting
+
+Configure API rate limits to prevent abuse and control request rates:
+
+```bash
+# Magic Link authentication rate limits (per time window)
+ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_EMAIL=3   # Max requests per email (default: 3)
+ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP=10     # Max requests per IP (default: 10)
+
+# General API rate limits (requests per minute)
+ACKIFY_AUTH_RATE_LIMIT=5          # Authentication endpoints (default: 5/min)
+ACKIFY_DOCUMENT_RATE_LIMIT=10     # Document creation (default: 10/min)
+ACKIFY_GENERAL_RATE_LIMIT=100     # General API requests (default: 100/min)
+```
+
+**When to adjust**:
+- **Testing/CI**: Increase limits (e.g., `1000`) to prevent 429 errors during automated tests
+- **High traffic**: Increase `GENERAL_RATE_LIMIT` for production workloads
+- **Security**: Lower `AUTH_RATE_LIMIT` to prevent brute-force attacks
+
+### Logging
+
+```bash
+# Log level: debug, info, warn, error (default: info)
+ACKIFY_LOG_LEVEL=info
+
+# Log format: classic or json (default: classic)
+ACKIFY_LOG_FORMAT=classic
+```
+
+**Log formats**:
+- `classic`: Human-readable format for development and simple deployments
+- `json`: Structured JSON for log aggregators (Datadog, ELK, Splunk)
+
+**Example JSON output**:
+```json
+{"time":"2025-11-24T10:00:00Z","level":"INFO","msg":"Server started","port":8080}
+```
+
 ### Document Checksum (Optional)
 
 Configuration for automatic checksum computation when creating documents from URLs:
@@ -119,6 +158,17 @@ ACKIFY_CHECKSUM_ALLOWED_TYPES=application/pdf,image/*,application/msword,applica
 ```
 
 **Note**: These settings only apply when admins create documents via the admin dashboard with a remote URL. The system will attempt to download and calculate the SHA-256 checksum automatically.
+
+**Testing variables** (⚠️ **NEVER use in production**):
+```bash
+# Disable SSRF protection (testing only)
+ACKIFY_CHECKSUM_SKIP_SSRF_CHECK=false
+
+# Skip TLS certificate verification (testing only)
+ACKIFY_CHECKSUM_INSECURE_SKIP_VERIFY=false
+```
+
+These variables disable critical security protections and should **only** be used in isolated test environments.
 
 ## Advanced Configuration
 

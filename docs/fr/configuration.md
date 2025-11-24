@@ -100,6 +100,45 @@ Quand `ACKIFY_ONLY_ADMIN_CAN_CREATE` est activé :
 - ✅ Les utilisateurs non-admin verront un message d'erreur lors d'une tentative de création
 - ✅ Les deux endpoints API (`POST /documents` et `GET /documents/find-or-create`) sont protégés
 
+### Limitation de Débit (Rate Limiting)
+
+Configuration des limites de requêtes API pour prévenir les abus et contrôler le débit :
+
+```bash
+# Limites d'authentification Magic Link (par fenêtre de temps)
+ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_EMAIL=3   # Max requêtes par email (défaut: 3)
+ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP=10     # Max requêtes par IP (défaut: 10)
+
+# Limites API générales (requêtes par minute)
+ACKIFY_AUTH_RATE_LIMIT=5          # Endpoints d'authentification (défaut: 5/min)
+ACKIFY_DOCUMENT_RATE_LIMIT=10     # Création de documents (défaut: 10/min)
+ACKIFY_GENERAL_RATE_LIMIT=100     # Requêtes API générales (défaut: 100/min)
+```
+
+**Quand ajuster** :
+- **Tests/CI** : Augmenter les limites (ex: `1000`) pour éviter les erreurs 429 durant les tests automatisés
+- **Trafic élevé** : Augmenter `GENERAL_RATE_LIMIT` pour les charges de production
+- **Sécurité** : Réduire `AUTH_RATE_LIMIT` pour prévenir les attaques par force brute
+
+### Journalisation (Logging)
+
+```bash
+# Niveau de log : debug, info, warn, error (défaut: info)
+ACKIFY_LOG_LEVEL=info
+
+# Format de log : classic ou json (défaut: classic)
+ACKIFY_LOG_FORMAT=classic
+```
+
+**Formats de log** :
+- `classic` : Format lisible pour le développement et déploiements simples
+- `json` : JSON structuré pour aggrégateurs de logs (Datadog, ELK, Splunk)
+
+**Exemple de sortie JSON** :
+```json
+{"time":"2025-11-24T10:00:00Z","level":"INFO","msg":"Server started","port":8080}
+```
+
 ### Checksums Documents (Optionnel)
 
 Configuration pour le calcul automatique de checksum lors de la création de documents depuis des URLs :
@@ -119,6 +158,17 @@ ACKIFY_CHECKSUM_ALLOWED_TYPES=application/pdf,image/*,application/msword,applica
 ```
 
 **Note** : Ces paramètres s'appliquent uniquement lorsque les admins créent des documents via le dashboard admin avec une URL distante. Le système tentera de télécharger et calculer le checksum SHA-256 automatiquement.
+
+**Variables de test** (⚠️ **NE JAMAIS utiliser en production**) :
+```bash
+# Désactiver la protection SSRF (tests uniquement)
+ACKIFY_CHECKSUM_SKIP_SSRF_CHECK=false
+
+# Ignorer la vérification des certificats TLS (tests uniquement)
+ACKIFY_CHECKSUM_INSECURE_SKIP_VERIFY=false
+```
+
+Ces variables désactivent des protections de sécurité critiques et ne doivent être utilisées **que** dans des environnements de test isolés.
 
 ## Configuration Avancée
 
