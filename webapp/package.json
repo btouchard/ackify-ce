@@ -16,7 +16,8 @@
     "cypress:run": "cypress run",
     "cypress:headless": "cypress run --headless",
     "test:e2e": "cypress run --headless",
-    "test:e2e:open": "cypress open"
+    "test:e2e:open": "cypress open",
+    "postinstall": "node scripts/patch-nyc.cjs"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -45,6 +46,7 @@
     "istanbul-lib-coverage": "^3.2.2",
     "jsdom": "^27.2.0",
     "nyc": "^17.1.0",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.14",
