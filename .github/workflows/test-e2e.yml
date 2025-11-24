@@ -48,7 +48,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: webapp/package-lock.json
 
@@ -114,7 +114,7 @@ jobs:
           wait-on: 'http://localhost:8080/api/v1/health'
           wait-on-timeout: 60
           browser: chrome
-          headless: true
+          headed: false
         env:
           CYPRESS_baseUrl: http://localhost:8080
           CYPRESS_mailhogUrl: http://localhost:8025
