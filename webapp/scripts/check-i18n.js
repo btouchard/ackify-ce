@@ -32,13 +32,27 @@ function flattenKeys(obj, prefix = '') {
 
 /**
  * Check if a key exists in an object
+ * Handles keys with literal dots (e.g., "document.created")
  */
 function hasKey(obj, keyPath) {
   const keys = keyPath.split('.');
   let current = obj;
 
-  for (const key of keys) {
-    if (typeof current !== 'object' || current === null || !(key in current)) {
+  for (let i = 0; i < keys.length; i++) {
+    if (typeof current !== 'object' || current === null) {
+      return false;
+    }
+
+    // Try the remaining path as a single key first (for literal dots)
+    const remainingPath = keys.slice(i).join('.');
+    if (remainingPath in current) {
+      current = current[remainingPath];
+      return true;
+    }
+
+    // Otherwise, try the next segment
+    const key = keys[i];
+    if (!(key in current)) {
       return false;
     }
     current = current[key];
