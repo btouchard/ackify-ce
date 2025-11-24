@@ -96,6 +96,8 @@ jobs:
           ACKIFY_MAIL_FROM_NAME: "Ackify Test"
           ACKIFY_LOG_LEVEL: "debug"
           ACKIFY_AUTH_MAGICLINK_ENABLED: "true"
+          ACKIFY_LOCALES_DIR: "backend/locales"
+          ACKIFY_TEMPLATES_DIR: "backend/templates"
         run: |
           go build -o ackify ./backend/cmd/community
           ./ackify &
