@@ -16,8 +16,7 @@
     "cypress:run": "cypress run",
     "cypress:headless": "cypress run --headless",
     "test:e2e": "cypress run --headless",
-    "test:e2e:open": "cypress open",
-    "postinstall": "node scripts/patch-nyc.cjs"
+    "test:e2e:open": "cypress open"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -58,8 +57,6 @@
     "vue-tsc": "^3.1.0"
   },
   "overrides": {
-    "glob": "^10.4.5",
-    "rimraf": "^5.0.10",
     "inflight": "npm:noop-package@1.0.0"
   }
 }
