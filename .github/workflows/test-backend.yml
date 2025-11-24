@@ -44,6 +44,11 @@ jobs:
         cd backend
         go mod download
 
+    - name: Create empty frontend dist directory for embed directive
+      run: |
+        mkdir -p backend/cmd/community/web/dist
+        echo '{}' > backend/cmd/community/web/dist/.gitkeep
+
     - name: Run go fmt check
       run: |
         cd backend
