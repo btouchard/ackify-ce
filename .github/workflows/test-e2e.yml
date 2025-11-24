@@ -98,6 +98,11 @@ jobs:
           ACKIFY_AUTH_MAGICLINK_ENABLED: "true"
           ACKIFY_LOCALES_DIR: "backend/locales"
           ACKIFY_TEMPLATES_DIR: "backend/templates"
+          ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_EMAIL: "1000"
+          ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP: "1000"
+          ACKIFY_AUTH_RATE_LIMIT: "1000"
+          ACKIFY_DOCUMENT_RATE_LIMIT: "1000"
+          ACKIFY_GENERAL_RATE_LIMIT: "1000"
         run: |
           go build -o ackify ./backend/cmd/community
           ./ackify &
