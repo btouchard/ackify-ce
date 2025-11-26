@@ -39,6 +39,7 @@ type AppConfig struct {
 	AuthRateLimit      int  // Global auth rate limit (requests per minute), default: 5
 	DocumentRateLimit  int  // Document creation rate limit (requests per minute), default: 10
 	GeneralRateLimit   int  // General API rate limit (requests per minute), default: 100
+	ImportMaxSigners   int  // Maximum signers per CSV import, default: 500
 }
 
 type DatabaseConfig struct {
@@ -251,6 +252,9 @@ func Load() (*Config, error) {
 	config.App.AuthRateLimit = getEnvInt("ACKIFY_AUTH_RATE_LIMIT", 5)
 	config.App.DocumentRateLimit = getEnvInt("ACKIFY_DOCUMENT_RATE_LIMIT", 10)
 	config.App.GeneralRateLimit = getEnvInt("ACKIFY_GENERAL_RATE_LIMIT", 100)
+
+	// CSV import configuration
+	config.App.ImportMaxSigners = getEnvInt("ACKIFY_IMPORT_MAX_SIGNERS", 500)
 
 	// Validation: At least one authentication method must be enabled
 	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {

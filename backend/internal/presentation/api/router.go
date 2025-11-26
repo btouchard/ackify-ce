@@ -44,6 +44,7 @@ type RouterConfig struct {
 	AuthRateLimit             int // Global auth rate limit (requests per minute), default: 5
 	DocumentRateLimit         int // Document creation rate limit (requests per minute), default: 10
 	GeneralRateLimit          int // General API rate limit (requests per minute), default: 100
+	ImportMaxSigners          int // Maximum signers per CSV import, default: 500
 }
 
 // NewRouter creates and configures the API v1 router
@@ -186,8 +187,14 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		r.Use(apiMiddleware.RequireAdmin)
 		r.Use(apiMiddleware.CSRFProtect)
 
+		// Configure import max signers with default
+		importMaxSigners := cfg.ImportMaxSigners
+		if importMaxSigners == 0 {
+			importMaxSigners = 500 // Default: 500 signers per import
+		}
+
 		// Initialize admin handler
-		adminHandler := apiAdmin.NewHandler(cfg.DocumentRepository, cfg.ExpectedSignerRepository, cfg.ReminderService, cfg.SignatureService, cfg.BaseURL)
+		adminHandler := apiAdmin.NewHandler(cfg.DocumentRepository, cfg.ExpectedSignerRepository, cfg.ReminderService, cfg.SignatureService, cfg.BaseURL, importMaxSigners)
 		webhooksHandler := apiAdmin.NewWebhooksHandler(cfg.WebhookRepository, cfg.WebhookDeliveryRepository)
 
 		r.Route("/admin", func(r chi.Router) {
@@ -207,6 +214,10 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 				// Expected signers management
 				r.Post("/{docId}/signers", adminHandler.HandleAddExpectedSigner)
 				r.Delete("/{docId}/signers/{email}", adminHandler.HandleRemoveExpectedSigner)
+
+				// CSV import for expected signers
+				r.Post("/{docId}/signers/preview-csv", adminHandler.HandlePreviewCSV)
+				r.Post("/{docId}/signers/import", adminHandler.HandleImportSigners)
 
 				// Reminder management
 				r.Post("/{docId}/reminders", adminHandler.HandleSendReminders)

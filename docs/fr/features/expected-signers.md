@@ -45,17 +45,108 @@ X-CSRF-Token: abc123
 }
 ```
 
-### Ajout en Batch
+### Import CSV (Recommandé)
 
+La méthode la plus efficace pour ajouter de nombreux signataires est l'import CSV natif.
+
+**Via le Dashboard Admin :**
+1. Aller sur `/admin` et sélectionner un document
+2. Dans la section "Lecteurs attendus", cliquer sur **Import CSV**
+3. Sélectionner un fichier CSV
+4. Prévisualiser les entrées (valides, existantes, invalides)
+5. Confirmer l'import
+
+**Format CSV supporté :**
+```csv
+email,name
+alice@company.com,Alice Smith
+bob@company.com,Bob Jones
+charlie@company.com,Charlie Brown
+```
+
+**Fonctionnalités auto-détectées :**
+- **Séparateur** : virgule (`,`) ou point-virgule (`;`)
+- **En-tête** : détection automatique des colonnes `email` et `name`
+- **Ordre des colonnes** : flexible (email/name ou name/email)
+- **Colonne name** : optionnelle
+
+**Exemples de formats valides :**
+```csv
+# Avec en-tête, séparateur virgule
+email,name
+alice@company.com,Alice Smith
+
+# Sans en-tête (email seul)
+bob@company.com
+charlie@company.com
+
+# En-têtes français, séparateur point-virgule
+courriel;nom
+alice@company.com;Alice Smith
+
+# Colonnes inversées
+name,email
+Bob Jones,bob@company.com
+```
+
+**Limite configurable :**
 ```bash
-# Liste d'emails dans un fichier
-cat emails.txt | while read email; do
-  curl -X POST http://localhost:8080/api/v1/admin/documents/policy_2025/signers \
-    -b cookies.txt \
-    -H "X-CSRF-Token: $CSRF_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"email\": \"$email\"}"
-done
+# Par défaut : 500 signataires max par import
+ACKIFY_IMPORT_MAX_SIGNERS=1000
+```
+
+**Via l'API :**
+
+1. **Preview** (analyse du CSV) :
+```http
+POST /api/v1/admin/documents/{docId}/signers/preview-csv
+Content-Type: multipart/form-data
+X-CSRF-Token: abc123
+
+file: [fichier CSV]
+```
+
+Response :
+```json
+{
+  "signers": [
+    {"lineNumber": 2, "email": "alice@company.com", "name": "Alice Smith"},
+    {"lineNumber": 3, "email": "bob@company.com", "name": "Bob Jones"}
+  ],
+  "errors": [
+    {"lineNumber": 5, "content": "invalid-email", "error": "invalid_email_format"}
+  ],
+  "totalLines": 4,
+  "validCount": 2,
+  "invalidCount": 1,
+  "hasHeader": true,
+  "existingEmails": ["charlie@company.com"],
+  "maxSigners": 500
+}
+```
+
+2. **Import** (après validation) :
+```http
+POST /api/v1/admin/documents/{docId}/signers/import
+Content-Type: application/json
+X-CSRF-Token: abc123
+
+{
+  "signers": [
+    {"email": "alice@company.com", "name": "Alice Smith"},
+    {"email": "bob@company.com", "name": "Bob Jones"}
+  ]
+}
+```
+
+Response :
+```json
+{
+  "message": "Import completed",
+  "imported": 2,
+  "skipped": 0,
+  "total": 2
+}
 ```
 
 ## Tracking de Complétion
@@ -286,22 +377,11 @@ Voir [Email Setup](../configuration/email-setup.md) pour plus de détails.
 
 ### Import CSV
 
-Pour importer massivement :
-
-```python
-import csv
-import requests
-
-with open('employees.csv') as f:
-    reader = csv.DictReader(f)
-    for row in reader:
-        requests.post(
-            'http://localhost:8080/api/v1/admin/documents/policy_2025/signers',
-            json={'email': row['email'], 'name': row['name']},
-            headers={'X-CSRF-Token': csrf_token},
-            cookies=cookies
-        )
-```
+Utilisez l'import CSV natif (voir section "Import CSV" ci-dessus) pour les imports en masse. Avantages :
+- Preview avant import avec détection d'erreurs
+- Détection automatique des doublons
+- Limite configurable (`ACKIFY_IMPORT_MAX_SIGNERS`)
+- Support multi-formats (virgule/point-virgule, avec/sans en-tête)
 
 ### Personnalisation
 

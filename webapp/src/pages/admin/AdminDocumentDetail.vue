@@ -11,7 +11,11 @@ import {
   removeExpectedSigner,
   sendReminders,
   deleteDocument,
+  previewCSVSigners,
+  importSigners,
   type DocumentStatus,
+  type CSVPreviewResult,
+  type CSVSignerEntry,
 } from '@/services/admin'
 import { extractError } from '@/services/http'
 import {
@@ -26,6 +30,11 @@ import {
   Clock,
   X,
   Trash2,
+  Upload,
+  AlertTriangle,
+  FileCheck,
+  FileX,
+  Search,
 } from 'lucide-vue-next'
 import Card from '@/components/ui/Card.vue'
 import CardHeader from '@/components/ui/CardHeader.vue'
@@ -64,8 +73,16 @@ const showDeleteConfirmModal = ref(false)
 const showMetadataWarningModal = ref(false)
 const showRemoveSignerModal = ref(false)
 const showSendRemindersModal = ref(false)
+const showImportCSVModal = ref(false)
 const signerToRemove = ref('')
 const remindersMessage = ref('')
+
+// CSV Import
+const csvFile = ref<File | null>(null)
+const csvPreview = ref<CSVPreviewResult | null>(null)
+const analyzingCSV = ref(false)
+const importingCSV = ref(false)
+const csvError = ref('')
 
 // Metadata form
 const metadataForm = ref<Partial<{
@@ -93,6 +110,7 @@ const savingMetadata = ref(false)
 // Expected signers form
 const signersEmails = ref('')
 const addingSigners = ref(false)
+const signerFilter = ref('')
 
 // Reminders
 const sendMode = ref<'all' | 'selected'>('all')
@@ -112,6 +130,15 @@ const stats = computed(() => documentStatus.value?.stats)
 const reminderStats = computed(() => documentStatus.value?.reminderStats)
 const smtpEnabled = computed(() => (window as any).ACKIFY_SMTP_ENABLED || false)
 const expectedSigners = computed(() => documentStatus.value?.expectedSigners || [])
+const filteredSigners = computed(() => {
+  const filter = signerFilter.value.toLowerCase().trim()
+  if (!filter) return expectedSigners.value
+  return expectedSigners.value.filter(signer =>
+    signer.email.toLowerCase().includes(filter) ||
+    (signer.name && signer.name.toLowerCase().includes(filter)) ||
+    (signer.userName && signer.userName.toLowerCase().includes(filter))
+  )
+})
 const unexpectedSignatures = computed(() => documentStatus.value?.unexpectedSignatures || [])
 const documentMetadata = computed(() => documentStatus.value?.document)
 
@@ -355,6 +382,90 @@ async function handleDeleteDocument() {
   }
 }
 
+// CSV Import functions
+function openImportCSVModal() {
+  csvFile.value = null
+  csvPreview.value = null
+  csvError.value = ''
+  showImportCSVModal.value = true
+}
+
+function handleCSVFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    csvFile.value = target.files[0]
+    csvPreview.value = null
+    csvError.value = ''
+  }
+}
+
+async function analyzeCSV() {
+  if (!csvFile.value) return
+
+  try {
+    analyzingCSV.value = true
+    csvError.value = ''
+    const response = await previewCSVSigners(docId.value, csvFile.value)
+    csvPreview.value = response.data
+  } catch (err) {
+    csvError.value = extractError(err)
+    console.error('Failed to analyze CSV:', err)
+  } finally {
+    analyzingCSV.value = false
+  }
+}
+
+function getSignerStatus(signer: CSVSignerEntry): 'valid' | 'exists' {
+  if (!csvPreview.value) return 'valid'
+  return csvPreview.value.existingEmails.includes(signer.email) ? 'exists' : 'valid'
+}
+
+const signersToImport = computed(() => {
+  if (!csvPreview.value) return []
+  return csvPreview.value.signers.filter(
+    s => !csvPreview.value!.existingEmails.includes(s.email)
+  )
+})
+
+async function confirmImportCSV() {
+  if (!csvPreview.value || signersToImport.value.length === 0) return
+
+  try {
+    importingCSV.value = true
+    csvError.value = ''
+
+    const signersData = signersToImport.value.map(s => ({
+      email: s.email,
+      name: s.name
+    }))
+
+    const response = await importSigners(docId.value, signersData)
+
+    showImportCSVModal.value = false
+    csvFile.value = null
+    csvPreview.value = null
+
+    success.value = t('admin.documentDetail.csvImportSuccess', {
+      imported: response.data.imported,
+      skipped: response.data.skipped
+    })
+    await loadDocumentStatus()
+    setTimeout(() => (success.value = ''), 3000)
+  } catch (err) {
+    csvError.value = extractError(err)
+    console.error('Failed to import signers:', err)
+  } finally {
+    importingCSV.value = false
+  }
+}
+
+function closeImportCSVModal() {
+  showImportCSVModal.value = false
+  csvFile.value = null
+  csvPreview.value = null
+  csvError.value = ''
+}
+
 onMounted(() => {
   loadDocumentStatus()
 })
@@ -524,15 +635,34 @@ onMounted(() => {
                 <CardTitle>{{ t('admin.documentDetail.readers') }}</CardTitle>
                 <CardDescription v-if="stats">{{ stats.signedCount }} / {{ stats.expectedCount }} {{ t('admin.dashboard.stats.signed').toLowerCase() }}</CardDescription>
               </div>
-              <Button @click="showAddSignersModal = true" size="sm">
-                <Plus :size="16" class="mr-2" />
-                {{ t('admin.documentDetail.addButton') }}
-              </Button>
+              <div class="flex gap-2">
+                <Button @click="openImportCSVModal" size="sm" variant="outline">
+                  <Upload :size="16" class="mr-2" />
+                  {{ t('admin.documentDetail.importCSV') }}
+                </Button>
+                <Button @click="showAddSignersModal = true" size="sm">
+                  <Plus :size="16" class="mr-2" />
+                  {{ t('admin.documentDetail.addButton') }}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <!-- Expected Signers Table -->
+            <!-- Filter + Expected Signers Table -->
             <div v-if="expectedSigners.length > 0">
+              <!-- Filter -->
+              <div class="relative mb-4">
+                <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
+                <Input
+                  v-model="signerFilter"
+                  :placeholder="t('admin.documentDetail.filterPlaceholder')"
+                  class="pl-9"
+                  name="ackify-signer-filter"
+                  autocomplete="off"
+                  data-1p-ignore
+                  data-lpignore="true"
+                />
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -547,7 +677,7 @@ onMounted(() => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-for="signer in expectedSigners" :key="signer.email">
+                  <TableRow v-for="signer in filteredSigners" :key="signer.email">
                     <TableCell>
                       <input v-if="!signer.hasSigned" type="checkbox" class="rounded"
                              :checked="selectedEmails.includes(signer.email)"
@@ -727,6 +857,154 @@ onMounted(() => {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Import CSV Modal -->
+    <div v-if="showImportCSVModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="closeImportCSVModal">
+      <Card class="max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle>{{ t('admin.documentDetail.importCSVTitle') }}</CardTitle>
+            <Button variant="ghost" size="icon" @click="closeImportCSVModal">
+              <X :size="20" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="flex-1 overflow-auto">
+          <!-- Error Alert -->
+          <Alert v-if="csvError" variant="destructive" class="mb-4">
+            <AlertDescription>{{ csvError }}</AlertDescription>
+          </Alert>
+
+          <!-- Step 1: File Selection -->
+          <div v-if="!csvPreview" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.selectFile') }}</label>
+              <input
+                type="file"
+                accept=".csv"
+                @change="handleCSVFileChange"
+                class="block w-full text-sm text-muted-foreground
+                       file:mr-4 file:py-2 file:px-4
+                       file:rounded-md file:border-0
+                       file:text-sm file:font-medium
+                       file:bg-primary file:text-primary-foreground
+                       hover:file:bg-primary/90
+                       cursor-pointer"
+              />
+              <p class="text-xs text-muted-foreground mt-2">
+                {{ t('admin.documentDetail.csvFormatHelp') }}
+              </p>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <Button type="button" variant="outline" @click="closeImportCSVModal">
+                {{ t('common.cancel') }}
+              </Button>
+              <Button @click="analyzeCSV" :disabled="!csvFile || analyzingCSV">
+                <Loader2 v-if="analyzingCSV" :size="16" class="mr-2 animate-spin" />
+                {{ analyzingCSV ? t('admin.documentDetail.analyzing') : t('admin.documentDetail.analyze') }}
+              </Button>
+            </div>
+          </div>
+
+          <!-- Step 2: Preview -->
+          <div v-else class="space-y-4">
+            <!-- Summary -->
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 flex items-center gap-3">
+                <FileCheck :size="24" class="text-green-600" />
+                <div>
+                  <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.validEntries') }}</p>
+                  <p class="text-xl font-bold text-green-600">{{ signersToImport.length }}</p>
+                </div>
+              </div>
+              <div v-if="csvPreview.existingEmails.length > 0" class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 flex items-center gap-3">
+                <AlertTriangle :size="24" class="text-orange-600" />
+                <div>
+                  <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.existingEntries') }}</p>
+                  <p class="text-xl font-bold text-orange-600">{{ csvPreview.existingEmails.length }}</p>
+                </div>
+              </div>
+              <div v-if="csvPreview.invalidCount > 0" class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 flex items-center gap-3">
+                <FileX :size="24" class="text-red-600" />
+                <div>
+                  <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.invalidEntries') }}</p>
+                  <p class="text-xl font-bold text-red-600">{{ csvPreview.invalidCount }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="border rounded-lg overflow-hidden">
+              <div class="max-h-64 overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead class="w-16">{{ t('admin.documentDetail.lineNumber') }}</TableHead>
+                      <TableHead>{{ t('admin.documentDetail.email') }}</TableHead>
+                      <TableHead>{{ t('admin.documentDetail.name') }}</TableHead>
+                      <TableHead class="w-32">{{ t('admin.documentDetail.status') }}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="signer in csvPreview.signers" :key="signer.lineNumber" :class="getSignerStatus(signer) === 'exists' ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''">
+                      <TableCell class="text-muted-foreground">{{ signer.lineNumber }}</TableCell>
+                      <TableCell>{{ signer.email }}</TableCell>
+                      <TableCell>{{ signer.name || '-' }}</TableCell>
+                      <TableCell>
+                        <Badge :variant="getSignerStatus(signer) === 'exists' ? 'secondary' : 'default'">
+                          {{ getSignerStatus(signer) === 'exists' ? t('admin.documentDetail.statusExists') : t('admin.documentDetail.statusValid') }}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            <!-- Errors Table -->
+            <div v-if="csvPreview.errors.length > 0" class="border border-destructive rounded-lg overflow-hidden">
+              <div class="bg-destructive/10 px-4 py-2 font-medium text-destructive">
+                {{ t('admin.documentDetail.parseErrors') }}
+              </div>
+              <div class="max-h-32 overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead class="w-16">{{ t('admin.documentDetail.lineNumber') }}</TableHead>
+                      <TableHead>{{ t('admin.documentDetail.content') }}</TableHead>
+                      <TableHead>{{ t('admin.documentDetail.errorReason') }}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow v-for="err in csvPreview.errors" :key="err.lineNumber" class="bg-red-50/50 dark:bg-red-900/10">
+                      <TableCell class="text-muted-foreground">{{ err.lineNumber }}</TableCell>
+                      <TableCell class="font-mono text-xs truncate max-w-48">{{ err.content }}</TableCell>
+                      <TableCell class="text-destructive text-sm">{{ t('admin.documentDetail.csvError.' + err.error, err.error) }}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-between items-center pt-4">
+              <Button type="button" variant="ghost" @click="csvPreview = null; csvFile = null">
+                {{ t('admin.documentDetail.backToFileSelection') }}
+              </Button>
+              <div class="flex gap-3">
+                <Button type="button" variant="outline" @click="closeImportCSVModal">
+                  {{ t('common.cancel') }}
+                </Button>
+                <Button @click="confirmImportCSV" :disabled="importingCSV || signersToImport.length === 0">
+                  <Loader2 v-if="importingCSV" :size="16" class="mr-2 animate-spin" />
+                  {{ importingCSV ? t('admin.documentDetail.importing') : t('admin.documentDetail.importButton', { count: signersToImport.length }) }}
+                </Button>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

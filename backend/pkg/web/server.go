@@ -183,6 +183,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		AuthRateLimit:             cfg.App.AuthRateLimit,
 		DocumentRateLimit:         cfg.App.DocumentRateLimit,
 		GeneralRateLimit:          cfg.App.GeneralRateLimit,
+		ImportMaxSigners:          cfg.App.ImportMaxSigners,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)

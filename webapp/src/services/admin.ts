@@ -141,6 +141,65 @@ export async function removeExpectedSigner(
 }
 
 // ============================================================================
+// CSV IMPORT
+// ============================================================================
+
+export interface CSVSignerEntry {
+  lineNumber: number
+  email: string
+  name: string
+}
+
+export interface CSVParseError {
+  lineNumber: number
+  content: string
+  error: string
+}
+
+export interface CSVPreviewResult {
+  signers: CSVSignerEntry[]
+  errors: CSVParseError[]
+  totalLines: number
+  validCount: number
+  invalidCount: number
+  hasHeader: boolean
+  existingEmails: string[]
+  maxSigners: number
+}
+
+export interface ImportSignersResult {
+  message: string
+  imported: number
+  skipped: number
+  total: number
+}
+
+// Preview CSV file before import
+export async function previewCSVSigners(
+  docId: string,
+  file: File
+): Promise<ApiResponse<CSVPreviewResult>> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await http.post(`/admin/documents/${docId}/signers/preview-csv`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+  return response.data
+}
+
+// Import signers after preview confirmation
+export async function importSigners(
+  docId: string,
+  signers: { email: string; name: string }[]
+): Promise<ApiResponse<ImportSignersResult>> {
+  const response = await http.post(`/admin/documents/${docId}/signers/import`, { signers })
+  return response.data
+}
+
+// ============================================================================
 // REMINDERS
 // ============================================================================
 

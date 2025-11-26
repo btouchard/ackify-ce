@@ -4,9 +4,13 @@ package admin
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
@@ -52,16 +56,18 @@ type Handler struct {
 	reminderService    reminderService
 	signatureService   signatureService
 	baseURL            string
+	importMaxSigners   int
 }
 
 // NewHandler creates a new admin handler
-func NewHandler(documentRepo documentRepository, expectedSignerRepo expectedSignerRepository, reminderService reminderService, signatureService signatureService, baseURL string) *Handler {
+func NewHandler(documentRepo documentRepository, expectedSignerRepo expectedSignerRepository, reminderService reminderService, signatureService signatureService, baseURL string, importMaxSigners int) *Handler {
 	return &Handler{
 		documentRepo:       documentRepo,
 		expectedSignerRepo: expectedSignerRepo,
 		reminderService:    reminderService,
 		signatureService:   signatureService,
 		baseURL:            baseURL,
+		importMaxSigners:   importMaxSigners,
 	}
 }
 
@@ -682,5 +688,195 @@ func (h *Handler) HandleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 
 	shared.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "Document deleted successfully",
+	})
+}
+
+// CSVPreviewResponse represents the response for CSV preview
+type CSVPreviewResponse struct {
+	Signers        []services.CSVSignerEntry `json:"signers"`
+	Errors         []services.CSVParseError  `json:"errors"`
+	TotalLines     int                       `json:"totalLines"`
+	ValidCount     int                       `json:"validCount"`
+	InvalidCount   int                       `json:"invalidCount"`
+	HasHeader      bool                      `json:"hasHeader"`
+	ExistingEmails []string                  `json:"existingEmails"`
+	MaxSigners     int                       `json:"maxSigners"`
+}
+
+// HandlePreviewCSV handles POST /api/v1/admin/documents/{docId}/signers/preview-csv
+func (h *Handler) HandlePreviewCSV(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	docID := chi.URLParam(r, "docId")
+
+	if docID == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Document ID is required", nil)
+		return
+	}
+
+	// Limit file size to 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // 1MB
+
+	// Parse multipart form
+	if err := r.ParseMultipartForm(1 << 20); err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "File too large or invalid form data", nil)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "CSV file is required", nil)
+		return
+	}
+	defer file.Close()
+
+	// Read file content
+	content, err := io.ReadAll(file)
+	if err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Failed to read file", nil)
+		return
+	}
+
+	// Parse CSV
+	parser := services.NewCSVParser(h.importMaxSigners)
+	result, err := parser.Parse(strings.NewReader(string(content)))
+	if err != nil {
+		logger.Logger.Error("Failed to parse CSV", "error", err.Error(), "doc_id", docID)
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, fmt.Sprintf("Failed to parse CSV: %s", err.Error()), nil)
+		return
+	}
+
+	// Get existing signers for this document to identify duplicates
+	existingEmails := []string{}
+	existingSigners, err := h.expectedSignerRepo.ListByDocID(ctx, docID)
+	if err == nil {
+		existingEmailsMap := make(map[string]bool)
+		for _, signer := range existingSigners {
+			existingEmailsMap[strings.ToLower(signer.Email)] = true
+		}
+
+		// Check which emails from the CSV already exist
+		for _, entry := range result.Signers {
+			if existingEmailsMap[strings.ToLower(entry.Email)] {
+				existingEmails = append(existingEmails, entry.Email)
+			}
+		}
+	}
+
+	response := CSVPreviewResponse{
+		Signers:        result.Signers,
+		Errors:         result.Errors,
+		TotalLines:     result.TotalLines,
+		ValidCount:     result.ValidCount,
+		InvalidCount:   result.InvalidCount,
+		HasHeader:      result.HasHeader,
+		ExistingEmails: existingEmails,
+		MaxSigners:     h.importMaxSigners,
+	}
+
+	shared.WriteJSON(w, http.StatusOK, response)
+}
+
+// ImportSignersRequest represents the request body for importing signers
+type ImportSignersRequest struct {
+	Signers []ImportSignerEntry `json:"signers"`
+}
+
+// ImportSignerEntry represents a single signer to import
+type ImportSignerEntry struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+// ImportSignersResponse represents the response for signer import
+type ImportSignersResponse struct {
+	Message  string `json:"message"`
+	Imported int    `json:"imported"`
+	Skipped  int    `json:"skipped"`
+	Total    int    `json:"total"`
+}
+
+// HandleImportSigners handles POST /api/v1/admin/documents/{docId}/signers/import
+func (h *Handler) HandleImportSigners(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	docID := chi.URLParam(r, "docId")
+
+	if docID == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Document ID is required", nil)
+		return
+	}
+
+	// Get user from context
+	user, ok := shared.GetUserFromContext(ctx)
+	if !ok {
+		shared.WriteUnauthorized(w, "")
+		return
+	}
+
+	// Parse request body
+	var req ImportSignersRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Invalid request body", nil)
+		return
+	}
+
+	// Validate signers count
+	if len(req.Signers) == 0 {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "At least one signer is required", nil)
+		return
+	}
+
+	if len(req.Signers) > h.importMaxSigners {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest,
+			fmt.Sprintf("Maximum %d signers per import (received %d)", h.importMaxSigners, len(req.Signers)), nil)
+		return
+	}
+
+	// Get existing signers to calculate skipped count
+	existingEmailsMap := make(map[string]bool)
+	existingSigners, err := h.expectedSignerRepo.ListByDocID(ctx, docID)
+	if err == nil {
+		for _, signer := range existingSigners {
+			existingEmailsMap[strings.ToLower(signer.Email)] = true
+		}
+	}
+
+	// Count how many will be skipped (already exist)
+	skippedCount := 0
+	for _, signer := range req.Signers {
+		if existingEmailsMap[strings.ToLower(signer.Email)] {
+			skippedCount++
+		}
+	}
+
+	// Convert to ContactInfo slice
+	contacts := make([]models.ContactInfo, 0, len(req.Signers))
+	for _, signer := range req.Signers {
+		contacts = append(contacts, models.ContactInfo{
+			Email: strings.ToLower(strings.TrimSpace(signer.Email)),
+			Name:  strings.TrimSpace(signer.Name),
+		})
+	}
+
+	// Add all signers (repository handles duplicates with ON CONFLICT DO NOTHING)
+	if err := h.expectedSignerRepo.AddExpected(ctx, docID, contacts, user.Email); err != nil {
+		logger.Logger.Error("Failed to import signers", "error", err.Error(), "doc_id", docID, "count", len(contacts))
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to import signers", nil)
+		return
+	}
+
+	importedCount := len(req.Signers) - skippedCount
+
+	logger.Logger.Info("Signers imported successfully",
+		"doc_id", docID,
+		"imported", importedCount,
+		"skipped", skippedCount,
+		"total", len(req.Signers),
+		"imported_by", user.Email)
+
+	shared.WriteJSON(w, http.StatusOK, ImportSignersResponse{
+		Message:  "Import completed",
+		Imported: importedCount,
+		Skipped:  skippedCount,
+		Total:    len(req.Signers),
 	})
 }

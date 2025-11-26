@@ -113,6 +113,9 @@ ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP=10     # Max requests per IP (default: 10)
 ACKIFY_AUTH_RATE_LIMIT=5          # Authentication endpoints (default: 5/min)
 ACKIFY_DOCUMENT_RATE_LIMIT=10     # Document creation (default: 10/min)
 ACKIFY_GENERAL_RATE_LIMIT=100     # General API requests (default: 100/min)
+
+# CSV Import
+ACKIFY_IMPORT_MAX_SIGNERS=500     # Max signers per CSV import (default: 500)
 ```
 
 **When to adjust**:
