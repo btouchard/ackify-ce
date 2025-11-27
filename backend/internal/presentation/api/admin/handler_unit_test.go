@@ -160,7 +160,7 @@ func (m *mockSignatureService) GetDocumentSignatures(ctx context.Context, docID 
 // ============================================================================
 
 func createTestHandler(docRepo documentRepository, signerRepo expectedSignerRepository, reminderSvc reminderService, sigService signatureService) *Handler {
-	return NewHandler(docRepo, signerRepo, reminderSvc, sigService, "https://test.example.com")
+	return NewHandler(docRepo, signerRepo, reminderSvc, sigService, "https://test.example.com", 500)
 }
 
 func createContextWithUser(email string, isAdmin bool) context.Context {

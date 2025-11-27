@@ -88,7 +88,7 @@ func TestAdminHandler_GetDocumentStatus_WithUnexpectedSignatures(t *testing.T) {
 	}
 
 	// Create admin handler
-	handler := admin.NewHandler(docRepo, expectedSignerRepo, nil, sigService, "https://example.com")
+	handler := admin.NewHandler(docRepo, expectedSignerRepo, nil, sigService, "https://example.com", 500)
 
 	// Create HTTP request
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/documents/"+docID+"/status", nil)
@@ -211,7 +211,7 @@ func TestAdminHandler_GetDocumentStatus_NoExpectedSigners(t *testing.T) {
 	}
 
 	// Create admin handler
-	handler := admin.NewHandler(docRepo, expectedSignerRepo, nil, sigService, "https://example.com")
+	handler := admin.NewHandler(docRepo, expectedSignerRepo, nil, sigService, "https://example.com", 500)
 
 	// Create HTTP request
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/documents/"+docID+"/status", nil)
