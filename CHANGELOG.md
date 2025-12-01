@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-12-01
+
+### 🔐 Microsoft OAuth Support
+
+Patch release adding full support for Microsoft Azure AD / Entra ID as OAuth provider.
+
+### Fixed
+
+- **Microsoft OAuth Authentication**
+  - Fixed "missing email in user info response" error with Microsoft Graph API
+  - Added support for `mail` field (Microsoft) as fallback for `email` (OIDC standard)
+  - Added support for `userPrincipalName` as last resort email fallback
+  - Added support for `displayName` (camelCase) for Microsoft user names
+  - Email field priority: `email` → `mail` → `userPrincipalName`
+  - Name field priority: `name` → `given_name`+`family_name` → `displayName` → `cn` → `display_name` → `preferred_username`
+
+### Technical Details
+
+- Modified `parseUserInfo()` in `backend/internal/infrastructure/auth/oauth_provider.go`
+- Added 3 new test cases for Microsoft Graph API response formats
+- 100% backward compatible with existing OAuth providers (Google, GitHub, GitLab, custom)
+
+## [1.2.4] - 2025-11-28
+
+### 📄 CSV Signers Import
+
+Minor release adding the ability to import expected signers from a CSV file.
+
+### Added
+
+- **CSV Import for Expected Signers**
+  - CSV file upload directly from admin interface
+  - Data preview before import with validation
+  - Automatic separator detection (comma or semicolon)
+  - Smart column detection (email, name)
+  - Support for files with or without headers
+  - Email validation with detailed error report
+  - Selective import: ability to modify list before confirmation
+  - Configurable limit on number of signers per import (`ACKIFY_IMPORT_MAX_SIGNERS`, default: 500)
+
+### Technical Details
+
+- New `CSVParser` service for robust CSV file parsing
+- API endpoints: `POST /api/v1/admin/documents/{docId}/signers/preview-csv` and `POST /api/v1/admin/documents/{docId}/signers/import`
+- Drag-and-drop upload interface for CSV files
+- Preview modal with valid/invalid signers table
+
 ## [1.2.3] - 2025-11-24
 
 ### 🧪 Quality & Stability
@@ -482,6 +529,9 @@ For users upgrading from v1.1.x to v1.2.0:
 - NULL UserName handling in database operations
 - Proper string conversion for UserName field
 
+[1.2.5]: https://github.com/btouchard/ackify-ce/compare/v1.2.4...v1.2.5
+[1.2.4]: https://github.com/btouchard/ackify-ce/compare/v1.2.3...v1.2.4
+[1.2.3]: https://github.com/btouchard/ackify-ce/compare/v1.2.1...v1.2.3
 [1.2.1]: https://github.com/btouchard/ackify-ce/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/btouchard/ackify-ce/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/btouchard/ackify-ce/compare/v1.1.2...v1.1.3
