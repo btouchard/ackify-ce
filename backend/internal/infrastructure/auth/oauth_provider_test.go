@@ -273,6 +273,55 @@ func TestOAuthProvider_parseUserInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "Microsoft Graph API - mail field",
+			responseObj: map[string]interface{}{
+				"id":                "microsoft-id-12345",
+				"mail":              "user@company.com",
+				"displayName":       "Microsoft User",
+				"userPrincipalName": "user@company.onmicrosoft.com",
+			},
+			wantErr: false,
+			checkUser: func(t *testing.T, user *models.User) {
+				if user.Sub != "microsoft-id-12345" {
+					t.Errorf("Sub = %v, expected microsoft-id-12345", user.Sub)
+				}
+				if user.Email != "user@company.com" {
+					t.Errorf("Email = %v, expected user@company.com (from mail field)", user.Email)
+				}
+				if user.Name != "Microsoft User" {
+					t.Errorf("Name = %v, expected Microsoft User (from displayName)", user.Name)
+				}
+			},
+		},
+		{
+			name: "Microsoft Graph API - userPrincipalName fallback",
+			responseObj: map[string]interface{}{
+				"id":                "microsoft-id-67890",
+				"displayName":       "UPN User",
+				"userPrincipalName": "user@company.onmicrosoft.com",
+			},
+			wantErr: false,
+			checkUser: func(t *testing.T, user *models.User) {
+				if user.Email != "user@company.onmicrosoft.com" {
+					t.Errorf("Email = %v, expected user@company.onmicrosoft.com (from userPrincipalName)", user.Email)
+				}
+			},
+		},
+		{
+			name: "email field takes priority over mail",
+			responseObj: map[string]interface{}{
+				"sub":   "12345",
+				"email": "primary@example.com",
+				"mail":  "secondary@example.com",
+			},
+			wantErr: false,
+			checkUser: func(t *testing.T, user *models.User) {
+				if user.Email != "primary@example.com" {
+					t.Errorf("Email = %v, expected primary@example.com (email should take priority)", user.Email)
+				}
+			},
+		},
+		{
 			name: "missing email",
 			responseObj: map[string]interface{}{
 				"sub":  "12345",

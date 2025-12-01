@@ -344,12 +344,21 @@ func (p *OAuthProvider) parseUserInfo(resp *http.Response) (*models.User, error)
 		return nil, fmt.Errorf("missing user ID in response")
 	}
 
-	if email, ok := rawUser["email"].(string); ok {
+	// Check for email in various provider-specific fields
+	// - "email": Standard OIDC claim (Google, GitHub, GitLab, etc.)
+	// - "mail": Microsoft Graph API
+	// - "userPrincipalName": Microsoft fallback (UPN format)
+	if email, ok := rawUser["email"].(string); ok && email != "" {
 		user.Email = email
+	} else if mail, ok := rawUser["mail"].(string); ok && mail != "" {
+		user.Email = mail
+	} else if upn, ok := rawUser["userPrincipalName"].(string); ok && upn != "" {
+		user.Email = upn
 	} else {
-		return nil, fmt.Errorf("missing email in user info response")
+		return nil, fmt.Errorf("missing email in user info response (checked: email, mail, userPrincipalName)")
 	}
 
+	// Extract display name from various provider-specific fields
 	var name string
 	if fullName, ok := rawUser["name"].(string); ok && fullName != "" {
 		name = fullName
@@ -359,10 +368,12 @@ func (p *OAuthProvider) parseUserInfo(resp *http.Response) (*models.User, error)
 		} else {
 			name = firstName
 		}
+	} else if displayName, ok := rawUser["displayName"].(string); ok && displayName != "" {
+		name = displayName
 	} else if cn, ok := rawUser["cn"].(string); ok && cn != "" {
 		name = cn
-	} else if displayName, ok := rawUser["display_name"].(string); ok && displayName != "" {
-		name = displayName
+	} else if displayNameSnake, ok := rawUser["display_name"].(string); ok && displayNameSnake != "" {
+		name = displayNameSnake
 	} else if preferredName, ok := rawUser["preferred_username"].(string); ok && preferredName != "" {
 		name = preferredName
 	}
