@@ -49,9 +49,6 @@ Cypress.Commands.add('visitWithLocale', (url: string, locale: string = 'en', opt
         options.onBeforeLoad(win)
       }
     }
-  }).then(() => {
-    // Set the lang cookie after page load so backend uses correct locale for subsequent requests
-    cy.setCookie('lang', locale)
   })
 })
 
