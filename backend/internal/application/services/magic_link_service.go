@@ -13,6 +13,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -32,6 +33,7 @@ type MagicLinkRepository interface {
 type MagicLinkService struct {
 	repo              MagicLinkRepository
 	emailSender       email.Sender
+	i18n              *i18n.I18n
 	baseURL           string
 	appName           string
 	allowedDomains    []string // Domaines email autorisés (vide = tous)
@@ -45,6 +47,7 @@ type MagicLinkService struct {
 type MagicLinkServiceConfig struct {
 	Repository        MagicLinkRepository
 	EmailSender       email.Sender
+	I18n              *i18n.I18n
 	BaseURL           string
 	AppName           string
 	AllowedDomains    []string
@@ -78,6 +81,7 @@ func NewMagicLinkService(cfg MagicLinkServiceConfig) *MagicLinkService {
 	return &MagicLinkService{
 		repo:              cfg.Repository,
 		emailSender:       cfg.EmailSender,
+		i18n:              cfg.I18n,
 		baseURL:           cfg.BaseURL,
 		appName:           cfg.AppName,
 		allowedDomains:    cfg.AllowedDomains,
@@ -179,10 +183,16 @@ func (s *MagicLinkService) RequestMagicLink(
 		locale = "en"
 	}
 
+	// Traduire le sujet de l'email
+	subject := "Your login link" // Fallback par défaut
+	if s.i18n != nil {
+		subject = s.i18n.T(locale, "email.magic_link.subject")
+	}
+
 	// Envoyer l'email
 	msg := email.Message{
 		To:       []string{emailAddr},
-		Subject:  "Your login link",
+		Subject:  subject,
 		Template: "magic_link",
 		Locale:   locale,
 		Data: map[string]interface{}{

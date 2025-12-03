@@ -117,6 +117,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	magicLinkService := services.NewMagicLinkService(services.MagicLinkServiceConfig{
 		Repository:        magicLinkRepo,
 		EmailSender:       emailSender,
+		I18n:              i18nService,
 		BaseURL:           cfg.App.BaseURL,
 		AppName:           cfg.App.Organisation,
 		RateLimitPerEmail: cfg.Auth.MagicLinkRateLimitEmail,

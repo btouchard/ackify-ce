@@ -49,6 +49,9 @@ Cypress.Commands.add('visitWithLocale', (url: string, locale: string = 'en', opt
         options.onBeforeLoad(win)
       }
     }
+  }).then(() => {
+    // Set the lang cookie after page load so backend uses correct locale for subsequent requests
+    cy.setCookie('lang', locale)
   })
 })
 
@@ -68,8 +71,9 @@ Cypress.Commands.add('loginViaMagicLink', (email: string, redirectTo?: string) =
   // Wait for success message
   cy.contains('Check your email', { timeout: 10000 }).should('be.visible')
 
-  // Get magic link from email
-  cy.waitForEmail(email, 'login link', 30000).then((message) => {
+  // Get magic link from email (subject from backend i18n: email.magic_link.subject)
+  const emailSubject = 'Your login link' // en.json: email.magic_link.subject
+  cy.waitForEmail(email, emailSubject, 30000).then((message) => {
     cy.extractMagicLink(message).then((magicLink) => {
       // Visit magic link
       cy.visit(magicLink)
