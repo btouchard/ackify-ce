@@ -8,6 +8,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -34,6 +35,7 @@ type ReminderService struct {
 	reminderRepo       reminderRepository
 	emailSender        email.Sender
 	magicLinkService   magicLinkService
+	i18n               *i18n.I18n
 	baseURL            string
 }
 
@@ -43,6 +45,7 @@ func NewReminderService(
 	reminderRepo reminderRepository,
 	emailSender email.Sender,
 	magicLinkService magicLinkService,
+	i18nService *i18n.I18n,
 	baseURL string,
 ) *ReminderService {
 	return &ReminderService{
@@ -50,6 +53,7 @@ func NewReminderService(
 		reminderRepo:       reminderRepo,
 		emailSender:        emailSender,
 		magicLinkService:   magicLinkService,
+		i18n:               i18nService,
 		baseURL:            baseURL,
 	}
 }
@@ -177,7 +181,7 @@ func (s *ReminderService) sendSingleReminder(
 		Status:         "sent",
 	}
 
-	err = email.SendSignatureReminderEmail(ctx, s.emailSender, []string{recipientEmail}, locale, docID, docURL, authSignURL, recipientName)
+	err = email.SendSignatureReminderEmail(ctx, s.emailSender, s.i18n, []string{recipientEmail}, locale, docID, docURL, authSignURL, recipientName)
 	if err != nil {
 		log.Status = "failed"
 		errMsg := err.Error()

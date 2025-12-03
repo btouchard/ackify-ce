@@ -13,7 +13,7 @@ import (
 
 func TestWebhookRepository_CRUD_And_ListActiveByEvent(t *testing.T) {
 	tdb := SetupTestDB(t)
-	repo := NewWebhookRepository(tdb.DB)
+	repo := NewWebhookRepository(tdb.DB, tdb.TenantProvider)
 
 	ctx := context.Background()
 	input := models.WebhookInput{

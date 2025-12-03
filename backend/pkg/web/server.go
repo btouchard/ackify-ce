@@ -74,7 +74,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	webhookPublisher := services.NewWebhookPublisher(webhookRepo, webhookDeliveryRepo)
 	whCfg := whworker.DefaultWorkerConfig()
 	webhookWorker := whworker.NewWorker(webhookDeliveryRepo, &http.Client{}, whCfg)
-	oauthSessionRepo := database.NewOAuthSessionRepository(db)
+	oauthSessionRepo := database.NewOAuthSessionRepository(db, tenantProvider)
 
 	// Initialize OAuth auth service with session repository
 	// Note: SessionService is ALWAYS created, OAuthProvider is OPTIONAL (based on credentials)
@@ -152,6 +152,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		reminderRepo,
 		emailQueueRepo,
 		magicLinkService,
+		i18nService,
 		cfg.App.BaseURL,
 	)
 

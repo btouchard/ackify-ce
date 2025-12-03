@@ -41,6 +41,10 @@ declare global {
 }
 
 Cypress.Commands.add('visitWithLocale', (url: string, locale: string = 'en', options?: Partial<Cypress.VisitOptions>) => {
+  // Set the lang cookie BEFORE visiting the page
+  // This ensures the backend uses the correct locale for emails
+  cy.setCookie('lang', locale, { path: '/' })
+
   return cy.visit(url, {
     ...options,
     onBeforeLoad: (win) => {
@@ -53,8 +57,6 @@ Cypress.Commands.add('visitWithLocale', (url: string, locale: string = 'en', opt
 })
 
 Cypress.Commands.add('loginViaMagicLink', (email: string, redirectTo?: string) => {
-  const baseUrl = Cypress.config('baseUrl')
-
   // Clear mailbox first
   cy.clearMailbox()
 

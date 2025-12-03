@@ -25,7 +25,7 @@ func TestDocumentRepository_Create(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	input := models.DocumentInput{
 		Title:             "Test Document",
@@ -81,7 +81,7 @@ func TestDocumentRepository_GetByDocID(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	input := models.DocumentInput{
 		Title:             "Get Test Document",
@@ -128,7 +128,7 @@ func TestDocumentRepository_Update(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	input := models.DocumentInput{
 		Title:             "Original Title",
@@ -191,7 +191,7 @@ func TestDocumentRepository_CreateOrUpdate(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	input := models.DocumentInput{
 		Title:             "CreateOrUpdate Test",
@@ -248,7 +248,7 @@ func TestDocumentRepository_Delete(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	input := models.DocumentInput{
 		Title:             "Delete Test",
@@ -289,7 +289,7 @@ func TestDocumentRepository_List(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	// Create multiple documents
 	for i := 1; i <= 5; i++ {
@@ -348,7 +348,7 @@ func TestDocumentRepository_FindByReference_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
 
 	ctx := context.Background()
-	repo := NewDocumentRepository(testDB.DB)
+	repo := NewDocumentRepository(testDB.DB, testDB.TenantProvider)
 
 	// Create a document first
 	input := models.DocumentInput{

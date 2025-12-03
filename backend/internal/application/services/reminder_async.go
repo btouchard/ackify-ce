@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -22,6 +23,7 @@ type ReminderAsyncService struct {
 	reminderRepo       reminderRepository
 	queueRepo          emailQueueRepository
 	magicLinkService   magicLinkService
+	i18n               *i18n.I18n
 	baseURL            string
 	useAsyncQueue      bool // Feature flag to enable/disable async queue
 }
@@ -32,6 +34,7 @@ func NewReminderAsyncService(
 	reminderRepo reminderRepository,
 	queueRepo emailQueueRepository,
 	magicLinkService magicLinkService,
+	i18nService *i18n.I18n,
 	baseURL string,
 ) *ReminderAsyncService {
 	return &ReminderAsyncService{
@@ -39,6 +42,7 @@ func NewReminderAsyncService(
 		reminderRepo:       reminderRepo,
 		queueRepo:          queueRepo,
 		magicLinkService:   magicLinkService,
+		i18n:               i18nService,
 		baseURL:            baseURL,
 		useAsyncQueue:      true, // Enable async by default
 	}
@@ -169,11 +173,17 @@ func (s *ReminderAsyncService) queueSingleReminder(
 		"Locale":        locale,
 	}
 
+	// Get translated subject using i18n
+	subject := "Document Reading Confirmation Reminder" // Fallback
+	if s.i18n != nil {
+		subject = s.i18n.T(locale, "email.reminder.subject")
+	}
+
 	// Create email queue input
 	refType := "signature_reminder"
 	input := models.EmailQueueInput{
 		ToAddresses:   []string{recipientEmail},
-		Subject:       "Reminder: Document signature required",
+		Subject:       subject,
 		Template:      "signature_reminder",
 		Locale:        locale,
 		Data:          data,

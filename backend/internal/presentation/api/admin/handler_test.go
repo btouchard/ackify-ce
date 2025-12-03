@@ -32,9 +32,9 @@ func TestAdminHandler_GetDocumentStatus_WithUnexpectedSignatures(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup repositories and services
-	docRepo := database.NewDocumentRepository(testDB.DB)
-	sigRepo := database.NewSignatureRepository(testDB.DB)
-	expectedSignerRepo := database.NewExpectedSignerRepository(testDB.DB)
+	docRepo := database.NewDocumentRepository(testDB.DB, testDB.TenantProvider)
+	sigRepo := database.NewSignatureRepository(testDB.DB, testDB.TenantProvider)
+	expectedSignerRepo := database.NewExpectedSignerRepository(testDB.DB, testDB.TenantProvider)
 	signer, _ := crypto.NewEd25519Signer()
 	sigService := services.NewSignatureService(sigRepo, docRepo, signer)
 
@@ -187,9 +187,9 @@ func TestAdminHandler_GetDocumentStatus_NoExpectedSigners(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup repositories and services
-	docRepo := database.NewDocumentRepository(testDB.DB)
-	sigRepo := database.NewSignatureRepository(testDB.DB)
-	expectedSignerRepo := database.NewExpectedSignerRepository(testDB.DB)
+	docRepo := database.NewDocumentRepository(testDB.DB, testDB.TenantProvider)
+	sigRepo := database.NewSignatureRepository(testDB.DB, testDB.TenantProvider)
+	expectedSignerRepo := database.NewExpectedSignerRepository(testDB.DB, testDB.TenantProvider)
 	signer, _ := crypto.NewEd25519Signer()
 	sigService := services.NewSignatureService(sigRepo, docRepo, signer)
 

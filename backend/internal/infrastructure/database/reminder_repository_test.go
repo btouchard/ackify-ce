@@ -55,7 +55,7 @@ func TestReminderRepository_Basic_Integration(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	repo := NewReminderRepository(testDB.DB)
+	repo := NewReminderRepository(testDB.DB, testDB.TenantProvider)
 
 	// Create a document and expected signer
 	_, err = testDB.DB.Exec(`

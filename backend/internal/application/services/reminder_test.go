@@ -136,7 +136,7 @@ func TestReminderService_SendReminders_NoPendingSigners(t *testing.T) {
 	mockEmailSender := &mockEmailSender{}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", nil, "https://example.com/doc.pdf", "en")
 
@@ -189,7 +189,7 @@ func TestReminderService_SendReminders_Success(t *testing.T) {
 	}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", nil, "https://example.com/doc.pdf", "en")
 
@@ -252,7 +252,7 @@ func TestReminderService_SendReminders_EmailFailure(t *testing.T) {
 	}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", nil, "https://example.com/doc.pdf", "en")
 
@@ -311,7 +311,7 @@ func TestReminderService_SendReminders_SpecificEmails(t *testing.T) {
 	}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	specificEmails := []string{"pending2@example.com"}
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", specificEmails, "https://example.com/doc.pdf", "en")
@@ -344,7 +344,7 @@ func TestReminderService_SendReminders_RepositoryError(t *testing.T) {
 	mockEmailSender := &mockEmailSender{}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", nil, "https://example.com/doc.pdf", "en")
 
@@ -381,7 +381,7 @@ func TestReminderService_GetReminderHistory(t *testing.T) {
 		},
 	}
 
-	service := NewReminderService(&mockExpectedSignerRepository{}, mockReminderRepo, &mockEmailSender{}, &mockMagicLinkService{}, "https://example.com")
+	service := NewReminderService(&mockExpectedSignerRepository{}, mockReminderRepo, &mockEmailSender{}, &mockMagicLinkService{}, nil, "https://example.com")
 
 	logs, err := service.GetReminderHistory(ctx, "doc1")
 
@@ -419,7 +419,7 @@ func TestReminderService_GetReminderStats(t *testing.T) {
 		},
 	}
 
-	service := NewReminderService(&mockExpectedSignerRepository{}, mockReminderRepo, &mockEmailSender{}, &mockMagicLinkService{}, "https://example.com")
+	service := NewReminderService(&mockExpectedSignerRepository{}, mockReminderRepo, &mockEmailSender{}, &mockMagicLinkService{}, nil, "https://example.com")
 
 	stats, err := service.GetReminderStats(ctx, "doc1")
 
@@ -470,7 +470,7 @@ func TestReminderService_SendReminders_MultiplePending(t *testing.T) {
 	}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", nil, "https://example.com/doc.pdf", "en")
 
@@ -517,7 +517,7 @@ func TestReminderService_SendReminders_LogFailure(t *testing.T) {
 	}
 	mockMagicLink := &mockMagicLinkService{}
 
-	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, "https://example.com")
+	service := NewReminderService(mockExpectedRepo, mockReminderRepo, mockEmailSender, mockMagicLink, nil, "https://example.com")
 
 	result, err := service.SendReminders(ctx, "doc1", "admin@example.com", nil, "https://example.com/doc.pdf", "en")
 

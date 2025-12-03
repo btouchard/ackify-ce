@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -22,31 +23,39 @@ type oauthSessionRepository interface {
 
 // OAuthSessionRepository implements the OAuth session repository
 type OAuthSessionRepository struct {
-	db *sql.DB
+	db      *sql.DB
+	tenants tenant.Provider
 }
 
 // NewOAuthSessionRepository creates a new OAuth session repository
-func NewOAuthSessionRepository(db *sql.DB) *OAuthSessionRepository {
-	return &OAuthSessionRepository{db: db}
+func NewOAuthSessionRepository(db *sql.DB, tenants tenant.Provider) *OAuthSessionRepository {
+	return &OAuthSessionRepository{db: db, tenants: tenants}
 }
 
 // Create creates a new OAuth session
 func (r *OAuthSessionRepository) Create(ctx context.Context, session *models.OAuthSession) error {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	query := `
 		INSERT INTO oauth_sessions (
+			tenant_id,
 			session_id,
 			user_sub,
 			refresh_token_encrypted,
 			access_token_expires_at,
 			user_agent,
 			ip_address
-		) VALUES ($1, $2, $3, $4, $5, $6)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at, updated_at
 	`
 
-	err := r.db.QueryRowContext(
+	err = r.db.QueryRowContext(
 		ctx,
 		query,
+		tenantID,
 		session.SessionID,
 		session.UserSub,
 		session.RefreshTokenEncrypted,
@@ -63,6 +72,8 @@ func (r *OAuthSessionRepository) Create(ctx context.Context, session *models.OAu
 		return fmt.Errorf("failed to create OAuth session: %w", err)
 	}
 
+	session.TenantID = tenantID
+
 	logger.Logger.Info("Created OAuth session",
 		"session_id", session.SessionID,
 		"user_sub", session.UserSub)
@@ -72,9 +83,15 @@ func (r *OAuthSessionRepository) Create(ctx context.Context, session *models.OAu
 
 // GetBySessionID retrieves an OAuth session by session ID
 func (r *OAuthSessionRepository) GetBySessionID(ctx context.Context, sessionID string) (*models.OAuthSession, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	query := `
 		SELECT
 			id,
+			tenant_id,
 			session_id,
 			user_sub,
 			refresh_token_encrypted,
@@ -85,14 +102,15 @@ func (r *OAuthSessionRepository) GetBySessionID(ctx context.Context, sessionID s
 			user_agent,
 			ip_address
 		FROM oauth_sessions
-		WHERE session_id = $1
+		WHERE session_id = $1 AND tenant_id = $2
 	`
 
 	session := &models.OAuthSession{}
 	var lastRefreshedAt sql.NullTime
 
-	err := r.db.QueryRowContext(ctx, query, sessionID).Scan(
+	err = r.db.QueryRowContext(ctx, query, sessionID, tenantID).Scan(
 		&session.ID,
+		&session.TenantID,
 		&session.SessionID,
 		&session.UserSub,
 		&session.RefreshTokenEncrypted,
@@ -124,6 +142,11 @@ func (r *OAuthSessionRepository) GetBySessionID(ctx context.Context, sessionID s
 
 // UpdateRefreshToken updates the refresh token and expiration time
 func (r *OAuthSessionRepository) UpdateRefreshToken(ctx context.Context, sessionID string, encryptedToken []byte, expiresAt time.Time) error {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	query := `
 		UPDATE oauth_sessions
 		SET
@@ -131,10 +154,10 @@ func (r *OAuthSessionRepository) UpdateRefreshToken(ctx context.Context, session
 			access_token_expires_at = $2,
 			last_refreshed_at = now(),
 			updated_at = now()
-		WHERE session_id = $3
+		WHERE session_id = $3 AND tenant_id = $4
 	`
 
-	result, err := r.db.ExecContext(ctx, query, encryptedToken, expiresAt, sessionID)
+	result, err := r.db.ExecContext(ctx, query, encryptedToken, expiresAt, sessionID, tenantID)
 	if err != nil {
 		logger.Logger.Error("Failed to update OAuth session refresh token",
 			"session_id", sessionID,
@@ -159,9 +182,14 @@ func (r *OAuthSessionRepository) UpdateRefreshToken(ctx context.Context, session
 
 // DeleteBySessionID deletes an OAuth session by session ID
 func (r *OAuthSessionRepository) DeleteBySessionID(ctx context.Context, sessionID string) error {
-	query := `DELETE FROM oauth_sessions WHERE session_id = $1`
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get tenant: %w", err)
+	}
 
-	result, err := r.db.ExecContext(ctx, query, sessionID)
+	query := `DELETE FROM oauth_sessions WHERE session_id = $1 AND tenant_id = $2`
+
+	result, err := r.db.ExecContext(ctx, query, sessionID, tenantID)
 	if err != nil {
 		logger.Logger.Error("Failed to delete OAuth session",
 			"session_id", sessionID,

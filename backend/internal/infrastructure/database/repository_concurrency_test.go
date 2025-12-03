@@ -16,7 +16,7 @@ import (
 
 func TestRepository_Concurrency_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -430,7 +430,7 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 			wg.Add(1)
 			go func(workerID int) {
 				defer wg.Done()
-				repo := NewSignatureRepository(testDB.DB)
+				repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 
 				for j := 0; j < opsPerWorker; j++ {
 					if workerID%2 == 0 {

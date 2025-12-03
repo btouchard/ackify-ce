@@ -14,7 +14,7 @@ import (
 
 func TestRepository_Create_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -75,7 +75,7 @@ func TestRepository_Create_Integration(t *testing.T) {
 
 func TestRepository_Create_UniqueConstraint_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -100,7 +100,7 @@ func TestRepository_Create_UniqueConstraint_Integration(t *testing.T) {
 
 func TestRepository_GetByDocAndUser_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -187,7 +187,7 @@ func TestRepository_GetByDocAndUser_Integration(t *testing.T) {
 
 func TestRepository_GetByDoc_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -254,7 +254,7 @@ func TestRepository_GetByDoc_Integration(t *testing.T) {
 
 func TestRepository_GetByUser_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -321,7 +321,7 @@ func TestRepository_GetByUser_Integration(t *testing.T) {
 
 func TestRepository_CheckUserSignatureStatus_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -392,7 +392,7 @@ func TestRepository_CheckUserSignatureStatus_Integration(t *testing.T) {
 
 func TestRepository_GetLastSignature_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 

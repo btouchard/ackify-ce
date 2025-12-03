@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 )
 
 // QueueSender implements the Sender interface by queuing emails instead of sending them directly
@@ -65,6 +66,7 @@ func (q *QueueSender) Send(ctx context.Context, msg Message) error {
 func QueueSignatureReminderEmail(
 	ctx context.Context,
 	queueRepo QueueRepository,
+	i18nService *i18n.I18n,
 	recipients []string,
 	locale string,
 	docID string,
@@ -81,12 +83,18 @@ func QueueSignatureReminderEmail(
 		"locale":         locale,
 	}
 
+	// Get translated subject using i18n
+	subject := "Document Reading Confirmation Reminder" // Fallback
+	if i18nService != nil {
+		subject = i18nService.T(locale, "email.reminder.subject")
+	}
+
 	// Create a reference for tracking
 	refType := "signature_reminder"
 
 	input := models.EmailQueueInput{
 		ToAddresses:   recipients,
-		Subject:       "Reminder: Document signature required",
+		Subject:       subject,
 		Template:      "signature_reminder",
 		Locale:        locale,
 		Data:          data,

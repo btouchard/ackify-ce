@@ -16,7 +16,7 @@ import (
 
 func TestRepository_DatabaseConstraints_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -206,6 +206,12 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 	t.Run("transaction commit", func(t *testing.T) {
 		testDB.ClearTable(t)
 
+		// Get tenant ID for direct SQL insert
+		tenantID, err := testDB.TenantProvider.CurrentTenant(ctx)
+		if err != nil {
+			t.Fatalf("Failed to get tenant ID: %v", err)
+		}
+
 		// Start transaction
 		tx, err := testDB.DB.BeginTx(ctx, nil)
 		if err != nil {
@@ -213,10 +219,10 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 		}
 
 		// Execute operations within transaction context
-		query := `INSERT INTO signatures (doc_id, user_sub, user_email, signed_at, payload_hash, signature, nonce) 
-				 VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		query := `INSERT INTO signatures (tenant_id, doc_id, user_sub, user_email, signed_at, payload_hash, signature, nonce)
+				 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
-		_, err = tx.ExecContext(ctx, query, "test-doc", "test-user", "test@example.com",
+		_, err = tx.ExecContext(ctx, query, tenantID, "test-doc", "test-user", "test@example.com",
 			time.Now().UTC(), "hash1", "sig1", "nonce1")
 		if err != nil {
 			t.Fatalf("Failed to create signature in transaction: %v", err)
@@ -235,7 +241,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 		}
 
 		// Verify using repository
-		repo := NewSignatureRepository(testDB.DB)
+		repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 		result, err := repo.GetByDocAndUser(ctx, "test-doc", "test-user")
 		if err != nil {
 			t.Fatalf("Failed to get signature after commit: %v", err)
@@ -250,7 +256,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 
 		// Create initial signature
 		sig1 := factory.CreateValidSignature()
-		mainRepo := NewSignatureRepository(testDB.DB)
+		mainRepo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 		_ = mainRepo.Create(ctx, sig1)
 
 		// Start transaction with READ COMMITTED isolation
@@ -262,7 +268,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 		}
 		defer tx1.Rollback()
 
-		repo1 := NewSignatureRepository(testDB.DB)
+		repo1 := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 
 		// Start another transaction
 		tx2, err := testDB.DB.BeginTx(ctx, &sql.TxOptions{
@@ -273,7 +279,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 		}
 		defer tx2.Rollback()
 
-		repo2 := NewSignatureRepository(testDB.DB)
+		repo2 := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 
 		// Both transactions should see the initial signature
 		result1, err := repo1.GetByDocAndUser(ctx, sig1.DocID, sig1.UserSub)
@@ -296,7 +302,7 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 
 func TestRepository_DataIntegrity_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -393,7 +399,7 @@ func TestRepository_DataIntegrity_Integration(t *testing.T) {
 
 func TestRepository_EdgeCases_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
-	repo := NewSignatureRepository(testDB.DB)
+	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 

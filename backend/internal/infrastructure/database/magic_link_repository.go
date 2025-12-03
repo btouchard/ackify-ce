@@ -6,6 +6,8 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 )
@@ -21,8 +23,8 @@ func NewMagicLinkRepository(db *sql.DB) services.MagicLinkRepository {
 func (r *magicLinkRepo) CreateToken(ctx context.Context, token *models.MagicLinkToken) error {
 	query := `
 		INSERT INTO magic_link_tokens
-		(token, email, expires_at, redirect_to, created_by_ip, created_by_user_agent, purpose, doc_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		(tenant_id, token, email, expires_at, redirect_to, created_by_ip, created_by_user_agent, purpose, doc_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, created_at
 	`
 
@@ -33,6 +35,7 @@ func (r *magicLinkRepo) CreateToken(ctx context.Context, token *models.MagicLink
 	}
 
 	return r.db.QueryRowContext(ctx, query,
+		token.TenantID, // Can be NULL for login requests
 		token.Token,
 		token.Email,
 		token.ExpiresAt,
@@ -46,7 +49,7 @@ func (r *magicLinkRepo) CreateToken(ctx context.Context, token *models.MagicLink
 
 func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.MagicLinkToken, error) {
 	query := `
-		SELECT id, token, email, created_at, expires_at, used_at, used_by_ip,
+		SELECT id, tenant_id, token, email, created_at, expires_at, used_at, used_by_ip,
 		       used_by_user_agent, redirect_to, created_by_ip, created_by_user_agent,
 		       purpose, doc_id
 		FROM magic_link_tokens
@@ -56,9 +59,11 @@ func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.M
 	var t models.MagicLinkToken
 	var usedAt sql.NullTime
 	var usedByIP, usedByUserAgent, docID sql.NullString
+	var tenantID sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, token).Scan(
 		&t.ID,
+		&tenantID,
 		&t.Token,
 		&t.Email,
 		&t.CreatedAt,
@@ -80,6 +85,10 @@ func (r *magicLinkRepo) GetByToken(ctx context.Context, token string) (*models.M
 		return nil, err
 	}
 
+	if tenantID.Valid {
+		parsed, _ := uuid.Parse(tenantID.String)
+		t.TenantID = &parsed
+	}
 	if usedAt.Valid {
 		t.UsedAt = &usedAt.Time
 	}
@@ -138,12 +147,13 @@ func (r *magicLinkRepo) DeleteExpired(ctx context.Context) (int64, error) {
 func (r *magicLinkRepo) LogAttempt(ctx context.Context, attempt *models.MagicLinkAuthAttempt) error {
 	query := `
 		INSERT INTO magic_link_auth_attempts
-		(email, success, failure_reason, ip_address, user_agent)
-		VALUES ($1, $2, $3, $4, $5)
+		(tenant_id, email, success, failure_reason, ip_address, user_agent)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, attempted_at
 	`
 
 	return r.db.QueryRowContext(ctx, query,
+		attempt.TenantID, // Can be NULL before authentication
 		attempt.Email,
 		attempt.Success,
 		attempt.FailureReason,

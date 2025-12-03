@@ -3,6 +3,8 @@ package email
 
 import (
 	"context"
+
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 )
 
 func SendEmail(ctx context.Context, sender Sender, template string, to []string, locale string, subject string, data map[string]any) error {
@@ -17,7 +19,7 @@ func SendEmail(ctx context.Context, sender Sender, template string, to []string,
 	return sender.Send(ctx, msg)
 }
 
-func SendSignatureReminderEmail(ctx context.Context, sender Sender, to []string, locale, docID, docURL, signURL, recipientName string) error {
+func SendSignatureReminderEmail(ctx context.Context, sender Sender, i18nService *i18n.I18n, to []string, locale, docID, docURL, signURL, recipientName string) error {
 	data := map[string]any{
 		"DocID":         docID,
 		"DocURL":        docURL,
@@ -25,9 +27,10 @@ func SendSignatureReminderEmail(ctx context.Context, sender Sender, to []string,
 		"RecipientName": recipientName,
 	}
 
-	subject := "Reminder: Document reading confirmation required"
-	if locale == "fr" {
-		subject = "Rappel : Confirmation de lecture de document requise"
+	// Get translated subject using i18n
+	subject := "Document Reading Confirmation Reminder" // Fallback
+	if i18nService != nil {
+		subject = i18nService.T(locale, "email.reminder.subject")
 	}
 
 	return SendEmail(ctx, sender, "signature_reminder", to, locale, subject, data)

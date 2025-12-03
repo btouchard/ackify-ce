@@ -4,6 +4,7 @@
 package database
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -22,9 +24,10 @@ import (
 )
 
 type TestDB struct {
-	DB     *sql.DB
-	DSN    string
-	dbName string
+	DB             *sql.DB
+	DSN            string
+	dbName         string
+	TenantProvider tenant.Provider
 }
 
 func SetupTestDB(t *testing.T) *TestDB {
@@ -97,6 +100,13 @@ func SetupTestDB(t *testing.T) *TestDB {
 	if err := testDB.createSchema(); err != nil {
 		t.Fatalf("Failed to create test schema in %s: %v", dbName, err)
 	}
+
+	// Initialize tenant provider after migrations (instance_metadata table exists)
+	tenantProvider, err := tenant.NewSingleTenantProviderWithContext(context.Background(), db)
+	if err != nil {
+		t.Fatalf("Failed to create tenant provider in %s: %v", dbName, err)
+	}
+	testDB.TenantProvider = tenantProvider
 
 	t.Cleanup(func() {
 		testDB.Cleanup()

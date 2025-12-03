@@ -13,8 +13,8 @@ import (
 
 func TestWebhookDeliveryRepository_Enqueue_And_GetNext(t *testing.T) {
 	tdb := SetupTestDB(t)
-	wrepo := NewWebhookRepository(tdb.DB)
-	drepo := NewWebhookDeliveryRepository(tdb.DB)
+	wrepo := NewWebhookRepository(tdb.DB, tdb.TenantProvider)
+	drepo := NewWebhookDeliveryRepository(tdb.DB, tdb.TenantProvider)
 
 	ctx := context.Background()
 	wh, err := wrepo.Create(ctx, models.WebhookInput{TargetURL: "https://example.com/hook", Secret: "secret", Active: true, Events: []string{"document.created"}})

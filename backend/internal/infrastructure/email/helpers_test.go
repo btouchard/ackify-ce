@@ -128,6 +128,9 @@ func TestSendEmail(t *testing.T) {
 func TestSendSignatureReminderEmail(t *testing.T) {
 	t.Parallel()
 
+	// Note: When i18n is nil, all tests use the fallback subject
+	fallbackSubject := "Document Reading Confirmation Reminder"
+
 	tests := []struct {
 		name            string
 		to              []string
@@ -148,31 +151,31 @@ func TestSendSignatureReminderEmail(t *testing.T) {
 			docURL:          "https://example.com/doc.pdf",
 			signURL:         "https://example.com/?doc=doc123",
 			recipientName:   "John Doe",
-			expectedSubject: "Reminder: Document reading confirmation required",
+			expectedSubject: fallbackSubject,
 			sendError:       nil,
 			expectError:     false,
 		},
 		{
-			name:            "Send reminder in French",
+			name:            "Send reminder in French (fallback without i18n)",
 			to:              []string{"utilisateur@exemple.fr"},
 			locale:          "fr",
 			docID:           "doc456",
 			docURL:          "https://exemple.fr/document.pdf",
 			signURL:         "https://exemple.fr/?doc=doc456",
 			recipientName:   "Marie Dupont",
-			expectedSubject: "Rappel : Confirmation de lecture de document requise",
+			expectedSubject: fallbackSubject,
 			sendError:       nil,
 			expectError:     false,
 		},
 		{
-			name:            "Send reminder with unknown locale defaults to English",
+			name:            "Send reminder with unknown locale defaults to fallback",
 			to:              []string{"user@example.com"},
 			locale:          "es",
 			docID:           "doc789",
 			docURL:          "https://example.com/doc.pdf",
 			signURL:         "https://example.com/?doc=doc789",
 			recipientName:   "Juan Garcia",
-			expectedSubject: "Reminder: Document reading confirmation required",
+			expectedSubject: fallbackSubject,
 			sendError:       nil,
 			expectError:     false,
 		},
@@ -184,7 +187,7 @@ func TestSendSignatureReminderEmail(t *testing.T) {
 			docURL:          "https://example.com/doc.pdf",
 			signURL:         "https://example.com/?doc=doc999",
 			recipientName:   "Test User",
-			expectedSubject: "Reminder: Document reading confirmation required",
+			expectedSubject: fallbackSubject,
 			sendError:       errors.New("email server unavailable"),
 			expectError:     true,
 		},
@@ -196,7 +199,7 @@ func TestSendSignatureReminderEmail(t *testing.T) {
 			docURL:          "https://example.com/doc.pdf",
 			signURL:         "https://example.com/?doc=doc000",
 			recipientName:   "",
-			expectedSubject: "Reminder: Document reading confirmation required",
+			expectedSubject: fallbackSubject,
 			sendError:       nil,
 			expectError:     false,
 		},
@@ -213,7 +216,7 @@ func TestSendSignatureReminderEmail(t *testing.T) {
 				},
 			}
 
-			err := SendSignatureReminderEmail(ctx, mock, tt.to, tt.locale, tt.docID, tt.docURL, tt.signURL, tt.recipientName)
+			err := SendSignatureReminderEmail(ctx, mock, nil, tt.to, tt.locale, tt.docID, tt.docURL, tt.signURL, tt.recipientName)
 
 			if tt.expectError && err == nil {
 				t.Error("Expected error but got nil")

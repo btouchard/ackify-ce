@@ -12,8 +12,7 @@ import (
 
 func TestExpectedSignerRepository_AddExpected(t *testing.T) {
 	testDB := SetupTestDB(t)
-	setupExpectedSignersTable(t, testDB)
-	repo := NewExpectedSignerRepository(testDB.DB)
+	repo := NewExpectedSignerRepository(testDB.DB, testDB.TenantProvider)
 	ctx := context.Background()
 
 	tests := []struct {
@@ -98,9 +97,8 @@ func TestExpectedSignerRepository_AddExpected(t *testing.T) {
 
 func TestExpectedSignerRepository_ListWithStatusByDocID(t *testing.T) {
 	testDB := SetupTestDB(t)
-	setupExpectedSignersTable(t, testDB)
-	sigRepo := NewSignatureRepository(testDB.DB)
-	expectedRepo := NewExpectedSignerRepository(testDB.DB)
+	sigRepo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
+	expectedRepo := NewExpectedSignerRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -161,9 +159,8 @@ func TestExpectedSignerRepository_ListWithStatusByDocID(t *testing.T) {
 
 func TestExpectedSignerRepository_GetStats(t *testing.T) {
 	testDB := SetupTestDB(t)
-	setupExpectedSignersTable(t, testDB)
-	sigRepo := NewSignatureRepository(testDB.DB)
-	expectedRepo := NewExpectedSignerRepository(testDB.DB)
+	sigRepo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
+	expectedRepo := NewExpectedSignerRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
 	ctx := context.Background()
 
@@ -223,8 +220,7 @@ func TestExpectedSignerRepository_GetStats(t *testing.T) {
 
 func TestExpectedSignerRepository_Remove(t *testing.T) {
 	testDB := SetupTestDB(t)
-	setupExpectedSignersTable(t, testDB)
-	repo := NewExpectedSignerRepository(testDB.DB)
+	repo := NewExpectedSignerRepository(testDB.DB, testDB.TenantProvider)
 	ctx := context.Background()
 
 	// Setup
@@ -263,49 +259,6 @@ func TestExpectedSignerRepository_Remove(t *testing.T) {
 }
 
 // Helper functions
-
-func setupExpectedSignersTable(t *testing.T, testDB *TestDB) {
-	t.Helper()
-
-	schema := `
-		DROP TABLE IF EXISTS reminder_logs;
-		DROP TABLE IF EXISTS expected_signers;
-
-		CREATE TABLE expected_signers (
-			id BIGSERIAL PRIMARY KEY,
-			doc_id TEXT NOT NULL,
-			email TEXT NOT NULL,
-			name TEXT NOT NULL DEFAULT '',
-			added_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			added_by TEXT NOT NULL,
-			notes TEXT,
-			UNIQUE (doc_id, email)
-		);
-
-		CREATE INDEX idx_expected_signers_doc_id ON expected_signers(doc_id);
-		CREATE INDEX idx_expected_signers_email ON expected_signers(email);
-
-		CREATE TABLE reminder_logs (
-			id BIGSERIAL PRIMARY KEY,
-			doc_id TEXT NOT NULL,
-			recipient_email TEXT NOT NULL,
-			sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			sent_by TEXT NOT NULL,
-			template_used TEXT NOT NULL,
-			status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'bounced')),
-			error_message TEXT,
-			FOREIGN KEY (doc_id, recipient_email) REFERENCES expected_signers(doc_id, email) ON DELETE CASCADE
-		);
-
-		CREATE INDEX idx_reminder_logs_doc_id ON reminder_logs(doc_id);
-		CREATE INDEX idx_reminder_logs_recipient_email ON reminder_logs(recipient_email);
-	`
-
-	_, err := testDB.DB.Exec(schema)
-	if err != nil {
-		t.Fatalf("failed to setup expected_signers table: %v", err)
-	}
-}
 
 func clearExpectedSignersTable(t *testing.T, testDB *TestDB) {
 	t.Helper()
