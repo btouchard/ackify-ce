@@ -67,6 +67,34 @@ func main() {
 			log.Fatal("Migration down failed:", err)
 		}
 		fmt.Printf("CE migrations rolled back %d steps\n", steps)
+	case "goto":
+		if len(args) < 2 {
+			log.Fatal("goto requires a version number")
+		}
+		var version uint
+		_, err := fmt.Sscanf(args[1], "%d", &version)
+		if err != nil {
+			log.Fatal("Invalid version number:", err)
+		}
+		err = m.Migrate(version)
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			log.Fatal("Migration goto failed:", err)
+		}
+		fmt.Printf("Migrated to version %d\n", version)
+	case "force":
+		if len(args) < 2 {
+			log.Fatal("force requires a version number")
+		}
+		var version int
+		_, err := fmt.Sscanf(args[1], "%d", &version)
+		if err != nil {
+			log.Fatal("Invalid version number:", err)
+		}
+		err = m.Force(version)
+		if err != nil {
+			log.Fatal("Force version failed:", err)
+		}
+		fmt.Printf("Forced version to %d (no migrations executed)\n", version)
 	case "version":
 		version, dirty, err := m.Version()
 		if err != nil {
@@ -91,6 +119,8 @@ func printUsage() {
 	fmt.Println("Commands:")
 	fmt.Println("  up           Apply all CE migrations")
 	fmt.Println("  down [n]     Rollback n CE migrations (default: 1)")
+	fmt.Println("  goto <v>     Migrate to specific version (up or down)")
+	fmt.Println("  force <v>    Force version without running migrations (for existing DBs)")
 	fmt.Println("  version      Show current migration version")
 	fmt.Println("  drop         Drop all migrations (DANGER)")
 	fmt.Println()
@@ -101,5 +131,7 @@ func printUsage() {
 	fmt.Println("Examples:")
 	fmt.Println("  migrate up")
 	fmt.Println("  migrate down 2")
+	fmt.Println("  migrate goto 5")
+	fmt.Println("  migrate force 1        # For existing DB with only signatures table")
 	fmt.Println("  migrate version")
 }

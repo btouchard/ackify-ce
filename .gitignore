@@ -22,3 +22,4 @@ client_secret*.json
 /bin/tailwindcss
 /static/output.css
 /.coverage-report/
+/docker.secret
