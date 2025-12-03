@@ -11,21 +11,28 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // EmailQueueRepository handles database operations for the email queue
 type EmailQueueRepository struct {
-	db *sql.DB
+	db      *sql.DB
+	tenants tenant.Provider
 }
 
 // NewEmailQueueRepository creates a new email queue repository
-func NewEmailQueueRepository(db *sql.DB) *EmailQueueRepository {
-	return &EmailQueueRepository{db: db}
+func NewEmailQueueRepository(db *sql.DB, tenants tenant.Provider) *EmailQueueRepository {
+	return &EmailQueueRepository{db: db, tenants: tenants}
 }
 
 // Enqueue adds a new email to the queue
 func (r *EmailQueueRepository) Enqueue(ctx context.Context, input models.EmailQueueInput) (*models.EmailQueueItem, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	// Prepare data as JSON
 	dataJSON, err := json.Marshal(input.Data)
 	if err != nil {
@@ -56,18 +63,19 @@ func (r *EmailQueueRepository) Enqueue(ctx context.Context, input models.EmailQu
 
 	query := `
 		INSERT INTO email_queue (
-			to_addresses, cc_addresses, bcc_addresses,
+			tenant_id, to_addresses, cc_addresses, bcc_addresses,
 			subject, template, locale, data, headers,
 			priority, scheduled_for, max_retries,
 			reference_type, reference_id, created_by
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
 		) RETURNING
-			id, status, retry_count, created_at, processed_at,
+			id, tenant_id, status, retry_count, created_at, processed_at,
 			next_retry_at, last_error, error_details
 	`
 
 	item := &models.EmailQueueItem{
+		TenantID:      tenantID,
 		ToAddresses:   input.ToAddresses,
 		CcAddresses:   input.CcAddresses,
 		BccAddresses:  input.BccAddresses,
@@ -87,6 +95,7 @@ func (r *EmailQueueRepository) Enqueue(ctx context.Context, input models.EmailQu
 	err = r.db.QueryRowContext(
 		ctx,
 		query,
+		tenantID,
 		pq.Array(input.ToAddresses),
 		pq.Array(input.CcAddresses),
 		pq.Array(input.BccAddresses),
@@ -103,6 +112,7 @@ func (r *EmailQueueRepository) Enqueue(ctx context.Context, input models.EmailQu
 		input.CreatedBy,
 	).Scan(
 		&item.ID,
+		&item.TenantID,
 		&item.Status,
 		&item.RetryCount,
 		&item.CreatedAt,

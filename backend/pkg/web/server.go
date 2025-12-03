@@ -19,6 +19,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	whworker "github.com/btouchard/ackify-ce/backend/internal/infrastructure/webhook"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/workers"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api"
@@ -48,14 +49,25 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		return nil, fmt.Errorf("failed to initialize infrastructure: %w", err)
 	}
 
+	// Initialize tenant provider
+	tenantProvider, err := tenant.NewSingleTenantProviderWithContext(ctx, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize tenant provider: %w", err)
+	}
+	tenantID, err := tenantProvider.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current tenant ID: %w", err)
+	}
+	logger.Logger.Info("Tenant provider initialized", "tenant_id", tenantID)
+
 	// Initialize repositories
-	signatureRepo := database.NewSignatureRepository(db)
-	documentRepo := database.NewDocumentRepository(db)
-	expectedSignerRepo := database.NewExpectedSignerRepository(db)
-	reminderRepo := database.NewReminderRepository(db)
-	emailQueueRepo := database.NewEmailQueueRepository(db)
-	webhookRepo := database.NewWebhookRepository(db)
-	webhookDeliveryRepo := database.NewWebhookDeliveryRepository(db)
+	signatureRepo := database.NewSignatureRepository(db, tenantProvider)
+	documentRepo := database.NewDocumentRepository(db, tenantProvider)
+	expectedSignerRepo := database.NewExpectedSignerRepository(db, tenantProvider)
+	reminderRepo := database.NewReminderRepository(db, tenantProvider)
+	emailQueueRepo := database.NewEmailQueueRepository(db, tenantProvider)
+	webhookRepo := database.NewWebhookRepository(db, tenantProvider)
+	webhookDeliveryRepo := database.NewWebhookDeliveryRepository(db, tenantProvider)
 	magicLinkRepo := database.NewMagicLinkRepository(db)
 
 	// Initialize webhook publisher and worker

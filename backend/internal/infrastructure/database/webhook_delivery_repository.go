@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 )
 
 // Joined view of a delivery with webhook send data
@@ -29,14 +30,20 @@ type WebhookDeliveryItem struct {
 }
 
 type WebhookDeliveryRepository struct {
-	db *sql.DB
+	db      *sql.DB
+	tenants tenant.Provider
 }
 
-func NewWebhookDeliveryRepository(db *sql.DB) *WebhookDeliveryRepository {
-	return &WebhookDeliveryRepository{db: db}
+func NewWebhookDeliveryRepository(db *sql.DB, tenants tenant.Provider) *WebhookDeliveryRepository {
+	return &WebhookDeliveryRepository{db: db, tenants: tenants}
 }
 
 func (r *WebhookDeliveryRepository) Enqueue(ctx context.Context, input models.WebhookDeliveryInput) (*models.WebhookDelivery, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	payloadJSON, err := json.Marshal(input.Payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %w", err)
@@ -51,11 +58,12 @@ func (r *WebhookDeliveryRepository) Enqueue(ctx context.Context, input models.We
 	}
 
 	q := `
-        INSERT INTO webhook_deliveries (webhook_id, event_type, event_id, payload, priority, max_retries, scheduled_for)
-        VALUES ($1,$2,$3,$4,$5,$6,$7)
-        RETURNING id, status, retry_count, created_at, processed_at, next_retry_at
+        INSERT INTO webhook_deliveries (tenant_id, webhook_id, event_type, event_id, payload, priority, max_retries, scheduled_for)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        RETURNING id, tenant_id, status, retry_count, created_at, processed_at, next_retry_at
     `
 	item := &models.WebhookDelivery{
+		TenantID:     tenantID,
 		WebhookID:    input.WebhookID,
 		EventType:    input.EventType,
 		EventID:      input.EventID,
@@ -65,8 +73,8 @@ func (r *WebhookDeliveryRepository) Enqueue(ctx context.Context, input models.We
 		ScheduledFor: scheduled,
 	}
 	err = r.db.QueryRowContext(ctx, q,
-		input.WebhookID, input.EventType, input.EventID, payloadJSON, input.Priority, maxRetries, scheduled,
-	).Scan(&item.ID, &item.Status, &item.RetryCount, &item.CreatedAt, &item.ProcessedAt, &item.NextRetryAt)
+		tenantID, input.WebhookID, input.EventType, input.EventID, payloadJSON, input.Priority, maxRetries, scheduled,
+	).Scan(&item.ID, &item.TenantID, &item.Status, &item.RetryCount, &item.CreatedAt, &item.ProcessedAt, &item.NextRetryAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to enqueue webhook delivery: %w", err)
 	}
@@ -203,15 +211,20 @@ func (r *WebhookDeliveryRepository) MarkFailed(ctx context.Context, id int64, er
 }
 
 func (r *WebhookDeliveryRepository) ListByWebhook(ctx context.Context, webhookID int64, limit, offset int) ([]*models.WebhookDelivery, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	q := `
-        SELECT id, webhook_id, event_type, event_id, payload, status, retry_count, max_retries, priority,
+        SELECT id, tenant_id, webhook_id, event_type, event_id, payload, status, retry_count, max_retries, priority,
                created_at, scheduled_for, processed_at, next_retry_at, request_headers, response_status, response_headers, response_body, last_error
         FROM webhook_deliveries
-        WHERE webhook_id=$1
+        WHERE webhook_id=$1 AND tenant_id=$2
         ORDER BY id DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $3 OFFSET $4
     `
-	rows, err := r.db.QueryContext(ctx, q, webhookID, limit, offset)
+	rows, err := r.db.QueryContext(ctx, q, webhookID, tenantID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deliveries: %w", err)
 	}
@@ -220,7 +233,7 @@ func (r *WebhookDeliveryRepository) ListByWebhook(ctx context.Context, webhookID
 	for rows.Next() {
 		d := &models.WebhookDelivery{}
 		if err := rows.Scan(
-			&d.ID, &d.WebhookID, &d.EventType, &d.EventID, &d.Payload, &d.Status, &d.RetryCount, &d.MaxRetries, &d.Priority,
+			&d.ID, &d.TenantID, &d.WebhookID, &d.EventType, &d.EventID, &d.Payload, &d.Status, &d.RetryCount, &d.MaxRetries, &d.Priority,
 			&d.CreatedAt, &d.ScheduledFor, &d.ProcessedAt, &d.NextRetryAt, &d.RequestHeaders, &d.ResponseStatus, &d.ResponseHeaders, &d.ResponseBody, &d.LastError,
 		); err != nil {
 			return nil, err

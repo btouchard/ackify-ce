@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/pkg/services"
+	"github.com/google/uuid"
 )
 
 type Signature struct {
 	ID           int64      `json:"id" db:"id"`
+	TenantID     uuid.UUID  `json:"tenant_id" db:"tenant_id"`
 	DocID        string     `json:"doc_id" db:"doc_id"`
 	UserSub      string     `json:"user_sub" db:"user_sub"`
 	UserEmail    string     `json:"user_email" db:"user_email"`

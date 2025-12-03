@@ -8,18 +8,25 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/lib/pq"
 )
 
 type WebhookRepository struct {
-	db *sql.DB
+	db      *sql.DB
+	tenants tenant.Provider
 }
 
-func NewWebhookRepository(db *sql.DB) *WebhookRepository {
-	return &WebhookRepository{db: db}
+func NewWebhookRepository(db *sql.DB, tenants tenant.Provider) *WebhookRepository {
+	return &WebhookRepository{db: db, tenants: tenants}
 }
 
 func (r *WebhookRepository) Create(ctx context.Context, input models.WebhookInput) (*models.Webhook, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	headersIn := []byte("{}")
 	if input.Headers != nil {
 		if data, err := json.Marshal(input.Headers); err == nil {
@@ -28,13 +35,14 @@ func (r *WebhookRepository) Create(ctx context.Context, input models.WebhookInpu
 	}
 
 	query := `
-        INSERT INTO webhooks (title, target_url, secret, active, events, headers, description, created_by)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-        RETURNING id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
+        INSERT INTO webhooks (tenant_id, title, target_url, secret, active, events, headers, description, created_by)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        RETURNING id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
     `
 	wh := &models.Webhook{}
 	var headersOut models.NullRawMessage
-	err := r.db.QueryRowContext(ctx, query,
+	err = r.db.QueryRowContext(ctx, query,
+		tenantID,
 		input.Title,
 		input.TargetURL,
 		input.Secret,
@@ -44,7 +52,7 @@ func (r *WebhookRepository) Create(ctx context.Context, input models.WebhookInpu
 		input.Description,
 		input.CreatedBy,
 	).Scan(
-		&wh.ID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&wh.Events), &headersOut, &wh.Description, &wh.CreatedBy,
+		&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&wh.Events), &headersOut, &wh.Description, &wh.CreatedBy,
 		&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
 	)
 	if err != nil {
@@ -57,6 +65,11 @@ func (r *WebhookRepository) Create(ctx context.Context, input models.WebhookInpu
 }
 
 func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.WebhookInput) (*models.Webhook, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	headersJSON := []byte("{}")
 	if input.Headers != nil {
 		if data, err := json.Marshal(input.Headers); err == nil {
@@ -67,12 +80,12 @@ func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.W
 	query := `
         UPDATE webhooks
         SET title=$1, target_url=$2, secret=COALESCE(NULLIF($3,''), secret), active=$4, events=$5, headers=$6, description=$7, updated_at=now()
-        WHERE id=$8
-        RETURNING id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
+        WHERE id=$8 AND tenant_id=$9
+        RETURNING id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
     `
 	wh := &models.Webhook{}
 	var headersOut models.NullRawMessage
-	err := r.db.QueryRowContext(ctx, query,
+	err = r.db.QueryRowContext(ctx, query,
 		input.Title,
 		input.TargetURL,
 		input.Secret,
@@ -81,8 +94,9 @@ func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.W
 		headersJSON,
 		input.Description,
 		id,
+		tenantID,
 	).Scan(
-		&wh.ID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&wh.Events), &headersOut, &wh.Description, &wh.CreatedBy,
+		&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&wh.Events), &headersOut, &wh.Description, &wh.CreatedBy,
 		&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
 	)
 	if err != nil {
@@ -95,7 +109,12 @@ func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.W
 }
 
 func (r *WebhookRepository) SetActive(ctx context.Context, id int64, active bool) error {
-	res, err := r.db.ExecContext(ctx, `UPDATE webhooks SET active=$1, updated_at=now() WHERE id=$2`, active, id)
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	res, err := r.db.ExecContext(ctx, `UPDATE webhooks SET active=$1, updated_at=now() WHERE id=$2 AND tenant_id=$3`, active, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("failed to set active: %w", err)
 	}
@@ -107,7 +126,12 @@ func (r *WebhookRepository) SetActive(ctx context.Context, id int64, active bool
 }
 
 func (r *WebhookRepository) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM webhooks WHERE id=$1`, id)
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	_, err = r.db.ExecContext(ctx, `DELETE FROM webhooks WHERE id=$1 AND tenant_id=$2`, id, tenantID)
 	if err != nil {
 		return fmt.Errorf("failed to delete webhook: %w", err)
 	}
@@ -115,16 +139,21 @@ func (r *WebhookRepository) Delete(ctx context.Context, id int64) error {
 }
 
 func (r *WebhookRepository) GetByID(ctx context.Context, id int64) (*models.Webhook, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	query := `
-        SELECT id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
+        SELECT id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
         FROM webhooks
-        WHERE id=$1
+        WHERE id=$1 AND tenant_id=$2
     `
 	wh := &models.Webhook{}
 	var events []string
 	var headersJSON models.NullRawMessage
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&wh.ID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
+	err = r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
+		&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
 		&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
 	)
 	if err != nil {
@@ -138,13 +167,19 @@ func (r *WebhookRepository) GetByID(ctx context.Context, id int64) (*models.Webh
 }
 
 func (r *WebhookRepository) List(ctx context.Context, limit, offset int) ([]*models.Webhook, error) {
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	query := `
-        SELECT id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
+        SELECT id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
         FROM webhooks
+        WHERE tenant_id=$1
         ORDER BY id DESC
-        LIMIT $1 OFFSET $2
+        LIMIT $2 OFFSET $3
     `
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list webhooks: %w", err)
 	}
@@ -156,7 +191,7 @@ func (r *WebhookRepository) List(ctx context.Context, limit, offset int) ([]*mod
 		var events []string
 		var headersJSON models.NullRawMessage
 		if err := rows.Scan(
-			&wh.ID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
+			&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
 			&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
 		); err != nil {
 			return nil, err
@@ -172,13 +207,17 @@ func (r *WebhookRepository) List(ctx context.Context, limit, offset int) ([]*mod
 
 // ListActiveByEvent returns active webhooks subscribed to a given event type
 func (r *WebhookRepository) ListActiveByEvent(ctx context.Context, event string) ([]*models.Webhook, error) {
-	// Use ANY($1) against events[]
+	tenantID, err := r.tenants.CurrentTenant(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
 	query := `
-        SELECT id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
+        SELECT id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
         FROM webhooks
-        WHERE active = TRUE AND $1 = ANY(events)
+        WHERE tenant_id=$1 AND active = TRUE AND $2 = ANY(events)
     `
-	rows, err := r.db.QueryContext(ctx, query, event)
+	rows, err := r.db.QueryContext(ctx, query, tenantID, event)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active webhooks: %w", err)
 	}
@@ -190,7 +229,7 @@ func (r *WebhookRepository) ListActiveByEvent(ctx context.Context, event string)
 		var events []string
 		var headersJSON models.NullRawMessage
 		if err := rows.Scan(
-			&wh.ID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
+			&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
 			&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
 		); err != nil {
 			return nil, err

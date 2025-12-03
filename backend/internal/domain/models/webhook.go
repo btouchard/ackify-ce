@@ -4,11 +4,14 @@ package models
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Webhook struct {
-	Title           string            `json:"title"`
 	ID              int64             `json:"id"`
+	TenantID        uuid.UUID         `json:"tenant_id" db:"tenant_id"`
+	Title           string            `json:"title"`
 	TargetURL       string            `json:"targetUrl"`
 	Secret          string            `json:"-"`
 	Active          bool              `json:"active"`
@@ -48,6 +51,7 @@ const (
 
 type WebhookDelivery struct {
 	ID              int64                 `json:"id"`
+	TenantID        uuid.UUID             `json:"tenant_id" db:"tenant_id"`
 	WebhookID       int64                 `json:"webhookId"`
 	EventType       string                `json:"eventType"`
 	EventID         string                `json:"eventId"`

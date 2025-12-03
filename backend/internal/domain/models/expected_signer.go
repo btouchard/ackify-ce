@@ -1,17 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // ExpectedSigner represents an expected signer for a document
 type ExpectedSigner struct {
-	ID      int64     `json:"id" db:"id"`
-	DocID   string    `json:"doc_id" db:"doc_id"`
-	Email   string    `json:"email" db:"email"`
-	Name    string    `json:"name" db:"name"`
-	AddedAt time.Time `json:"added_at" db:"added_at"`
-	AddedBy string    `json:"added_by" db:"added_by"`
-	Notes   *string   `json:"notes,omitempty" db:"notes"`
+	ID       int64     `json:"id" db:"id"`
+	TenantID uuid.UUID `json:"tenant_id" db:"tenant_id"`
+	DocID    string    `json:"doc_id" db:"doc_id"`
+	Email    string    `json:"email" db:"email"`
+	Name     string    `json:"name" db:"name"`
+	AddedAt  time.Time `json:"added_at" db:"added_at"`
+	AddedBy  string    `json:"added_by" db:"added_by"`
+	Notes    *string   `json:"notes,omitempty" db:"notes"`
 }
 
 // ExpectedSignerWithStatus combines expected signer info with signature status

@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // EmailQueueStatus represents the status of an email in the queue
@@ -30,6 +32,7 @@ const (
 // EmailQueueItem represents an email in the processing queue
 type EmailQueueItem struct {
 	ID            int64            `json:"id"`
+	TenantID      uuid.UUID        `json:"tenant_id" db:"tenant_id"`
 	ToAddresses   []string         `json:"to_addresses"`
 	CcAddresses   []string         `json:"cc_addresses,omitempty"`
 	BccAddresses  []string         `json:"bcc_addresses,omitempty"`

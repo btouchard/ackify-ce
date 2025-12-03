@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // ReminderLog represents a log entry for an email reminder sent to a signer
 type ReminderLog struct {
 	ID             int64     `json:"id" db:"id"`
+	TenantID       uuid.UUID `json:"tenant_id" db:"tenant_id"`
 	DocID          string    `json:"doc_id" db:"doc_id"`
 	RecipientEmail string    `json:"recipient_email" db:"recipient_email"`
 	SentAt         time.Time `json:"sent_at" db:"sent_at"`

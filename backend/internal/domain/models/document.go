@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package models
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Document represents document metadata for tracking and integrity verification
 type Document struct {
 	DocID             string     `json:"doc_id" db:"doc_id"`
+	TenantID          uuid.UUID  `json:"tenant_id" db:"tenant_id"`
 	Title             string     `json:"title" db:"title"`
 	URL               string     `json:"url" db:"url"`
 	Checksum          string     `json:"checksum" db:"checksum"`
