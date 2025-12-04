@@ -16,35 +16,27 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
 	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/documents"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/health"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/signatures"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/users"
+	"github.com/btouchard/ackify-ce/backend/pkg/coreapp"
 )
 
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
 	AuthService               *auth.OauthService
 	MagicLinkService          *services.MagicLinkService
-	SignatureService          *services.SignatureService
-	DocumentService           *services.DocumentService
-	DocumentRepository        *database.DocumentRepository
-	ExpectedSignerRepository  *database.ExpectedSignerRepository
-	ReminderService           *services.ReminderAsyncService // Now using async service
 	WebhookRepository         *database.WebhookRepository
 	WebhookDeliveryRepository *database.WebhookDeliveryRepository
-	WebhookPublisher          *services.WebhookPublisher
+	CoreDeps                  coreapp.CoreDeps
 	BaseURL                   string
 	AdminEmails               []string
 	AutoLogin                 bool
 	OAuthEnabled              bool
 	MagicLinkEnabled          bool
-	OnlyAdminCanCreate        bool
-	AuthRateLimit             int // Global auth rate limit (requests per minute), default: 5
-	DocumentRateLimit         int // Document creation rate limit (requests per minute), default: 10
-	GeneralRateLimit          int // General API rate limit (requests per minute), default: 100
-	ImportMaxSigners          int // Maximum signers per CSV import, default: 500
+	AuthRateLimit             int
+	DocumentRateLimit         int
+	GeneralRateLimit          int
 }
 
 // NewRouter creates and configures the API v1 router
@@ -82,20 +74,14 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	r.Use(apiMiddleware.CORS)
 	r.Use(generalRateLimit.Middleware)
 
-	// Initialize handlers
+	// Initialize coreapp handler groups (documents/signatures)
+	coreGroups := coreapp.NewHandlerGroups(cfg.CoreDeps)
+
+	// Initialize handlers for non-coreapp routes
 	healthHandler := health.NewHandler()
 	authHandler := apiAuth.NewHandler(cfg.AuthService, cfg.MagicLinkService, apiMiddleware, cfg.BaseURL, cfg.OAuthEnabled, cfg.MagicLinkEnabled)
 	usersHandler := users.NewHandler(cfg.AdminEmails)
-	documentsHandler := documents.NewHandler(
-		cfg.SignatureService,
-		cfg.DocumentService,
-		cfg.DocumentRepository,
-		cfg.ExpectedSignerRepository,
-		cfg.WebhookPublisher,
-		cfg.AdminEmails,
-		cfg.OnlyAdminCanCreate,
-	)
-	signaturesHandler := signatures.NewHandler(cfg.SignatureService, cfg.ExpectedSignerRepository, cfg.WebhookPublisher)
+	webhooksHandler := apiAdmin.NewWebhooksHandler(cfg.WebhookRepository, cfg.WebhookDeliveryRepository)
 
 	// Public routes
 	r.Group(func(r chi.Router) {
@@ -139,27 +125,18 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 			})
 		})
 
-		// Public document endpoints
-		r.Route("/documents", func(r chi.Router) {
-			// Document creation (with CSRF and stricter rate limiting)
-			r.Group(func(r chi.Router) {
-				r.Use(apiMiddleware.CSRFProtect)
-				r.Use(documentRateLimit.Middleware)
-				r.Post("/", documentsHandler.HandleCreateDocument)
-			})
+		// Public document endpoints (from coreapp)
+		coreGroups.RegisterPublic(r)
+	})
 
-			// Read-only document endpoints
-			r.Get("/", documentsHandler.HandleListDocuments)
-			r.Get("/{docId}", documentsHandler.HandleGetDocument)
-			r.Get("/{docId}/signatures", documentsHandler.HandleGetDocumentSignatures)
-			r.Get("/{docId}/expected-signers", documentsHandler.HandleGetExpectedSigners)
-
-			// Find or create document by reference (public for embed support, but with optional auth)
-			r.Group(func(r chi.Router) {
-				r.Use(apiMiddleware.OptionalAuth)
-				r.Get("/find-or-create", documentsHandler.HandleFindOrCreateDocument)
-			})
-		})
+	// User document routes with special handling
+	// - Document creation requires CSRF + rate limiting
+	// - find-or-create requires optional auth
+	r.Group(func(r chi.Router) {
+		r.Use(apiMiddleware.CSRFProtect)
+		r.Use(documentRateLimit.Middleware)
+		r.Use(apiMiddleware.OptionalAuth)
+		coreGroups.RegisterUser(r)
 	})
 
 	// Authenticated routes
@@ -167,19 +144,10 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		r.Use(apiMiddleware.RequireAuth)
 		r.Use(apiMiddleware.CSRFProtect)
 
-		// User endpoints
+		// User endpoints (non-coreapp)
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/me", usersHandler.HandleGetCurrentUser)
 		})
-
-		// Signature endpoints
-		r.Route("/signatures", func(r chi.Router) {
-			r.Get("/", signaturesHandler.HandleGetUserSignatures)
-			r.Post("/", signaturesHandler.HandleCreateSignature)
-		})
-
-		// Document signature status (authenticated)
-		r.Get("/documents/{docId}/signatures/status", signaturesHandler.HandleGetSignatureStatus)
 	})
 
 	// Admin routes
@@ -187,53 +155,18 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		r.Use(apiMiddleware.RequireAdmin)
 		r.Use(apiMiddleware.CSRFProtect)
 
-		// Configure import max signers with default
-		importMaxSigners := cfg.ImportMaxSigners
-		if importMaxSigners == 0 {
-			importMaxSigners = 500 // Default: 500 signers per import
-		}
+		// Admin document routes (from coreapp)
+		coreGroups.RegisterAdmin(r)
 
-		// Initialize admin handler
-		adminHandler := apiAdmin.NewHandler(cfg.DocumentRepository, cfg.ExpectedSignerRepository, cfg.ReminderService, cfg.SignatureService, cfg.BaseURL, importMaxSigners)
-		webhooksHandler := apiAdmin.NewWebhooksHandler(cfg.WebhookRepository, cfg.WebhookDeliveryRepository)
-
-		r.Route("/admin", func(r chi.Router) {
-			// Document management
-			r.Route("/documents", func(r chi.Router) {
-				r.Get("/", adminHandler.HandleListDocuments)
-				r.Get("/{docId}", adminHandler.HandleGetDocument)
-				r.Get("/{docId}/signers", adminHandler.HandleGetDocumentWithSigners)
-				r.Get("/{docId}/status", adminHandler.HandleGetDocumentStatus)
-
-				// Document metadata
-				r.Put("/{docId}/metadata", adminHandler.HandleUpdateDocumentMetadata)
-
-				// Document deletion
-				r.Delete("/{docId}", adminHandler.HandleDeleteDocument)
-
-				// Expected signers management
-				r.Post("/{docId}/signers", adminHandler.HandleAddExpectedSigner)
-				r.Delete("/{docId}/signers/{email}", adminHandler.HandleRemoveExpectedSigner)
-
-				// CSV import for expected signers
-				r.Post("/{docId}/signers/preview-csv", adminHandler.HandlePreviewCSV)
-				r.Post("/{docId}/signers/import", adminHandler.HandleImportSigners)
-
-				// Reminder management
-				r.Post("/{docId}/reminders", adminHandler.HandleSendReminders)
-				r.Get("/{docId}/reminders", adminHandler.HandleGetReminderHistory)
-			})
-
-			// Webhooks management
-			r.Route("/webhooks", func(r chi.Router) {
-				r.Get("/", webhooksHandler.HandleListWebhooks)
-				r.Post("/", webhooksHandler.HandleCreateWebhook)
-				r.Get("/{id}", webhooksHandler.HandleGetWebhook)
-				r.Put("/{id}", webhooksHandler.HandleUpdateWebhook)
-				r.Patch("/{id}/{action}", webhooksHandler.HandleToggleWebhook) // action: enable|disable
-				r.Delete("/{id}", webhooksHandler.HandleDeleteWebhook)
-				r.Get("/{id}/deliveries", webhooksHandler.HandleListDeliveries)
-			})
+		// Webhooks management (non-coreapp)
+		r.Route("/admin/webhooks", func(r chi.Router) {
+			r.Get("/", webhooksHandler.HandleListWebhooks)
+			r.Post("/", webhooksHandler.HandleCreateWebhook)
+			r.Get("/{id}", webhooksHandler.HandleGetWebhook)
+			r.Put("/{id}", webhooksHandler.HandleUpdateWebhook)
+			r.Patch("/{id}/{action}", webhooksHandler.HandleToggleWebhook) // action: enable|disable
+			r.Delete("/{id}", webhooksHandler.HandleDeleteWebhook)
+			r.Get("/{id}/deliveries", webhooksHandler.HandleListDeliveries)
 		})
 	})
 

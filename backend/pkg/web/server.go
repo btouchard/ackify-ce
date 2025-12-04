@@ -15,6 +15,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/authorization"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/config"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
@@ -24,6 +25,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/workers"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
+	"github.com/btouchard/ackify-ce/backend/pkg/coreapp"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -104,6 +106,7 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 	signatureService := services.NewSignatureService(signatureRepo, documentRepo, signer)
 	signatureService.SetChecksumConfig(&cfg.Checksum)
 	documentService := services.NewDocumentService(documentRepo, &cfg.Checksum)
+	expectedSignerService := services.NewExpectedSignerService(expectedSignerRepo)
 
 	// Initialize email worker for async processing
 	var emailWorker *email.Worker
@@ -177,27 +180,39 @@ func NewServer(ctx context.Context, cfg *config.Config, frontend embed.FS, versi
 		webhookPublisher,
 	))
 
+	// Build CoreDeps for coreapp handlers (documents/signatures)
+	importMaxSigners := cfg.App.ImportMaxSigners
+	if importMaxSigners == 0 {
+		importMaxSigners = 500 // Default: 500 signers per import
+	}
+
+	documentAuthorizer := authorization.NewCEDocumentAuthorizer(cfg.App.AdminEmails, cfg.App.OnlyAdminCanCreate)
+
+	coreDeps := coreapp.CoreDeps{
+		Documents:          documentService,
+		Signatures:         signatureService,
+		ExpectedSigners:    expectedSignerService,
+		Reminders:          reminderService,
+		WebhookPublisher:   webhookPublisher,
+		DocumentAuthorizer: documentAuthorizer,
+		BaseURL:            cfg.App.BaseURL,
+		ImportMaxSigners:   importMaxSigners,
+	}
+
 	apiConfig := api.RouterConfig{
 		AuthService:               authService,
 		MagicLinkService:          magicLinkService,
-		SignatureService:          signatureService,
-		DocumentService:           documentService,
-		DocumentRepository:        documentRepo,
-		ExpectedSignerRepository:  expectedSignerRepo,
-		ReminderService:           reminderService,
 		WebhookRepository:         webhookRepo,
 		WebhookDeliveryRepository: webhookDeliveryRepo,
-		WebhookPublisher:          webhookPublisher,
+		CoreDeps:                  coreDeps,
 		BaseURL:                   cfg.App.BaseURL,
 		AdminEmails:               cfg.App.AdminEmails,
 		AutoLogin:                 cfg.OAuth.AutoLogin,
 		OAuthEnabled:              cfg.Auth.OAuthEnabled,
 		MagicLinkEnabled:          cfg.Auth.MagicLinkEnabled,
-		OnlyAdminCanCreate:        cfg.App.OnlyAdminCanCreate,
 		AuthRateLimit:             cfg.App.AuthRateLimit,
 		DocumentRateLimit:         cfg.App.DocumentRateLimit,
 		GeneralRateLimit:          cfg.App.GeneralRateLimit,
-		ImportMaxSigners:          cfg.App.ImportMaxSigners,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)

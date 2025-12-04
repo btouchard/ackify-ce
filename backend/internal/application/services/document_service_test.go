@@ -378,6 +378,26 @@ func (m *mockDocumentRepository) FindByReference(ctx context.Context, ref string
 	return nil, nil // Not found by default
 }
 
+func (m *mockDocumentRepository) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	return nil, nil
+}
+
+func (m *mockDocumentRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
+	return nil, nil
+}
+
+func (m *mockDocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
+	return 0, nil
+}
+
+func (m *mockDocumentRepository) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
+	return m.Create(ctx, docID, input, createdBy)
+}
+
+func (m *mockDocumentRepository) Delete(ctx context.Context, docID string) error {
+	return nil
+}
+
 // Test CreateDocument with URL reference
 func TestDocumentService_CreateDocument_WithURL(t *testing.T) {
 	mockRepo := &mockDocumentRepository{}

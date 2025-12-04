@@ -42,26 +42,34 @@ type webhookPublisher interface {
 	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
 }
 
+// signatureService defines the interface for signature operations (used for counts)
+type signatureService interface {
+	GetDocumentSignatures(ctx context.Context, docID string) ([]*models.Signature, error)
+}
+
+// documentAuthorizer defines the interface for document creation authorization
+type documentAuthorizer interface {
+	CanCreateDocument(ctx context.Context, user *models.User) bool
+}
+
 // Handler handles document API requests
 type Handler struct {
-	signatureService   *services.SignatureService
+	signatureService   signatureService
 	documentService    documentService
 	documentRepo       documentRepository
 	expectedSignerRepo expectedSignerRepository
 	webhookPublisher   webhookPublisher
-	adminEmails        []string
-	onlyAdminCanCreate bool
+	authorizer         documentAuthorizer
 }
 
 // NewHandler creates a handler with all dependencies for full functionality
 func NewHandler(
-	signatureService *services.SignatureService,
+	signatureService signatureService,
 	documentService documentService,
 	documentRepo documentRepository,
 	expectedSignerRepo expectedSignerRepository,
 	publisher webhookPublisher,
-	adminEmails []string,
-	onlyAdminCanCreate bool,
+	authorizer documentAuthorizer,
 ) *Handler {
 	return &Handler{
 		signatureService:   signatureService,
@@ -69,8 +77,7 @@ func NewHandler(
 		documentRepo:       documentRepo,
 		expectedSignerRepo: expectedSignerRepo,
 		webhookPublisher:   publisher,
-		adminEmails:        adminEmails,
-		onlyAdminCanCreate: onlyAdminCanCreate,
+		authorizer:         authorizer,
 	}
 }
 
@@ -117,32 +124,14 @@ type CreateDocumentResponse struct {
 func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Check if only admins can create documents
-	if h.onlyAdminCanCreate {
-		user, authenticated := shared.GetUserFromContext(ctx)
-		if !authenticated {
-			logger.Logger.Warn("Unauthenticated user attempted to create document",
-				"remote_addr", r.RemoteAddr)
+	user, _ := shared.GetUserFromContext(ctx)
+	if !h.authorizer.CanCreateDocument(ctx, user) {
+		if user == nil {
 			shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
-			return
+		} else {
+			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Not authorized to create documents", nil)
 		}
-
-		// Check if user is admin
-		isAdmin := false
-		for _, adminEmail := range h.adminEmails {
-			if strings.ToLower(user.Email) == strings.ToLower(adminEmail) {
-				isAdmin = true
-				break
-			}
-		}
-
-		if !isAdmin {
-			logger.Logger.Warn("Non-admin user attempted to create document",
-				"user_email", user.Email,
-				"remote_addr", r.RemoteAddr)
-			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Only administrators can create documents", nil)
-			return
-		}
+		return
 	}
 
 	// Parse request body
@@ -470,8 +459,7 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		"reference", ref,
 		"remote_addr", r.RemoteAddr)
 
-	// Check if user is authenticated
-	user, isAuthenticated := shared.GetUserFromContext(ctx)
+	user, _ := shared.GetUserFromContext(ctx)
 
 	// First, try to find the document (without creating)
 	refType := detectReferenceType(ref)
@@ -505,33 +493,14 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Document doesn't exist - check authentication before creating
-	if !isAuthenticated {
-		logger.Logger.Warn("Unauthenticated user attempted to create document",
-			"reference", ref,
-			"remote_addr", r.RemoteAddr)
-		shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
+	// Document doesn't exist - check authorization before creating
+	if !h.authorizer.CanCreateDocument(ctx, user) {
+		if user == nil {
+			shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
+		} else {
+			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Not authorized to create documents", nil)
+		}
 		return
-	}
-
-	// Check if only admins can create documents
-	if h.onlyAdminCanCreate {
-		isAdmin := false
-		for _, adminEmail := range h.adminEmails {
-			if strings.ToLower(user.Email) == strings.ToLower(adminEmail) {
-				isAdmin = true
-				break
-			}
-		}
-
-		if !isAdmin {
-			logger.Logger.Warn("Non-admin user attempted to create document via find-or-create",
-				"user_email", user.Email,
-				"reference", ref,
-				"remote_addr", r.RemoteAddr)
-			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Only administrators can create documents", nil)
-			return
-		}
 	}
 
 	// User is authenticated, create the document

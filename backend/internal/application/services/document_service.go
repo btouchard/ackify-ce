@@ -20,6 +20,11 @@ type documentRepository interface {
 	Create(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
 	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
 	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
+	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	Count(ctx context.Context, searchQuery string) (int, error)
+	CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
+	Delete(ctx context.Context, docID string) error
 }
 
 // DocumentService handles document metadata operations and unique ID generation
@@ -441,4 +446,34 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 	}
 
 	return doc, true, nil
+}
+
+// List returns documents with pagination
+func (s *DocumentService) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	return s.repo.List(ctx, limit, offset)
+}
+
+// Search searches documents by query with pagination
+func (s *DocumentService) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
+	return s.repo.Search(ctx, query, limit, offset)
+}
+
+// Count returns the total count of documents, optionally filtered by search query
+func (s *DocumentService) Count(ctx context.Context, searchQuery string) (int, error) {
+	return s.repo.Count(ctx, searchQuery)
+}
+
+// GetByDocID retrieves a document by its ID
+func (s *DocumentService) GetByDocID(ctx context.Context, docID string) (*models.Document, error) {
+	return s.repo.GetByDocID(ctx, docID)
+}
+
+// CreateOrUpdate creates a new document or updates an existing one
+func (s *DocumentService) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
+	return s.repo.CreateOrUpdate(ctx, docID, input, createdBy)
+}
+
+// Delete removes a document by its ID
+func (s *DocumentService) Delete(ctx context.Context, docID string) error {
+	return s.repo.Delete(ctx, docID)
 }
