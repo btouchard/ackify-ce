@@ -13,9 +13,14 @@ import (
 	"path"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
+
+// SignatureRepository defines minimal signature operations for meta tags
+type SignatureRepository interface {
+	GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error)
+}
 
 // EmbedFolder returns an http.HandlerFunc that serves an embedded filesystem
 // with SPA fallback support (serves index.html for non-existent routes)
@@ -25,7 +30,7 @@ import (
 // __ACKIFY_SMTP_ENABLED__ with SMTP availability flag,
 // __ACKIFY_ONLY_ADMIN_CAN_CREATE__ with document creation restriction flag,
 // and __META_TAGS__ with dynamic meta tags based on query parameters
-func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, signatureRepo *database.SignatureRepository) http.HandlerFunc {
+func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, signatureRepo SignatureRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fsys, err := fs.Sub(fsEmbed, targetPath)
 		if err != nil {
@@ -73,7 +78,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 	}
 }
 
-func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, signatureRepo *database.SignatureRepository) {
+func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, signatureRepo SignatureRepository) {
 	content, err := io.ReadAll(file)
 	if err != nil {
 		logger.Logger.Error("Failed to read index.html", "error", err.Error())
@@ -118,7 +123,7 @@ func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, ba
 	}
 }
 
-func generateMetaTags(r *http.Request, baseURL string, signatureRepo *database.SignatureRepository) string {
+func generateMetaTags(r *http.Request, baseURL string, signatureRepo SignatureRepository) string {
 	docID := r.URL.Query().Get("doc")
 	if docID == "" {
 		return ""

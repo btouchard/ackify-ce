@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"fmt"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 	"strconv"
 )
 

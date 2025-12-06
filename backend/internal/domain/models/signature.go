@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/pkg/services"
+	"github.com/btouchard/ackify-ce/pkg/services"
 	"github.com/google/uuid"
 )
 

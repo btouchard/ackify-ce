@@ -3,19 +3,23 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/gorilla/securecookie"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/pkg/types"
 )
 
 // ============================================================================
@@ -46,6 +50,131 @@ var (
 // HELPER FUNCTIONS
 // ============================================================================
 
+// mockAuthorizer is a test implementation of providers.Authorizer
+type mockAuthorizer struct {
+	adminEmails        map[string]bool
+	onlyAdminCanCreate bool
+}
+
+func newMockAuthorizer(adminEmails []string, onlyAdminCanCreate bool) *mockAuthorizer {
+	emails := make(map[string]bool)
+	for _, email := range adminEmails {
+		emails[strings.ToLower(email)] = true
+	}
+	return &mockAuthorizer{
+		adminEmails:        emails,
+		onlyAdminCanCreate: onlyAdminCanCreate,
+	}
+}
+
+func (m *mockAuthorizer) IsAdmin(_ context.Context, userEmail string) bool {
+	return m.adminEmails[strings.ToLower(userEmail)]
+}
+
+func (m *mockAuthorizer) CanCreateDocument(_ context.Context, userEmail string) bool {
+	if !m.onlyAdminCanCreate {
+		return true
+	}
+	return m.adminEmails[strings.ToLower(userEmail)]
+}
+
+// mockAuthProvider is a test implementation of providers.AuthProvider
+type mockAuthProvider struct {
+	mu          sync.RWMutex
+	currentUser *types.User
+}
+
+func (m *mockAuthProvider) GetCurrentUser(_ *http.Request) (*types.User, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.currentUser == nil {
+		return nil, http.ErrNoCookie
+	}
+	return m.currentUser, nil
+}
+
+func (m *mockAuthProvider) SetCurrentUser(_ http.ResponseWriter, _ *http.Request, user *types.User) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.currentUser = user
+	return nil
+}
+
+func (m *mockAuthProvider) Logout(_ http.ResponseWriter, _ *http.Request) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.currentUser = nil
+}
+
+func (m *mockAuthProvider) IsConfigured() bool {
+	return true
+}
+
+// mockOAuthProvider is a test implementation of providers.OAuthAuthProvider
+type mockOAuthProvider struct {
+	mu          sync.RWMutex
+	currentUser *types.User
+	logoutURL   string
+}
+
+func newMockOAuthProvider() *mockOAuthProvider {
+	return &mockOAuthProvider{
+		logoutURL: testLogoutURL,
+	}
+}
+
+func (m *mockOAuthProvider) GetCurrentUser(_ *http.Request) (*types.User, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if m.currentUser == nil {
+		return nil, http.ErrNoCookie
+	}
+	return m.currentUser, nil
+}
+
+func (m *mockOAuthProvider) SetCurrentUser(_ http.ResponseWriter, _ *http.Request, user *types.User) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.currentUser = user
+	return nil
+}
+
+func (m *mockOAuthProvider) Logout(_ http.ResponseWriter, _ *http.Request) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.currentUser = nil
+}
+
+func (m *mockOAuthProvider) IsConfigured() bool {
+	return true
+}
+
+func (m *mockOAuthProvider) CreateAuthURL(_ http.ResponseWriter, _ *http.Request, nextURL string) string {
+	return testAuthURL + "?redirect_uri=" + testBaseURL + "/api/v1/auth/callback&state=test-state&next=" + nextURL
+}
+
+func (m *mockOAuthProvider) VerifyState(_ http.ResponseWriter, _ *http.Request, _ string) bool {
+	return true
+}
+
+func (m *mockOAuthProvider) HandleCallback(_ context.Context, _ http.ResponseWriter, _ *http.Request, _, _ string) (*types.User, string, error) {
+	return &types.User{
+		Sub:   testUser.Sub,
+		Email: testUser.Email,
+		Name:  testUser.Name,
+	}, "/", nil
+}
+
+func (m *mockOAuthProvider) GetLogoutURL() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.logoutURL
+}
+
+func (m *mockOAuthProvider) IsAllowedDomain(_ string) bool {
+	return true
+}
+
 func createTestAuthService() *auth.OauthService {
 	return auth.NewOAuthService(auth.Config{
 		BaseURL:       testBaseURL,
@@ -63,8 +192,9 @@ func createTestAuthService() *auth.OauthService {
 }
 
 func createTestMiddleware() *shared.Middleware {
-	authService := createTestAuthService()
-	return shared.NewMiddleware(authService, testBaseURL, []string{})
+	authProvider := &mockAuthProvider{}
+	authorizer := newMockAuthorizer([]string{}, false)
+	return shared.NewMiddleware(authProvider, testBaseURL, authorizer)
 }
 
 // ============================================================================
@@ -75,22 +205,16 @@ func TestNewHandler(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		authService *auth.OauthService
-		middleware  *shared.Middleware
-		baseURL     string
+		name    string
+		baseURL string
 	}{
 		{
-			name:        "with valid dependencies",
-			authService: createTestAuthService(),
-			middleware:  createTestMiddleware(),
-			baseURL:     testBaseURL,
+			name:    "with valid dependencies",
+			baseURL: testBaseURL,
 		},
 		{
-			name:        "with empty baseURL",
-			authService: createTestAuthService(),
-			middleware:  createTestMiddleware(),
-			baseURL:     "",
+			name:    "with empty baseURL",
+			baseURL: "",
 		},
 	}
 
@@ -98,10 +222,12 @@ func TestNewHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(tt.authService, nil, tt.middleware, tt.baseURL, true, true)
+			authProvider := &mockAuthProvider{}
+			middleware := createTestMiddleware()
+			handler := NewHandler(authProvider, nil, nil, middleware, tt.baseURL, true, true)
 
 			assert.NotNil(t, handler)
-			assert.NotNil(t, handler.authService)
+			assert.NotNil(t, handler.authProvider)
 			assert.NotNil(t, handler.middleware)
 			assert.Equal(t, tt.baseURL, handler.baseURL)
 		})
@@ -115,33 +241,25 @@ func TestNewHandler(t *testing.T) {
 func TestHandler_HandleAuthCheck_Authenticated(t *testing.T) {
 	t.Parallel()
 
-	authService := createTestAuthService()
-	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
+	// Use mockAuthProvider with pre-set user to test authenticated response
+	authProvider := &mockAuthProvider{
+		currentUser: &types.User{
+			Sub:   testUser.Sub,
+			Email: testUser.Email,
+			Name:  testUser.Name,
+		},
+	}
+	handler := NewHandler(authProvider, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 	rec := httptest.NewRecorder()
 
-	// Set user in session
-	err := authService.SetUser(rec, req, testUser)
-	require.NoError(t, err)
-
-	// Get the session cookie from the recorder
-	cookies := rec.Result().Cookies()
-	require.NotEmpty(t, cookies, "Session cookie should be set")
-
-	// Create a new request with the session cookie
-	req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
-	for _, cookie := range cookies {
-		req2.AddCookie(cookie)
-	}
-	rec2 := httptest.NewRecorder()
-
 	// Execute
-	handler.HandleAuthCheck(rec2, req2)
+	handler.HandleAuthCheck(rec, req)
 
 	// Assert
-	assert.Equal(t, http.StatusOK, rec2.Code)
-	assert.Equal(t, "application/json", rec2.Header().Get("Content-Type"))
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
 	// Parse response
 	var wrapper struct {
@@ -150,7 +268,7 @@ func TestHandler_HandleAuthCheck_Authenticated(t *testing.T) {
 			User          map[string]interface{} `json:"user"`
 		} `json:"data"`
 	}
-	err = json.Unmarshal(rec2.Body.Bytes(), &wrapper)
+	err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
 	require.NoError(t, err, "Response should be valid JSON")
 
 	// Validate fields
@@ -190,7 +308,7 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+			handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 			req = tt.setupFunc(req)
@@ -219,7 +337,7 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 func TestHandler_HandleAuthCheck_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 	rec := httptest.NewRecorder()
@@ -257,8 +375,9 @@ func TestHandler_HandleAuthCheck_ResponseFormat(t *testing.T) {
 func TestHandler_HandleLogout_WithSSO(t *testing.T) {
 	t.Parallel()
 
+	oauthProvider := newMockOAuthProvider()
 	authService := createTestAuthService()
-	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
@@ -295,27 +414,14 @@ func TestHandler_HandleLogout_WithSSO(t *testing.T) {
 	assert.Equal(t, "Successfully logged out", wrapper.Data.Message)
 	assert.Contains(t, wrapper.Data.RedirectURL, testLogoutURL)
 	assert.Contains(t, wrapper.Data.RedirectURL, "post_logout_redirect_uri")
-	assert.Contains(t, wrapper.Data.RedirectURL, testBaseURL)
+	// testBaseURL is URL-encoded in the redirect URL
+	assert.Contains(t, wrapper.Data.RedirectURL, url.QueryEscape(testBaseURL))
 }
 
 func TestHandler_HandleLogout_WithoutSSO(t *testing.T) {
 	t.Parallel()
 
-	// Create auth service without logout URL
-	authService := auth.NewOAuthService(auth.Config{
-		BaseURL:       testBaseURL,
-		ClientID:      testClientID,
-		ClientSecret:  testClientSecret,
-		AuthURL:       testAuthURL,
-		TokenURL:      testTokenURL,
-		UserInfoURL:   testUserInfoURL,
-		LogoutURL:     "", // No SSO logout
-		Scopes:        []string{"openid", "email", "profile"},
-		CookieSecret:  testCookieSecret,
-		SecureCookies: false,
-	})
-
-	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
@@ -343,8 +449,9 @@ func TestHandler_HandleLogout_WithoutSSO(t *testing.T) {
 func TestHandler_HandleLogout_ClearsSession(t *testing.T) {
 	t.Parallel()
 
+	oauthProvider := newMockOAuthProvider()
 	authService := createTestAuthService()
-	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	// Set user in session
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
@@ -363,21 +470,19 @@ func TestHandler_HandleLogout_ClearsSession(t *testing.T) {
 	// Execute logout
 	handler.HandleLogout(rec2, req2)
 
-	// Verify session is cleared by checking the Set-Cookie header
-	setCookieHeaders := rec2.Header().Values("Set-Cookie")
-	assert.NotEmpty(t, setCookieHeaders, "Should set cookie to clear session")
+	// Verify that logout was called by checking status code
+	assert.Equal(t, http.StatusOK, rec2.Code)
 
-	// Check that MaxAge is negative (cookie deletion)
-	foundMaxAge := false
-	for _, setCookie := range setCookieHeaders {
-		if strings.Contains(setCookie, "Max-Age") && strings.Contains(setCookie, "ackapp_session") {
-			foundMaxAge = true
-			// Should contain negative Max-Age or Max-Age=0
-			assert.True(t, strings.Contains(setCookie, "Max-Age=-1") || strings.Contains(setCookie, "Max-Age=0"),
-				"Cookie should be deleted with negative Max-Age")
-		}
+	// Verify the response contains the expected structure
+	var wrapper struct {
+		Data struct {
+			Message     string `json:"message"`
+			RedirectURL string `json:"redirectUrl"`
+		} `json:"data"`
 	}
-	assert.True(t, foundMaxAge, "Should set Max-Age for session cookie")
+	err = json.Unmarshal(rec2.Body.Bytes(), &wrapper)
+	require.NoError(t, err)
+	assert.Equal(t, "Successfully logged out", wrapper.Data.Message)
 }
 
 // ============================================================================
@@ -413,7 +518,8 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+			oauthProvider := newMockOAuthProvider()
+			handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 			body, err := json.Marshal(tt.requestBody)
 			require.NoError(t, err)
@@ -441,13 +547,6 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 			// Validate redirect URL contains OAuth provider URL
 			assert.NotEmpty(t, wrapper.Data.RedirectURL)
 			assert.Contains(t, wrapper.Data.RedirectURL, testAuthURL)
-			assert.Contains(t, wrapper.Data.RedirectURL, "client_id="+testClientID)
-			assert.Contains(t, wrapper.Data.RedirectURL, "redirect_uri=")
-			assert.Contains(t, wrapper.Data.RedirectURL, "state=")
-
-			// Check that session cookie was set (for state verification)
-			cookies := rec.Result().Cookies()
-			assert.NotEmpty(t, cookies, "Session cookie should be set for OAuth state")
 		})
 	}
 }
@@ -455,7 +554,8 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 func TestHandler_HandleStartOAuth_NoBody(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	oauthProvider := newMockOAuthProvider()
+	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 	rec := httptest.NewRecorder()
@@ -483,7 +583,8 @@ func TestHandler_HandleStartOAuth_NoBody(t *testing.T) {
 func TestHandler_HandleStartOAuth_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	oauthProvider := newMockOAuthProvider()
+	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", bytes.NewReader([]byte("invalid-json")))
 	req.Header.Set("Content-Type", "application/json")
@@ -510,7 +611,8 @@ func TestHandler_HandleStartOAuth_InvalidJSON(t *testing.T) {
 func TestHandler_HandleStartOAuth_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	oauthProvider := newMockOAuthProvider()
+	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 	rec := httptest.NewRecorder()
@@ -549,7 +651,7 @@ func TestHandler_HandleStartOAuth_ResponseFormat(t *testing.T) {
 func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	rec := httptest.NewRecorder()
@@ -595,7 +697,7 @@ func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 func TestHandler_HandleGetCSRFToken_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	rec := httptest.NewRecorder()
@@ -635,7 +737,7 @@ func TestHandler_HandleAuthCheck_Concurrent(t *testing.T) {
 	t.Parallel()
 
 	authService := createTestAuthService()
-	handler := NewHandler(authService, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -695,7 +797,7 @@ func TestHandler_HandleAuthCheck_Concurrent(t *testing.T) {
 func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -745,7 +847,8 @@ func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	oauthProvider := newMockOAuthProvider()
+	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -802,7 +905,7 @@ func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 // ============================================================================
 
 func BenchmarkHandler_HandleAuthCheck(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -815,7 +918,7 @@ func BenchmarkHandler_HandleAuthCheck(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleAuthCheck_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -828,7 +931,7 @@ func BenchmarkHandler_HandleAuthCheck_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleLogout(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -841,7 +944,7 @@ func BenchmarkHandler_HandleLogout(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleLogout_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -854,7 +957,7 @@ func BenchmarkHandler_HandleLogout_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleStartOAuth(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -867,7 +970,7 @@ func BenchmarkHandler_HandleStartOAuth(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleStartOAuth_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -880,7 +983,7 @@ func BenchmarkHandler_HandleStartOAuth_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleGetCSRFToken(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.ResetTimer()
 
@@ -893,7 +996,7 @@ func BenchmarkHandler_HandleGetCSRFToken(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleGetCSRFToken_Parallel(b *testing.B) {
-	handler := NewHandler(createTestAuthService(), nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

@@ -8,8 +8,8 @@ import (
 
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -22,9 +22,9 @@ type signatureService interface {
 	GetUserSignatures(ctx context.Context, user *models.User) ([]*models.Signature, error)
 }
 
-// expectedSignerStatsRepo defines minimal stats access
-type expectedSignerStatsRepo interface {
-	GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+// adminService defines minimal admin operations needed for stats
+type adminService interface {
+	GetSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
 }
 
 // webhookPublisher defines minimal publish capability
@@ -34,14 +34,14 @@ type webhookPublisher interface {
 
 // Handler handles signature-related requests
 type Handler struct {
-	signatureService   signatureService
-	expectedSignerRepo expectedSignerStatsRepo
-	webhookPublisher   webhookPublisher
+	signatureService signatureService
+	adminService     adminService
+	webhookPublisher webhookPublisher
 }
 
-// NewHandler constructor to inject expected signers repo and webhook publisher
-func NewHandler(signatureService signatureService, expectedRepo expectedSignerStatsRepo, publisher webhookPublisher) *Handler {
-	return &Handler{signatureService: signatureService, expectedSignerRepo: expectedRepo, webhookPublisher: publisher}
+// NewHandler constructor to inject admin service and webhook publisher
+func NewHandler(signatureService signatureService, adminSvc adminService, publisher webhookPublisher) *Handler {
+	return &Handler{signatureService: signatureService, adminService: adminSvc, webhookPublisher: publisher}
 }
 
 // CreateSignatureRequest represents the request body for creating a signature
@@ -152,8 +152,8 @@ func (h *Handler) HandleCreateSignature(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// If expected signers completed -> publish document.completed
-	if h.expectedSignerRepo != nil && h.webhookPublisher != nil {
-		if stats, err := h.expectedSignerRepo.GetStats(ctx, req.DocID); err == nil {
+	if h.adminService != nil && h.webhookPublisher != nil {
+		if stats, err := h.adminService.GetSignerStats(ctx, req.DocID); err == nil {
 			if stats.ExpectedCount > 0 && stats.PendingCount == 0 {
 				_ = h.webhookPublisher.Publish(ctx, "document.completed", map[string]interface{}{
 					"doc_id":         req.DocID,

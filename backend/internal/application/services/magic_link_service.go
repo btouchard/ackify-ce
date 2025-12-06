@@ -11,10 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/email"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // MagicLinkRepository définit les opérations sur les tokens Magic Link
@@ -29,11 +28,21 @@ type MagicLinkRepository interface {
 	CountRecentAttemptsByIP(ctx context.Context, ip string, since time.Time) (int, error)
 }
 
+// emailSender defines email sending operations
+type emailSender interface {
+	Send(ctx context.Context, msg email.Message) error
+}
+
+// i18nTranslator defines translation operations
+type i18nTranslator interface {
+	T(locale, key string) string
+}
+
 // MagicLinkService gère l'authentification par Magic Link
 type MagicLinkService struct {
 	repo              MagicLinkRepository
-	emailSender       email.Sender
-	i18n              *i18n.I18n
+	emailSender       emailSender
+	i18n              i18nTranslator
 	baseURL           string
 	appName           string
 	allowedDomains    []string // Domaines email autorisés (vide = tous)
@@ -46,8 +55,8 @@ type MagicLinkService struct {
 // MagicLinkServiceConfig pour le service Magic Link
 type MagicLinkServiceConfig struct {
 	Repository        MagicLinkRepository
-	EmailSender       email.Sender
-	I18n              *i18n.I18n
+	EmailSender       emailSender
+	I18n              i18nTranslator
 	BaseURL           string
 	AppName           string
 	AllowedDomains    []string

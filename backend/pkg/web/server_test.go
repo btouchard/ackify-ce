@@ -144,8 +144,10 @@ func TestServer_Accessors(t *testing.T) {
 	_ = s.GetAddr
 	_ = s.Router
 	_ = s.GetDB
-	_ = s.GetAdminEmails
-	_ = s.GetAuthService
+	_ = s.GetAuthorizer
+	_ = s.GetAuthProvider
+	_ = s.GetQuotaEnforcer
+	_ = s.GetAuditLogger
 	_ = s.GetEmailSender
 	_ = s.RegisterRoutes
 

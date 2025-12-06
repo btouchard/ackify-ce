@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // SessionWorker handles background cleanup of expired OAuth sessions

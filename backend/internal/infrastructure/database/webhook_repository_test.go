@@ -8,7 +8,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestWebhookRepository_CRUD_And_ListActiveByEvent(t *testing.T) {

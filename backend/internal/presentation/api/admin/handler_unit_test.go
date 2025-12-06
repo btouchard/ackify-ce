@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,96 +23,93 @@ import (
 // MOCKS
 // ============================================================================
 
-type mockDocumentRepository struct {
-	getByDocIDFunc     func(ctx context.Context, docID string) (*models.Document, error)
-	listFunc           func(ctx context.Context, limit, offset int) ([]*models.Document, error)
-	searchFunc         func(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
-	countFunc          func(ctx context.Context, searchQuery string) (int, error)
-	createOrUpdateFunc func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
-	deleteFunc         func(ctx context.Context, docID string) error
+type mockAdminService struct {
+	getDocumentFunc                   func(ctx context.Context, docID string) (*models.Document, error)
+	listDocumentsFunc                 func(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	searchDocumentsFunc               func(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	countDocumentsFunc                func(ctx context.Context, searchQuery string) (int, error)
+	updateDocumentMetadataFunc        func(ctx context.Context, docID string, input models.DocumentInput, updatedBy string) (*models.Document, error)
+	deleteDocumentFunc                func(ctx context.Context, docID string) error
+	listExpectedSignersFunc           func(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	listExpectedSignersWithStatusFunc func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
+	addExpectedSignersFunc            func(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error
+	removeExpectedSignerFunc          func(ctx context.Context, docID, email string) error
+	getSignerStatsFunc                func(ctx context.Context, docID string) (*models.DocCompletionStats, error)
 }
 
-func (m *mockDocumentRepository) GetByDocID(ctx context.Context, docID string) (*models.Document, error) {
-	if m.getByDocIDFunc != nil {
-		return m.getByDocIDFunc(ctx, docID)
+func (m *mockAdminService) GetDocument(ctx context.Context, docID string) (*models.Document, error) {
+	if m.getDocumentFunc != nil {
+		return m.getDocumentFunc(ctx, docID)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockDocumentRepository) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
-	if m.listFunc != nil {
-		return m.listFunc(ctx, limit, offset)
+func (m *mockAdminService) ListDocuments(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	if m.listDocumentsFunc != nil {
+		return m.listDocumentsFunc(ctx, limit, offset)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockDocumentRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
-	if m.searchFunc != nil {
-		return m.searchFunc(ctx, query, limit, offset)
+func (m *mockAdminService) SearchDocuments(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
+	if m.searchDocumentsFunc != nil {
+		return m.searchDocumentsFunc(ctx, query, limit, offset)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockDocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
-	if m.countFunc != nil {
-		return m.countFunc(ctx, searchQuery)
+func (m *mockAdminService) CountDocuments(ctx context.Context, searchQuery string) (int, error) {
+	if m.countDocumentsFunc != nil {
+		return m.countDocumentsFunc(ctx, searchQuery)
 	}
 	return 0, errors.New("not implemented")
 }
 
-func (m *mockDocumentRepository) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
-	if m.createOrUpdateFunc != nil {
-		return m.createOrUpdateFunc(ctx, docID, input, createdBy)
+func (m *mockAdminService) UpdateDocumentMetadata(ctx context.Context, docID string, input models.DocumentInput, updatedBy string) (*models.Document, error) {
+	if m.updateDocumentMetadataFunc != nil {
+		return m.updateDocumentMetadataFunc(ctx, docID, input, updatedBy)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockDocumentRepository) Delete(ctx context.Context, docID string) error {
-	if m.deleteFunc != nil {
-		return m.deleteFunc(ctx, docID)
+func (m *mockAdminService) DeleteDocument(ctx context.Context, docID string) error {
+	if m.deleteDocumentFunc != nil {
+		return m.deleteDocumentFunc(ctx, docID)
 	}
 	return errors.New("not implemented")
 }
 
-type mockExpectedSignerRepository struct {
-	listByDocIDFunc           func(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
-	listWithStatusByDocIDFunc func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
-	addExpectedFunc           func(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error
-	removeFunc                func(ctx context.Context, docID, email string) error
-	getStatsFunc              func(ctx context.Context, docID string) (*models.DocCompletionStats, error)
-}
-
-func (m *mockExpectedSignerRepository) ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error) {
-	if m.listByDocIDFunc != nil {
-		return m.listByDocIDFunc(ctx, docID)
+func (m *mockAdminService) ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error) {
+	if m.listExpectedSignersFunc != nil {
+		return m.listExpectedSignersFunc(ctx, docID)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
-	if m.listWithStatusByDocIDFunc != nil {
-		return m.listWithStatusByDocIDFunc(ctx, docID)
+func (m *mockAdminService) ListExpectedSignersWithStatus(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
+	if m.listExpectedSignersWithStatusFunc != nil {
+		return m.listExpectedSignersWithStatusFunc(ctx, docID)
 	}
 	return nil, errors.New("not implemented")
 }
 
-func (m *mockExpectedSignerRepository) AddExpected(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error {
-	if m.addExpectedFunc != nil {
-		return m.addExpectedFunc(ctx, docID, contacts, addedBy)
+func (m *mockAdminService) AddExpectedSigners(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error {
+	if m.addExpectedSignersFunc != nil {
+		return m.addExpectedSignersFunc(ctx, docID, contacts, addedBy)
 	}
 	return errors.New("not implemented")
 }
 
-func (m *mockExpectedSignerRepository) Remove(ctx context.Context, docID, email string) error {
-	if m.removeFunc != nil {
-		return m.removeFunc(ctx, docID, email)
+func (m *mockAdminService) RemoveExpectedSigner(ctx context.Context, docID, email string) error {
+	if m.removeExpectedSignerFunc != nil {
+		return m.removeExpectedSignerFunc(ctx, docID, email)
 	}
 	return errors.New("not implemented")
 }
 
-func (m *mockExpectedSignerRepository) GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
-	if m.getStatsFunc != nil {
-		return m.getStatsFunc(ctx, docID)
+func (m *mockAdminService) GetSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
+	if m.getSignerStatsFunc != nil {
+		return m.getSignerStatsFunc(ctx, docID)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -159,8 +156,8 @@ func (m *mockSignatureService) GetDocumentSignatures(ctx context.Context, docID 
 // HELPERS
 // ============================================================================
 
-func createTestHandler(docRepo documentRepository, signerRepo expectedSignerRepository, reminderSvc reminderService, sigService signatureService) *Handler {
-	return NewHandler(docRepo, signerRepo, reminderSvc, sigService, "https://test.example.com", 500)
+func createTestHandler(adminSvc adminService, reminderSvc reminderService, sigService signatureService) *Handler {
+	return NewHandler(adminSvc, reminderSvc, sigService, "https://test.example.com", 500)
 }
 
 func createContextWithUser(email string, isAdmin bool) context.Context {
@@ -236,15 +233,15 @@ func TestHandleListDocuments_Success(t *testing.T) {
 		createTestDocument("doc2"),
 	}
 
-	docRepo := &mockDocumentRepository{
-		listFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	adminSvc := &mockAdminService{
+		listDocumentsFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
 			assert.Equal(t, 100, limit)
 			assert.Equal(t, 0, offset)
 			return docs, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/documents", nil)
 	rec := httptest.NewRecorder()
 
@@ -265,13 +262,13 @@ func TestHandleListDocuments_Success(t *testing.T) {
 func TestHandleListDocuments_EmptyList(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		listFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	adminSvc := &mockAdminService{
+		listDocumentsFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
 			return []*models.Document{}, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/documents", nil)
 	rec := httptest.NewRecorder()
 
@@ -291,13 +288,13 @@ func TestHandleListDocuments_EmptyList(t *testing.T) {
 func TestHandleListDocuments_RepositoryError(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		listFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	adminSvc := &mockAdminService{
+		listDocumentsFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
 			return nil, errors.New("database error")
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/documents", nil)
 	rec := httptest.NewRecorder()
 
@@ -314,14 +311,14 @@ func TestHandleGetDocument_Success(t *testing.T) {
 	t.Parallel()
 
 	doc := createTestDocument("doc1")
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			assert.Equal(t, "doc1", docID)
 			return doc, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}", handler.HandleGetDocument)
@@ -345,13 +342,13 @@ func TestHandleGetDocument_Success(t *testing.T) {
 func TestHandleGetDocument_NotFound(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return nil, errors.New("not found")
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}", handler.HandleGetDocument)
@@ -367,7 +364,7 @@ func TestHandleGetDocument_NotFound(t *testing.T) {
 func TestHandleGetDocument_EmptyDocID(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	// Without chi routing context, docId will be empty
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/documents/", nil)
@@ -398,21 +395,19 @@ func TestHandleGetDocumentWithSigners_Success(t *testing.T) {
 		CompletionRate: 50.0,
 	}
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
-	}
-	signerRepo := &mockExpectedSignerRepository{
-		listWithStatusByDocIDFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
+		listExpectedSignersWithStatusFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
 			return signers, nil
 		},
-		getStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
+		getSignerStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
 			return stats, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/signers", handler.HandleGetDocumentWithSigners)
@@ -437,13 +432,13 @@ func TestHandleGetDocumentWithSigners_Success(t *testing.T) {
 func TestHandleGetDocumentWithSigners_DocumentNotFound(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return nil, errors.New("not found")
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/signers", handler.HandleGetDocumentWithSigners)
@@ -460,18 +455,16 @@ func TestHandleGetDocumentWithSigners_SignersError(t *testing.T) {
 	t.Parallel()
 
 	doc := createTestDocument("doc1")
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
-	}
-	signerRepo := &mockExpectedSignerRepository{
-		listWithStatusByDocIDFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
+		listExpectedSignersWithStatusFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
 			return nil, errors.New("database error")
 		},
 	}
 
-	handler := createTestHandler(docRepo, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/signers", handler.HandleGetDocumentWithSigners)
@@ -491,8 +484,8 @@ func TestHandleGetDocumentWithSigners_SignersError(t *testing.T) {
 func TestHandleAddExpectedSigner_Success(t *testing.T) {
 	t.Parallel()
 
-	signerRepo := &mockExpectedSignerRepository{
-		addExpectedFunc: func(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error {
+	adminSvc := &mockAdminService{
+		addExpectedSignersFunc: func(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error {
 			assert.Equal(t, "doc1", docID)
 			assert.Len(t, contacts, 1)
 			assert.Equal(t, "new@example.com", contacts[0].Email)
@@ -501,7 +494,7 @@ func TestHandleAddExpectedSigner_Success(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(nil, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/signers", handler.HandleAddExpectedSigner)
@@ -531,7 +524,7 @@ func TestHandleAddExpectedSigner_Success(t *testing.T) {
 func TestHandleAddExpectedSigner_MissingEmail(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/signers", handler.HandleAddExpectedSigner)
@@ -554,7 +547,7 @@ func TestHandleAddExpectedSigner_MissingEmail(t *testing.T) {
 func TestHandleAddExpectedSigner_NoUser(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/signers", handler.HandleAddExpectedSigner)
@@ -576,7 +569,7 @@ func TestHandleAddExpectedSigner_NoUser(t *testing.T) {
 func TestHandleAddExpectedSigner_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/signers", handler.HandleAddExpectedSigner)
@@ -597,15 +590,15 @@ func TestHandleAddExpectedSigner_InvalidJSON(t *testing.T) {
 func TestHandleRemoveExpectedSigner_Success(t *testing.T) {
 	t.Parallel()
 
-	signerRepo := &mockExpectedSignerRepository{
-		removeFunc: func(ctx context.Context, docID, email string) error {
+	adminSvc := &mockAdminService{
+		removeExpectedSignerFunc: func(ctx context.Context, docID, email string) error {
 			assert.Equal(t, "doc1", docID)
 			assert.Equal(t, "remove@example.com", email)
 			return nil
 		},
 	}
 
-	handler := createTestHandler(nil, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Delete("/api/v1/admin/documents/{docId}/signers/{email}", handler.HandleRemoveExpectedSigner)
@@ -621,13 +614,13 @@ func TestHandleRemoveExpectedSigner_Success(t *testing.T) {
 func TestHandleRemoveExpectedSigner_RepositoryError(t *testing.T) {
 	t.Parallel()
 
-	signerRepo := &mockExpectedSignerRepository{
-		removeFunc: func(ctx context.Context, docID, email string) error {
+	adminSvc := &mockAdminService{
+		removeExpectedSignerFunc: func(ctx context.Context, docID, email string) error {
 			return errors.New("database error")
 		},
 	}
 
-	handler := createTestHandler(nil, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Delete("/api/v1/admin/documents/{docId}/signers/{email}", handler.HandleRemoveExpectedSigner)
@@ -643,7 +636,7 @@ func TestHandleRemoveExpectedSigner_RepositoryError(t *testing.T) {
 func TestHandleRemoveExpectedSigner_EmptyParams(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	// Without chi routing context, params will be empty
 	req := httptest.NewRequest(http.MethodDelete, "/api/v1/admin/documents//signers/", nil)
@@ -662,8 +655,8 @@ func TestHandleSendReminders_Success(t *testing.T) {
 	t.Parallel()
 
 	doc := createTestDocument("doc1")
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
 	}
@@ -681,7 +674,7 @@ func TestHandleSendReminders_Success(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, reminderSvc, nil)
+	handler := createTestHandler(adminSvc, reminderSvc, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/reminders", handler.HandleSendReminders)
@@ -701,7 +694,7 @@ func TestHandleSendReminders_Success(t *testing.T) {
 func TestHandleSendReminders_ServiceNotAvailable(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/reminders", handler.HandleSendReminders)
@@ -722,8 +715,8 @@ func TestHandleSendReminders_WithLocale(t *testing.T) {
 	t.Parallel()
 
 	doc := createTestDocument("doc1")
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
 	}
@@ -738,7 +731,7 @@ func TestHandleSendReminders_WithLocale(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, reminderSvc, nil)
+	handler := createTestHandler(adminSvc, reminderSvc, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/reminders", handler.HandleSendReminders)
@@ -760,8 +753,8 @@ func TestHandleSendReminders_SpecificEmails(t *testing.T) {
 	t.Parallel()
 
 	doc := createTestDocument("doc1")
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
 	}
@@ -778,7 +771,7 @@ func TestHandleSendReminders_SpecificEmails(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, reminderSvc, nil)
+	handler := createTestHandler(adminSvc, reminderSvc, nil)
 
 	router := chi.NewRouter()
 	router.Post("/api/v1/admin/documents/{docId}/reminders", handler.HandleSendReminders)
@@ -809,6 +802,7 @@ func TestHandleGetReminderHistory_Success(t *testing.T) {
 		createTestReminderLog("doc1", "user2@example.com"),
 	}
 
+	adminSvc := &mockAdminService{}
 	reminderSvc := &mockReminderService{
 		getReminderHistoryFunc: func(ctx context.Context, docID string) ([]*models.ReminderLog, error) {
 			assert.Equal(t, "doc1", docID)
@@ -816,7 +810,7 @@ func TestHandleGetReminderHistory_Success(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(nil, nil, reminderSvc, nil)
+	handler := createTestHandler(adminSvc, reminderSvc, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/reminders", handler.HandleGetReminderHistory)
@@ -839,7 +833,7 @@ func TestHandleGetReminderHistory_Success(t *testing.T) {
 func TestHandleGetReminderHistory_ServiceNotAvailable(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/reminders", handler.HandleGetReminderHistory)
@@ -855,13 +849,14 @@ func TestHandleGetReminderHistory_ServiceNotAvailable(t *testing.T) {
 func TestHandleGetReminderHistory_EmptyHistory(t *testing.T) {
 	t.Parallel()
 
+	adminSvc := &mockAdminService{}
 	reminderSvc := &mockReminderService{
 		getReminderHistoryFunc: func(ctx context.Context, docID string) ([]*models.ReminderLog, error) {
 			return []*models.ReminderLog{}, nil
 		},
 	}
 
-	handler := createTestHandler(nil, nil, reminderSvc, nil)
+	handler := createTestHandler(adminSvc, reminderSvc, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/reminders", handler.HandleGetReminderHistory)
@@ -888,11 +883,11 @@ func TestHandleGetReminderHistory_EmptyHistory(t *testing.T) {
 func TestHandleUpdateDocumentMetadata_CreateNew(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return nil, errors.New("not found")
 		},
-		createOrUpdateFunc: func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
+		updateDocumentMetadataFunc: func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
 			assert.Equal(t, "new-doc", docID)
 			assert.Equal(t, "New Document", input.Title)
 			assert.Equal(t, "admin@example.com", createdBy)
@@ -900,7 +895,7 @@ func TestHandleUpdateDocumentMetadata_CreateNew(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Put("/api/v1/admin/documents/{docId}/metadata", handler.HandleUpdateDocumentMetadata)
@@ -924,18 +919,18 @@ func TestHandleUpdateDocumentMetadata_UpdateExisting(t *testing.T) {
 	t.Parallel()
 
 	doc := createTestDocument("doc1")
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
-		createOrUpdateFunc: func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
+		updateDocumentMetadataFunc: func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
 			assert.Equal(t, "Updated Title", input.Title)
 			doc.Title = input.Title
 			return doc, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Put("/api/v1/admin/documents/{docId}/metadata", handler.HandleUpdateDocumentMetadata)
@@ -958,11 +953,11 @@ func TestHandleUpdateDocumentMetadata_UpdateExisting(t *testing.T) {
 func TestHandleUpdateDocumentMetadata_AllFields(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return createTestDocument(docID), nil
 		},
-		createOrUpdateFunc: func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
+		updateDocumentMetadataFunc: func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
 			assert.Equal(t, "New Title", input.Title)
 			assert.Equal(t, "https://new.example.com/doc.pdf", input.URL)
 			assert.Equal(t, "xyz789", input.Checksum)
@@ -972,7 +967,7 @@ func TestHandleUpdateDocumentMetadata_AllFields(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Put("/api/v1/admin/documents/{docId}/metadata", handler.HandleUpdateDocumentMetadata)
@@ -1003,7 +998,7 @@ func TestHandleUpdateDocumentMetadata_AllFields(t *testing.T) {
 func TestHandleUpdateDocumentMetadata_NoUser(t *testing.T) {
 	t.Parallel()
 
-	handler := createTestHandler(nil, nil, nil, nil)
+	handler := createTestHandler(nil, nil, nil)
 
 	router := chi.NewRouter()
 	router.Put("/api/v1/admin/documents/{docId}/metadata", handler.HandleUpdateDocumentMetadata)
@@ -1057,16 +1052,14 @@ func TestHandleGetDocumentStatus_Complete(t *testing.T) {
 		LastSentAt:   &lastSent,
 	}
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
-	}
-	signerRepo := &mockExpectedSignerRepository{
-		listWithStatusByDocIDFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
+		listExpectedSignersWithStatusFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
 			return signers, nil
 		},
-		getStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
+		getSignerStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
 			return stats, nil
 		},
 	}
@@ -1081,7 +1074,7 @@ func TestHandleGetDocumentStatus_Complete(t *testing.T) {
 		},
 	}
 
-	handler := createTestHandler(docRepo, signerRepo, reminderSvc, sigService)
+	handler := createTestHandler(adminSvc, reminderSvc, sigService)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/status", handler.HandleGetDocumentStatus)
@@ -1111,21 +1104,19 @@ func TestHandleGetDocumentStatus_Complete(t *testing.T) {
 func TestHandleGetDocumentStatus_MinimalData(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return nil, errors.New("not found")
 		},
-	}
-	signerRepo := &mockExpectedSignerRepository{
-		listWithStatusByDocIDFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
+		listExpectedSignersWithStatusFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
 			return []*models.ExpectedSignerWithStatus{}, nil
 		},
-		getStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
+		getSignerStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
 			return nil, errors.New("no stats")
 		},
 	}
 
-	handler := createTestHandler(docRepo, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/status", handler.HandleGetDocumentStatus)
@@ -1157,14 +1148,14 @@ func TestHandleGetDocumentStatus_MinimalData(t *testing.T) {
 func TestHandleDeleteDocument_Success(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		deleteFunc: func(ctx context.Context, docID string) error {
+	adminSvc := &mockAdminService{
+		deleteDocumentFunc: func(ctx context.Context, docID string) error {
 			assert.Equal(t, "doc1", docID)
 			return nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Delete("/api/v1/admin/documents/{docId}", handler.HandleDeleteDocument)
@@ -1187,13 +1178,13 @@ func TestHandleDeleteDocument_Success(t *testing.T) {
 func TestHandleDeleteDocument_RepositoryError(t *testing.T) {
 	t.Parallel()
 
-	docRepo := &mockDocumentRepository{
-		deleteFunc: func(ctx context.Context, docID string) error {
+	adminSvc := &mockAdminService{
+		deleteDocumentFunc: func(ctx context.Context, docID string) error {
 			return errors.New("database error")
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Delete("/api/v1/admin/documents/{docId}", handler.HandleDeleteDocument)
@@ -1281,13 +1272,13 @@ func BenchmarkHandleListDocuments(b *testing.B) {
 		createTestDocument("doc3"),
 	}
 
-	docRepo := &mockDocumentRepository{
-		listFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
+	adminSvc := &mockAdminService{
+		listDocumentsFunc: func(ctx context.Context, limit, offset int) ([]*models.Document, error) {
 			return docs, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, nil, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -1311,21 +1302,19 @@ func BenchmarkHandleGetDocumentStatus(b *testing.B) {
 		CompletionRate: 50.0,
 	}
 
-	docRepo := &mockDocumentRepository{
-		getByDocIDFunc: func(ctx context.Context, docID string) (*models.Document, error) {
+	adminSvc := &mockAdminService{
+		getDocumentFunc: func(ctx context.Context, docID string) (*models.Document, error) {
 			return doc, nil
 		},
-	}
-	signerRepo := &mockExpectedSignerRepository{
-		listWithStatusByDocIDFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
+		listExpectedSignersWithStatusFunc: func(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
 			return signers, nil
 		},
-		getStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
+		getSignerStatsFunc: func(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
 			return stats, nil
 		},
 	}
 
-	handler := createTestHandler(docRepo, signerRepo, nil, nil)
+	handler := createTestHandler(adminSvc, nil, nil)
 
 	router := chi.NewRouter()
 	router.Get("/api/v1/admin/documents/{docId}/status", handler.HandleGetDocumentStatus)

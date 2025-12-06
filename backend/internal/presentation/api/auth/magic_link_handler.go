@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // HandleRequestMagicLink handles POST /api/v1/auth/magic-link/request
@@ -82,7 +82,7 @@ func (h *Handler) HandleVerifyMagicLink(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Sauvegarder dans la session (réutiliser la logique OAuth existante)
-	if err := h.authService.SetUser(w, r, user); err != nil {
+	if err := h.authProvider.SetCurrentUser(w, r, user); err != nil {
 		logger.Logger.Error("Failed to create session after Magic Link", "error", err)
 		http.Error(w, "Failed to create session", http.StatusInternalServerError)
 		return

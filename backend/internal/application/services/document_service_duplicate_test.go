@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 // mockDocRepo is a simple in-memory mock for testing document duplication scenarios
@@ -67,25 +67,20 @@ func (m *mockDocRepo) FindByReference(ctx context.Context, ref string, refType s
 	return nil, nil
 }
 
-func (m *mockDocRepo) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
-	return nil, nil
+func (m *mockDocRepo) List(_ context.Context, _, _ int) ([]*models.Document, error) {
+	result := make([]*models.Document, 0, len(m.documents))
+	for _, doc := range m.documents {
+		result = append(result, doc)
+	}
+	return result, nil
 }
 
-func (m *mockDocRepo) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
-	return nil, nil
+func (m *mockDocRepo) Search(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
 }
 
-func (m *mockDocRepo) Count(ctx context.Context, searchQuery string) (int, error) {
+func (m *mockDocRepo) Count(_ context.Context, _ string) (int, error) {
 	return len(m.documents), nil
-}
-
-func (m *mockDocRepo) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
-	return m.Create(ctx, docID, input, createdBy)
-}
-
-func (m *mockDocRepo) Delete(ctx context.Context, docID string) error {
-	delete(m.documents, docID)
-	return nil
 }
 
 // TestFindOrCreateDocument_SameReferenceTwice tests that calling FindOrCreateDocument
@@ -93,7 +88,7 @@ func (m *mockDocRepo) Delete(ctx context.Context, docID string) error {
 func TestFindOrCreateDocument_SameReferenceTwice(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockDocRepo()
-	service := NewDocumentService(repo, nil)
+	service := NewDocumentService(repo, &mockDocExpectedSignerRepoTest{}, nil)
 
 	reference := "doc-123"
 
@@ -140,7 +135,7 @@ func TestFindOrCreateDocument_SameReferenceTwice(t *testing.T) {
 func TestFindOrCreateDocument_URLReference(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockDocRepo()
-	service := NewDocumentService(repo, nil)
+	service := NewDocumentService(repo, &mockDocExpectedSignerRepoTest{}, nil)
 
 	urlRef := "https://example.com/policy.pdf"
 
@@ -181,7 +176,7 @@ func TestFindOrCreateDocument_URLReference(t *testing.T) {
 func TestCreateDocument_AlwaysCreatesNew(t *testing.T) {
 	ctx := context.Background()
 	repo := newMockDocRepo()
-	service := NewDocumentService(repo, nil)
+	service := NewDocumentService(repo, &mockDocExpectedSignerRepoTest{}, nil)
 
 	reference := "doc-456"
 

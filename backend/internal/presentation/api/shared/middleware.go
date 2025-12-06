@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/providers"
+	"github.com/btouchard/ackify-ce/pkg/types"
 )
 
 // ContextKey represents a context key type
@@ -31,19 +31,19 @@ const (
 
 // Middleware represents API middleware
 type Middleware struct {
-	authService *auth.OauthService
-	csrfTokens  *sync.Map
-	baseURL     string
-	adminEmails []string
+	authProvider providers.AuthProvider
+	csrfTokens   *sync.Map
+	baseURL      string
+	authorizer   providers.Authorizer
 }
 
 // NewMiddleware creates a new middleware instance
-func NewMiddleware(authService *auth.OauthService, baseURL string, adminEmails []string) *Middleware {
+func NewMiddleware(authProvider providers.AuthProvider, baseURL string, authorizer providers.Authorizer) *Middleware {
 	return &Middleware{
-		authService: authService,
-		csrfTokens:  &sync.Map{},
-		baseURL:     baseURL,
-		adminEmails: adminEmails,
+		authProvider: authProvider,
+		csrfTokens:   &sync.Map{},
+		baseURL:      baseURL,
+		authorizer:   authorizer,
 	}
 }
 
@@ -76,7 +76,7 @@ func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := getRequestID(r.Context())
 
-		user, err := m.authService.GetUser(r)
+		user, err := m.authProvider.GetCurrentUser(r)
 		if err != nil || user == nil {
 			logger.Logger.Debug("authentication_required",
 				"request_id", requestID,
@@ -103,7 +103,7 @@ func (m *Middleware) OptionalAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := getRequestID(r.Context())
 
-		user, err := m.authService.GetUser(r)
+		user, err := m.authProvider.GetCurrentUser(r)
 		if err == nil && user != nil {
 			// User is authenticated, add to context
 			logger.Logger.Debug("optional_auth_success",
@@ -127,7 +127,7 @@ func (m *Middleware) RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestID := getRequestID(r.Context())
 
-		user, err := m.authService.GetUser(r)
+		user, err := m.authProvider.GetCurrentUser(r)
 		if err != nil || user == nil {
 			logger.Logger.Debug("admin_authentication_required",
 				"request_id", requestID,
@@ -137,16 +137,8 @@ func (m *Middleware) RequireAdmin(next http.Handler) http.Handler {
 			return
 		}
 
-		// Check if user is admin
-		isAdmin := false
-		for _, adminEmail := range m.adminEmails {
-			if strings.EqualFold(user.Email, adminEmail) {
-				isAdmin = true
-				break
-			}
-		}
-
-		if !isAdmin {
+		// Check if user is admin via authorizer
+		if !m.authorizer.IsAdmin(r.Context(), user.Email) {
 			logger.Logger.Warn("admin_access_denied",
 				"request_id", requestID,
 				"user_email", user.Email,
@@ -242,8 +234,8 @@ func (m *Middleware) cleanExpiredTokens() {
 }
 
 // GetUserFromContext retrieves the user from the request context
-func GetUserFromContext(ctx context.Context) (*models.User, bool) {
-	user, ok := ctx.Value(ContextKeyUser).(*models.User)
+func GetUserFromContext(ctx context.Context) (*types.User, bool) {
+	user, ok := ctx.Value(ContextKeyUser).(*types.User)
 	return user, ok
 }
 

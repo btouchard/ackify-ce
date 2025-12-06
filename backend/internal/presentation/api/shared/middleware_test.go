@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,25 +38,84 @@ var testAdminUser = &models.User{
 	Name:  "Admin User",
 }
 
-func createTestAuthService() *auth.OauthService {
-	return auth.NewOAuthService(auth.Config{
-		BaseURL:       testBaseURL,
-		ClientID:      testClientID,
-		ClientSecret:  testClientSecret,
-		AuthURL:       "http://localhost:8080/auth",
-		TokenURL:      "http://localhost:8080/token",
-		UserInfoURL:   "http://localhost:8080/userinfo",
-		LogoutURL:     "",
-		CookieSecret:  []byte("test-secret-key-32-bytes-long!"),
-		Scopes:        []string{"openid", "email", "profile"},
-		AllowedDomain: "",
-		SecureCookies: false,
+// mockAuthProvider is a test implementation of providers.AuthProvider
+type mockAuthProvider struct {
+	users map[string]*types.User // cookie value -> user
+}
+
+func newMockAuthProvider() *mockAuthProvider {
+	return &mockAuthProvider{
+		users: make(map[string]*types.User),
+	}
+}
+
+func (m *mockAuthProvider) GetCurrentUser(r *http.Request) (*types.User, error) {
+	cookie, err := r.Cookie("test_session")
+	if err != nil {
+		return nil, err
+	}
+	if user, ok := m.users[cookie.Value]; ok {
+		return user, nil
+	}
+	return nil, http.ErrNoCookie
+}
+
+func (m *mockAuthProvider) SetCurrentUser(w http.ResponseWriter, r *http.Request, user *types.User) error {
+	sessionID := user.Sub
+	m.users[sessionID] = user
+	http.SetCookie(w, &http.Cookie{
+		Name:  "test_session",
+		Value: sessionID,
+		Path:  "/",
+	})
+	return nil
+}
+
+func (m *mockAuthProvider) Logout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   "test_session",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
 	})
 }
 
-func createTestMiddleware(adminEmails []string) *Middleware {
-	authService := createTestAuthService()
-	return NewMiddleware(authService, testBaseURL, adminEmails)
+func (m *mockAuthProvider) IsConfigured() bool {
+	return true
+}
+
+// mockAuthorizer is a test implementation of providers.Authorizer
+type mockAuthorizer struct {
+	adminEmails        map[string]bool
+	onlyAdminCanCreate bool
+}
+
+func newMockAuthorizer(adminEmails []string, onlyAdminCanCreate bool) *mockAuthorizer {
+	emails := make(map[string]bool)
+	for _, email := range adminEmails {
+		emails[strings.ToLower(email)] = true
+	}
+	return &mockAuthorizer{
+		adminEmails:        emails,
+		onlyAdminCanCreate: onlyAdminCanCreate,
+	}
+}
+
+func (m *mockAuthorizer) IsAdmin(_ context.Context, email string) bool {
+	return m.adminEmails[strings.ToLower(email)]
+}
+
+func (m *mockAuthorizer) CanCreateDocument(_ context.Context, email string) bool {
+	if m.onlyAdminCanCreate {
+		return m.adminEmails[strings.ToLower(email)]
+	}
+	return true
+}
+
+func createTestMiddleware(adminEmails []string) (*Middleware, *mockAuthProvider) {
+	authProvider := newMockAuthProvider()
+	authorizer := newMockAuthorizer(adminEmails, false)
+	return NewMiddleware(authProvider, testBaseURL, authorizer), authProvider
 }
 
 // ============================================================================
@@ -88,13 +147,13 @@ func TestNewMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			m := createTestMiddleware(tt.adminEmails)
+			m, _ := createTestMiddleware(tt.adminEmails)
 
 			require.NotNil(t, m)
-			assert.NotNil(t, m.authService)
+			assert.NotNil(t, m.authProvider)
 			assert.NotNil(t, m.csrfTokens)
 			assert.Equal(t, testBaseURL, m.baseURL)
-			assert.Equal(t, tt.adminEmails, m.adminEmails)
+			assert.NotNil(t, m.authorizer)
 		})
 	}
 }
@@ -106,7 +165,7 @@ func TestNewMiddleware(t *testing.T) {
 func TestMiddleware_CORS(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	tests := []struct {
 		name           string
@@ -187,10 +246,10 @@ func TestMiddleware_CORS(t *testing.T) {
 func TestMiddleware_RequireAuth_Success(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, authProvider := createTestMiddleware([]string{})
 
 	nextCalled := false
-	var capturedUser *models.User
+	var capturedUser *types.User
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		nextCalled = true
 		user, ok := GetUserFromContext(r.Context())
@@ -206,7 +265,7 @@ func TestMiddleware_RequireAuth_Success(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Set user in session
-	err := m.authService.SetUser(rec, req, testUser)
+	err := authProvider.SetCurrentUser(rec, req, testUser)
 	require.NoError(t, err)
 
 	// Extract cookies and use in new request
@@ -228,7 +287,7 @@ func TestMiddleware_RequireAuth_Success(t *testing.T) {
 func TestMiddleware_RequireAuth_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -254,10 +313,10 @@ func TestMiddleware_RequireAuth_Unauthorized(t *testing.T) {
 func TestMiddleware_RequireAdmin_Success(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{"admin@example.com"})
+	m, authProvider := createTestMiddleware([]string{"admin@example.com"})
 
 	nextCalled := false
-	var capturedUser *models.User
+	var capturedUser *types.User
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		nextCalled = true
 		user, ok := GetUserFromContext(r.Context())
@@ -273,7 +332,7 @@ func TestMiddleware_RequireAdmin_Success(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Set admin user in session
-	err := m.authService.SetUser(rec, req, testAdminUser)
+	err := authProvider.SetCurrentUser(rec, req, testAdminUser)
 	require.NoError(t, err)
 
 	cookies := rec.Result().Cookies()
@@ -330,7 +389,7 @@ func TestMiddleware_RequireAdmin_CaseInsensitive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			m := createTestMiddleware([]string{tt.configEmail})
+			m, authProvider := createTestMiddleware([]string{tt.configEmail})
 
 			nextCalled := false
 			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -340,7 +399,7 @@ func TestMiddleware_RequireAdmin_CaseInsensitive(t *testing.T) {
 
 			handler := m.RequireAdmin(next)
 
-			user := &models.User{
+			user := &types.User{
 				Sub:   "test-123",
 				Email: tt.userEmail,
 				Name:  "Test",
@@ -349,7 +408,7 @@ func TestMiddleware_RequireAdmin_CaseInsensitive(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, "/admin/test", nil)
 			rec := httptest.NewRecorder()
 
-			err := m.authService.SetUser(rec, req, user)
+			err := authProvider.SetCurrentUser(rec, req, user)
 			require.NoError(t, err)
 
 			cookies := rec.Result().Cookies()
@@ -375,7 +434,7 @@ func TestMiddleware_RequireAdmin_CaseInsensitive(t *testing.T) {
 func TestMiddleware_RequireAdmin_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{"admin@example.com"})
+	m, _ := createTestMiddleware([]string{"admin@example.com"})
 
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -397,7 +456,7 @@ func TestMiddleware_RequireAdmin_Unauthorized(t *testing.T) {
 func TestMiddleware_RequireAdmin_Forbidden(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{"admin@example.com"})
+	m, authProvider := createTestMiddleware([]string{"admin@example.com"})
 
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -411,7 +470,7 @@ func TestMiddleware_RequireAdmin_Forbidden(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	// Set regular user (not admin)
-	err := m.authService.SetUser(rec, req, testUser)
+	err := authProvider.SetCurrentUser(rec, req, testUser)
 	require.NoError(t, err)
 
 	cookies := rec.Result().Cookies()
@@ -434,7 +493,7 @@ func TestMiddleware_RequireAdmin_Forbidden(t *testing.T) {
 func TestMiddleware_GenerateCSRFToken(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	token, err := m.GenerateCSRFToken()
 
@@ -446,7 +505,7 @@ func TestMiddleware_GenerateCSRFToken(t *testing.T) {
 func TestMiddleware_GenerateCSRFToken_Unique(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	token1, err := m.GenerateCSRFToken()
 	require.NoError(t, err)
@@ -460,7 +519,7 @@ func TestMiddleware_GenerateCSRFToken_Unique(t *testing.T) {
 func TestMiddleware_ValidateCSRFToken_Valid(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	token, err := m.GenerateCSRFToken()
 	require.NoError(t, err)
@@ -475,7 +534,7 @@ func TestMiddleware_ValidateCSRFToken_Valid(t *testing.T) {
 func TestMiddleware_ValidateCSRFToken_Invalid(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	tests := []struct {
 		name  string
@@ -508,7 +567,7 @@ func TestMiddleware_ValidateCSRFToken_Invalid(t *testing.T) {
 func TestMiddleware_ValidateCSRFToken_Expired(t *testing.T) {
 	// Cannot run in parallel as it manipulates token expiry
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	token, err := m.GenerateCSRFToken()
 	require.NoError(t, err)
@@ -531,7 +590,7 @@ func TestMiddleware_ValidateCSRFToken_Expired(t *testing.T) {
 func TestMiddleware_CSRFProtect_SafeMethods(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	safeMethods := []string{"GET", "HEAD", "OPTIONS"}
 
@@ -561,7 +620,7 @@ func TestMiddleware_CSRFProtect_SafeMethods(t *testing.T) {
 func TestMiddleware_CSRFProtect_ValidToken_Header(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	token, err := m.GenerateCSRFToken()
 	require.NoError(t, err)
@@ -590,7 +649,7 @@ func TestMiddleware_CSRFProtect_ValidToken_Header(t *testing.T) {
 func TestMiddleware_CSRFProtect_ValidToken_Cookie(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	token, err := m.GenerateCSRFToken()
 	require.NoError(t, err)
@@ -622,7 +681,7 @@ func TestMiddleware_CSRFProtect_ValidToken_Cookie(t *testing.T) {
 func TestMiddleware_CSRFProtect_MissingToken(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -644,7 +703,7 @@ func TestMiddleware_CSRFProtect_MissingToken(t *testing.T) {
 func TestMiddleware_CSRFProtect_InvalidToken(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -881,7 +940,7 @@ func TestRateLimit_Middleware_XForwardedFor(t *testing.T) {
 func TestMiddleware_CSRF_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	const numGoroutines = 50
 	var wg sync.WaitGroup
@@ -972,7 +1031,7 @@ func TestRateLimit_Middleware_Concurrent(t *testing.T) {
 // ============================================================================
 
 func BenchmarkMiddleware_CORS(b *testing.B) {
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -992,7 +1051,7 @@ func BenchmarkMiddleware_CORS(b *testing.B) {
 }
 
 func BenchmarkMiddleware_GenerateCSRFToken(b *testing.B) {
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 
 	b.ResetTimer()
 
@@ -1002,7 +1061,7 @@ func BenchmarkMiddleware_GenerateCSRFToken(b *testing.B) {
 }
 
 func BenchmarkMiddleware_ValidateCSRFToken(b *testing.B) {
-	m := createTestMiddleware([]string{})
+	m, _ := createTestMiddleware([]string{})
 	token, _ := m.GenerateCSRFToken()
 
 	b.ResetTimer()

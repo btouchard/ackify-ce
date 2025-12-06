@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -11,40 +12,118 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"gopkg.in/yaml.v3"
 
-	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
-	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
-	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/health"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/users"
-	"github.com/btouchard/ackify-ce/backend/pkg/coreapp"
+	"github.com/btouchard/ackify-ce/internal/application/services"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	apiAdmin "github.com/btouchard/ackify-ce/internal/presentation/api/admin"
+	apiAuth "github.com/btouchard/ackify-ce/internal/presentation/api/auth"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/documents"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/health"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/signatures"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/users"
+	"github.com/btouchard/ackify-ce/pkg/providers"
 )
+
+// magicLinkService defines magic link authentication operations
+type magicLinkService interface {
+	RequestMagicLink(ctx context.Context, email, redirectTo, ip, userAgent, locale string) error
+	VerifyMagicLink(ctx context.Context, token, ip, userAgent string) (*models.MagicLinkToken, error)
+	VerifyReminderAuthToken(ctx context.Context, token, ip, userAgent string) (*models.MagicLinkToken, error)
+}
+
+// signatureService defines signature operations
+type signatureService interface {
+	CreateSignature(ctx context.Context, request *models.SignatureRequest) error
+	GetDocumentSignatures(ctx context.Context, docID string) ([]*models.Signature, error)
+	GetSignatureStatus(ctx context.Context, docID string, user *models.User) (*models.SignatureStatus, error)
+	GetSignatureByDocAndUser(ctx context.Context, docID string, user *models.User) (*models.Signature, error)
+	GetUserSignatures(ctx context.Context, user *models.User) ([]*models.Signature, error)
+}
+
+// documentService defines document operations
+type documentService interface {
+	CreateDocument(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
+	FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error)
+	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
+	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	Count(ctx context.Context, searchQuery string) (int, error)
+	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
+	GetExpectedSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+	ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+}
+
+// reminderService defines reminder operations
+type reminderService interface {
+	SendReminders(ctx context.Context, docID, sentBy string, specificEmails []string, docURL, locale string) (*models.ReminderSendResult, error)
+	GetReminderHistory(ctx context.Context, docID string) ([]*models.ReminderLog, error)
+	GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error)
+}
+
+// webhookPublisher defines webhook publish operations
+type webhookPublisher interface {
+	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
+}
+
+// adminService defines admin-level document and signer operations
+type adminService interface {
+	GetDocument(ctx context.Context, docID string) (*models.Document, error)
+	ListDocuments(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	SearchDocuments(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	CountDocuments(ctx context.Context, searchQuery string) (int, error)
+	UpdateDocumentMetadata(ctx context.Context, docID string, input models.DocumentInput, updatedBy string) (*models.Document, error)
+	DeleteDocument(ctx context.Context, docID string) error
+	ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	ListExpectedSignersWithStatus(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
+	AddExpectedSigners(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error
+	RemoveExpectedSigner(ctx context.Context, docID, email string) error
+	GetSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+}
+
+// webhookService defines webhook management operations
+type webhookService interface {
+	CreateWebhook(ctx context.Context, input models.WebhookInput) (*models.Webhook, error)
+	UpdateWebhook(ctx context.Context, id int64, input models.WebhookInput) (*models.Webhook, error)
+	SetWebhookActive(ctx context.Context, id int64, active bool) error
+	DeleteWebhook(ctx context.Context, id int64) error
+	GetWebhookByID(ctx context.Context, id int64) (*models.Webhook, error)
+	ListWebhooks(ctx context.Context, limit, offset int) ([]*models.Webhook, error)
+	ListDeliveries(ctx context.Context, webhookID int64, limit, offset int) ([]*models.WebhookDelivery, error)
+}
 
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
-	AuthService               *auth.OauthService
-	MagicLinkService          *services.MagicLinkService
-	WebhookRepository         *database.WebhookRepository
-	WebhookDeliveryRepository *database.WebhookDeliveryRepository
-	CoreDeps                  coreapp.CoreDeps
-	BaseURL                   string
-	AdminEmails               []string
-	AutoLogin                 bool
-	OAuthEnabled              bool
-	MagicLinkEnabled          bool
-	AuthRateLimit             int
-	DocumentRateLimit         int
-	GeneralRateLimit          int
+	// Capability providers
+	AuthProvider  providers.AuthProvider      // Required for session management
+	OAuthProvider providers.OAuthAuthProvider // Optional, for OAuth authentication
+	Authorizer    providers.Authorizer        // Required for authorization decisions
+
+	// Services
+	MagicLinkService magicLinkService
+	SignatureService signatureService
+	DocumentService  documentService
+	AdminService     adminService
+	ReminderService  reminderService
+	WebhookService   webhookService
+	WebhookPublisher webhookPublisher
+
+	// Configuration
+	BaseURL           string
+	AutoLogin         bool
+	OAuthEnabled      bool
+	MagicLinkEnabled  bool
+	AuthRateLimit     int // Global auth rate limit (requests per minute), default: 5
+	DocumentRateLimit int // Document creation rate limit (requests per minute), default: 10
+	GeneralRateLimit  int // General API rate limit (requests per minute), default: 100
+	ImportMaxSigners  int // Maximum signers per CSV import, default: 500
 }
 
 // NewRouter creates and configures the API v1 router
 func NewRouter(cfg RouterConfig) *chi.Mux {
 	r := chi.NewRouter()
 
-	// Initialize middleware
-	apiMiddleware := shared.NewMiddleware(cfg.AuthService, cfg.BaseURL, cfg.AdminEmails)
+	// Initialize middleware with providers
+	apiMiddleware := shared.NewMiddleware(cfg.AuthProvider, cfg.BaseURL, cfg.Authorizer)
 
 	// Rate limiters with configurable limits
 	authLimit := cfg.AuthRateLimit
@@ -74,14 +153,17 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	r.Use(apiMiddleware.CORS)
 	r.Use(generalRateLimit.Middleware)
 
-	// Initialize coreapp handler groups (documents/signatures)
-	coreGroups := coreapp.NewHandlerGroups(cfg.CoreDeps)
-
-	// Initialize handlers for non-coreapp routes
+	// Initialize handlers
 	healthHandler := health.NewHandler()
-	authHandler := apiAuth.NewHandler(cfg.AuthService, cfg.MagicLinkService, apiMiddleware, cfg.BaseURL, cfg.OAuthEnabled, cfg.MagicLinkEnabled)
-	usersHandler := users.NewHandler(cfg.AdminEmails)
-	webhooksHandler := apiAdmin.NewWebhooksHandler(cfg.WebhookRepository, cfg.WebhookDeliveryRepository)
+	authHandler := apiAuth.NewHandler(cfg.AuthProvider, cfg.OAuthProvider, cfg.MagicLinkService, apiMiddleware, cfg.BaseURL, cfg.OAuthEnabled, cfg.MagicLinkEnabled)
+	usersHandler := users.NewHandler(cfg.Authorizer)
+	documentsHandler := documents.NewHandler(
+		cfg.SignatureService,
+		cfg.DocumentService,
+		cfg.WebhookPublisher,
+		cfg.Authorizer,
+	)
+	signaturesHandler := signatures.NewHandler(cfg.SignatureService, cfg.AdminService, cfg.WebhookPublisher)
 
 	// Public routes
 	r.Group(func(r chi.Router) {
@@ -125,18 +207,27 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 			})
 		})
 
-		// Public document endpoints (from coreapp)
-		coreGroups.RegisterPublic(r)
-	})
+		// Public document endpoints
+		r.Route("/documents", func(r chi.Router) {
+			// Document creation (with CSRF and stricter rate limiting)
+			r.Group(func(r chi.Router) {
+				r.Use(apiMiddleware.CSRFProtect)
+				r.Use(documentRateLimit.Middleware)
+				r.Post("/", documentsHandler.HandleCreateDocument)
+			})
 
-	// User document routes with special handling
-	// - Document creation requires CSRF + rate limiting
-	// - find-or-create requires optional auth
-	r.Group(func(r chi.Router) {
-		r.Use(apiMiddleware.CSRFProtect)
-		r.Use(documentRateLimit.Middleware)
-		r.Use(apiMiddleware.OptionalAuth)
-		coreGroups.RegisterUser(r)
+			// Read-only document endpoints
+			r.Get("/", documentsHandler.HandleListDocuments)
+			r.Get("/{docId}", documentsHandler.HandleGetDocument)
+			r.Get("/{docId}/signatures", documentsHandler.HandleGetDocumentSignatures)
+			r.Get("/{docId}/expected-signers", documentsHandler.HandleGetExpectedSigners)
+
+			// Find or create document by reference (public for embed support, but with optional auth)
+			r.Group(func(r chi.Router) {
+				r.Use(apiMiddleware.OptionalAuth)
+				r.Get("/find-or-create", documentsHandler.HandleFindOrCreateDocument)
+			})
+		})
 	})
 
 	// Authenticated routes
@@ -144,10 +235,19 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		r.Use(apiMiddleware.RequireAuth)
 		r.Use(apiMiddleware.CSRFProtect)
 
-		// User endpoints (non-coreapp)
+		// User endpoints
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/me", usersHandler.HandleGetCurrentUser)
 		})
+
+		// Signature endpoints
+		r.Route("/signatures", func(r chi.Router) {
+			r.Get("/", signaturesHandler.HandleGetUserSignatures)
+			r.Post("/", signaturesHandler.HandleCreateSignature)
+		})
+
+		// Document signature status (authenticated)
+		r.Get("/documents/{docId}/signatures/status", signaturesHandler.HandleGetSignatureStatus)
 	})
 
 	// Admin routes
@@ -155,18 +255,53 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		r.Use(apiMiddleware.RequireAdmin)
 		r.Use(apiMiddleware.CSRFProtect)
 
-		// Admin document routes (from coreapp)
-		coreGroups.RegisterAdmin(r)
+		// Configure import max signers with default
+		importMaxSigners := cfg.ImportMaxSigners
+		if importMaxSigners == 0 {
+			importMaxSigners = 500 // Default: 500 signers per import
+		}
 
-		// Webhooks management (non-coreapp)
-		r.Route("/admin/webhooks", func(r chi.Router) {
-			r.Get("/", webhooksHandler.HandleListWebhooks)
-			r.Post("/", webhooksHandler.HandleCreateWebhook)
-			r.Get("/{id}", webhooksHandler.HandleGetWebhook)
-			r.Put("/{id}", webhooksHandler.HandleUpdateWebhook)
-			r.Patch("/{id}/{action}", webhooksHandler.HandleToggleWebhook) // action: enable|disable
-			r.Delete("/{id}", webhooksHandler.HandleDeleteWebhook)
-			r.Get("/{id}/deliveries", webhooksHandler.HandleListDeliveries)
+		// Initialize admin handler
+		adminHandler := apiAdmin.NewHandler(cfg.AdminService, cfg.ReminderService, cfg.SignatureService, cfg.BaseURL, importMaxSigners)
+		webhooksHandler := apiAdmin.NewWebhooksHandler(cfg.WebhookService)
+
+		r.Route("/admin", func(r chi.Router) {
+			// Document management
+			r.Route("/documents", func(r chi.Router) {
+				r.Get("/", adminHandler.HandleListDocuments)
+				r.Get("/{docId}", adminHandler.HandleGetDocument)
+				r.Get("/{docId}/signers", adminHandler.HandleGetDocumentWithSigners)
+				r.Get("/{docId}/status", adminHandler.HandleGetDocumentStatus)
+
+				// Document metadata
+				r.Put("/{docId}/metadata", adminHandler.HandleUpdateDocumentMetadata)
+
+				// Document deletion
+				r.Delete("/{docId}", adminHandler.HandleDeleteDocument)
+
+				// Expected signers management
+				r.Post("/{docId}/signers", adminHandler.HandleAddExpectedSigner)
+				r.Delete("/{docId}/signers/{email}", adminHandler.HandleRemoveExpectedSigner)
+
+				// CSV import for expected signers
+				r.Post("/{docId}/signers/preview-csv", adminHandler.HandlePreviewCSV)
+				r.Post("/{docId}/signers/import", adminHandler.HandleImportSigners)
+
+				// Reminder management
+				r.Post("/{docId}/reminders", adminHandler.HandleSendReminders)
+				r.Get("/{docId}/reminders", adminHandler.HandleGetReminderHistory)
+			})
+
+			// Webhooks management
+			r.Route("/webhooks", func(r chi.Router) {
+				r.Get("/", webhooksHandler.HandleListWebhooks)
+				r.Post("/", webhooksHandler.HandleCreateWebhook)
+				r.Get("/{id}", webhooksHandler.HandleGetWebhook)
+				r.Put("/{id}", webhooksHandler.HandleUpdateWebhook)
+				r.Patch("/{id}/{action}", webhooksHandler.HandleToggleWebhook) // action: enable|disable
+				r.Delete("/{id}", webhooksHandler.HandleDeleteWebhook)
+				r.Get("/{id}/deliveries", webhooksHandler.HandleListDeliveries)
+			})
 		})
 	})
 

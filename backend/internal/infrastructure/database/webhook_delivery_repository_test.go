@@ -8,7 +8,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestWebhookDeliveryRepository_Enqueue_And_GetNext(t *testing.T) {

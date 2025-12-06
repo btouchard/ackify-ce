@@ -7,33 +7,29 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
 	"github.com/go-chi/chi/v5"
 )
 
-// Minimal interfaces for repositories used by this handler
-type webhookRepository interface {
-	Create(ctx context.Context, input models.WebhookInput) (*models.Webhook, error)
-	Update(ctx context.Context, id int64, input models.WebhookInput) (*models.Webhook, error)
-	SetActive(ctx context.Context, id int64, active bool) error
-	Delete(ctx context.Context, id int64) error
-	GetByID(ctx context.Context, id int64) (*models.Webhook, error)
-	List(ctx context.Context, limit, offset int) ([]*models.Webhook, error)
-}
-
-type webhookDeliveryRepository interface {
-	ListByWebhook(ctx context.Context, webhookID int64, limit, offset int) ([]*models.WebhookDelivery, error)
+// webhookService defines webhook management operations
+type webhookService interface {
+	CreateWebhook(ctx context.Context, input models.WebhookInput) (*models.Webhook, error)
+	UpdateWebhook(ctx context.Context, id int64, input models.WebhookInput) (*models.Webhook, error)
+	SetWebhookActive(ctx context.Context, id int64, active bool) error
+	DeleteWebhook(ctx context.Context, id int64) error
+	GetWebhookByID(ctx context.Context, id int64) (*models.Webhook, error)
+	ListWebhooks(ctx context.Context, limit, offset int) ([]*models.Webhook, error)
+	ListDeliveries(ctx context.Context, webhookID int64, limit, offset int) ([]*models.WebhookDelivery, error)
 }
 
 // WebhooksHandler groups operations on webhooks
 type WebhooksHandler struct {
-	repo       webhookRepository
-	deliveries webhookDeliveryRepository
+	service webhookService
 }
 
-func NewWebhooksHandler(repo webhookRepository, deliveries webhookDeliveryRepository) *WebhooksHandler {
-	return &WebhooksHandler{repo: repo, deliveries: deliveries}
+func NewWebhooksHandler(service webhookService) *WebhooksHandler {
+	return &WebhooksHandler{service: service}
 }
 
 type CreateWebhookRequest struct {
@@ -62,7 +58,7 @@ func (h *WebhooksHandler) HandleCreateWebhook(w http.ResponseWriter, r *http.Req
 	if user != nil {
 		input.CreatedBy = user.Email
 	}
-	wh, err := h.repo.Create(ctx, input)
+	wh, err := h.service.CreateWebhook(ctx, input)
 	if err != nil {
 		shared.WriteInternalError(w)
 		return
@@ -74,7 +70,7 @@ func (h *WebhooksHandler) HandleListWebhooks(w http.ResponseWriter, r *http.Requ
 	ctx := r.Context()
 	limit := 100
 	offset := 0
-	list, err := h.repo.List(ctx, limit, offset)
+	list, err := h.service.ListWebhooks(ctx, limit, offset)
 	if err != nil {
 		shared.WriteInternalError(w)
 		return
@@ -86,7 +82,7 @@ func (h *WebhooksHandler) HandleListWebhooks(w http.ResponseWriter, r *http.Requ
 func (h *WebhooksHandler) HandleGetWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	wh, err := h.repo.GetByID(ctx, id)
+	wh, err := h.service.GetWebhookByID(ctx, id)
 	if err != nil {
 		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Webhook not found", nil)
 		return
@@ -108,7 +104,7 @@ func (h *WebhooksHandler) HandleUpdateWebhook(w http.ResponseWriter, r *http.Req
 		return
 	}
 	input := models.WebhookInput{Title: req.Title, TargetURL: req.TargetURL, Secret: req.Secret, Active: req.Active, Events: req.Events, Headers: req.Headers, Description: req.Description}
-	wh, err := h.repo.Update(ctx, id, input)
+	wh, err := h.service.UpdateWebhook(ctx, id, input)
 	if err != nil {
 		shared.WriteInternalError(w)
 		return
@@ -120,7 +116,7 @@ func (h *WebhooksHandler) HandleToggleWebhook(w http.ResponseWriter, r *http.Req
 	ctx := r.Context()
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	enable := chi.URLParam(r, "action") == "enable"
-	if err := h.repo.SetActive(ctx, id, enable); err != nil {
+	if err := h.service.SetWebhookActive(ctx, id, enable); err != nil {
 		shared.WriteInternalError(w)
 		return
 	}
@@ -134,7 +130,7 @@ func (h *WebhooksHandler) HandleToggleWebhook(w http.ResponseWriter, r *http.Req
 func (h *WebhooksHandler) HandleDeleteWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	if err := h.repo.Delete(ctx, id); err != nil {
+	if err := h.service.DeleteWebhook(ctx, id); err != nil {
 		shared.WriteInternalError(w)
 		return
 	}
@@ -144,7 +140,7 @@ func (h *WebhooksHandler) HandleDeleteWebhook(w http.ResponseWriter, r *http.Req
 func (h *WebhooksHandler) HandleListDeliveries(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
-	deliveries, err := h.deliveries.ListByWebhook(ctx, id, 100, 0)
+	deliveries, err := h.service.ListDeliveries(ctx, id, 100, 0)
 	if err != nil {
 		shared.WriteInternalError(w)
 		return

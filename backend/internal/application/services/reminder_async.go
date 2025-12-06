@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // emailQueueRepository defines minimal interface for email queue operations
@@ -17,24 +16,46 @@ type emailQueueRepository interface {
 	GetQueueStats(ctx context.Context) (*models.EmailQueueStats, error)
 }
 
+// asyncExpectedSignerRepository defines expected signer operations for async reminders
+type asyncExpectedSignerRepository interface {
+	ListWithStatusByDocID(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
+}
+
+// asyncReminderRepository defines reminder logging for async service
+type asyncReminderRepository interface {
+	LogReminder(ctx context.Context, log *models.ReminderLog) error
+	GetReminderHistory(ctx context.Context, docID string) ([]*models.ReminderLog, error)
+	GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error)
+}
+
+// asyncMagicLinkService defines magic link operations for async reminders
+type asyncMagicLinkService interface {
+	CreateReminderAuthToken(ctx context.Context, email string, docID string) (string, error)
+}
+
+// translator defines translation operations
+type translator interface {
+	T(locale, key string) string
+}
+
 // ReminderAsyncService manages email notifications using asynchronous queue
 type ReminderAsyncService struct {
-	expectedSignerRepo expectedSignerRepository
-	reminderRepo       reminderRepository
+	expectedSignerRepo asyncExpectedSignerRepository
+	reminderRepo       asyncReminderRepository
 	queueRepo          emailQueueRepository
-	magicLinkService   magicLinkService
-	i18n               *i18n.I18n
+	magicLinkService   asyncMagicLinkService
+	i18n               translator
 	baseURL            string
 	useAsyncQueue      bool // Feature flag to enable/disable async queue
 }
 
 // NewReminderAsyncService initializes async reminder service with queue support
 func NewReminderAsyncService(
-	expectedSignerRepo expectedSignerRepository,
-	reminderRepo reminderRepository,
+	expectedSignerRepo asyncExpectedSignerRepository,
+	reminderRepo asyncReminderRepository,
 	queueRepo emailQueueRepository,
-	magicLinkService magicLinkService,
-	i18nService *i18n.I18n,
+	magicLinkService asyncMagicLinkService,
+	i18nService translator,
 	baseURL string,
 ) *ReminderAsyncService {
 	return &ReminderAsyncService{

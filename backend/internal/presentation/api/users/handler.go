@@ -3,20 +3,20 @@ package users
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/pkg/providers"
 )
 
 // Handler handles user API requests
 type Handler struct {
-	adminEmails []string
+	authorizer providers.Authorizer
 }
 
 // NewHandler creates a new users handler
-func NewHandler(adminEmails []string) *Handler {
+func NewHandler(authorizer providers.Authorizer) *Handler {
 	return &Handler{
-		adminEmails: adminEmails,
+		authorizer: authorizer,
 	}
 }
 
@@ -36,20 +36,11 @@ func (h *Handler) HandleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user is admin
-	isAdmin := false
-	for _, adminEmail := range h.adminEmails {
-		if strings.EqualFold(user.Email, adminEmail) {
-			isAdmin = true
-			break
-		}
-	}
-
 	userDTO := UserDTO{
 		ID:      user.Sub,
 		Email:   user.Email,
 		Name:    user.Name,
-		IsAdmin: isAdmin,
+		IsAdmin: h.authorizer.IsAdmin(r.Context(), user.Email),
 	}
 
 	shared.WriteJSON(w, http.StatusOK, userDTO)

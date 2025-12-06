@@ -7,19 +7,19 @@ import (
 	"os"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 	"github.com/gorilla/securecookie"
 )
 
 type Config struct {
 	App      AppConfig
+	Server   ServerConfig
 	Database DatabaseConfig
+	Checksum ChecksumConfig
 	Auth     AuthConfig
 	OAuth    OAuthConfig
-	Server   ServerConfig
-	Logger   LoggerConfig
 	Mail     MailConfig
-	Checksum ChecksumConfig
+	Logger   LoggerConfig
 }
 
 type AuthConfig struct {

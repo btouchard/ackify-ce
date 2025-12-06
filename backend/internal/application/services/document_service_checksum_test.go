@@ -8,8 +8,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/config"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/config"
 )
+
+// mockDocExpectedSignerRepo is a minimal mock for docExpectedSignerRepository
+type mockDocExpectedSignerRepo struct{}
+
+func (m *mockDocExpectedSignerRepo) ListByDocID(_ context.Context, _ string) ([]*models.ExpectedSigner, error) {
+	return []*models.ExpectedSigner{}, nil
+}
+
+func (m *mockDocExpectedSignerRepo) GetStats(_ context.Context, _ string) (*models.DocCompletionStats, error) {
+	return &models.DocCompletionStats{}, nil
+}
 
 // Test automatic checksum computation with valid PDF
 func TestDocumentService_CreateDocument_WithAutomaticChecksum(t *testing.T) {
@@ -38,7 +50,7 @@ func TestDocumentService_CreateDocument_WithAutomaticChecksum(t *testing.T) {
 		SkipSSRFCheck:      true, // For testing with httptest
 		InsecureSkipVerify: true, // Accept self-signed certs in tests
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	req := CreateDocumentRequest{
 		Reference: server.URL,
@@ -79,7 +91,7 @@ func TestDocumentService_CreateDocument_RejectsHTTP(t *testing.T) {
 		SkipSSRFCheck:      true,
 		InsecureSkipVerify: true,
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	// HTTP URL (not HTTPS)
 	req := CreateDocumentRequest{
@@ -121,7 +133,7 @@ func TestDocumentService_CreateDocument_TooLargeFile(t *testing.T) {
 			"application/pdf",
 		},
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	req := CreateDocumentRequest{
 		Reference: server.URL,
@@ -163,7 +175,7 @@ func TestDocumentService_CreateDocument_WrongContentType(t *testing.T) {
 		SkipSSRFCheck:      true,
 		InsecureSkipVerify: true,
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	req := CreateDocumentRequest{
 		Reference: server.URL,
@@ -208,7 +220,7 @@ func TestDocumentService_CreateDocument_ImageWildcard(t *testing.T) {
 		SkipSSRFCheck:      true,
 		InsecureSkipVerify: true,
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	req := CreateDocumentRequest{
 		Reference: server.URL,
@@ -237,7 +249,7 @@ func TestDocumentService_CreateDocument_NoChecksumConfig(t *testing.T) {
 	defer server.Close()
 
 	mockRepo := &mockDocumentRepository{}
-	service := NewDocumentService(mockRepo, nil) // No checksum config
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, nil) // No checksum config
 
 	req := CreateDocumentRequest{
 		Reference: server.URL,
@@ -268,7 +280,7 @@ func TestDocumentService_CreateDocument_NetworkError(t *testing.T) {
 			"application/pdf",
 		},
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	// Non-existent server
 	req := CreateDocumentRequest{
@@ -302,7 +314,7 @@ func TestDocumentService_CreateDocument_PlainReferenceNoChecksum(t *testing.T) {
 		SkipSSRFCheck:      true,
 		InsecureSkipVerify: true,
 	}
-	service := NewDocumentService(mockRepo, checksumConfig)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepo{}, checksumConfig)
 
 	req := CreateDocumentRequest{
 		Reference: "company-policy-2024",

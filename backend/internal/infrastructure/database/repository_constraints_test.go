@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestRepository_DatabaseConstraints_Integration(t *testing.T) {

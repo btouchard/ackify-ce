@@ -10,10 +10,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/application/services"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/providers"
 )
 
 // documentService defines the interface for document operations
@@ -21,20 +22,12 @@ type documentService interface {
 	CreateDocument(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
 	FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error)
 	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
-}
-
-// documentRepository defines the interface for document repository operations
-type documentRepository interface {
 	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
 	Count(ctx context.Context, searchQuery string) (int, error)
 	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
-}
-
-// expectedSignerRepository defines the interface for expected signer operations
-type expectedSignerRepository interface {
-	ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
-	GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+	GetExpectedSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+	ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
 }
 
 // webhookPublisher defines minimal publish capability
@@ -42,42 +35,31 @@ type webhookPublisher interface {
 	Publish(ctx context.Context, eventType string, payload map[string]interface{}) error
 }
 
-// signatureService defines the interface for signature operations (used for counts)
+// signatureService defines the interface for signature operations
 type signatureService interface {
 	GetDocumentSignatures(ctx context.Context, docID string) ([]*models.Signature, error)
 }
 
-// documentAuthorizer defines the interface for document creation authorization
-type documentAuthorizer interface {
-	CanCreateDocument(ctx context.Context, user *models.User) bool
-}
-
 // Handler handles document API requests
 type Handler struct {
-	signatureService   signatureService
-	documentService    documentService
-	documentRepo       documentRepository
-	expectedSignerRepo expectedSignerRepository
-	webhookPublisher   webhookPublisher
-	authorizer         documentAuthorizer
+	signatureService signatureService
+	documentService  documentService
+	webhookPublisher webhookPublisher
+	authorizer       providers.Authorizer
 }
 
 // NewHandler creates a handler with all dependencies for full functionality
 func NewHandler(
 	signatureService signatureService,
 	documentService documentService,
-	documentRepo documentRepository,
-	expectedSignerRepo expectedSignerRepository,
 	publisher webhookPublisher,
-	authorizer documentAuthorizer,
+	authorizer providers.Authorizer,
 ) *Handler {
 	return &Handler{
-		signatureService:   signatureService,
-		documentService:    documentService,
-		documentRepo:       documentRepo,
-		expectedSignerRepo: expectedSignerRepo,
-		webhookPublisher:   publisher,
-		authorizer:         authorizer,
+		signatureService: signatureService,
+		documentService:  documentService,
+		webhookPublisher: publisher,
+		authorizer:       authorizer,
 	}
 }
 
@@ -124,13 +106,24 @@ type CreateDocumentResponse struct {
 func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	user, _ := shared.GetUserFromContext(ctx)
-	if !h.authorizer.CanCreateDocument(ctx, user) {
-		if user == nil {
+	// Check if user can create documents
+	user, authenticated := shared.GetUserFromContext(ctx)
+	userEmail := ""
+	if authenticated && user != nil {
+		userEmail = user.Email
+	}
+
+	if !h.authorizer.CanCreateDocument(ctx, userEmail) {
+		if !authenticated {
+			logger.Logger.Warn("Unauthenticated user attempted to create document",
+				"remote_addr", r.RemoteAddr)
 			shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
-		} else {
-			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Not authorized to create documents", nil)
+			return
 		}
+		logger.Logger.Warn("Non-admin user attempted to create document",
+			"user_email", user.Email,
+			"remote_addr", r.RemoteAddr)
+		shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Only administrators can create documents", nil)
 		return
 	}
 
@@ -208,26 +201,20 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	pagination := shared.ParsePaginationParams(r, 20, 100)
 	searchQuery := r.URL.Query().Get("search")
 
-	// If no document repository is available, return empty list (backward compat)
-	if h.documentRepo == nil {
-		shared.WritePaginatedJSON(w, []DocumentDTO{}, pagination.Page, pagination.PageSize, 0)
-		return
-	}
-
-	// Fetch documents from repository
+	// Fetch documents from service
 	var docs []*models.Document
 	var err error
 
 	if searchQuery != "" {
 		// Use search if query is provided
-		docs, err = h.documentRepo.Search(ctx, searchQuery, pagination.PageSize, pagination.Offset)
+		docs, err = h.documentService.Search(ctx, searchQuery, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Public document search request",
 			"query", searchQuery,
 			"limit", pagination.PageSize,
 			"offset", pagination.Offset)
 	} else {
 		// Otherwise, list all documents
-		docs, err = h.documentRepo.List(ctx, pagination.PageSize, pagination.Offset)
+		docs, err = h.documentService.List(ctx, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Public document list request",
 			"limit", pagination.PageSize,
 			"offset", pagination.Offset)
@@ -242,7 +229,7 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get total count of documents (with or without search filter)
-	totalCount, err := h.documentRepo.Count(ctx, searchQuery)
+	totalCount, err := h.documentService.Count(ctx, searchQuery)
 	if err != nil {
 		logger.Logger.Warn("Failed to count documents, using result count",
 			"error", err.Error(),
@@ -267,10 +254,8 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get expected signer count
-		if h.expectedSignerRepo != nil {
-			if stats, err := h.expectedSignerRepo.GetStats(ctx, doc.DocID); err == nil {
-				dto.ExpectedSignerCount = stats.ExpectedCount
-			}
+		if stats, err := h.documentService.GetExpectedSignerStats(ctx, doc.DocID); err == nil {
+			dto.ExpectedSignerCount = stats.ExpectedCount
 		}
 
 		documents = append(documents, dto)
@@ -289,20 +274,16 @@ func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get document from DB if repository available
-	var doc *models.Document
-	if h.documentRepo != nil {
-		var err error
-		doc, err = h.documentRepo.GetByDocID(ctx, docID)
-		if err != nil {
-			logger.Logger.Error("Failed to get document", "doc_id", docID, "error", err.Error())
-			shared.WriteInternalError(w)
-			return
-		}
-		if doc == nil {
-			shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
-			return
-		}
+	// Get document from service
+	doc, err := h.documentService.GetByDocID(ctx, docID)
+	if err != nil {
+		logger.Logger.Error("Failed to get document", "doc_id", docID, "error", err.Error())
+		shared.WriteInternalError(w)
+		return
+	}
+	if doc == nil {
+		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
+		return
 	}
 
 	// Get signatures for the document
@@ -316,25 +297,16 @@ func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
 	// Build response
 	response := DocumentDTO{
 		ID:             docID,
+		Title:          doc.Title,
+		Description:    doc.Description,
+		CreatedAt:      doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:      doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		SignatureCount: len(signatures),
 	}
 
-	// Fill with document data if available
-	if doc != nil {
-		response.Title = doc.Title
-		response.Description = doc.Description
-		response.CreatedAt = doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00")
-		response.UpdatedAt = doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00")
-	} else {
-		// Fallback for backward compat (when no repo)
-		response.Title = "Document " + docID
-	}
-
 	// Get expected signer count
-	if h.expectedSignerRepo != nil {
-		if stats, err := h.expectedSignerRepo.GetStats(ctx, docID); err == nil {
-			response.ExpectedSignerCount = stats.ExpectedCount
-		}
+	if stats, err := h.documentService.GetExpectedSignerStats(ctx, docID); err == nil {
+		response.ExpectedSignerCount = stats.ExpectedCount
 	}
 
 	shared.WriteJSON(w, http.StatusOK, response)
@@ -384,14 +356,8 @@ func (h *Handler) HandleGetExpectedSigners(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// If no repository, return empty list (backward compat)
-	if h.expectedSignerRepo == nil {
-		shared.WriteJSON(w, http.StatusOK, []PublicExpectedSigner{})
-		return
-	}
-
 	// Get expected signers (public version - without internal notes/metadata)
-	signers, err := h.expectedSignerRepo.ListByDocID(ctx, docID)
+	signers, err := h.documentService.ListExpectedSigners(ctx, docID)
 	if err != nil {
 		logger.Logger.Error("Failed to get expected signers", "doc_id", docID, "error", err.Error())
 		shared.WriteInternalError(w)
@@ -459,7 +425,8 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		"reference", ref,
 		"remote_addr", r.RemoteAddr)
 
-	user, _ := shared.GetUserFromContext(ctx)
+	// Check if user is authenticated
+	user, isAuthenticated := shared.GetUserFromContext(ctx)
 
 	// First, try to find the document (without creating)
 	refType := detectReferenceType(ref)
@@ -493,13 +460,22 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Document doesn't exist - check authorization before creating
-	if !h.authorizer.CanCreateDocument(ctx, user) {
-		if user == nil {
-			shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
-		} else {
-			shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Not authorized to create documents", nil)
-		}
+	// Document doesn't exist - check authentication before creating
+	if !isAuthenticated {
+		logger.Logger.Warn("Unauthenticated user attempted to create document",
+			"reference", ref,
+			"remote_addr", r.RemoteAddr)
+		shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required to create document", nil)
+		return
+	}
+
+	// Check if user can create documents
+	if !h.authorizer.CanCreateDocument(ctx, user.Email) {
+		logger.Logger.Warn("Non-admin user attempted to create document via find-or-create",
+			"user_email", user.Email,
+			"reference", ref,
+			"remote_addr", r.RemoteAddr)
+		shared.WriteError(w, http.StatusForbidden, shared.ErrCodeForbidden, "Only administrators can create documents", nil)
 		return
 	}
 

@@ -23,3 +23,5 @@ client_secret*.json
 /static/output.css
 /.coverage-report/
 /docker.secret
+/samples/
+/docs/reports/

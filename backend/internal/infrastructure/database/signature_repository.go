@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/tenant"
 )
 
 // SignatureRepository handles PostgreSQL persistence for cryptographic signatures

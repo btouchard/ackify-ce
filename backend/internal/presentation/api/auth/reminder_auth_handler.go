@@ -4,9 +4,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // HandleVerifyReminderAuthLink handles GET /api/v1/auth/reminder-link/verify
@@ -50,7 +50,7 @@ func (h *Handler) HandleVerifyReminderAuthLink(w http.ResponseWriter, r *http.Re
 	}
 
 	// Sauvegarder dans la session (réutiliser la logique OAuth existante)
-	if err := h.authService.SetUser(w, r, user); err != nil {
+	if err := h.authProvider.SetCurrentUser(w, r, user); err != nil {
 		logger.Logger.Error("Failed to create session after reminder auth", "error", err)
 		http.Error(w, "Failed to create session", http.StatusInternalServerError)
 		return

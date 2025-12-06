@@ -10,31 +10,27 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/application/services"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 	"github.com/go-chi/chi/v5"
 )
 
-// documentRepository defines the interface for document operations
-type documentRepository interface {
-	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
-	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
-	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
-	Count(ctx context.Context, searchQuery string) (int, error)
-	CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
-	Delete(ctx context.Context, docID string) error
-}
-
-// expectedSignerRepository defines the interface for expected signer operations
-type expectedSignerRepository interface {
-	ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
-	ListWithStatusByDocID(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
-	AddExpected(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error
-	Remove(ctx context.Context, docID, email string) error
-	GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+// adminService defines admin-level operations on documents and signers
+type adminService interface {
+	GetDocument(ctx context.Context, docID string) (*models.Document, error)
+	ListDocuments(ctx context.Context, limit, offset int) ([]*models.Document, error)
+	SearchDocuments(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
+	CountDocuments(ctx context.Context, searchQuery string) (int, error)
+	UpdateDocumentMetadata(ctx context.Context, docID string, input models.DocumentInput, updatedBy string) (*models.Document, error)
+	DeleteDocument(ctx context.Context, docID string) error
+	ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	ListExpectedSignersWithStatus(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
+	AddExpectedSigners(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error
+	RemoveExpectedSigner(ctx context.Context, docID, email string) error
+	GetSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
 }
 
 // reminderService defines the interface for reminder operations
@@ -51,23 +47,21 @@ type signatureService interface {
 
 // Handler handles admin API requests
 type Handler struct {
-	documentRepo       documentRepository
-	expectedSignerRepo expectedSignerRepository
-	reminderService    reminderService
-	signatureService   signatureService
-	baseURL            string
-	importMaxSigners   int
+	adminService     adminService
+	reminderService  reminderService
+	signatureService signatureService
+	baseURL          string
+	importMaxSigners int
 }
 
 // NewHandler creates a new admin handler
-func NewHandler(documentRepo documentRepository, expectedSignerRepo expectedSignerRepository, reminderService reminderService, signatureService signatureService, baseURL string, importMaxSigners int) *Handler {
+func NewHandler(adminService adminService, reminderService reminderService, signatureService signatureService, baseURL string, importMaxSigners int) *Handler {
 	return &Handler{
-		documentRepo:       documentRepo,
-		expectedSignerRepo: expectedSignerRepo,
-		reminderService:    reminderService,
-		signatureService:   signatureService,
-		baseURL:            baseURL,
-		importMaxSigners:   importMaxSigners,
+		adminService:     adminService,
+		reminderService:  reminderService,
+		signatureService: signatureService,
+		baseURL:          baseURL,
+		importMaxSigners: importMaxSigners,
 	}
 }
 
@@ -131,13 +125,13 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if searchQuery != "" {
-		documents, err = h.documentRepo.Search(ctx, searchQuery, pagination.PageSize, pagination.Offset)
+		documents, err = h.adminService.SearchDocuments(ctx, searchQuery, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Admin document search",
 			"query", searchQuery,
 			"limit", pagination.PageSize,
 			"offset", pagination.Offset)
 	} else {
-		documents, err = h.documentRepo.List(ctx, pagination.PageSize, pagination.Offset)
+		documents, err = h.adminService.ListDocuments(ctx, pagination.PageSize, pagination.Offset)
 		logger.Logger.Debug("Admin document list",
 			"limit", pagination.PageSize,
 			"offset", pagination.Offset)
@@ -150,7 +144,7 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get total count of documents (with or without search filter)
-	totalCount, err := h.documentRepo.Count(ctx, searchQuery)
+	totalCount, err := h.adminService.CountDocuments(ctx, searchQuery)
 	if err != nil {
 		logger.Logger.Warn("Failed to count documents, using result count",
 			"error", err.Error(),
@@ -188,7 +182,7 @@ func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	document, err := h.documentRepo.GetByDocID(ctx, docID)
+	document, err := h.adminService.GetDocument(ctx, docID)
 	if err != nil {
 		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
 		return
@@ -208,21 +202,21 @@ func (h *Handler) HandleGetDocumentWithSigners(w http.ResponseWriter, r *http.Re
 	}
 
 	// Get document
-	document, err := h.documentRepo.GetByDocID(ctx, docID)
+	document, err := h.adminService.GetDocument(ctx, docID)
 	if err != nil {
 		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
 		return
 	}
 
 	// Get expected signers with status
-	signers, err := h.expectedSignerRepo.ListWithStatusByDocID(ctx, docID)
+	signers, err := h.adminService.ListExpectedSignersWithStatus(ctx, docID)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to get signers", nil)
 		return
 	}
 
 	// Get completion stats
-	stats, err := h.expectedSignerRepo.GetStats(ctx, docID)
+	stats, err := h.adminService.GetSignerStats(ctx, docID)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to get stats", nil)
 		return
@@ -281,7 +275,7 @@ func (h *Handler) HandleAddExpectedSigner(w http.ResponseWriter, r *http.Request
 
 	// Add expected signer
 	contacts := []models.ContactInfo{{Email: req.Email, Name: req.Name}}
-	err := h.expectedSignerRepo.AddExpected(ctx, docID, contacts, user.Email)
+	err := h.adminService.AddExpectedSigners(ctx, docID, contacts, user.Email)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to add expected signer", nil)
 		return
@@ -313,7 +307,7 @@ func (h *Handler) HandleRemoveExpectedSigner(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Remove expected signer
-	err = h.expectedSignerRepo.Remove(ctx, docID, email)
+	err = h.adminService.RemoveExpectedSigner(ctx, docID, email)
 	if err != nil {
 		logger.Logger.Error("failed to remove expected signer", "error", err, "doc_id", docID, "email", email)
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to remove expected signer", nil)
@@ -416,7 +410,7 @@ func (h *Handler) HandleSendReminders(w http.ResponseWriter, r *http.Request) {
 
 	// Get document URL from metadata
 	var docURL string
-	if doc, err := h.documentRepo.GetByDocID(ctx, docID); err == nil && doc != nil && doc.URL != "" {
+	if doc, err := h.adminService.GetDocument(ctx, docID); err == nil && doc != nil && doc.URL != "" {
 		docURL = doc.URL
 	}
 
@@ -521,7 +515,7 @@ func (h *Handler) HandleUpdateDocumentMetadata(w http.ResponseWriter, r *http.Re
 	}
 
 	// Get existing document or create new one
-	doc, err := h.documentRepo.GetByDocID(ctx, docID)
+	doc, err := h.adminService.GetDocument(ctx, docID)
 	if err != nil || doc == nil {
 		// Document doesn't exist, create a new one
 		doc = &models.Document{
@@ -555,7 +549,7 @@ func (h *Handler) HandleUpdateDocumentMetadata(w http.ResponseWriter, r *http.Re
 		ChecksumAlgorithm: doc.ChecksumAlgorithm,
 		Description:       doc.Description,
 	}
-	doc, err = h.documentRepo.CreateOrUpdate(ctx, docID, input, user.Email)
+	doc, err = h.adminService.UpdateDocumentMetadata(ctx, docID, input, user.Email)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to update document metadata", nil)
 		return
@@ -603,13 +597,13 @@ func (h *Handler) HandleGetDocumentStatus(w http.ResponseWriter, r *http.Request
 	}
 
 	// Get document (optional)
-	if doc, err := h.documentRepo.GetByDocID(ctx, docID); err == nil && doc != nil {
+	if doc, err := h.adminService.GetDocument(ctx, docID); err == nil && doc != nil {
 		response.Document = toDocumentResponse(doc)
 	}
 
 	// Get expected signers with status
 	expectedEmails := make(map[string]bool)
-	if signers, err := h.expectedSignerRepo.ListWithStatusByDocID(ctx, docID); err == nil {
+	if signers, err := h.adminService.ListExpectedSignersWithStatus(ctx, docID); err == nil {
 		for _, signer := range signers {
 			response.ExpectedSigners = append(response.ExpectedSigners, toExpectedSignerResponse(signer))
 			expectedEmails[signer.Email] = true
@@ -634,7 +628,7 @@ func (h *Handler) HandleGetDocumentStatus(w http.ResponseWriter, r *http.Request
 	}
 
 	// Get completion stats
-	if stats, err := h.expectedSignerRepo.GetStats(ctx, docID); err == nil {
+	if stats, err := h.adminService.GetSignerStats(ctx, docID); err == nil {
 		response.Stats = toStatsResponse(stats)
 	} else {
 		// Default stats if no expected signers
@@ -680,7 +674,7 @@ func (h *Handler) HandleDeleteDocument(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delete document (this will cascade delete signatures and expected signers due to DB constraints)
-	err := h.documentRepo.Delete(ctx, docID)
+	err := h.adminService.DeleteDocument(ctx, docID)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to delete document", nil)
 		return
@@ -747,7 +741,7 @@ func (h *Handler) HandlePreviewCSV(w http.ResponseWriter, r *http.Request) {
 
 	// Get existing signers for this document to identify duplicates
 	existingEmails := []string{}
-	existingSigners, err := h.expectedSignerRepo.ListByDocID(ctx, docID)
+	existingSigners, err := h.adminService.ListExpectedSigners(ctx, docID)
 	if err == nil {
 		existingEmailsMap := make(map[string]bool)
 		for _, signer := range existingSigners {
@@ -833,7 +827,7 @@ func (h *Handler) HandleImportSigners(w http.ResponseWriter, r *http.Request) {
 
 	// Get existing signers to calculate skipped count
 	existingEmailsMap := make(map[string]bool)
-	existingSigners, err := h.expectedSignerRepo.ListByDocID(ctx, docID)
+	existingSigners, err := h.adminService.ListExpectedSigners(ctx, docID)
 	if err == nil {
 		for _, signer := range existingSigners {
 			existingEmailsMap[strings.ToLower(signer.Email)] = true
@@ -858,7 +852,7 @@ func (h *Handler) HandleImportSigners(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add all signers (repository handles duplicates with ON CONFLICT DO NOTHING)
-	if err := h.expectedSignerRepo.AddExpected(ctx, docID, contacts, user.Email); err != nil {
+	if err := h.adminService.AddExpectedSigners(ctx, docID, contacts, user.Email); err != nil {
 		logger.Logger.Error("Failed to import signers", "error", err.Error(), "doc_id", docID, "count", len(contacts))
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to import signers", nil)
 		return

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,12 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/application/services"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
 )
-
-// Note: services import is still needed for CreateDocumentRequest
 
 // ============================================================================
 // TEST FIXTURES & MOCKS
@@ -65,6 +64,34 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+// mockAuthorizer is a test implementation of providers.Authorizer
+type mockAuthorizer struct {
+	adminEmails        map[string]bool
+	onlyAdminCanCreate bool
+}
+
+func newMockAuthorizer(adminEmails []string, onlyAdminCanCreate bool) *mockAuthorizer {
+	emails := make(map[string]bool)
+	for _, email := range adminEmails {
+		emails[strings.ToLower(strings.TrimSpace(email))] = true
+	}
+	return &mockAuthorizer{
+		adminEmails:        emails,
+		onlyAdminCanCreate: onlyAdminCanCreate,
+	}
+}
+
+func (m *mockAuthorizer) IsAdmin(_ context.Context, userEmail string) bool {
+	return m.adminEmails[strings.ToLower(strings.TrimSpace(userEmail))]
+}
+
+func (m *mockAuthorizer) CanCreateDocument(_ context.Context, userEmail string) bool {
+	if !m.onlyAdminCanCreate {
+		return true
+	}
+	return m.adminEmails[strings.ToLower(strings.TrimSpace(userEmail))]
+}
+
 // Mock document service
 type mockDocumentService struct {
 	createDocFunc       func(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
@@ -93,6 +120,30 @@ func (m *mockDocumentService) FindByReference(ctx context.Context, ref string, r
 	return nil, fmt.Errorf("document not found")
 }
 
+func (m *mockDocumentService) List(_ context.Context, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{testDoc}, nil
+}
+
+func (m *mockDocumentService) Search(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{testDoc}, nil
+}
+
+func (m *mockDocumentService) Count(_ context.Context, _ string) (int, error) {
+	return 1, nil
+}
+
+func (m *mockDocumentService) GetByDocID(_ context.Context, _ string) (*models.Document, error) {
+	return testDoc, nil
+}
+
+func (m *mockDocumentService) GetExpectedSignerStats(_ context.Context, _ string) (*models.DocCompletionStats, error) {
+	return &models.DocCompletionStats{}, nil
+}
+
+func (m *mockDocumentService) ListExpectedSigners(_ context.Context, _ string) ([]*models.ExpectedSigner, error) {
+	return []*models.ExpectedSigner{}, nil
+}
+
 // Mock signature service
 type mockSignatureService struct {
 	getDocumentSignaturesFunc func(ctx context.Context, docID string) ([]*models.Signature, error)
@@ -105,23 +156,11 @@ func (m *mockSignatureService) GetDocumentSignatures(ctx context.Context, docID 
 	return []*models.Signature{testSignature}, nil
 }
 
-// Mock document authorizer
-type mockDocumentAuthorizer struct {
-	canCreateFunc func(ctx context.Context, user *models.User) bool
-}
-
-func (m *mockDocumentAuthorizer) CanCreateDocument(ctx context.Context, user *models.User) bool {
-	if m.canCreateFunc != nil {
-		return m.canCreateFunc(ctx, user)
-	}
-	return true
-}
-
 func createTestHandler() *Handler {
 	return &Handler{
 		signatureService: &mockSignatureService{},
 		documentService:  &mockDocumentService{},
-		authorizer:       &mockDocumentAuthorizer{},
+		authorizer:       newMockAuthorizer([]string{}, false),
 	}
 }
 
@@ -136,16 +175,16 @@ func addUserToContext(ctx context.Context, user *models.User) context.Context {
 func TestNewHandler(t *testing.T) {
 	t.Parallel()
 
-	sigService := &mockSignatureService{}
+	sigService := &services.SignatureService{}
 	docService := &mockDocumentService{}
-	authorizer := &mockDocumentAuthorizer{}
+	authorizer := newMockAuthorizer([]string{}, false)
 
-	handler := NewHandler(sigService, docService, nil, nil, nil, authorizer)
+	handler := NewHandler(sigService, docService, nil, authorizer)
 
 	assert.NotNil(t, handler)
 	assert.Equal(t, sigService, handler.signatureService)
 	assert.Equal(t, docService, handler.documentService)
-	assert.Equal(t, authorizer, handler.authorizer)
+	assert.NotNil(t, handler.authorizer)
 }
 
 // ============================================================================
@@ -191,7 +230,7 @@ func TestHandler_HandleCreateDocument_Success(t *testing.T) {
 
 			handler := &Handler{
 				documentService: mockDocService,
-				authorizer:      &mockDocumentAuthorizer{},
+				authorizer:      newMockAuthorizer([]string{}, false),
 			}
 
 			reqBody := CreateDocumentRequest{
@@ -290,7 +329,7 @@ func TestHandler_HandleCreateDocument_ServiceError(t *testing.T) {
 
 	handler := &Handler{
 		documentService: mockDocService,
-		authorizer:      &mockDocumentAuthorizer{},
+		authorizer:      newMockAuthorizer([]string{}, false),
 	}
 
 	reqBody := CreateDocumentRequest{
@@ -441,7 +480,7 @@ func TestHandler_HandleFindOrCreateDocument_FindExisting(t *testing.T) {
 
 	handler := &Handler{
 		documentService: mockDocService,
-		authorizer:      &mockDocumentAuthorizer{},
+		authorizer:      newMockAuthorizer([]string{}, false),
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/doc.pdf", nil)
@@ -466,6 +505,7 @@ func TestHandler_HandleFindOrCreateDocument_CreateNew(t *testing.T) {
 
 	mockDocService := &mockDocumentService{
 		findByReferenceFunc: func(ctx context.Context, ref string, refType string) (*models.Document, error) {
+			// Document not found - return nil, nil (not an error)
 			return nil, nil
 		},
 		findOrCreateDocFunc: func(ctx context.Context, ref string) (*models.Document, bool, error) {
@@ -476,11 +516,12 @@ func TestHandler_HandleFindOrCreateDocument_CreateNew(t *testing.T) {
 
 	handler := &Handler{
 		documentService: mockDocService,
-		authorizer:      &mockDocumentAuthorizer{},
+		authorizer:      newMockAuthorizer([]string{}, false),
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/new-doc.pdf", nil)
 
+	// Add authenticated user to context
 	ctx := addUserToContext(req.Context(), testUser)
 	req = req.WithContext(ctx)
 
@@ -505,16 +546,18 @@ func TestHandler_HandleFindOrCreateDocument_UnauthenticatedCreate(t *testing.T) 
 
 	mockDocService := &mockDocumentService{
 		findByReferenceFunc: func(ctx context.Context, ref string, refType string) (*models.Document, error) {
+			// Document not found - return nil, nil (not an error)
 			return nil, nil
 		},
 	}
 
 	handler := &Handler{
 		documentService: mockDocService,
-		authorizer:      &mockDocumentAuthorizer{canCreateFunc: func(ctx context.Context, user *models.User) bool { return user != nil }},
+		authorizer:      newMockAuthorizer([]string{}, false),
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/new-doc.pdf", nil)
+	// No user in context
 	rec := httptest.NewRecorder()
 
 	handler.HandleFindOrCreateDocument(rec, req)
@@ -716,13 +759,13 @@ func TestHandler_HandleCreateDocument_Concurrent(t *testing.T) {
 // ADMIN-ONLY DOCUMENT CREATION TESTS
 // ============================================================================
 
-func TestHandler_HandleCreateDocument_Authorized(t *testing.T) {
+func TestHandler_HandleCreateDocument_AdminOnlyEnabled_AdminUser(t *testing.T) {
 	t.Parallel()
 
 	handler := &Handler{
-		signatureService: &mockSignatureService{},
+		signatureService: &services.SignatureService{},
 		documentService:  &mockDocumentService{},
-		authorizer:       &mockDocumentAuthorizer{canCreateFunc: func(ctx context.Context, user *models.User) bool { return true }},
+		authorizer:       newMockAuthorizer([]string{"admin@example.com"}, true),
 	}
 
 	reqBody := CreateDocumentRequest{
@@ -735,6 +778,7 @@ func TestHandler_HandleCreateDocument_Authorized(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
+	// Add admin user to context
 	adminUser := &models.User{
 		Sub:   "oauth2|admin",
 		Email: "admin@example.com",
@@ -750,13 +794,13 @@ func TestHandler_HandleCreateDocument_Authorized(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "test-doc-123")
 }
 
-func TestHandler_HandleCreateDocument_NotAuthorized(t *testing.T) {
+func TestHandler_HandleCreateDocument_AdminOnlyEnabled_NonAdminUser(t *testing.T) {
 	t.Parallel()
 
 	handler := &Handler{
-		signatureService: &mockSignatureService{},
+		signatureService: &services.SignatureService{},
 		documentService:  &mockDocumentService{},
-		authorizer:       &mockDocumentAuthorizer{canCreateFunc: func(ctx context.Context, user *models.User) bool { return false }},
+		authorizer:       newMockAuthorizer([]string{"admin@example.com"}, true),
 	}
 
 	reqBody := CreateDocumentRequest{
@@ -769,6 +813,7 @@ func TestHandler_HandleCreateDocument_NotAuthorized(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
+	// Add non-admin user to context
 	regularUser := &models.User{
 		Sub:   "oauth2|user",
 		Email: "user@example.com",
@@ -781,16 +826,16 @@ func TestHandler_HandleCreateDocument_NotAuthorized(t *testing.T) {
 	handler.HandleCreateDocument(rec, req)
 
 	assert.Equal(t, http.StatusForbidden, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Not authorized")
+	assert.Contains(t, rec.Body.String(), "Only administrators can create documents")
 }
 
-func TestHandler_HandleCreateDocument_Unauthenticated(t *testing.T) {
+func TestHandler_HandleCreateDocument_AdminOnlyEnabled_Unauthenticated(t *testing.T) {
 	t.Parallel()
 
 	handler := &Handler{
-		signatureService: &mockSignatureService{},
+		signatureService: &services.SignatureService{},
 		documentService:  &mockDocumentService{},
-		authorizer:       &mockDocumentAuthorizer{canCreateFunc: func(ctx context.Context, user *models.User) bool { return user != nil }},
+		authorizer:       newMockAuthorizer([]string{"admin@example.com"}, true),
 	}
 
 	reqBody := CreateDocumentRequest{
@@ -802,6 +847,7 @@ func TestHandler_HandleCreateDocument_Unauthenticated(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/documents", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	// No user in context (unauthenticated)
 
 	rec := httptest.NewRecorder()
 	handler.HandleCreateDocument(rec, req)
@@ -810,13 +856,13 @@ func TestHandler_HandleCreateDocument_Unauthenticated(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "Authentication required")
 }
 
-func TestHandler_HandleCreateDocument_PublicCreation(t *testing.T) {
+func TestHandler_HandleCreateDocument_AdminOnlyDisabled_AnyUser(t *testing.T) {
 	t.Parallel()
 
 	handler := &Handler{
-		signatureService: &mockSignatureService{},
+		signatureService: &services.SignatureService{},
 		documentService:  &mockDocumentService{},
-		authorizer:       &mockDocumentAuthorizer{canCreateFunc: func(ctx context.Context, user *models.User) bool { return true }},
+		authorizer:       newMockAuthorizer([]string{"admin@example.com"}, false), // Disabled
 	}
 
 	reqBody := CreateDocumentRequest{

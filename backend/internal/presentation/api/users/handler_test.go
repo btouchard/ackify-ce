@@ -6,13 +6,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
 )
 
 // ============================================================================
@@ -40,6 +41,27 @@ var (
 
 	testAdminEmails = []string{"admin@example.com", "admin2@example.com"}
 )
+
+// mockAuthorizer is a test implementation of authorizer interface
+type mockAuthorizer struct {
+	adminEmails map[string]bool
+}
+
+func newMockAuthorizer(adminEmails []string) *mockAuthorizer {
+	emails := make(map[string]bool)
+	for _, email := range adminEmails {
+		emails[strings.ToLower(email)] = true
+	}
+	return &mockAuthorizer{adminEmails: emails}
+}
+
+func (m *mockAuthorizer) IsAdmin(_ context.Context, email string) bool {
+	return m.adminEmails[strings.ToLower(email)]
+}
+
+func (m *mockAuthorizer) CanCreateDocument(_ context.Context, email string) bool {
+	return m.adminEmails[strings.ToLower(email)]
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -82,12 +104,11 @@ func TestNewHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(tt.adminEmails)
+			authorizer := newMockAuthorizer(tt.adminEmails)
+			handler := NewHandler(authorizer)
 
 			assert.NotNil(t, handler)
-			if tt.adminEmails != nil {
-				assert.Equal(t, len(tt.adminEmails), len(handler.adminEmails))
-			}
+			assert.NotNil(t, handler.authorizer)
 		})
 	}
 }
@@ -156,7 +177,8 @@ func TestHandler_HandleGetCurrentUser_Success(t *testing.T) {
 			t.Parallel()
 
 			// Setup
-			handler := NewHandler(tt.adminEmails)
+			authorizer := newMockAuthorizer(tt.adminEmails)
+			handler := NewHandler(authorizer)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
 			ctx := addUserToContext(req.Context(), tt.user)
@@ -216,7 +238,8 @@ func TestHandler_HandleGetCurrentUser_Unauthorized(t *testing.T) {
 			t.Parallel()
 
 			// Setup
-			handler := NewHandler(testAdminEmails)
+			authorizer := newMockAuthorizer(testAdminEmails)
+			handler := NewHandler(authorizer)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
 			ctx := tt.setupCtx(req.Context())
@@ -244,7 +267,8 @@ func TestHandler_HandleGetCurrentUser_Unauthorized(t *testing.T) {
 func TestHandler_HandleGetCurrentUser_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(testAdminEmails)
+	authorizer := newMockAuthorizer(testAdminEmails)
+	handler := NewHandler(authorizer)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me", nil)
 	ctx := addUserToContext(req.Context(), testUserRegular)
@@ -341,7 +365,8 @@ func TestHandler_HandleGetCurrentUser_AdminEmailCaseInsensitive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(tt.adminEmails)
+			authorizer := newMockAuthorizer(tt.adminEmails)
+			handler := NewHandler(authorizer)
 
 			user := &models.User{
 				Sub:   "test-sub",
@@ -371,7 +396,8 @@ func TestHandler_HandleGetCurrentUser_AdminEmailCaseInsensitive(t *testing.T) {
 func TestHandler_HandleGetCurrentUser_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(testAdminEmails)
+	authorizer := newMockAuthorizer(testAdminEmails)
+	handler := NewHandler(authorizer)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
@@ -463,7 +489,8 @@ func TestHandler_HandleGetCurrentUser_DifferentHTTPMethods(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(testAdminEmails)
+			authorizer := newMockAuthorizer(testAdminEmails)
+			handler := NewHandler(authorizer)
 
 			req := httptest.NewRequest(tt.method, "/api/v1/users/me", nil)
 			ctx := addUserToContext(req.Context(), testUserRegular)
@@ -479,7 +506,8 @@ func TestHandler_HandleGetCurrentUser_DifferentHTTPMethods(t *testing.T) {
 }
 
 func BenchmarkHandler_HandleGetCurrentUser(b *testing.B) {
-	handler := NewHandler(testAdminEmails)
+	authorizer := newMockAuthorizer(testAdminEmails)
+	handler := NewHandler(authorizer)
 
 	b.ResetTimer()
 
@@ -495,7 +523,8 @@ func BenchmarkHandler_HandleGetCurrentUser(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleGetCurrentUser_Parallel(b *testing.B) {
-	handler := NewHandler(testAdminEmails)
+	authorizer := newMockAuthorizer(testAdminEmails)
+	handler := NewHandler(authorizer)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

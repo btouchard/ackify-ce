@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // OEmbedResponse represents the oEmbed JSON response format

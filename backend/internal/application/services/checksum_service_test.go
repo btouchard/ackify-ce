@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 type fakeVerificationRepository struct {
@@ -121,25 +121,20 @@ func (f *fakeDocumentRepository) FindByReference(_ context.Context, ref string, 
 	return nil, nil
 }
 
-func (f *fakeDocumentRepository) List(_ context.Context, limit, offset int) ([]*models.Document, error) {
-	return nil, nil
+func (f *fakeDocumentRepository) List(_ context.Context, _, _ int) ([]*models.Document, error) {
+	result := make([]*models.Document, 0, len(f.documents))
+	for _, doc := range f.documents {
+		result = append(result, doc)
+	}
+	return result, nil
 }
 
-func (f *fakeDocumentRepository) Search(_ context.Context, query string, limit, offset int) ([]*models.Document, error) {
-	return nil, nil
+func (f *fakeDocumentRepository) Search(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
 }
 
-func (f *fakeDocumentRepository) Count(_ context.Context, searchQuery string) (int, error) {
+func (f *fakeDocumentRepository) Count(_ context.Context, _ string) (int, error) {
 	return len(f.documents), nil
-}
-
-func (f *fakeDocumentRepository) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
-	return f.Create(ctx, docID, input, createdBy)
-}
-
-func (f *fakeDocumentRepository) Delete(_ context.Context, docID string) error {
-	delete(f.documents, docID)
-	return nil
 }
 
 func TestChecksumService_ValidateChecksumFormat(t *testing.T) {

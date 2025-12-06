@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 func TestMagicLinkRepository_CreateToken(t *testing.T) {

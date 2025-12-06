@@ -1,18 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package models
 
-import "strings"
+import "github.com/btouchard/ackify-ce/pkg/types"
 
-type User struct {
-	Sub   string `json:"sub"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-}
-
-func (u *User) IsValid() bool {
-	return strings.TrimSpace(u.Sub) != "" && strings.TrimSpace(u.Email) != ""
-}
-
-func (u *User) NormalizedEmail() string {
-	return strings.ToLower(u.Email)
-}
+// User is an alias for the unified user type.
+// This allows domain code to use models.User while sharing the same underlying type.
+type User = types.User

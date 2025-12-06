@@ -4,7 +4,7 @@ package email
 import (
 	"context"
 
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
 )
 
 func SendEmail(ctx context.Context, sender Sender, template string, to []string, locale string, subject string, data map[string]any) error {

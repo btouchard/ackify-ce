@@ -5,8 +5,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/application/services"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // MagicLinkCleanupWorker nettoie périodiquement les tokens expirés

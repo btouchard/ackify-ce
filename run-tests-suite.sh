@@ -19,7 +19,7 @@ echo -e "${BLUE}╔════════════════════�
 echo ""
 
 # Check if we're in the right directory
-if [ ! -f "go.mod" ] || [ ! -d "backend" ] || [ ! -d "webapp" ]; then
+if [ ! -f "backend/go.mod" ] || [ ! -d "backend" ] || [ ! -d "webapp" ]; then
     echo -e "${RED}❌ Error: Please run this script from the project root directory${NC}"
     exit 1
 fi
@@ -145,12 +145,11 @@ else
             # Run migrations
             echo -e "${YELLOW}📝 Running database migrations...${NC}"
             export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
-            cd "$PROJECT_ROOT"
-            if go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up; then
+            cd "$BACKEND_DIR"
+            if go run ./cmd/migrate/main.go -migrations-path file://migrations up; then
                 echo -e "${GREEN}✓ Migrations applied${NC}"
 
-                # Run integration tests
-                cd "$BACKEND_DIR"
+                # Run integration tests (already in $BACKEND_DIR)
                 export INTEGRATION_TESTS=1
                 if go test -v -race -tags=integration -p 1 -count=1 ./internal/infrastructure/database/... ./internal/presentation/api/admin; then
                     echo -e "${GREEN}✓ Integration tests passed${NC}"

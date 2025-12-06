@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/config"
-	"github.com/btouchard/ackify-ce/backend/pkg/checksum"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/pkg/checksum"
+	"github.com/btouchard/ackify-ce/pkg/config"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 type documentRepository interface {
@@ -23,21 +23,26 @@ type documentRepository interface {
 	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
 	Count(ctx context.Context, searchQuery string) (int, error)
-	CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
-	Delete(ctx context.Context, docID string) error
+}
+
+type docExpectedSignerRepository interface {
+	ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
 }
 
 // DocumentService handles document metadata operations and unique ID generation
 type DocumentService struct {
-	repo           documentRepository
-	checksumConfig *config.ChecksumConfig
+	repo               documentRepository
+	expectedSignerRepo docExpectedSignerRepository
+	checksumConfig     *config.ChecksumConfig
 }
 
 // NewDocumentService initializes the document service with its repository dependency
-func NewDocumentService(repo documentRepository, checksumConfig *config.ChecksumConfig) *DocumentService {
+func NewDocumentService(repo documentRepository, expectedSignerRepo docExpectedSignerRepository, checksumConfig *config.ChecksumConfig) *DocumentService {
 	return &DocumentService{
-		repo:           repo,
-		checksumConfig: checksumConfig,
+		repo:               repo,
+		expectedSignerRepo: expectedSignerRepo,
+		checksumConfig:     checksumConfig,
 	}
 }
 
@@ -448,17 +453,17 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 	return doc, true, nil
 }
 
-// List returns documents with pagination
+// List retrieves a paginated list of documents
 func (s *DocumentService) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
 	return s.repo.List(ctx, limit, offset)
 }
 
-// Search searches documents by query with pagination
+// Search performs a search query across documents
 func (s *DocumentService) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
 	return s.repo.Search(ctx, query, limit, offset)
 }
 
-// Count returns the total count of documents, optionally filtered by search query
+// Count returns the total number of documents matching the search query
 func (s *DocumentService) Count(ctx context.Context, searchQuery string) (int, error) {
 	return s.repo.Count(ctx, searchQuery)
 }
@@ -468,12 +473,18 @@ func (s *DocumentService) GetByDocID(ctx context.Context, docID string) (*models
 	return s.repo.GetByDocID(ctx, docID)
 }
 
-// CreateOrUpdate creates a new document or updates an existing one
-func (s *DocumentService) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
-	return s.repo.CreateOrUpdate(ctx, docID, input, createdBy)
+// GetExpectedSignerStats retrieves completion statistics for expected signers
+func (s *DocumentService) GetExpectedSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
+	if s.expectedSignerRepo == nil {
+		return nil, fmt.Errorf("expected signer repository not configured")
+	}
+	return s.expectedSignerRepo.GetStats(ctx, docID)
 }
 
-// Delete removes a document by its ID
-func (s *DocumentService) Delete(ctx context.Context, docID string) error {
-	return s.repo.Delete(ctx, docID)
+// ListExpectedSigners retrieves all expected signers for a document
+func (s *DocumentService) ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error) {
+	if s.expectedSignerRepo == nil {
+		return nil, fmt.Errorf("expected signer repository not configured")
+	}
+	return s.expectedSignerRepo.ListByDocID(ctx, docID)
 }

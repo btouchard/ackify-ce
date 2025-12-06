@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 // Test generateDocID function
@@ -343,6 +343,17 @@ func TestIsBase64Like(t *testing.T) {
 	}
 }
 
+// mockDocExpectedSignerRepo is a minimal mock for testing
+type mockDocExpectedSignerRepoTest struct{}
+
+func (m *mockDocExpectedSignerRepoTest) ListByDocID(_ context.Context, _ string) ([]*models.ExpectedSigner, error) {
+	return []*models.ExpectedSigner{}, nil
+}
+
+func (m *mockDocExpectedSignerRepoTest) GetStats(_ context.Context, _ string) (*models.DocCompletionStats, error) {
+	return &models.DocCompletionStats{}, nil
+}
+
 // mockDocumentRepository is a mock implementation for testing
 type mockDocumentRepository struct {
 	createFunc          func(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error)
@@ -378,30 +389,22 @@ func (m *mockDocumentRepository) FindByReference(ctx context.Context, ref string
 	return nil, nil // Not found by default
 }
 
-func (m *mockDocumentRepository) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
-	return nil, nil
+func (m *mockDocumentRepository) List(_ context.Context, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
 }
 
-func (m *mockDocumentRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
-	return nil, nil
+func (m *mockDocumentRepository) Search(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
 }
 
-func (m *mockDocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
+func (m *mockDocumentRepository) Count(_ context.Context, _ string) (int, error) {
 	return 0, nil
-}
-
-func (m *mockDocumentRepository) CreateOrUpdate(ctx context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
-	return m.Create(ctx, docID, input, createdBy)
-}
-
-func (m *mockDocumentRepository) Delete(ctx context.Context, docID string) error {
-	return nil
 }
 
 // Test CreateDocument with URL reference
 func TestDocumentService_CreateDocument_WithURL(t *testing.T) {
 	mockRepo := &mockDocumentRepository{}
-	service := NewDocumentService(mockRepo, nil) // nil config = no automatic checksum
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil) // nil config = no automatic checksum
 
 	req := CreateDocumentRequest{
 		Reference: "https://example.com/important-doc.pdf",
@@ -438,7 +441,7 @@ func TestDocumentService_CreateDocument_WithURL(t *testing.T) {
 // Test CreateDocument with URL reference and custom title
 func TestDocumentService_CreateDocument_WithURLAndTitle(t *testing.T) {
 	mockRepo := &mockDocumentRepository{}
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 
 	req := CreateDocumentRequest{
 		Reference: "https://example.com/doc.pdf",
@@ -466,7 +469,7 @@ func TestDocumentService_CreateDocument_WithURLAndTitle(t *testing.T) {
 // Test CreateDocument with HTTP URL
 func TestDocumentService_CreateDocument_WithHTTPURL(t *testing.T) {
 	mockRepo := &mockDocumentRepository{}
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 
 	req := CreateDocumentRequest{
 		Reference: "http://example.com/doc.html",
@@ -506,7 +509,7 @@ func TestDocumentService_CreateDocument_IDCollisionRetry(t *testing.T) {
 		},
 	}
 
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 
 	req := CreateDocumentRequest{
 		Reference: "test-doc",
@@ -636,7 +639,7 @@ func TestDocumentService_FindByReference_Success(t *testing.T) {
 		},
 	}
 
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
 	doc, err := service.FindByReference(ctx, "https://example.com/test.pdf", "url")
@@ -673,7 +676,7 @@ func TestDocumentService_FindOrCreateDocument_Found(t *testing.T) {
 		},
 	}
 
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
 	doc, created, err := service.FindOrCreateDocument(ctx, "https://example.com/existing.pdf")
@@ -705,7 +708,7 @@ func TestDocumentService_FindOrCreateDocument_CreateWithURL(t *testing.T) {
 		},
 	}
 
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
 	doc, created, err := service.FindOrCreateDocument(ctx, "https://example.com/new-doc.pdf")
@@ -741,7 +744,7 @@ func TestDocumentService_FindOrCreateDocument_CreateWithPath(t *testing.T) {
 		},
 	}
 
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
 	doc, created, err := service.FindOrCreateDocument(ctx, "/home/user/important-file.pdf")
@@ -787,7 +790,7 @@ func TestDocumentService_FindOrCreateDocument_CreateWithReference(t *testing.T) 
 		},
 	}
 
-	service := NewDocumentService(mockRepo, nil)
+	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
 	doc, created, err := service.FindOrCreateDocument(ctx, "company-policy-2024")

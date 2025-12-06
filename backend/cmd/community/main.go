@@ -11,9 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/config"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
-	"github.com/btouchard/ackify-ce/backend/pkg/web"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/pkg/config"
+	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/pkg/web"
+	webauth "github.com/btouchard/ackify-ce/pkg/web/auth"
 )
 
 // Build-time variables set via ldflags
@@ -40,11 +44,59 @@ func main() {
 		"commit", Commit,
 		"build_date", BuildDate)
 
-	server, err := web.NewServer(ctx, cfg, frontend, Version)
+	// Initialize DB
+	db, err := database.InitDB(ctx, database.Config{DSN: cfg.Database.DSN})
+	if err != nil {
+		log.Fatalf("failed to initialize database: %v", err)
+	}
+
+	// Initialize tenant provider
+	tenantProvider, err := tenant.NewSingleTenantProviderWithContext(ctx, db)
+	if err != nil {
+		log.Fatalf("failed to initialize tenant provider: %v", err)
+	}
+
+	// Create OAuth session repository
+	oauthSessionRepo := database.NewOAuthSessionRepository(db, tenantProvider)
+
+	// Create OAuth service (internal infrastructure)
+	var oauthService *auth.OauthService
+	if cfg.Auth.OAuthEnabled {
+		oauthService = auth.NewOAuthService(auth.Config{
+			BaseURL:       cfg.App.BaseURL,
+			ClientID:      cfg.OAuth.ClientID,
+			ClientSecret:  cfg.OAuth.ClientSecret,
+			AuthURL:       cfg.OAuth.AuthURL,
+			TokenURL:      cfg.OAuth.TokenURL,
+			UserInfoURL:   cfg.OAuth.UserInfoURL,
+			LogoutURL:     cfg.OAuth.LogoutURL,
+			Scopes:        cfg.OAuth.Scopes,
+			AllowedDomain: cfg.OAuth.AllowedDomain,
+			CookieSecret:  cfg.OAuth.CookieSecret,
+			SecureCookies: cfg.App.SecureCookies,
+			SessionRepo:   oauthSessionRepo,
+		})
+	}
+
+	// Create OAuth provider adapter
+	oauthProvider := webauth.NewOAuthProvider(oauthService, cfg.Auth.OAuthEnabled)
+
+	// Create Authorizer
+	authorizer := webauth.NewSimpleAuthorizer(cfg.App.AdminEmails, cfg.App.OnlyAdminCanCreate)
+
+	// === Build Server ===
+	server, err := web.NewServerBuilder(cfg, frontend, Version).
+		WithDB(db).
+		WithTenantProvider(tenantProvider).
+		WithOAuthProvider(oauthProvider). // OAuth provider for OAuth-specific operations
+		WithAuthorizer(authorizer).       // Authorization decisions
+		// QuotaEnforcer and AuditLogger use defaults (NoLimit, LogOnly)
+		Build(ctx)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
+	// Start server
 	go func() {
 		log.Printf("Community Edition server starting on %s", server.GetAddr())
 		if err := server.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -52,6 +104,7 @@ func main() {
 		}
 	}()
 
+	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

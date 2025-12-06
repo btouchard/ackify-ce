@@ -6,9 +6,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
-	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/pkg/logger"
 )
 
 // DocumentRepository handles document metadata persistence
