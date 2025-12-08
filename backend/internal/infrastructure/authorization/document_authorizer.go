@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/internal/domain/models"
 )
 
 type CEDocumentAuthorizer struct {

@@ -2,9 +2,9 @@
 package coreapp
 
 import (
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/documents"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/signatures"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/admin"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/documents"
+	"github.com/btouchard/ackify-ce/internal/presentation/api/signatures"
 )
 
 type CoreHandlers struct {
