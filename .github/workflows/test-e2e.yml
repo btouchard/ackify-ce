@@ -99,8 +99,8 @@ jobs:
           ACKIFY_MAIL_FROM_NAME: "Ackify Test"
           ACKIFY_LOG_LEVEL: "debug"
           ACKIFY_AUTH_MAGICLINK_ENABLED: "true"
-          ACKIFY_LOCALES_DIR: "backend/locales"
-          ACKIFY_TEMPLATES_DIR: "backend/templates"
+          ACKIFY_LOCALES_DIR: "${{ github.workspace }}/backend/locales"
+          ACKIFY_TEMPLATES_DIR: "${{ github.workspace }}/backend/templates"
           ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_EMAIL: "1000"
           ACKIFY_AUTH_MAGICLINK_RATE_LIMIT_IP: "1000"
           ACKIFY_AUTH_RATE_LIMIT: "1000"
@@ -108,11 +108,21 @@ jobs:
           ACKIFY_GENERAL_RATE_LIMIT: "1000"
         run: |
           cd backend && go build -o ../ackify ./cmd/community
-          ./ackify &
+          cd ..
+          ./ackify > /tmp/ackify.log 2>&1 &
           echo $! > /tmp/ackify.pid
 
           # Wait for server to be ready
-          timeout 30 bash -c 'until curl -s http://localhost:8080/api/v1/health > /dev/null; do sleep 1; done'
+          for i in $(seq 1 60); do
+            if curl -s http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+              echo "Server is ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed to start. Logs:"
+          cat /tmp/ackify.log
+          exit 1
 
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
