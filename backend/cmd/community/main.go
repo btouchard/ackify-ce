@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/btouchard/ackify-ce/internal/infrastructure/auth"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/tenant"
-	"github.com/btouchard/ackify-ce/pkg/config"
-	"github.com/btouchard/ackify-ce/pkg/logger"
-	"github.com/btouchard/ackify-ce/pkg/web"
-	webauth "github.com/btouchard/ackify-ce/pkg/web/auth"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/backend/pkg/config"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/web"
+	webauth "github.com/btouchard/ackify-ce/backend/pkg/web/auth"
 )
 
 // Build-time variables set via ldflags

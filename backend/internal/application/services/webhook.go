@@ -6,8 +6,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // Interfaces kept local to application layer

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/pkg/config"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/backend/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

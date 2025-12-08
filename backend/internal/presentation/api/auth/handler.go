@@ -9,11 +9,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/internal/presentation/handlers"
-	"github.com/btouchard/ackify-ce/pkg/logger"
-	"github.com/btouchard/ackify-ce/pkg/providers"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // magicLinkService defines magic link operations

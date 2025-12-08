@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // HandleRequestMagicLink handles POST /api/v1/auth/magic-link/request

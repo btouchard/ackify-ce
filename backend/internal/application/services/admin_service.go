@@ -4,7 +4,7 @@ package services
 import (
 	"context"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 )
 
 // adminDocumentRepository defines admin-specific document operations

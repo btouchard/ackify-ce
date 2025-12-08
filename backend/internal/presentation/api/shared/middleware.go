@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/btouchard/ackify-ce/pkg/logger"
-	"github.com/btouchard/ackify-ce/pkg/providers"
-	"github.com/btouchard/ackify-ce/pkg/types"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
+	"github.com/btouchard/ackify-ce/backend/pkg/types"
 )
 
 // ContextKey represents a context key type

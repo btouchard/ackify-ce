@@ -5,8 +5,8 @@ import (
 	"context"
 	"net/http"
 
-	infraAuth "github.com/btouchard/ackify-ce/internal/infrastructure/auth"
-	"github.com/btouchard/ackify-ce/pkg/web"
+	infraAuth "github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/backend/pkg/web"
 )
 
 // OAuthProvider adapts the internal OauthService to the web.OAuthAuthProvider interface.

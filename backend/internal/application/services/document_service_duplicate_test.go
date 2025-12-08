@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 )
 
 // mockDocRepo is a simple in-memory mock for testing document duplication scenarios

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 )
 
 type fakeVerificationRepository struct {

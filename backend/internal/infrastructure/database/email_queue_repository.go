@@ -10,9 +10,9 @@ import (
 
 	"github.com/lib/pq"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/tenant"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // EmailQueueRepository handles database operations for the email queue

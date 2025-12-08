@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/email"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/i18n"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // expectedSignerRepository defines minimal interface for expected signer operations

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // HandleError handles different types of errors and returns appropriate HTTP responses

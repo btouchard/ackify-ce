@@ -12,16 +12,16 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"gopkg.in/yaml.v3"
 
-	"github.com/btouchard/ackify-ce/internal/application/services"
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	apiAdmin "github.com/btouchard/ackify-ce/internal/presentation/api/admin"
-	apiAuth "github.com/btouchard/ackify-ce/internal/presentation/api/auth"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/documents"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/health"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/signatures"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/users"
-	"github.com/btouchard/ackify-ce/pkg/providers"
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
+	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/documents"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/health"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/signatures"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/users"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // magicLinkService defines magic link authentication operations

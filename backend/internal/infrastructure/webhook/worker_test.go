@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"io"
 )
 

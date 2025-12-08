@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/pkg/web"
+	"github.com/btouchard/ackify-ce/backend/pkg/web"
 )
 
 // SimpleAuthorizer is an authorization implementation based on a list of admin emails.

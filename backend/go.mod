@@ -1,4 +1,4 @@
-module github.com/btouchard/ackify-ce
+module github.com/btouchard/ackify-ce/backend
 
 go 1.24.5
 

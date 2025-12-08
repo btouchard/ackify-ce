@@ -8,8 +8,8 @@ import (
 
 	"time"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/go-chi/chi/v5"
 )
 

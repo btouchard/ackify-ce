@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // responseWriter is a wrapper around http.ResponseWriter that captures the status code

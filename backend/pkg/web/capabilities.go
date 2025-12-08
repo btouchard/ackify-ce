@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/pkg/providers"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // Common errors for capability providers.

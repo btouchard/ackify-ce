@@ -11,11 +11,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/internal/application/services"
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/infrastructure/database"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/admin"
-	"github.com/btouchard/ackify-ce/pkg/crypto"
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
+	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/go-chi/chi/v5"
 )
 

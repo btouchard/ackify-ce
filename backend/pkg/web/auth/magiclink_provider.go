@@ -5,9 +5,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/internal/application/services"
-	infraAuth "github.com/btouchard/ackify-ce/internal/infrastructure/auth"
-	"github.com/btouchard/ackify-ce/pkg/web"
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
+	infraAuth "github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
+	"github.com/btouchard/ackify-ce/backend/pkg/web"
 )
 
 // MagicLinkProvider adapts the MagicLinkService to the web.MagicLinkAuthProvider interface.

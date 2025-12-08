@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 )
 
 func TestReminderRepository_Basic_Integration(t *testing.T) {

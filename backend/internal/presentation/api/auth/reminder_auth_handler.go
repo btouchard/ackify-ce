@@ -4,9 +4,9 @@ package auth
 import (
 	"net/http"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // HandleVerifyReminderAuthLink handles GET /api/v1/auth/reminder-link/verify

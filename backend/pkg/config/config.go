@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/gorilla/securecookie"
 )
 

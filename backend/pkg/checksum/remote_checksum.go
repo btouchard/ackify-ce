@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 // ChecksumResult represents the result of a checksum computation

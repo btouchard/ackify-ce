@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btouchard/ackify-ce/internal/domain/models"
-	"github.com/btouchard/ackify-ce/pkg/checksum"
-	"github.com/btouchard/ackify-ce/pkg/config"
-	"github.com/btouchard/ackify-ce/pkg/crypto"
-	"github.com/btouchard/ackify-ce/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/checksum"
+	"github.com/btouchard/ackify-ce/backend/pkg/config"
+	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
+	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
 type repository interface {
