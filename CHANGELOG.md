@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2025-12-08
+
+### 🏗️ Architecture & CI/CD
+
+Version de maintenance améliorant l'architecture interne et la stabilité du pipeline CI/CD.
+
+### Added
+
+- **Architecture Clean Architecture Renforcée**
+  - Séparation stricte des couches avec interfaces privées
+  - Extraction des packages `coreapp` pour l'injection de dépendances
+  - Préparation de l'architecture pour le support multi-tenant
+
+- **Système de Migrations Amélioré**
+  - Commande `force` pour forcer la version de migration
+  - Commande `goto` pour migrer vers une version spécifique
+  - Meilleure gestion des bases de données existantes sans schéma de migration
+
+### Fixed
+
+- **CI/CD Pipeline**
+  - Ajout de QEMU pour le build Docker multi-plateforme (linux/amd64, linux/arm64)
+  - Correction du chemin go.mod dans le dossier backend
+  - Chemins absolus pour les templates et locales dans les tests E2E
+  - Meilleure gestion des logs de démarrage serveur pour le debug
+
+- **Internationalisation**
+  - Sujets des emails de rappels maintenant internationalisés (respectent la langue configurée)
+
+- **Tests E2E**
+  - Correction du test de création de document par URL
+
+### Technical Details
+
+**Fichiers modifiés :**
+- `.github/workflows/build-docker.yml` - Ajout setup QEMU
+- `.github/workflows/test-e2e.yml` - Chemins absolus et meilleure gestion des erreurs
+- `backend/cmd/migrate/main.go` - Nouvelles commandes force et goto
+- `backend/internal/infrastructure/email/` - Internationalisation des sujets
+
 ## [1.2.5] - 2025-12-01
 
 ### 🔐 Microsoft OAuth Support
@@ -529,6 +569,7 @@ For users upgrading from v1.1.x to v1.2.0:
 - NULL UserName handling in database operations
 - Proper string conversion for UserName field
 
+[1.2.6]: https://github.com/btouchard/ackify-ce/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/btouchard/ackify-ce/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/btouchard/ackify-ce/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/btouchard/ackify-ce/compare/v1.2.1...v1.2.3
