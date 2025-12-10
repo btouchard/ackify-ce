@@ -38,12 +38,10 @@ jobs:
       with:
         go-version: '1.24.5'
         cache: true
-        cache-dependency-path: backend/go.sum
+        cache-dependency-path: go.sum
 
     - name: Download dependencies
-      run: |
-        cd backend
-        go mod download
+      run: go mod download
 
     - name: Create empty frontend dist directory for embed directive
       run: |
@@ -52,17 +50,14 @@ jobs:
 
     - name: Run go fmt check
       run: |
-        cd backend
-        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+        if [ "$(gofmt -s -l backend | wc -l)" -gt 0 ]; then
           echo "The following files need to be formatted:"
-          gofmt -s -l .
+          gofmt -s -l backend
           exit 1
         fi
 
     - name: Run go vet
-      run: |
-        cd backend
-        go vet ./...
+      run: go vet ./backend/...
 
     - name: Run unit tests
       env:
@@ -71,19 +66,16 @@ jobs:
         ACKIFY_OAUTH_CLIENT_ID: "test-client-id"
         ACKIFY_OAUTH_CLIENT_SECRET: "test-client-secret"
         ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
-      run: |
-        cd backend
-        go test -v -race -short ./...
+      run: go test -v -race -short ./backend/...
 
     - name: Run integration tests
       env:
         ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
         INTEGRATION_TESTS: "1"
       run: |
-        cd backend
         go test -v -race -tags=integration -p 1 -count=1 \
-          ./internal/infrastructure/database/... \
-          ./internal/presentation/api/admin
+          ./backend/internal/infrastructure/database/... \
+          ./backend/internal/presentation/api/admin
 
     - name: Generate coverage report
       env:
@@ -95,14 +87,13 @@ jobs:
         ACKIFY_OAUTH_CLIENT_SECRET: "test-client-secret"
         ACKIFY_OAUTH_COOKIE_SECRET: "dGVzdC1jb29raWUtc2VjcmV0LXRlc3QtY29va2llLXNlY3JldA=="
       run: |
-        cd backend
         # Unit coverage
-        go test -v -race -short -covermode=atomic -coverprofile=coverage-unit.out ./...
+        go test -v -race -short -covermode=atomic -coverprofile=coverage-unit.out ./backend/...
         # Integration coverage
         go test -v -race -tags=integration -p 1 -count=1 \
           -covermode=atomic -coverprofile=coverage-integration.out \
-          ./internal/infrastructure/database/... \
-          ./internal/presentation/api/admin
+          ./backend/internal/infrastructure/database/... \
+          ./backend/internal/presentation/api/admin
         # Merge coverage
         echo "mode: atomic" > coverage.out
         tail -n +2 coverage-unit.out >> coverage.out
@@ -115,5 +106,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: backend-coverage
-        path: backend/coverage.out
+        path: coverage.out
         retention-days: 1

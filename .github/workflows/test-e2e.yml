@@ -44,7 +44,7 @@ jobs:
         with:
           go-version: '1.24.5'
           cache: true
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: go.sum
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -64,15 +64,13 @@ jobs:
         run: npm run build
 
       - name: Install backend dependencies
-        working-directory: backend
         run: go mod download
 
       - name: Run database migrations
-        working-directory: backend
         env:
           ACKIFY_DB_DSN: "postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
         run: |
-          go run ./cmd/migrate/main.go -migrations-path file://migrations up
+          go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up
 
       - name: Copy frontend dist for embed
         run: |
@@ -107,8 +105,7 @@ jobs:
           ACKIFY_DOCUMENT_RATE_LIMIT: "1000"
           ACKIFY_GENERAL_RATE_LIMIT: "1000"
         run: |
-          cd backend && go build -o ../ackify ./cmd/community
-          cd ..
+          go build -o ackify ./backend/cmd/community
           ./ackify > /tmp/ackify.log 2>&1 &
           echo $! > /tmp/ackify.pid
 

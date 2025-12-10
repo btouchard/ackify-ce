@@ -19,14 +19,13 @@ echo -e "${BLUE}╔════════════════════�
 echo ""
 
 # Check if we're in the right directory
-if [ ! -f "backend/go.mod" ] || [ ! -d "backend" ] || [ ! -d "webapp" ]; then
+if [ ! -f "go.mod" ] || [ ! -d "webapp" ]; then
     echo -e "${RED}❌ Error: Please run this script from the project root directory${NC}"
     exit 1
 fi
 
 # Variables
 PROJECT_ROOT=$(pwd)
-BACKEND_DIR="$PROJECT_ROOT/backend"
 WEBAPP_DIR="$PROJECT_ROOT/webapp"
 COVERAGE_DIR="$PROJECT_ROOT/.coverage-report"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -69,7 +68,7 @@ echo -e "${CYAN}  Phase 1/3: Backend Tests (Go)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-cd "$BACKEND_DIR"
+cd "$PROJECT_ROOT"
 
 echo -e "${YELLOW}📦 Running go fmt check...${NC}"
 if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
@@ -145,20 +144,20 @@ else
             # Run migrations
             echo -e "${YELLOW}📝 Running database migrations...${NC}"
             export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
-            cd "$BACKEND_DIR"
-            if go run ./cmd/migrate/main.go -migrations-path file://migrations up; then
+            cd "$PROJECT_ROOT"
+            if go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up; then
                 echo -e "${GREEN}✓ Migrations applied${NC}"
 
-                # Run integration tests (already in $BACKEND_DIR)
+                # Run integration tests
                 export INTEGRATION_TESTS=1
-                if go test -v -race -tags=integration -p 1 -count=1 ./internal/infrastructure/database/... ./internal/presentation/api/admin; then
+                if go test -v -race -tags=integration -p 1 -count=1 ./backend/internal/infrastructure/database/... ./backend/internal/presentation/api/admin; then
                     echo -e "${GREEN}✓ Integration tests passed${NC}"
 
                     # Generate integration coverage
                     echo -e "${YELLOW}📊 Generating integration test coverage...${NC}"
                     go test -race -tags=integration -p 1 -count=1 \
                         -covermode=atomic -coverprofile="$COVERAGE_DIR/backend-integration.out" \
-                        ./internal/infrastructure/database/... ./internal/presentation/api/admin 2>&1 | grep -v "no test files" || true
+                        ./backend/internal/infrastructure/database/... ./backend/internal/presentation/api/admin 2>&1 | grep -v "no test files" || true
                     echo -e "${GREEN}✓ Integration coverage generated${NC}"
                 else
                     echo -e "${RED}❌ Integration tests failed${NC}"

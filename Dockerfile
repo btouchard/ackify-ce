@@ -22,17 +22,17 @@ FROM golang:alpine AS builder
 RUN apk update && apk add --no-cache ca-certificates git curl && rm -rf /var/cache/apk/*
 RUN adduser -D -g '' ackuser
 
-WORKDIR /app/backend
-COPY backend/go.mod backend/go.sum ./
+WORKDIR /app
+COPY go.mod go.sum ./
 ENV GOTOOLCHAIN=auto
 # Cache Go modules and build cache between builds
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod download && go mod verify
-COPY backend/ ./
+COPY backend/ ./backend/
 
-RUN mkdir -p cmd/community/web/dist
-COPY --from=spa-builder /app/webapp/dist ./cmd/community/web/dist
+RUN mkdir -p backend/cmd/community/web/dist
+COPY --from=spa-builder /app/webapp/dist ./backend/cmd/community/web/dist
 
 # Cross-compile per target platform
 ARG TARGETOS
@@ -46,14 +46,14 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
     -a -installsuffix cgo \
     -ldflags="-w -s -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
-    -o /app/ackify ./cmd/community
+    -o /app/ackify ./backend/cmd/community
 
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
     -a -installsuffix cgo \
     -ldflags="-w -s" \
-    -o /app/migrate ./cmd/migrate
+    -o /app/migrate ./backend/cmd/migrate
 
 FROM gcr.io/distroless/static-debian12:nonroot
 

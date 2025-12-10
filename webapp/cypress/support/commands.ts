@@ -16,6 +16,7 @@ declare global {
       /**
        * Visit a page with locale set to English
        * @param url - URL to visit
+       * @param locale - Locale to use
        * @param options - Visit options
        */
       visitWithLocale(url: string, locale?: string, options?: Partial<Cypress.VisitOptions>): Chainable<Cypress.AUTWindow>
