@@ -131,6 +131,12 @@ func SetupTestDB(t *testing.T) *TestDB {
 }
 
 func (tdb *TestDB) createSchema() error {
+	// Create ackify_app role if it doesn't exist (required by migration 0016_add_rls_policies.up.sql)
+	// This mirrors what cmd/migrate/main.go does with ensureAppRole()
+	if err := tdb.ensureAppRole(); err != nil {
+		return fmt.Errorf("failed to ensure ackify_app role: %w", err)
+	}
+
 	// Find migrations directory
 	migrationsPath := os.Getenv("MIGRATIONS_PATH")
 	if migrationsPath == "" {
@@ -355,4 +361,55 @@ func isStringPtrEqual(a, b *string) bool {
 
 func NewSignatureFactory() *SignatureFactory {
 	return &SignatureFactory{}
+}
+
+// ensureAppRole creates the ackify_app role if it doesn't exist.
+// This mirrors cmd/migrate/main.go ensureAppRole() behavior for tests.
+// The role is created with NOLOGIN (no password) - sufficient for running migrations.
+func (tdb *TestDB) ensureAppRole() error {
+	// Check if role exists
+	var exists bool
+	err := tdb.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = 'ackify_app')").Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check if ackify_app role exists: %w", err)
+	}
+
+	if exists {
+		return nil // Role already exists
+	}
+
+	// Create the role with NOLOGIN (no password needed for tests)
+	createSQL := `
+		CREATE ROLE ackify_app WITH
+			NOLOGIN
+			NOCREATEDB
+			NOCREATEROLE
+			NOINHERIT
+			NOREPLICATION
+			CONNECTION LIMIT -1
+	`
+	_, err = tdb.DB.Exec(createSQL)
+	if err != nil {
+		return fmt.Errorf("failed to create ackify_app role: %w", err)
+	}
+
+	// Grant CONNECT on database
+	var dbName string
+	err = tdb.DB.QueryRow("SELECT current_database()").Scan(&dbName)
+	if err != nil {
+		return fmt.Errorf("failed to get current database name: %w", err)
+	}
+
+	_, err = tdb.DB.Exec(fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO ackify_app", dbName))
+	if err != nil {
+		return fmt.Errorf("failed to grant CONNECT to ackify_app: %w", err)
+	}
+
+	// Grant USAGE on public schema
+	_, err = tdb.DB.Exec("GRANT USAGE ON SCHEMA public TO ackify_app")
+	if err != nil {
+		return fmt.Errorf("failed to grant USAGE on public schema: %w", err)
+	}
+
+	return nil
 }
