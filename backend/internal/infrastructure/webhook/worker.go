@@ -5,17 +5,19 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"fmt"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
-	"strconv"
 )
 
 // DeliveryRepository is the minimal interface used by the worker
@@ -52,6 +54,10 @@ type Worker struct {
 	http HTTPDoer
 	cfg  WorkerConfig
 
+	// RLS support
+	db      *sql.DB
+	tenants tenant.Provider
+
 	ctx      context.Context
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
@@ -60,7 +66,7 @@ type Worker struct {
 	started  bool
 }
 
-func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig) *Worker {
+func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig, db *sql.DB, tenants tenant.Provider) *Worker {
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 10
 	}
@@ -80,7 +86,7 @@ func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig) *
 		cfg.RequestTimeout = 10 * time.Second
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Worker{repo: repo, http: httpClient, cfg: cfg, ctx: ctx, cancel: cancel, stopChan: make(chan struct{})}
+	return &Worker{repo: repo, http: httpClient, cfg: cfg, db: db, tenants: tenants, ctx: ctx, cancel: cancel, stopChan: make(chan struct{})}
 }
 
 func (w *Worker) Start() error {
@@ -148,33 +154,85 @@ func (w *Worker) cleanupLoop() {
 		case <-w.stopChan:
 			return
 		case <-t.C:
-			if n, err := w.repo.CleanupOld(w.ctx, w.cfg.CleanupAge); err != nil {
-				logger.Logger.Error("Failed to cleanup webhook deliveries", "error", err.Error())
-			} else if n > 0 {
-				logger.Logger.Info("Cleaned webhook deliveries", "count", n)
-			}
+			w.performCleanup()
 		}
+	}
+}
+
+func (w *Worker) performCleanup() {
+	ctx, cancel := context.WithTimeout(w.ctx, 5*time.Minute)
+	defer cancel()
+
+	var deleted int64
+	var err error
+
+	// Use RLS context if db and tenants are available
+	if w.db != nil && w.tenants != nil {
+		tenantID, tenantErr := w.tenants.CurrentTenant(ctx)
+		if tenantErr != nil {
+			logger.Logger.Error("Failed to get tenant for webhook cleanup", "error", tenantErr.Error())
+			return
+		}
+
+		err = tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+			var cleanupErr error
+			deleted, cleanupErr = w.repo.CleanupOld(txCtx, w.cfg.CleanupAge)
+			return cleanupErr
+		})
+	} else {
+		// No RLS - direct repository access (for tests)
+		deleted, err = w.repo.CleanupOld(ctx, w.cfg.CleanupAge)
+	}
+
+	if err != nil {
+		logger.Logger.Error("Failed to cleanup webhook deliveries", "error", err.Error())
+	} else if deleted > 0 {
+		logger.Logger.Info("Cleaned webhook deliveries", "count", deleted)
 	}
 }
 
 func (w *Worker) processBatch() {
 	ctx, cancel := context.WithTimeout(w.ctx, 5*time.Minute)
 	defer cancel()
-	items, err := w.repo.GetNextToProcess(ctx, w.cfg.BatchSize)
+
+	var items []*database.WebhookDeliveryItem
+	var err error
+
+	// Use RLS context if db and tenants are available
+	if w.db != nil && w.tenants != nil {
+		tenantID, tenantErr := w.tenants.CurrentTenant(ctx)
+		if tenantErr != nil {
+			logger.Logger.Error("Failed to get tenant for webhook worker", "error", tenantErr.Error())
+			return
+		}
+
+		err = tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+			var fetchErr error
+			items, fetchErr = w.repo.GetNextToProcess(txCtx, w.cfg.BatchSize)
+			if fetchErr != nil {
+				return fetchErr
+			}
+			if len(items) == 0 {
+				items, fetchErr = w.repo.GetRetryable(txCtx, w.cfg.BatchSize)
+			}
+			return fetchErr
+		})
+	} else {
+		// No RLS - direct repository access (for tests)
+		items, err = w.repo.GetNextToProcess(ctx, w.cfg.BatchSize)
+		if err == nil && len(items) == 0 {
+			items, err = w.repo.GetRetryable(ctx, w.cfg.BatchSize)
+		}
+	}
+
 	if err != nil {
 		logger.Logger.Error("Failed to get webhook deliveries", "error", err.Error())
 		return
 	}
 	if len(items) == 0 {
-		items, err = w.repo.GetRetryable(ctx, w.cfg.BatchSize)
-		if err != nil {
-			logger.Logger.Error("Failed to get retryable webhook deliveries", "error", err.Error())
-			return
-		}
-		if len(items) == 0 {
-			return
-		}
+		return
 	}
+
 	sem := make(chan struct{}, w.cfg.MaxConcurrent)
 	var wg sync.WaitGroup
 	for _, it := range items {
@@ -183,7 +241,22 @@ func (w *Worker) processBatch() {
 		go func(item *database.WebhookDeliveryItem) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			w.processOne(ctx, item)
+
+			// Use RLS context if available
+			if w.db != nil && w.tenants != nil {
+				tenantID, _ := w.tenants.CurrentTenant(ctx)
+				err := tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+					w.processOne(txCtx, item)
+					return nil
+				})
+				if err != nil {
+					logger.Logger.Error("Failed to process webhook with tenant context",
+						"id", item.ID,
+						"error", err.Error())
+				}
+			} else {
+				w.processOne(ctx, item)
+			}
 		}(it)
 	}
 	wg.Wait()

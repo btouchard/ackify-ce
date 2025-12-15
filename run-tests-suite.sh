@@ -144,6 +144,7 @@ else
             # Run migrations
             echo -e "${YELLOW}📝 Running database migrations...${NC}"
             export ACKIFY_DB_DSN="postgres://postgres:testpassword@localhost:5432/ackify_test?sslmode=disable"
+            export ACKIFY_APP_PASSWORD="ackifytestpassword"
             cd "$PROJECT_ROOT"
             if go run ./backend/cmd/migrate/main.go -migrations-path file://backend/migrations up; then
                 echo -e "${GREEN}✓ Migrations applied${NC}"

@@ -7,7 +7,8 @@ services:
     container_name: ackify-ce-migrate
     environment:
       ACKIFY_LOG_LEVEL: "${ACKIFY_LOG_LEVEL}"
-      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
+      ACKIFY_DB_DSN: "postgres://postgres:${POSTGRES_PASSWORD}@ackify-db:5432/ackify?sslmode=disable"
+      ACKIFY_APP_PASSWORD: "${ACKIFY_APP_PASSWORD:-ackify}"
     depends_on:
       ackify-db:
         condition: service_healthy
@@ -25,7 +26,7 @@ services:
       ACKIFY_LOG_LEVEL: "${ACKIFY_LOG_LEVEL}"
       ACKIFY_BASE_URL: "${ACKIFY_BASE_URL}"
       ACKIFY_ORGANISATION: "${ACKIFY_ORGANISATION}"
-      ACKIFY_DB_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ackify-db:5432/${POSTGRES_DB}?sslmode=disable"
+      ACKIFY_DB_DSN: "postgres://ackify_app:${ACKIFY_APP_PASSWORD}@ackify-db:5432/ackify?sslmode=disable"
       ACKIFY_OAUTH_PROVIDER: "${ACKIFY_OAUTH_PROVIDER}"
       ACKIFY_OAUTH_CLIENT_ID: "${ACKIFY_OAUTH_CLIENT_ID}"
       ACKIFY_OAUTH_CLIENT_SECRET: "${ACKIFY_OAUTH_CLIENT_SECRET}"
@@ -59,15 +60,15 @@ services:
     container_name: ackify-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ackify
     volumes:
       - ackify_data:/var/lib/postgresql/data
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ackify"]
       interval: 10s
       timeout: 5s
       retries: 5

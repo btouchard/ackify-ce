@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
 	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/documents"
@@ -93,6 +95,10 @@ type webhookService interface {
 
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
+	// Database for RLS middleware
+	DB             *sql.DB         // Required for RLS transaction management
+	TenantProvider tenant.Provider // Required for tenant context
+
 	// Capability providers
 	AuthProvider  providers.AuthProvider      // Required for session management
 	OAuthProvider providers.OAuthAuthProvider // Optional, for OAuth authentication
@@ -152,6 +158,13 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	r.Use(shared.SecurityHeaders)
 	r.Use(apiMiddleware.CORS)
 	r.Use(generalRateLimit.Middleware)
+
+	// RLS middleware for database tenant isolation (always active)
+	// Must be after Recoverer to handle panics, before handlers that use DB
+	if cfg.DB != nil && cfg.TenantProvider != nil {
+		rlsMiddleware := shared.NewRLSMiddleware(cfg.DB, cfg.TenantProvider)
+		r.Use(rlsMiddleware.Handler)
+	}
 
 	// Initialize handlers
 	healthHandler := health.NewHandler()

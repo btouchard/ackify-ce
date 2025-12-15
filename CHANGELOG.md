@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.8] - 2025-12-15
+
+### 🔐 Multi-Tenant Security & Row Level Security
+
+Version majeure de sécurité introduisant l'isolation des données par tenant avec PostgreSQL Row Level Security (RLS).
+
+### Added
+
+- **Row Level Security (RLS)**
+  - Isolation des données au niveau PostgreSQL avec politiques RLS
+  - Protection de 11 tables : documents, signatures, expected_signers, webhooks, reminder_logs, email_queue, checksum_verifications, webhook_deliveries, oauth_sessions, magic_link_tokens, magic_link_auth_attempts
+  - Fonction `current_tenant_id()` pour récupérer le tenant de la session
+  - `FORCE ROW LEVEL SECURITY` pour appliquer les politiques même aux propriétaires des tables
+  - Comportement sécurisé par défaut : aucune donnée accessible si tenant non défini
+
+- **Support Multi-Tenant**
+  - Nouvelle table `instance_metadata` stockant l'UUID unique du tenant
+  - Colonne `tenant_id` (UUID) ajoutée à toutes les tables métier et d'authentification
+  - Index optimisés sur `tenant_id` pour des performances optimales
+  - Triggers d'immutabilité empêchant la modification du `tenant_id` après création
+  - Backfill automatique des données existantes avec le tenant de l'instance
+
+- **Gestion du Rôle Applicatif**
+  - Création automatique du rôle `ackify_app` par l'outil de migration
+  - Séparation des privilèges (rôle applicatif vs rôle superuser)
+  - Variable d'environnement `ACKIFY_APP_PASSWORD` pour définir le mot de passe du rôle
+  - Privilèges par défaut configurés pour les futures tables
+
+### Technical Details
+
+**Nouvelles migrations :**
+- `0015_add_tenant_support.{up,down}.sql` - Support multi-tenant
+- `0016_add_rls_policies.{up,down}.sql` - Politiques RLS
+
+**Fichiers modifiés :**
+- `backend/cmd/migrate/main.go` - Création du rôle `ackify_app`
+
+**Sécurité :**
+- Les politiques RLS utilisent `USING` et `WITH CHECK` pour filtrer lectures et écritures
+- Les tokens magic link acceptent `tenant_id IS NULL` pour les requêtes de login
+- Les sessions OAuth sont isolées par tenant après authentification
+
 ## [1.2.6] - 2025-12-08
 
 ### 🏗️ Architecture & CI/CD
@@ -569,6 +611,7 @@ For users upgrading from v1.1.x to v1.2.0:
 - NULL UserName handling in database operations
 - Proper string conversion for UserName field
 
+[1.2.8]: https://github.com/btouchard/ackify-ce/compare/v1.2.6...v1.2.8
 [1.2.6]: https://github.com/btouchard/ackify-ce/compare/v1.2.5...v1.2.6
 [1.2.5]: https://github.com/btouchard/ackify-ce/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/btouchard/ackify-ce/compare/v1.2.3...v1.2.4

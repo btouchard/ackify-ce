@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/lib/pq"
 )
@@ -41,7 +42,7 @@ func (r *WebhookRepository) Create(ctx context.Context, input models.WebhookInpu
     `
 	wh := &models.Webhook{}
 	var headersOut models.NullRawMessage
-	err = r.db.QueryRowContext(ctx, query,
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query,
 		tenantID,
 		input.Title,
 		input.TargetURL,
@@ -64,12 +65,9 @@ func (r *WebhookRepository) Create(ctx context.Context, input models.WebhookInpu
 	return wh, nil
 }
 
+// Update modifies an existing webhook configuration
+// RLS policy automatically filters by tenant_id
 func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.WebhookInput) (*models.Webhook, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	headersJSON := []byte("{}")
 	if input.Headers != nil {
 		if data, err := json.Marshal(input.Headers); err == nil {
@@ -80,12 +78,12 @@ func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.W
 	query := `
         UPDATE webhooks
         SET title=$1, target_url=$2, secret=COALESCE(NULLIF($3,''), secret), active=$4, events=$5, headers=$6, description=$7, updated_at=now()
-        WHERE id=$8 AND tenant_id=$9
+        WHERE id=$8
         RETURNING id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
     `
 	wh := &models.Webhook{}
 	var headersOut models.NullRawMessage
-	err = r.db.QueryRowContext(ctx, query,
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query,
 		input.Title,
 		input.TargetURL,
 		input.Secret,
@@ -94,7 +92,6 @@ func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.W
 		headersJSON,
 		input.Description,
 		id,
-		tenantID,
 	).Scan(
 		&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&wh.Events), &headersOut, &wh.Description, &wh.CreatedBy,
 		&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
@@ -108,13 +105,10 @@ func (r *WebhookRepository) Update(ctx context.Context, id int64, input models.W
 	return wh, nil
 }
 
+// SetActive enables or disables a webhook
+// RLS policy automatically filters by tenant_id
 func (r *WebhookRepository) SetActive(ctx context.Context, id int64, active bool) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
-	res, err := r.db.ExecContext(ctx, `UPDATE webhooks SET active=$1, updated_at=now() WHERE id=$2 AND tenant_id=$3`, active, id, tenantID)
+	res, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, `UPDATE webhooks SET active=$1, updated_at=now() WHERE id=$2`, active, id)
 	if err != nil {
 		return fmt.Errorf("failed to set active: %w", err)
 	}
@@ -125,34 +119,28 @@ func (r *WebhookRepository) SetActive(ctx context.Context, id int64, active bool
 	return nil
 }
 
+// Delete removes a webhook configuration
+// RLS policy automatically filters by tenant_id
 func (r *WebhookRepository) Delete(ctx context.Context, id int64) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
-	_, err = r.db.ExecContext(ctx, `DELETE FROM webhooks WHERE id=$1 AND tenant_id=$2`, id, tenantID)
+	_, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, `DELETE FROM webhooks WHERE id=$1`, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete webhook: %w", err)
 	}
 	return nil
 }
 
+// GetByID retrieves a webhook by its ID
+// RLS policy automatically filters by tenant_id
 func (r *WebhookRepository) GetByID(ctx context.Context, id int64) (*models.Webhook, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
         SELECT id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
         FROM webhooks
-        WHERE id=$1 AND tenant_id=$2
+        WHERE id=$1
     `
 	wh := &models.Webhook{}
 	var events []string
 	var headersJSON models.NullRawMessage
-	err = r.db.QueryRowContext(ctx, query, id, tenantID).Scan(
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, id).Scan(
 		&wh.ID, &wh.TenantID, &wh.Title, &wh.TargetURL, &wh.Secret, &wh.Active, pq.Array(&events), &headersJSON, &wh.Description, &wh.CreatedBy,
 		&wh.CreatedAt, &wh.UpdatedAt, &wh.LastDeliveredAt, &wh.FailureCount,
 	)
@@ -166,20 +154,16 @@ func (r *WebhookRepository) GetByID(ctx context.Context, id int64) (*models.Webh
 	return wh, nil
 }
 
+// List retrieves paginated webhooks
+// RLS policy automatically filters by tenant_id
 func (r *WebhookRepository) List(ctx context.Context, limit, offset int) ([]*models.Webhook, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
         SELECT id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
         FROM webhooks
-        WHERE tenant_id=$1
         ORDER BY id DESC
-        LIMIT $2 OFFSET $3
+        LIMIT $1 OFFSET $2
     `
-	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list webhooks: %w", err)
 	}
@@ -206,18 +190,14 @@ func (r *WebhookRepository) List(ctx context.Context, limit, offset int) ([]*mod
 }
 
 // ListActiveByEvent returns active webhooks subscribed to a given event type
+// RLS policy automatically filters by tenant_id
 func (r *WebhookRepository) ListActiveByEvent(ctx context.Context, event string) ([]*models.Webhook, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
         SELECT id, tenant_id, title, target_url, secret, active, events, headers, description, created_by, created_at, updated_at, last_delivered_at, failure_count
         FROM webhooks
-        WHERE tenant_id=$1 AND active = TRUE AND $2 = ANY(events)
+        WHERE active = TRUE AND $1 = ANY(events)
     `
-	rows, err := r.db.QueryContext(ctx, query, tenantID, event)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, event)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list active webhooks: %w", err)
 	}

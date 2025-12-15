@@ -6,6 +6,7 @@ services:
     container_name: ackify-migrate
     environment:
       ACKIFY_DB_DSN: "postgres://postgres:testpassword@ackify-db:5432/ackify_test?sslmode=disable"
+      ACKIFY_APP_PASSWORD: "ackifytestpassword"
     depends_on:
       ackify-db:
         condition: service_healthy
@@ -27,7 +28,7 @@ services:
       ACKIFY_LOG_FORMAT: "classic"
       ACKIFY_BASE_URL: "http://localhost:8080"
       ACKIFY_ORGANISATION: "Ackify Test"
-      ACKIFY_DB_DSN: "postgres://postgres:testpassword@ackify-db:5432/ackify_test?sslmode=disable"
+      ACKIFY_DB_DSN: "postgres://ackify_app:ackifytestpassword@ackify-db:5432/ackify_test?sslmode=disable"
       ACKIFY_AUTH_OAUTH_ENABLED: "true"
       ACKIFY_AUTH_MAGICLINK_ENABLED: "true"
       ACKIFY_OAUTH_PROVIDER: "custom"

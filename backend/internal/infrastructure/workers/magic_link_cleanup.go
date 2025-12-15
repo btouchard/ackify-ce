@@ -3,9 +3,11 @@ package workers
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -14,9 +16,13 @@ type MagicLinkCleanupWorker struct {
 	service  *services.MagicLinkService
 	interval time.Duration
 	stopChan chan struct{}
+
+	// RLS support
+	db      *sql.DB
+	tenants tenant.Provider
 }
 
-func NewMagicLinkCleanupWorker(service *services.MagicLinkService, interval time.Duration) *MagicLinkCleanupWorker {
+func NewMagicLinkCleanupWorker(service *services.MagicLinkService, interval time.Duration, db *sql.DB, tenants tenant.Provider) *MagicLinkCleanupWorker {
 	if interval == 0 {
 		interval = 1 * time.Hour // Défaut: toutes les heures
 	}
@@ -25,6 +31,8 @@ func NewMagicLinkCleanupWorker(service *services.MagicLinkService, interval time
 		service:  service,
 		interval: interval,
 		stopChan: make(chan struct{}),
+		db:       db,
+		tenants:  tenants,
 	}
 }
 
@@ -53,7 +61,19 @@ func (w *MagicLinkCleanupWorker) Stop() {
 }
 
 func (w *MagicLinkCleanupWorker) cleanup(ctx context.Context) {
-	deleted, err := w.service.CleanupExpiredTokens(ctx)
+	// Get tenant ID for RLS context
+	tenantID, err := w.tenants.CurrentTenant(ctx)
+	if err != nil {
+		logger.Logger.Error("Failed to get tenant for magic link cleanup", "error", err)
+		return
+	}
+
+	var deleted int64
+	err = tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+		var cleanupErr error
+		deleted, cleanupErr = w.service.CleanupExpiredTokens(txCtx)
+		return cleanupErr
+	})
 	if err != nil {
 		logger.Logger.Error("Failed to cleanup expired magic link tokens", "error", err)
 		return

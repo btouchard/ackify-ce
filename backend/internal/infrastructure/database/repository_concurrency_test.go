@@ -309,8 +309,13 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 		const duration = 2 * time.Second
 		const numWorkers = 20
 
-		ctx, cancel := context.WithTimeout(ctx, duration)
+		// Use a separate context for timeout control (not passed to DB operations)
+		// This avoids race conditions when context is cancelled during row scanning
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), duration)
 		defer cancel()
+
+		// Use background context for DB operations to avoid cancellation races
+		dbCtx := context.Background()
 
 		var wg sync.WaitGroup
 		operationCounts := make(chan map[string]int, numWorkers)
@@ -331,7 +336,7 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 
 				for {
 					select {
-					case <-ctx.Done():
+					case <-timeoutCtx.Done():
 						operationCounts <- counts
 						return
 					default:
@@ -341,14 +346,14 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 								fmt.Sprintf("stress-user-%d-%d", workerID, counts["creates"]),
 								fmt.Sprintf("stress%d%d@example.com", workerID, counts["creates"]),
 							)
-							if err := repo.Create(ctx, sig); err != nil {
+							if err := repo.Create(dbCtx, sig); err != nil {
 								counts["errors"]++
 							} else {
 								counts["creates"]++
 							}
 
 						case 1: // GetByDocAndUser
-							_, err := repo.GetByDocAndUser(ctx, "test-doc-123", "user-123")
+							_, err := repo.GetByDocAndUser(dbCtx, "test-doc-123", "user-123")
 							if err != nil && !strings.Contains(err.Error(), "not found") {
 								counts["errors"]++
 							} else {
@@ -356,7 +361,7 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 							}
 
 						case 2: // ExistsByDocAndUser
-							_, err := repo.ExistsByDocAndUser(ctx, "test-doc-123", "user-123")
+							_, err := repo.ExistsByDocAndUser(dbCtx, "test-doc-123", "user-123")
 							if err != nil {
 								counts["errors"]++
 							} else {
@@ -364,7 +369,7 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 							}
 
 						case 3: // GetLastSignature
-							_, err := repo.GetLastSignature(ctx, "test-doc-123")
+							_, err := repo.GetLastSignature(dbCtx, "test-doc-123")
 							if err != nil {
 								counts["errors"]++
 							} else {
@@ -372,7 +377,7 @@ func TestRepository_Concurrency_Integration(t *testing.T) {
 							}
 
 						case 4: // GetAllSignaturesOrdered
-							_, err := repo.GetAllSignaturesOrdered(ctx)
+							_, err := repo.GetAllSignaturesOrdered(dbCtx)
 							if err != nil {
 								counts["errors"]++
 							} else {

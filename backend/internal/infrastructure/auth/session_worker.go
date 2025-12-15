@@ -3,10 +3,12 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
 
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -15,6 +17,10 @@ type SessionWorker struct {
 	sessionRepo     SessionRepository
 	cleanupInterval time.Duration
 	cleanupAge      time.Duration
+
+	// RLS support
+	db      *sql.DB
+	tenants tenant.Provider
 
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -39,7 +45,7 @@ func DefaultSessionWorkerConfig() SessionWorkerConfig {
 }
 
 // NewSessionWorker creates a new OAuth session cleanup worker
-func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig) *SessionWorker {
+func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig, db *sql.DB, tenants tenant.Provider) *SessionWorker {
 	// Apply defaults
 	if config.CleanupInterval <= 0 {
 		config.CleanupInterval = 24 * time.Hour
@@ -54,6 +60,8 @@ func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig)
 		sessionRepo:     sessionRepo,
 		cleanupInterval: config.CleanupInterval,
 		cleanupAge:      config.CleanupAge,
+		db:              db,
+		tenants:         tenants,
 		ctx:             ctx,
 		cancel:          cancel,
 		stopChan:        make(chan struct{}),
@@ -148,7 +156,28 @@ func (w *SessionWorker) performCleanup() {
 	logger.Logger.Debug("Starting OAuth session cleanup",
 		"older_than", w.cleanupAge)
 
-	deleted, err := w.sessionRepo.DeleteExpired(ctx, w.cleanupAge)
+	var deleted int64
+	var err error
+
+	// Use RLS context if db and tenants are available
+	if w.db != nil && w.tenants != nil {
+		tenantID, tenantErr := w.tenants.CurrentTenant(ctx)
+		if tenantErr != nil {
+			logger.Logger.Error("Failed to get tenant for session cleanup",
+				"error", tenantErr.Error())
+			return
+		}
+
+		err = tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+			var cleanupErr error
+			deleted, cleanupErr = w.sessionRepo.DeleteExpired(txCtx, w.cleanupAge)
+			return cleanupErr
+		})
+	} else {
+		// No RLS - direct repository access (for tests)
+		deleted, err = w.sessionRepo.DeleteExpired(ctx, w.cleanupAge)
+	}
+
 	if err != nil {
 		logger.Logger.Error("Failed to cleanup expired OAuth sessions",
 			"error", err.Error())

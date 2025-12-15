@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 )
 
@@ -104,7 +105,7 @@ func (r *SignatureRepository) Create(ctx context.Context, signature *models.Sign
 		docChecksum = sql.NullString{String: signature.DocChecksum, Valid: true}
 	}
 
-	err = r.db.QueryRowContext(
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(
 		ctx, query,
 		tenantID,
 		signature.DocID,
@@ -129,23 +130,19 @@ func (r *SignatureRepository) Create(ctx context.Context, signature *models.Sign
 }
 
 // GetByDocAndUser retrieves a specific signature by document ID and user OAuth subject identifier
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) GetByDocAndUser(ctx context.Context, docID, userSub string) (*models.Signature, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT s.id, s.tenant_id, s.doc_id, s.user_sub, s.user_email, s.user_name, s.signed_at, s.doc_checksum,
 		       s.payload_hash, s.signature, s.nonce, s.created_at, s.referer, s.prev_hash,
 		       s.hash_version, s.doc_deleted_at, d.title, d.url
 		FROM signatures s
-		LEFT JOIN documents d ON s.doc_id = d.doc_id
-		WHERE s.tenant_id = $1 AND s.doc_id = $2 AND s.user_sub = $3
+		LEFT JOIN documents d ON s.doc_id = d.doc_id AND s.tenant_id = d.tenant_id
+		WHERE s.doc_id = $1 AND s.user_sub = $2
 	`
 
 	signature := &models.Signature{}
-	err = scanSignature(r.db.QueryRowContext(ctx, query, tenantID, docID, userSub), signature)
+	err := scanSignature(dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID, userSub), signature)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -158,23 +155,19 @@ func (r *SignatureRepository) GetByDocAndUser(ctx context.Context, docID, userSu
 }
 
 // GetByDoc retrieves all signatures for a specific document, ordered by creation timestamp descending
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT s.id, s.tenant_id, s.doc_id, s.user_sub, s.user_email, s.user_name, s.signed_at, s.doc_checksum,
 		       s.payload_hash, s.signature, s.nonce, s.created_at, s.referer, s.prev_hash,
 		       s.hash_version, s.doc_deleted_at, d.title, d.url
 		FROM signatures s
-		LEFT JOIN documents d ON s.doc_id = d.doc_id
-		WHERE s.tenant_id = $1 AND s.doc_id = $2
+		LEFT JOIN documents d ON s.doc_id = d.doc_id AND s.tenant_id = d.tenant_id
+		WHERE s.doc_id = $1
 		ORDER BY s.created_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID, docID)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, docID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query signatures: %w", err)
 	}
@@ -195,23 +188,19 @@ func (r *SignatureRepository) GetByDoc(ctx context.Context, docID string) ([]*mo
 }
 
 // GetByUser retrieves all signatures created by a specific user, ordered by creation timestamp descending
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT s.id, s.tenant_id, s.doc_id, s.user_sub, s.user_email, s.user_name, s.signed_at, s.doc_checksum,
 		       s.payload_hash, s.signature, s.nonce, s.created_at, s.referer, s.prev_hash,
 		       s.hash_version, s.doc_deleted_at, d.title, d.url
 		FROM signatures s
-		LEFT JOIN documents d ON s.doc_id = d.doc_id
-		WHERE s.tenant_id = $1 AND s.user_sub = $2
+		LEFT JOIN documents d ON s.doc_id = d.doc_id AND s.tenant_id = d.tenant_id
+		WHERE s.user_sub = $1
 		ORDER BY s.created_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID, userSub)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, userSub)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query user signatures: %w", err)
 	}
@@ -232,16 +221,12 @@ func (r *SignatureRepository) GetByUser(ctx context.Context, userSub string) ([]
 }
 
 // ExistsByDocAndUser efficiently checks if a signature already exists without retrieving full record data
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) ExistsByDocAndUser(ctx context.Context, docID, userSub string) (bool, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
-	query := `SELECT EXISTS(SELECT 1 FROM signatures WHERE tenant_id = $1 AND doc_id = $2 AND user_sub = $3)`
+	query := `SELECT EXISTS(SELECT 1 FROM signatures WHERE doc_id = $1 AND user_sub = $2)`
 
 	var exists bool
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID, userSub).Scan(&exists)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID, userSub).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check signature existence: %w", err)
 	}
@@ -250,21 +235,17 @@ func (r *SignatureRepository) ExistsByDocAndUser(ctx context.Context, docID, use
 }
 
 // CheckUserSignatureStatus verifies if a user has signed, accepting either OAuth subject or email as identifier
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) CheckUserSignatureStatus(ctx context.Context, docID, userIdentifier string) (bool, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT EXISTS(
 			SELECT 1 FROM signatures
-			WHERE tenant_id = $1 AND doc_id = $2 AND (user_sub = $3 OR LOWER(user_email) = LOWER($3))
+			WHERE doc_id = $1 AND (user_sub = $2 OR LOWER(user_email) = LOWER($2))
 		)
 	`
 
 	var exists bool
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID, userIdentifier).Scan(&exists)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID, userIdentifier).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check user signature status: %w", err)
 	}
@@ -273,25 +254,21 @@ func (r *SignatureRepository) CheckUserSignatureStatus(ctx context.Context, docI
 }
 
 // GetLastSignature retrieves the most recent signature for hash chain linking (returns nil if no signatures exist)
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) GetLastSignature(ctx context.Context, docID string) (*models.Signature, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT s.id, s.tenant_id, s.doc_id, s.user_sub, s.user_email, s.user_name, s.signed_at, s.doc_checksum,
 		       s.payload_hash, s.signature, s.nonce, s.created_at, s.referer, s.prev_hash,
 		       s.hash_version, s.doc_deleted_at, d.title, d.url
 		FROM signatures s
-		LEFT JOIN documents d ON s.doc_id = d.doc_id
-		WHERE s.tenant_id = $1 AND s.doc_id = $2
+		LEFT JOIN documents d ON s.doc_id = d.doc_id AND s.tenant_id = d.tenant_id
+		WHERE s.doc_id = $1
 		ORDER BY s.id DESC
 		LIMIT 1
 	`
 
 	signature := &models.Signature{}
-	err = scanSignature(r.db.QueryRowContext(ctx, query, tenantID, docID), signature)
+	err := scanSignature(dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID), signature)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -304,22 +281,17 @@ func (r *SignatureRepository) GetLastSignature(ctx context.Context, docID string
 }
 
 // GetAllSignaturesOrdered retrieves all signatures in chronological order for chain integrity verification
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT s.id, s.tenant_id, s.doc_id, s.user_sub, s.user_email, s.user_name, s.signed_at, s.doc_checksum,
 		       s.payload_hash, s.signature, s.nonce, s.created_at, s.referer, s.prev_hash,
 		       s.hash_version, s.doc_deleted_at, d.title, d.url
 		FROM signatures s
-		LEFT JOIN documents d ON s.doc_id = d.doc_id
-		WHERE s.tenant_id = $1
+		LEFT JOIN documents d ON s.doc_id = d.doc_id AND s.tenant_id = d.tenant_id
 		ORDER BY s.id ASC`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query all signatures: %w", err)
 	}
@@ -340,14 +312,10 @@ func (r *SignatureRepository) GetAllSignaturesOrdered(ctx context.Context) ([]*m
 }
 
 // UpdatePrevHash modifies the previous hash pointer for chain reconstruction operations
+// RLS policy automatically filters by tenant_id
 func (r *SignatureRepository) UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
-	query := `UPDATE signatures SET prev_hash = $3 WHERE tenant_id = $1 AND id = $2`
-	if _, err := r.db.ExecContext(ctx, query, tenantID, id, prevHash); err != nil {
+	query := `UPDATE signatures SET prev_hash = $2 WHERE id = $1`
+	if _, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, id, prevHash); err != nil {
 		return fmt.Errorf("failed to update prev_hash: %w", err)
 	}
 	return nil

@@ -352,7 +352,7 @@ func (b *ServerBuilder) createRepositories() *repositories {
 func (b *ServerBuilder) initializeWebhookSystem(repos *repositories) (*services.WebhookPublisher, *webhook.Worker, error) {
 	whPublisher := services.NewWebhookPublisher(repos.webhook, repos.webhookDelivery)
 	whCfg := webhook.DefaultWorkerConfig()
-	whWorker := webhook.NewWorker(repos.webhookDelivery, &http.Client{}, whCfg)
+	whWorker := webhook.NewWorker(repos.webhookDelivery, &http.Client{}, whCfg, b.db, b.tenantProvider)
 
 	if err := whWorker.Start(); err != nil {
 		return nil, nil, fmt.Errorf("failed to start webhook worker: %w", err)
@@ -370,7 +370,7 @@ func (b *ServerBuilder) initializeEmailWorker(repos *repositories, whPublisher *
 	renderer := email.NewRenderer(getTemplatesDir(), b.cfg.App.BaseURL, b.cfg.App.Organisation,
 		b.cfg.Mail.FromName, b.cfg.Mail.From, "fr", b.i18nService)
 	workerConfig := email.DefaultWorkerConfig()
-	emailWorker := email.NewWorker(repos.emailQueue, b.emailSender, renderer, workerConfig)
+	emailWorker := email.NewWorker(repos.emailQueue, b.emailSender, renderer, workerConfig, b.db, b.tenantProvider)
 
 	if whPublisher != nil {
 		emailWorker.SetPublisher(whPublisher)
@@ -424,7 +424,7 @@ func (b *ServerBuilder) initializeMagicLinkService(ctx context.Context, repos *r
 	var magicLinkWorker *workers.MagicLinkCleanupWorker
 	if b.magicLinkEnabled {
 		logger.Logger.Info("Magic Link authentication enabled")
-		magicLinkWorker = workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour)
+		magicLinkWorker = workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
 		go magicLinkWorker.Start(ctx)
 	} else {
 		logger.Logger.Info("Magic Link authentication disabled")
@@ -454,7 +454,7 @@ func (b *ServerBuilder) initializeSessionWorker(repos *repositories) (*auth.Sess
 	}
 
 	workerConfig := auth.DefaultSessionWorkerConfig()
-	sessionWorker := auth.NewSessionWorker(repos.oauthSession, workerConfig)
+	sessionWorker := auth.NewSessionWorker(repos.oauthSession, workerConfig, b.db, b.tenantProvider)
 	if err := sessionWorker.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start OAuth session worker: %w", err)
 	}
@@ -470,6 +470,11 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 
 	// Build API router config using providers
 	apiConfig := api.RouterConfig{
+		// Database for RLS middleware
+		DB:             b.db,
+		TenantProvider: b.tenantProvider,
+
+		// Capability providers
 		AuthProvider:      b.authProvider,
 		OAuthProvider:     b.oauthProvider,
 		Authorizer:        b.authorizer,

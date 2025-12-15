@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -92,7 +93,7 @@ func (r *EmailQueueRepository) Enqueue(ctx context.Context, input models.EmailQu
 		CreatedBy:     input.CreatedBy,
 	}
 
-	err = r.db.QueryRowContext(
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(
 		ctx,
 		query,
 		tenantID,
@@ -158,7 +159,7 @@ func (r *EmailQueueRepository) GetNextToProcess(ctx context.Context, limit int) 
 			last_error, error_details, reference_type, reference_id, created_by
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, time.Now(), limit)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, time.Now(), limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get next emails to process: %w", err)
 	}
@@ -209,7 +210,7 @@ func (r *EmailQueueRepository) MarkAsSent(ctx context.Context, id int64) error {
 		WHERE id = $2
 	`
 
-	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to mark email as sent: %w", err)
 	}
@@ -290,7 +291,7 @@ func (r *EmailQueueRepository) MarkAsFailedWithDelay(ctx context.Context, id int
 		args = []interface{}{time.Now(), errorMsg, errorDetailsJSON, id}
 	}
 
-	result, err := r.db.ExecContext(ctx, query, args...)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to mark email as failed: %w", err)
 	}
@@ -310,7 +311,7 @@ func (r *EmailQueueRepository) MarkAsFailedWithDelay(ctx context.Context, id int
 			    error_details = $3
 			WHERE id = $4
 		`
-		_, err = r.db.ExecContext(ctx, query, time.Now(), errorMsg, errorDetailsJSON, id)
+		_, err = dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, time.Now(), errorMsg, errorDetailsJSON, id)
 		if err != nil {
 			return fmt.Errorf("failed to mark email as permanently failed: %w", err)
 		}
@@ -347,7 +348,7 @@ func (r *EmailQueueRepository) GetRetryableEmails(ctx context.Context, limit int
 			last_error, error_details, reference_type, reference_id, created_by
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, time.Now(), limit)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, time.Now(), limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get retryable emails: %w", err)
 	}
@@ -402,7 +403,7 @@ func (r *EmailQueueRepository) GetQueueStats(ctx context.Context) (*models.Email
 		FROM email_queue
 		GROUP BY status
 	`
-	rows, err := r.db.QueryContext(ctx, statusQuery)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, statusQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get status counts: %w", err)
 	}
@@ -430,7 +431,7 @@ func (r *EmailQueueRepository) GetQueueStats(ctx context.Context) (*models.Email
 
 	// Get oldest pending email
 	var oldestPending sql.NullTime
-	err = r.db.QueryRowContext(ctx, `
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, `
 		SELECT MIN(created_at)
 		FROM email_queue
 		WHERE status = 'pending'
@@ -443,7 +444,7 @@ func (r *EmailQueueRepository) GetQueueStats(ctx context.Context) (*models.Email
 	}
 
 	// Get average retry count
-	err = r.db.QueryRowContext(ctx, `
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, `
 		SELECT AVG(retry_count)::float
 		FROM email_queue
 		WHERE status IN ('sent', 'failed')
@@ -453,7 +454,7 @@ func (r *EmailQueueRepository) GetQueueStats(ctx context.Context) (*models.Email
 	}
 
 	// Get last 24 hours stats
-	err = r.db.QueryRowContext(ctx, `
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, `
 		SELECT
 			COUNT(*) FILTER (WHERE status = 'sent' AND processed_at >= NOW() - INTERVAL '24 hours') as sent,
 			COUNT(*) FILTER (WHERE status = 'failed' AND processed_at >= NOW() - INTERVAL '24 hours') as failed,
@@ -476,7 +477,7 @@ func (r *EmailQueueRepository) CancelEmail(ctx context.Context, id int64) error 
 		WHERE id = $2 AND status IN ('pending', 'processing')
 	`
 
-	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to cancel email: %w", err)
 	}
@@ -503,7 +504,7 @@ func (r *EmailQueueRepository) CleanupOldEmails(ctx context.Context, olderThan t
 	`
 
 	cutoff := time.Now().Add(-olderThan)
-	result, err := r.db.ExecContext(ctx, query, cutoff)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, cutoff)
 	if err != nil {
 		return 0, fmt.Errorf("failed to cleanup old emails: %w", err)
 	}

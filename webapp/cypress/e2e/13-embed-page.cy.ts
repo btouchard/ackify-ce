@@ -12,7 +12,8 @@ describe('Test 13: Embed Page Functionality', () => {
 
   it('should display embed page with no signatures state', () => {
     // Step 1: Visit embed page with new document (force English locale)
-    cy.visitWithLocale(`/embed?doc=${sharedDocId}`, 'en')
+      cy.loginViaMagicLink('embed-user1@test.com')
+      cy.visitWithLocale(`/embed?doc=${sharedDocId}`, 'en')
 
     // Step 2: Should load without authentication
     cy.url({ timeout: 10000 }).should('include', '/embed')

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -49,7 +50,7 @@ func (r *ExpectedSignerRepository) AddExpected(ctx context.Context, docID string
 		ON CONFLICT (doc_id, email) DO NOTHING
 	`, strings.Join(valueStrings, ","))
 
-	_, err = r.db.ExecContext(ctx, query, valueArgs...)
+	_, err = dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, valueArgs...)
 	if err != nil {
 		return fmt.Errorf("failed to add expected signers: %w", err)
 	}
@@ -58,20 +59,16 @@ func (r *ExpectedSignerRepository) AddExpected(ctx context.Context, docID string
 }
 
 // ListByDocID retrieves all expected signers for a document, ordered chronologically by when they were added
+// RLS policy automatically filters by tenant_id
 func (r *ExpectedSignerRepository) ListByDocID(ctx context.Context, docID string) ([]*models.ExpectedSigner, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT id, tenant_id, doc_id, email, name, added_at, added_by, notes
 		FROM expected_signers
-		WHERE tenant_id = $1 AND doc_id = $2
+		WHERE doc_id = $1
 		ORDER BY added_at ASC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID, docID)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, docID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query expected signers: %w", err)
 	}
@@ -105,12 +102,8 @@ func (r *ExpectedSignerRepository) ListByDocID(ctx context.Context, docID string
 }
 
 // ListWithStatusByDocID enriches signer data with signature completion status and reminder tracking metrics
+// RLS policy automatically filters by tenant_id
 func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT
 			es.id,
@@ -131,12 +124,12 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 		FROM expected_signers es
 		LEFT JOIN signatures s ON es.tenant_id = s.tenant_id AND es.doc_id = s.doc_id AND es.email = s.user_email
 		LEFT JOIN reminder_logs rl ON es.tenant_id = rl.tenant_id AND es.doc_id = rl.doc_id AND es.email = rl.recipient_email
-		WHERE es.tenant_id = $1 AND es.doc_id = $2
+		WHERE es.doc_id = $1
 		GROUP BY es.id, es.tenant_id, es.doc_id, es.email, es.name, es.added_at, es.added_by, es.notes, s.id, s.signed_at, s.user_name
 		ORDER BY has_signed DESC, es.added_at ASC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID, docID)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, docID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query expected signers with status: %w", err)
 	}
@@ -190,18 +183,14 @@ func (r *ExpectedSignerRepository) ListWithStatusByDocID(ctx context.Context, do
 }
 
 // Remove deletes a specific expected signer by document ID and email address
+// RLS policy automatically filters by tenant_id
 func (r *ExpectedSignerRepository) Remove(ctx context.Context, docID, email string) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		DELETE FROM expected_signers
-		WHERE tenant_id = $1 AND doc_id = $2 AND email = $3
+		WHERE doc_id = $1 AND email = $2
 	`
 
-	result, err := r.db.ExecContext(ctx, query, tenantID, docID, email)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, docID, email)
 	if err != nil {
 		return fmt.Errorf("failed to remove expected signer: %w", err)
 	}
@@ -219,18 +208,14 @@ func (r *ExpectedSignerRepository) Remove(ctx context.Context, docID, email stri
 }
 
 // RemoveAllForDoc purges all expected signers associated with a document in a single operation
+// RLS policy automatically filters by tenant_id
 func (r *ExpectedSignerRepository) RemoveAllForDoc(ctx context.Context, docID string) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		DELETE FROM expected_signers
-		WHERE tenant_id = $1 AND doc_id = $2
+		WHERE doc_id = $1
 	`
 
-	_, err = r.db.ExecContext(ctx, query, tenantID, docID)
+	_, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, docID)
 	if err != nil {
 		return fmt.Errorf("failed to remove all expected signers: %w", err)
 	}
@@ -239,21 +224,17 @@ func (r *ExpectedSignerRepository) RemoveAllForDoc(ctx context.Context, docID st
 }
 
 // IsExpected efficiently verifies if an email address is in the expected signer list for a document
+// RLS policy automatically filters by tenant_id
 func (r *ExpectedSignerRepository) IsExpected(ctx context.Context, docID, email string) (bool, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT EXISTS(
 			SELECT 1 FROM expected_signers
-			WHERE tenant_id = $1 AND doc_id = $2 AND email = $3
+			WHERE doc_id = $1 AND email = $2
 		)
 	`
 
 	var exists bool
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID, email).Scan(&exists)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID, email).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if email is expected: %w", err)
 	}
@@ -262,26 +243,22 @@ func (r *ExpectedSignerRepository) IsExpected(ctx context.Context, docID, email 
 }
 
 // GetStats calculates signature completion metrics including percentage progress for a document
+// RLS policy automatically filters by tenant_id
 func (r *ExpectedSignerRepository) GetStats(ctx context.Context, docID string) (*models.DocCompletionStats, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT
 			COUNT(*) as expected_count,
 			COUNT(s.id) as signed_count
 		FROM expected_signers es
 		LEFT JOIN signatures s ON es.tenant_id = s.tenant_id AND es.doc_id = s.doc_id AND es.email = s.user_email
-		WHERE es.tenant_id = $1 AND es.doc_id = $2
+		WHERE es.doc_id = $1
 	`
 
 	stats := &models.DocCompletionStats{
 		DocID: docID,
 	}
 
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID).Scan(&stats.ExpectedCount, &stats.SignedCount)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID).Scan(&stats.ExpectedCount, &stats.SignedCount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get stats: %w", err)
 	}

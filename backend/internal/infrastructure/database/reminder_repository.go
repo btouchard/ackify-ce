@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -36,7 +37,7 @@ func (r *ReminderRepository) LogReminder(ctx context.Context, log *models.Remind
 		RETURNING id
 	`
 
-	err = r.db.QueryRowContext(ctx, query,
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query,
 		tenantID,
 		log.DocID,
 		log.RecipientEmail,
@@ -56,20 +57,16 @@ func (r *ReminderRepository) LogReminder(ctx context.Context, log *models.Remind
 }
 
 // GetReminderHistory retrieves complete reminder audit trail for a document, ordered by send time descending
+// RLS policy automatically filters by tenant_id
 func (r *ReminderRepository) GetReminderHistory(ctx context.Context, docID string) ([]*models.ReminderLog, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT id, tenant_id, doc_id, recipient_email, sent_at, sent_by, template_used, status, error_message
 		FROM reminder_logs
-		WHERE tenant_id = $1 AND doc_id = $2
+		WHERE doc_id = $1
 		ORDER BY sent_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID, docID)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, docID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query reminder history: %w", err)
 	}
@@ -104,22 +101,18 @@ func (r *ReminderRepository) GetReminderHistory(ctx context.Context, docID strin
 }
 
 // GetLastReminderByEmail retrieves the most recent reminder sent to a specific recipient for throttling logic
+// RLS policy automatically filters by tenant_id
 func (r *ReminderRepository) GetLastReminderByEmail(ctx context.Context, docID, email string) (*models.ReminderLog, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT id, tenant_id, doc_id, recipient_email, sent_at, sent_by, template_used, status, error_message
 		FROM reminder_logs
-		WHERE tenant_id = $1 AND doc_id = $2 AND recipient_email = $3
+		WHERE doc_id = $1 AND recipient_email = $2
 		ORDER BY sent_at DESC
 		LIMIT 1
 	`
 
 	log := &models.ReminderLog{}
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID, email).Scan(
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID, email).Scan(
 		&log.ID,
 		&log.TenantID,
 		&log.DocID,
@@ -143,20 +136,16 @@ func (r *ReminderRepository) GetLastReminderByEmail(ctx context.Context, docID, 
 }
 
 // GetReminderCount tallies successfully delivered reminders to a recipient for rate limiting
+// RLS policy automatically filters by tenant_id
 func (r *ReminderRepository) GetReminderCount(ctx context.Context, docID, email string) (int, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT COUNT(*)
 		FROM reminder_logs
-		WHERE tenant_id = $1 AND doc_id = $2 AND recipient_email = $3 AND status = 'sent'
+		WHERE doc_id = $1 AND recipient_email = $2 AND status = 'sent'
 	`
 
 	var count int
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID, email).Scan(&count)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID, email).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get reminder count: %w", err)
 	}
@@ -165,24 +154,20 @@ func (r *ReminderRepository) GetReminderCount(ctx context.Context, docID, email 
 }
 
 // GetReminderStats aggregates reminder metrics including pending signers and last send timestamp
+// RLS policy automatically filters by tenant_id
 func (r *ReminderRepository) GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT
 			COUNT(*) as total_sent,
 			MAX(sent_at) as last_sent_at
 		FROM reminder_logs
-		WHERE tenant_id = $1 AND doc_id = $2 AND status = 'sent'
+		WHERE doc_id = $1 AND status = 'sent'
 	`
 
 	stats := &models.ReminderStats{}
 	var lastSent sql.NullTime
 
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID).Scan(&stats.TotalSent, &lastSent)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID).Scan(&stats.TotalSent, &lastSent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get reminder stats: %w", err)
 	}
@@ -195,10 +180,10 @@ func (r *ReminderRepository) GetReminderStats(ctx context.Context, docID string)
 		SELECT COUNT(*)
 		FROM expected_signers es
 		LEFT JOIN signatures s ON es.tenant_id = s.tenant_id AND es.doc_id = s.doc_id AND es.email = s.user_email
-		WHERE es.tenant_id = $1 AND es.doc_id = $2 AND s.id IS NULL
+		WHERE es.doc_id = $1 AND s.id IS NULL
 	`
 
-	err = r.db.QueryRowContext(ctx, pendingQuery, tenantID, docID).Scan(&stats.PendingCount)
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, pendingQuery, docID).Scan(&stats.PendingCount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pending count: %w", err)
 	}

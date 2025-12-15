@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -52,7 +53,7 @@ func (r *OAuthSessionRepository) Create(ctx context.Context, session *models.OAu
 		RETURNING id, created_at, updated_at
 	`
 
-	err = r.db.QueryRowContext(
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(
 		ctx,
 		query,
 		tenantID,
@@ -82,12 +83,8 @@ func (r *OAuthSessionRepository) Create(ctx context.Context, session *models.OAu
 }
 
 // GetBySessionID retrieves an OAuth session by session ID
+// RLS policy automatically filters by tenant_id
 func (r *OAuthSessionRepository) GetBySessionID(ctx context.Context, sessionID string) (*models.OAuthSession, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT
 			id,
@@ -102,13 +99,13 @@ func (r *OAuthSessionRepository) GetBySessionID(ctx context.Context, sessionID s
 			user_agent,
 			ip_address
 		FROM oauth_sessions
-		WHERE session_id = $1 AND tenant_id = $2
+		WHERE session_id = $1
 	`
 
 	session := &models.OAuthSession{}
 	var lastRefreshedAt sql.NullTime
 
-	err = r.db.QueryRowContext(ctx, query, sessionID, tenantID).Scan(
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, sessionID).Scan(
 		&session.ID,
 		&session.TenantID,
 		&session.SessionID,
@@ -141,12 +138,8 @@ func (r *OAuthSessionRepository) GetBySessionID(ctx context.Context, sessionID s
 }
 
 // UpdateRefreshToken updates the refresh token and expiration time
+// RLS policy automatically filters by tenant_id
 func (r *OAuthSessionRepository) UpdateRefreshToken(ctx context.Context, sessionID string, encryptedToken []byte, expiresAt time.Time) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		UPDATE oauth_sessions
 		SET
@@ -154,10 +147,10 @@ func (r *OAuthSessionRepository) UpdateRefreshToken(ctx context.Context, session
 			access_token_expires_at = $2,
 			last_refreshed_at = now(),
 			updated_at = now()
-		WHERE session_id = $3 AND tenant_id = $4
+		WHERE session_id = $3
 	`
 
-	result, err := r.db.ExecContext(ctx, query, encryptedToken, expiresAt, sessionID, tenantID)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, encryptedToken, expiresAt, sessionID)
 	if err != nil {
 		logger.Logger.Error("Failed to update OAuth session refresh token",
 			"session_id", sessionID,
@@ -181,15 +174,11 @@ func (r *OAuthSessionRepository) UpdateRefreshToken(ctx context.Context, session
 }
 
 // DeleteBySessionID deletes an OAuth session by session ID
+// RLS policy automatically filters by tenant_id
 func (r *OAuthSessionRepository) DeleteBySessionID(ctx context.Context, sessionID string) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
+	query := `DELETE FROM oauth_sessions WHERE session_id = $1`
 
-	query := `DELETE FROM oauth_sessions WHERE session_id = $1 AND tenant_id = $2`
-
-	result, err := r.db.ExecContext(ctx, query, sessionID, tenantID)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, sessionID)
 	if err != nil {
 		logger.Logger.Error("Failed to delete OAuth session",
 			"session_id", sessionID,
@@ -217,7 +206,7 @@ func (r *OAuthSessionRepository) DeleteExpired(ctx context.Context, olderThan ti
 	`
 
 	cutoffTime := time.Now().Add(-olderThan)
-	result, err := r.db.ExecContext(ctx, query, cutoffTime)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, cutoffTime)
 	if err != nil {
 		logger.Logger.Error("Failed to delete expired OAuth sessions",
 			"cutoff_time", cutoffTime,

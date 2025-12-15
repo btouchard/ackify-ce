@@ -53,6 +53,7 @@ install/
 client_secret*.json
 
 # Node.js (if any frontend assets)
+**/node_modules/
 node_modules/
 npm-debug.log
 yarn-error.log

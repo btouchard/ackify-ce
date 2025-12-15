@@ -3,6 +3,7 @@ package email
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
@@ -48,6 +50,10 @@ type Worker struct {
 	renderer  *Renderer
 	publisher EventPublisher
 
+	// RLS support
+	db      *sql.DB
+	tenants tenant.Provider
+
 	// Worker configuration
 	batchSize       int
 	pollInterval    time.Duration
@@ -85,7 +91,7 @@ func DefaultWorkerConfig() WorkerConfig {
 }
 
 // NewWorker creates a new email worker
-func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, config WorkerConfig) *Worker {
+func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, config WorkerConfig, db *sql.DB, tenants tenant.Provider) *Worker {
 	// Apply defaults
 	if config.BatchSize <= 0 {
 		config.BatchSize = 10
@@ -109,6 +115,8 @@ func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, con
 		queueRepo:       queueRepo,
 		sender:          sender,
 		renderer:        renderer,
+		db:              db,
+		tenants:         tenants,
 		batchSize:       config.BatchSize,
 		pollInterval:    config.PollInterval,
 		cleanupInterval: config.CleanupInterval,
@@ -218,28 +226,40 @@ func (w *Worker) processBatch() {
 	ctx, cancel := context.WithTimeout(w.ctx, 5*time.Minute)
 	defer cancel()
 
-	// Get next batch of emails
-	emails, err := w.queueRepo.GetNextToProcess(ctx, w.batchSize)
+	// Get tenant ID for RLS context
+	tenantID, err := w.tenants.CurrentTenant(ctx)
+	if err != nil {
+		logger.Logger.Error("Failed to get tenant for email worker", "error", err.Error())
+		return
+	}
+
+	// Get next batch of emails within tenant context
+	var emails []*models.EmailQueueItem
+	err = tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+		var fetchErr error
+		emails, fetchErr = w.queueRepo.GetNextToProcess(txCtx, w.batchSize)
+		if fetchErr != nil {
+			return fetchErr
+		}
+		if len(emails) == 0 {
+			// Also check for retryable emails
+			emails, fetchErr = w.queueRepo.GetRetryableEmails(txCtx, w.batchSize)
+		}
+		return fetchErr
+	})
 	if err != nil {
 		logger.Logger.Error("Failed to get emails to process", "error", err.Error())
 		return
 	}
 
 	if len(emails) == 0 {
-		// Also check for retryable emails
-		emails, err = w.queueRepo.GetRetryableEmails(ctx, w.batchSize)
-		if err != nil {
-			logger.Logger.Error("Failed to get retryable emails", "error", err.Error())
-			return
-		}
-		if len(emails) == 0 {
-			return // Nothing to process
-		}
+		return // Nothing to process
 	}
 
 	logger.Logger.Debug("Processing email batch", "count", len(emails))
 
 	// Process emails concurrently with limited concurrency
+	// Each goroutine gets its own tenant context (transaction)
 	sem := make(chan struct{}, w.maxConcurrent)
 	var wg sync.WaitGroup
 
@@ -251,7 +271,16 @@ func (w *Worker) processBatch() {
 			defer wg.Done()
 			defer func() { <-sem }() // Release semaphore
 
-			w.processEmail(ctx, item)
+			// Each email processing gets its own RLS transaction
+			err := tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+				w.processEmail(txCtx, item)
+				return nil
+			})
+			if err != nil {
+				logger.Logger.Error("Failed to process email with tenant context",
+					"id", item.ID,
+					"error", err.Error())
+			}
 		}(email)
 	}
 
@@ -395,7 +424,19 @@ func (w *Worker) performCleanup() {
 	ctx, cancel := context.WithTimeout(w.ctx, 5*time.Minute)
 	defer cancel()
 
-	deleted, err := w.queueRepo.CleanupOldEmails(ctx, w.cleanupAge)
+	// Get tenant ID for RLS context
+	tenantID, err := w.tenants.CurrentTenant(ctx)
+	if err != nil {
+		logger.Logger.Error("Failed to get tenant for email cleanup", "error", err.Error())
+		return
+	}
+
+	var deleted int64
+	err = tenant.WithTenantContext(ctx, w.db, tenantID, func(txCtx context.Context) error {
+		var cleanupErr error
+		deleted, cleanupErr = w.queueRepo.CleanupOldEmails(txCtx, w.cleanupAge)
+		return cleanupErr
+	})
 	if err != nil {
 		logger.Logger.Error("Failed to cleanup old emails", "error", err.Error())
 		return

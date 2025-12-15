@@ -3,14 +3,24 @@ package webhook
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
-	"io"
+	"github.com/google/uuid"
 )
+
+// mockTenantProvider for testing
+type mockTenantProviderWebhook struct {
+	tenantID uuid.UUID
+}
+
+func (m *mockTenantProviderWebhook) CurrentTenant(ctx context.Context) (uuid.UUID, error) {
+	return m.tenantID, nil
+}
 
 func TestComputeSignature(t *testing.T) {
 	secret := "supersecret"
@@ -63,7 +73,8 @@ func (f *fakeDelRepo) CleanupOld(ctx context.Context, olderThan time.Duration) (
 func TestWorker_ProcessBatch_Success(t *testing.T) {
 	repo := &fakeDelRepo{}
 	doer := &fakeDoer{resp: &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader("ok")), Header: http.Header{}}}
-	w := NewWorker(repo, doer, DefaultWorkerConfig())
+	tenants := &mockTenantProviderWebhook{tenantID: uuid.New()}
+	w := NewWorker(repo, doer, DefaultWorkerConfig(), nil, tenants)
 	w.processBatch()
 	if repo.delivered != 1 {
 		t.Fatalf("expected delivered=1, got %d", repo.delivered)

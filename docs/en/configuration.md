@@ -173,6 +173,23 @@ ACKIFY_CHECKSUM_INSECURE_SKIP_VERIFY=false
 
 These variables disable critical security protections and should **only** be used in isolated test environments.
 
+### Row Level Security (RLS)
+
+Ackify uses PostgreSQL Row Level Security for tenant data isolation. This is configured automatically during migrations.
+
+```bash
+# Password for the ackify_app database role (required for RLS)
+ACKIFY_APP_PASSWORD=your_secure_app_password
+```
+
+**How it works**:
+- The `migrate` tool creates a non-superuser role `ackify_app` before running migrations
+- The application connects to PostgreSQL using this role
+- RLS policies automatically filter all queries by tenant
+- No data leakage possible even if application code forgets tenant filtering
+
+See [Row Level Security](configuration/rls.md) for detailed documentation.
+
 ## Advanced Configuration
 
 ### OAuth2 Providers
@@ -200,9 +217,12 @@ ACKIFY_LOG_LEVEL=info
 ACKIFY_LISTEN_ADDR=:8080
 
 # Database
-POSTGRES_USER=ackifyr
+POSTGRES_USER=postgres
 POSTGRES_PASSWORD=super_secure_password_123
 POSTGRES_DB=ackify
+
+# RLS (Row Level Security)
+ACKIFY_APP_PASSWORD=another_secure_password_456
 
 # OAuth2 (Google)
 ACKIFY_OAUTH_PROVIDER=google
@@ -258,6 +278,7 @@ curl http://localhost:8080/api/v1/health
 
 - ✅ Use HTTPS (`ACKIFY_BASE_URL=https://...`)
 - ✅ Generate strong secrets (64+ characters)
+- ✅ Configure RLS with strong password (`ACKIFY_APP_PASSWORD`)
 - ✅ Restrict OAuth domain (`ACKIFY_OAUTH_ALLOWED_DOMAIN`)
 - ✅ Configure admin emails (`ACKIFY_ADMIN_EMAILS`)
 - ✅ Use PostgreSQL with SSL in production

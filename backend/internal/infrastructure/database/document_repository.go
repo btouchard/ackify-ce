@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -46,7 +47,7 @@ func (r *DocumentRepository) Create(ctx context.Context, docID string, input mod
 	}
 
 	doc := &models.Document{}
-	err = r.db.QueryRowContext(
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(
 		ctx,
 		query,
 		tenantID,
@@ -80,20 +81,16 @@ func (r *DocumentRepository) Create(ctx context.Context, docID string, input mod
 }
 
 // GetByDocID retrieves document metadata by document ID (excluding soft-deleted documents)
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) GetByDocID(ctx context.Context, docID string) (*models.Document, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 		FROM documents
-		WHERE tenant_id = $1 AND doc_id = $2 AND deleted_at IS NULL
+		WHERE doc_id = $1 AND deleted_at IS NULL
 	`
 
 	doc := &models.Document{}
-	err = r.db.QueryRowContext(ctx, query, tenantID, docID).Scan(
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, docID).Scan(
 		&doc.DocID,
 		&doc.TenantID,
 		&doc.Title,
@@ -120,12 +117,8 @@ func (r *DocumentRepository) GetByDocID(ctx context.Context, docID string) (*mod
 }
 
 // FindByReference searches for a document by reference (URL, path, or doc_id)
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	var query string
 	var args []interface{}
 
@@ -135,37 +128,37 @@ func (r *DocumentRepository) FindByReference(ctx context.Context, ref string, re
 		query = `
 			SELECT doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 			FROM documents
-			WHERE tenant_id = $1 AND url = $2 AND deleted_at IS NULL
+			WHERE url = $1 AND deleted_at IS NULL
 			LIMIT 1
 		`
-		args = []interface{}{tenantID, ref}
+		args = []interface{}{ref}
 
 	case "path":
 		// Search by URL field (paths are also stored in url field, excluding soft-deleted)
 		query = `
 			SELECT doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 			FROM documents
-			WHERE tenant_id = $1 AND url = $2 AND deleted_at IS NULL
+			WHERE url = $1 AND deleted_at IS NULL
 			LIMIT 1
 		`
-		args = []interface{}{tenantID, ref}
+		args = []interface{}{ref}
 
 	case "reference":
 		// Search by doc_id (excluding soft-deleted)
 		query = `
 			SELECT doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 			FROM documents
-			WHERE tenant_id = $1 AND doc_id = $2 AND deleted_at IS NULL
+			WHERE doc_id = $1 AND deleted_at IS NULL
 			LIMIT 1
 		`
-		args = []interface{}{tenantID, ref}
+		args = []interface{}{ref}
 
 	default:
 		return nil, fmt.Errorf("unknown reference type: %s", refType)
 	}
 
 	doc := &models.Document{}
-	err = r.db.QueryRowContext(ctx, query, args...).Scan(
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, args...).Scan(
 		&doc.DocID,
 		&doc.TenantID,
 		&doc.Title,
@@ -203,16 +196,12 @@ func (r *DocumentRepository) FindByReference(ctx context.Context, ref string, re
 }
 
 // Update modifies existing document metadata while preserving creation timestamp and creator
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) Update(ctx context.Context, docID string, input models.DocumentInput) (*models.Document, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		UPDATE documents
-		SET title = $3, url = $4, checksum = $5, checksum_algorithm = $6, description = $7
-		WHERE tenant_id = $1 AND doc_id = $2 AND deleted_at IS NULL
+		SET title = $2, url = $3, checksum = $4, checksum_algorithm = $5, description = $6
+		WHERE doc_id = $1 AND deleted_at IS NULL
 		RETURNING doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 	`
 
@@ -224,10 +213,9 @@ func (r *DocumentRepository) Update(ctx context.Context, docID string, input mod
 	}
 
 	doc := &models.Document{}
-	err = r.db.QueryRowContext(
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(
 		ctx,
 		query,
-		tenantID,
 		docID,
 		input.Title,
 		input.URL,
@@ -288,7 +276,7 @@ func (r *DocumentRepository) CreateOrUpdate(ctx context.Context, docID string, i
 	}
 
 	doc := &models.Document{}
-	err = r.db.QueryRowContext(
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(
 		ctx,
 		query,
 		tenantID,
@@ -322,15 +310,11 @@ func (r *DocumentRepository) CreateOrUpdate(ctx context.Context, docID string, i
 }
 
 // Delete soft-deletes document by setting deleted_at timestamp, preserving metadata and signature history
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) Delete(ctx context.Context, docID string) error {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get tenant: %w", err)
-	}
+	query := `UPDATE documents SET deleted_at = now() WHERE doc_id = $1 AND deleted_at IS NULL`
 
-	query := `UPDATE documents SET deleted_at = now() WHERE tenant_id = $1 AND doc_id = $2 AND deleted_at IS NULL`
-
-	result, err := r.db.ExecContext(ctx, query, tenantID, docID)
+	result, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, query, docID)
 	if err != nil {
 		logger.Logger.Error("Failed to delete document", "error", err.Error(), "doc_id", docID)
 		return fmt.Errorf("failed to delete document: %w", err)
@@ -349,21 +333,17 @@ func (r *DocumentRepository) Delete(ctx context.Context, docID string) error {
 }
 
 // List retrieves paginated documents ordered by creation date, newest first (excluding soft-deleted)
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) List(ctx context.Context, limit, offset int) ([]*models.Document, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	query := `
 		SELECT doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 		FROM documents
-		WHERE tenant_id = $1 AND deleted_at IS NULL
+		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
+		LIMIT $1 OFFSET $2
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, tenantID, limit, offset)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		logger.Logger.Error("Failed to list documents", "error", err.Error())
 		return nil, fmt.Errorf("failed to list documents: %w", err)
@@ -402,28 +382,24 @@ func (r *DocumentRepository) List(ctx context.Context, limit, offset int) ([]*mo
 
 // Search retrieves paginated documents matching the search query (excluding soft-deleted)
 // Searches in doc_id, title, url, and description fields using case-insensitive pattern matching
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	searchQuery := `
 		SELECT doc_id, tenant_id, title, url, checksum, checksum_algorithm, description, created_at, updated_at, created_by, deleted_at
 		FROM documents
-		WHERE tenant_id = $1 AND deleted_at IS NULL
+		WHERE deleted_at IS NULL
 		AND (
-			doc_id ILIKE $2
-			OR title ILIKE $2
-			OR url ILIKE $2
-			OR description ILIKE $2
+			doc_id ILIKE $1
+			OR title ILIKE $1
+			OR url ILIKE $1
+			OR description ILIKE $1
 		)
 		ORDER BY created_at DESC
-		LIMIT $3 OFFSET $4
+		LIMIT $2 OFFSET $3
 	`
 
 	searchPattern := "%" + query + "%"
-	rows, err := r.db.QueryContext(ctx, searchQuery, tenantID, searchPattern, limit, offset)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, searchQuery, searchPattern, limit, offset)
 	if err != nil {
 		logger.Logger.Error("Failed to search documents", "error", err.Error(), "query", query)
 		return nil, fmt.Errorf("failed to search documents: %w", err)
@@ -467,12 +443,8 @@ func (r *DocumentRepository) Search(ctx context.Context, query string, limit, of
 }
 
 // Count returns the total number of documents matching the optional search query (excluding soft-deleted)
+// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	var query string
 	var args []interface{}
 
@@ -481,28 +453,28 @@ func (r *DocumentRepository) Count(ctx context.Context, searchQuery string) (int
 		query = `
 			SELECT COUNT(*)
 			FROM documents
-			WHERE tenant_id = $1 AND deleted_at IS NULL
+			WHERE deleted_at IS NULL
 			AND (
-				doc_id ILIKE $2
-				OR title ILIKE $2
-				OR url ILIKE $2
-				OR description ILIKE $2
+				doc_id ILIKE $1
+				OR title ILIKE $1
+				OR url ILIKE $1
+				OR description ILIKE $1
 			)
 		`
 		searchPattern := "%" + searchQuery + "%"
-		args = []interface{}{tenantID, searchPattern}
+		args = []interface{}{searchPattern}
 	} else {
 		// Count all documents
 		query = `
 			SELECT COUNT(*)
 			FROM documents
-			WHERE tenant_id = $1 AND deleted_at IS NULL
+			WHERE deleted_at IS NULL
 		`
-		args = []interface{}{tenantID}
+		args = []interface{}{}
 	}
 
 	var count int
-	err = r.db.QueryRowContext(ctx, query, args...).Scan(&count)
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query, args...).Scan(&count)
 	if err != nil {
 		logger.Logger.Error("Failed to count documents", "error", err.Error(), "search", searchQuery)
 		return 0, fmt.Errorf("failed to count documents: %w", err)

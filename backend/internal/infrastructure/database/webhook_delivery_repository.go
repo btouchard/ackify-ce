@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 )
 
@@ -72,7 +73,7 @@ func (r *WebhookDeliveryRepository) Enqueue(ctx context.Context, input models.We
 		MaxRetries:   maxRetries,
 		ScheduledFor: scheduled,
 	}
-	err = r.db.QueryRowContext(ctx, q,
+	err = dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, q,
 		tenantID, input.WebhookID, input.EventType, input.EventID, payloadJSON, input.Priority, maxRetries, scheduled,
 	).Scan(&item.ID, &item.TenantID, &item.Status, &item.RetryCount, &item.CreatedAt, &item.ProcessedAt, &item.NextRetryAt)
 	if err != nil {
@@ -102,7 +103,7 @@ func (r *WebhookDeliveryRepository) GetNextToProcess(ctx context.Context, limit 
         FROM upd u
         JOIN webhooks w ON w.id = u.webhook_id
     `
-	rows, err := r.db.QueryContext(ctx, q, time.Now(), limit)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, q, time.Now(), limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get next webhook deliveries: %w", err)
 	}
@@ -144,7 +145,7 @@ func (r *WebhookDeliveryRepository) GetRetryable(ctx context.Context, limit int)
         FROM upd u
         JOIN webhooks w ON w.id = u.webhook_id
     `
-	rows, err := r.db.QueryContext(ctx, q, time.Now(), limit)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, q, time.Now(), limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get retryable webhook deliveries: %w", err)
 	}
@@ -178,7 +179,7 @@ func (r *WebhookDeliveryRepository) MarkDelivered(ctx context.Context, id int64,
         SET status='delivered', processed_at=now(), response_status=$1, response_headers=$2, response_body=$3
         WHERE id=$4
     `
-	_, err := r.db.ExecContext(ctx, q, responseStatus, headersJSON, responseBody, id)
+	_, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, q, responseStatus, headersJSON, responseBody, id)
 	return err
 }
 
@@ -193,38 +194,35 @@ func (r *WebhookDeliveryRepository) MarkFailed(ctx context.Context, id int64, er
             SET status='pending', retry_count=retry_count+1, last_error=$1, scheduled_for=calculate_next_retry_time(retry_count+1)
             WHERE id=$2 AND retry_count < max_retries
         `
-		res, e := r.db.ExecContext(ctx, q, errMsg, id)
+		res, e := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, q, errMsg, id)
 		if e != nil {
 			return e
 		}
 		if n, _ := res.RowsAffected(); n == 0 {
 			// mark as permanently failed
 			q := `UPDATE webhook_deliveries SET status='failed', processed_at=now(), last_error=$1 WHERE id=$2`
-			_, e = r.db.ExecContext(ctx, q, errMsg, id)
+			_, e = dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, q, errMsg, id)
 			return e
 		}
 		return nil
 	}
 	q := `UPDATE webhook_deliveries SET status='failed', processed_at=now(), last_error=$1 WHERE id=$2`
-	_, e := r.db.ExecContext(ctx, q, errMsg, id)
+	_, e := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, q, errMsg, id)
 	return e
 }
 
+// ListByWebhook retrieves paginated webhook deliveries for a specific webhook
+// RLS policy automatically filters by tenant_id
 func (r *WebhookDeliveryRepository) ListByWebhook(ctx context.Context, webhookID int64, limit, offset int) ([]*models.WebhookDelivery, error) {
-	tenantID, err := r.tenants.CurrentTenant(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get tenant: %w", err)
-	}
-
 	q := `
         SELECT id, tenant_id, webhook_id, event_type, event_id, payload, status, retry_count, max_retries, priority,
                created_at, scheduled_for, processed_at, next_retry_at, request_headers, response_status, response_headers, response_body, last_error
         FROM webhook_deliveries
-        WHERE webhook_id=$1 AND tenant_id=$2
+        WHERE webhook_id=$1
         ORDER BY id DESC
-        LIMIT $3 OFFSET $4
+        LIMIT $2 OFFSET $3
     `
-	rows, err := r.db.QueryContext(ctx, q, webhookID, tenantID, limit, offset)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, q, webhookID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list deliveries: %w", err)
 	}
@@ -246,7 +244,7 @@ func (r *WebhookDeliveryRepository) ListByWebhook(ctx context.Context, webhookID
 func (r *WebhookDeliveryRepository) CleanupOld(ctx context.Context, olderThan time.Duration) (int64, error) {
 	q := `DELETE FROM webhook_deliveries WHERE status IN ('delivered','failed','cancelled') AND processed_at < $1`
 	cutoff := time.Now().Add(-olderThan)
-	res, err := r.db.ExecContext(ctx, q, cutoff)
+	res, err := dbctx.GetQuerier(ctx, r.db).ExecContext(ctx, q, cutoff)
 	if err != nil {
 		return 0, fmt.Errorf("failed to cleanup old deliveries: %w", err)
 	}
