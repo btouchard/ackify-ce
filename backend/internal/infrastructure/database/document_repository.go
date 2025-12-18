@@ -443,7 +443,6 @@ func (r *DocumentRepository) Search(ctx context.Context, query string, limit, of
 }
 
 // Count returns the total number of documents matching the optional search query (excluding soft-deleted)
-// RLS policy automatically filters by tenant_id
 func (r *DocumentRepository) Count(ctx context.Context, searchQuery string) (int, error) {
 	var query string
 	var args []interface{}

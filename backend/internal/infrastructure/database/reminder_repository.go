@@ -190,3 +190,14 @@ func (r *ReminderRepository) GetReminderStats(ctx context.Context, docID string)
 
 	return stats, nil
 }
+
+// Count returns the number of sent reminders in the database
+func (r *ReminderRepository) Count(ctx context.Context) (int, error) {
+	query := `SELECT COUNT(*) FROM reminder_logs WHERE status = 'sent'`
+	var count int
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count sent reminders count: %w", err)
+	}
+	return count, nil
+}

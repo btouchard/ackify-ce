@@ -3,6 +3,7 @@ module github.com/btouchard/ackify-ce
 go 1.24.5
 
 require (
+	github.com/btouchard/shm v1.0.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/go-mail/mail/v2 v2.3.0
 	github.com/golang-migrate/migrate/v4 v4.19.0

@@ -222,3 +222,14 @@ func (r *WebhookRepository) ListActiveByEvent(ctx context.Context, event string)
 	}
 	return res, nil
 }
+
+// Count returns the total number of unique webhooks (distinct target URLs)
+func (r *WebhookRepository) Count(ctx context.Context) (int, error) {
+	query := `SELECT COUNT(DISTINCT target_url) FROM webhooks WHERE active = TRUE`
+	var count int
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count unique webhooks: %w", err)
+	}
+	return count, nil
+}

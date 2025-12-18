@@ -24,6 +24,7 @@ type repository interface {
 	GetLastSignature(ctx context.Context, docID string) (*models.Signature, error)
 	GetAllSignaturesOrdered(ctx context.Context) ([]*models.Signature, error)
 	UpdatePrevHash(ctx context.Context, id int64, prevHash *string) error
+	Count(ctx context.Context) (int, error)
 }
 
 type cryptoSigner interface {
@@ -441,4 +442,13 @@ func (s *SignatureService) verifyDocumentIntegrity(ctx context.Context, doc *mod
 		"checksum", result.ChecksumHex[:16]+"...")
 
 	return nil
+}
+
+// CountSigns returns the current count of signatures in the database
+func (s *SignatureService) CountSigns(ctx context.Context) int {
+	c, err := s.repo.Count(ctx)
+	if err != nil {
+		c = 0
+	}
+	return c
 }

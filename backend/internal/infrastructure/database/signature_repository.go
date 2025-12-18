@@ -320,3 +320,14 @@ func (r *SignatureRepository) UpdatePrevHash(ctx context.Context, id int64, prev
 	}
 	return nil
 }
+
+// Count returns the total number of unique signers (distinct email addresses)
+func (r *SignatureRepository) Count(ctx context.Context) (int, error) {
+	query := `SELECT COUNT(DISTINCT user_email) FROM signatures`
+	var count int
+	err := dbctx.GetQuerier(ctx, r.db).QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count unique signers: %w", err)
+	}
+	return count, nil
+}
