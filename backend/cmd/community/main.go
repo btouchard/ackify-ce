@@ -61,7 +61,7 @@ func main() {
 
 	// Create OAuth service (internal infrastructure)
 	var oauthService *auth.OauthService
-	if cfg.Auth.OAuthEnabled {
+	if cfg.Auth.OAuthEnabled || cfg.Auth.MagicLinkEnabled {
 		oauthService = auth.NewOAuthService(auth.Config{
 			BaseURL:       cfg.App.BaseURL,
 			ClientID:      cfg.OAuth.ClientID,
