@@ -71,6 +71,10 @@ func (m *mockSignatureRepository) UpdatePrevHash(ctx context.Context, id int64, 
 	return nil
 }
 
+func (m *mockSignatureRepository) Count(ctx context.Context) (int, error) {
+	return 0, nil
+}
+
 // mockCryptoSigner for testing
 type mockCryptoSigner struct{}
 
