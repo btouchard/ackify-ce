@@ -357,6 +357,9 @@ print_success "Ed25519 private key generated"
 
 DB_PASSWORD=$(openssl rand -hex 24)
 print_success "Database password generated"
+
+DB_APP_PASSWORD=$(openssl rand -hex 24)
+print_success "App database password generated"
 echo ""
 
 # ==========================================
@@ -380,10 +383,8 @@ ACKIFY_ORGANISATION=${APP_ORGANISATION}
 # ==========================================
 # Database Configuration
 # ==========================================
-POSTGRES_USER=ackifyr
 POSTGRES_PASSWORD=${DB_PASSWORD}
-POSTGRES_DB=ackify
-ACKIFY_DB_DSN=postgres://ackifyr:${DB_PASSWORD}@postgres:5432/ackify?sslmode=disable
+ACKIFY_APP_PASSWORD=${DB_APP_PASSWORD}
 
 # ==========================================
 # Security Configuration (Auto-generated)
