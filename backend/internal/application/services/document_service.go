@@ -468,6 +468,15 @@ func (s *DocumentService) Count(ctx context.Context, searchQuery string) (int, e
 	return s.repo.Count(ctx, searchQuery)
 }
 
+// CountDocs returns the current count of documents
+func (s *DocumentService) CountDocs(ctx context.Context) int {
+	c, err := s.repo.Count(ctx, "")
+	if err != nil {
+		c = 0
+	}
+	return c
+}
+
 // GetByDocID retrieves a document by its ID
 func (s *DocumentService) GetByDocID(ctx context.Context, docID string) (*models.Document, error) {
 	return s.repo.GetByDocID(ctx, docID)

@@ -17,6 +17,7 @@ type webhookRepository interface {
 	GetByID(ctx context.Context, id int64) (*models.Webhook, error)
 	List(ctx context.Context, limit, offset int) ([]*models.Webhook, error)
 	ListActiveByEvent(ctx context.Context, event string) ([]*models.Webhook, error)
+	Count(ctx context.Context) (int, error)
 }
 
 // webhookDeliveryRepository defines webhook delivery operations
@@ -86,4 +87,13 @@ func (s *WebhookService) ListDeliveries(ctx context.Context, webhookID int64, li
 // EnqueueDelivery enqueues a webhook delivery
 func (s *WebhookService) EnqueueDelivery(ctx context.Context, input models.WebhookDeliveryInput) (*models.WebhookDelivery, error) {
 	return s.deliveryRepo.Enqueue(ctx, input)
+}
+
+// CountWebhooks returns the total number of webhooks
+func (s *WebhookService) CountWebhooks(ctx context.Context) int {
+	c, err := s.webhookRepo.Count(ctx)
+	if err != nil {
+		c = 0
+	}
+	return c
 }

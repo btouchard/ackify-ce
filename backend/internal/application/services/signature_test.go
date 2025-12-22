@@ -150,6 +150,10 @@ func (f *fakeRepository) UpdatePrevHash(_ context.Context, id int64, prevHash *s
 	return nil
 }
 
+func (f *fakeRepository) Count(_ context.Context) (int, error) {
+	return len(f.allSignatures), nil
+}
+
 type fakeCryptoSigner struct {
 	shouldFail bool
 }

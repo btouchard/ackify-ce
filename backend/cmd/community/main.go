@@ -42,7 +42,8 @@ func main() {
 	logger.Logger.Info("Starting Ackify Community Edition",
 		"version", Version,
 		"commit", Commit,
-		"build_date", BuildDate)
+		"build_date", BuildDate,
+		"telemetry", cfg.Telemetry)
 
 	// Initialize DB
 	db, err := database.InitDB(ctx, database.Config{DSN: cfg.Database.DSN})

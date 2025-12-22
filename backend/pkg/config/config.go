@@ -12,14 +12,15 @@ import (
 )
 
 type Config struct {
-	App      AppConfig
-	Server   ServerConfig
-	Database DatabaseConfig
-	Checksum ChecksumConfig
-	Auth     AuthConfig
-	OAuth    OAuthConfig
-	Mail     MailConfig
-	Logger   LoggerConfig
+	App       AppConfig
+	Server    ServerConfig
+	Database  DatabaseConfig
+	Checksum  ChecksumConfig
+	Auth      AuthConfig
+	OAuth     OAuthConfig
+	Mail      MailConfig
+	Logger    LoggerConfig
+	Telemetry bool
 }
 
 type AuthConfig struct {
@@ -63,11 +64,6 @@ type ServerConfig struct {
 	ListenAddr string
 }
 
-type LoggerConfig struct {
-	Level  string
-	Format string // "classic" or "json"
-}
-
 type MailConfig struct {
 	Host               string
 	Port               int
@@ -91,6 +87,11 @@ type ChecksumConfig struct {
 	AllowedContentType []string
 	SkipSSRFCheck      bool // For testing only - DO NOT use in production
 	InsecureSkipVerify bool // For testing only - DO NOT use in production
+}
+
+type LoggerConfig struct {
+	Level  string
+	Format string // "classic" or "json"
 }
 
 // Load loads configuration from environment variables
@@ -255,6 +256,9 @@ func Load() (*Config, error) {
 
 	// CSV import configuration
 	config.App.ImportMaxSigners = getEnvInt("ACKIFY_IMPORT_MAX_SIGNERS", 500)
+
+	// Telemetry configuration
+	config.Telemetry = getEnv("ACKIFY_TELEMETRY", "false") != "false" && getEnv("DO_NOT_TRACK", "") != "1"
 
 	// Validation: At least one authentication method must be enabled
 	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {

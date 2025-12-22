@@ -144,6 +144,40 @@ MagicLink provides passwordless authentication via email. Users receive a secure
 - Internal applications where email domain is trusted
 - Combination with OAuth for flexible authentication
 
+## Anonymous Telemetry
+
+Ackify can collect anonymous usage metrics to help improve the project.
+
+### What is collected
+
+**Business metrics only:**
+- Number of documents created
+- Number of signatures/confirmations
+- Number of webhooks configured
+- Number of email reminders sent
+
+### What is NOT collected
+
+- No personal data
+- No user information (names, emails, IPs)
+- No document content
+- No authentication details
+
+### Privacy
+
+- **GDPR compliant** - No personal data is ever collected
+- **Non-intrusive** - Runs in background, no impact on performance
+- **Opt-in** - Disabled by default, you choose to enable it
+
+### Configuration
+
+```env
+# Enable anonymous telemetry (default: false)
+ACKIFY_TELEMETRY=true
+```
+
+We encourage you to enable telemetry to help us improve Ackify for everyone!
+
 ## SMTP Configuration
 
 SMTP is used for:
@@ -193,6 +227,7 @@ ADMIN_EMAILS=admin@your-domain.com
 - `MAIL_*` - SMTP configuration for email features
 - `AUTH_MAGICLINK_ENABLED` - Force enable/disable MagicLink
 - `ONLY_ADMIN_CAN_CREATE` - Restrict document creation to admins only (default: false)
+- `ACKIFY_TELEMETRY` - Enable anonymous usage metrics (default: false)
 
 ## Troubleshooting
 

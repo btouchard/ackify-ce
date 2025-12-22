@@ -26,6 +26,7 @@ type asyncReminderRepository interface {
 	LogReminder(ctx context.Context, log *models.ReminderLog) error
 	GetReminderHistory(ctx context.Context, docID string) ([]*models.ReminderLog, error)
 	GetReminderStats(ctx context.Context, docID string) (*models.ReminderStats, error)
+	Count(ctx context.Context) (int, error)
 }
 
 // asyncMagicLinkService defines magic link operations for async reminders
@@ -304,4 +305,13 @@ func (s *ReminderAsyncService) SendReminders(
 	locale string,
 ) (*models.ReminderSendResult, error) {
 	return s.SendRemindersAsync(ctx, docID, sentBy, specificEmails, docURL, locale)
+}
+
+// CountSent returns the number of sent reminders for a document
+func (s *ReminderAsyncService) CountSent(ctx context.Context) int {
+	c, err := s.reminderRepo.Count(ctx)
+	if err != nil {
+		return 0
+	}
+	return c
 }

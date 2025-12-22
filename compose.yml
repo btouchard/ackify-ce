@@ -45,6 +45,7 @@ services:
       ACKIFY_MAIL_STARTTLS: "false"
       ACKIFY_MAIL_FROM: "${ACKIFY_MAIL_FROM:-noreply@ackify.local}"
       ACKIFY_MAIL_FROM_NAME: "${ACKIFY_MAIL_FROM_NAME:-Ackify}"
+      ACKIFY_TELEMETRY: "${ACKIFY_TELEMETRY:-false}"
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully

@@ -68,6 +68,7 @@ services:
       ACKIFY_CHECKSUM_MAX_REDIRECTS: "${ACKIFY_CHECKSUM_MAX_REDIRECTS:-3}"
       ACKIFY_CHECKSUM_ALLOWED_TYPES: "${ACKIFY_CHECKSUM_ALLOWED_TYPES:-}"
       ACKIFY_IMPORT_MAX_SIGNERS: "${ACKIFY_IMPORT_MAX_SIGNERS:-500}"
+      ACKIFY_TELEMETRY: "${ACKIFY_TELEMETRY:-false}"
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully
