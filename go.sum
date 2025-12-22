@@ -2,8 +2,8 @@ github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 h1:L/gRVlceqvL25
 github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/btouchard/shm v1.0.0 h1:TDhE20wvji5Hby9L/3LSXnZ++UUuGCAZhxC89dL3Ais=
-github.com/btouchard/shm v1.0.0/go.mod h1:KgTIF/83o34/Uw0vvleusF++OGhWfQi7qqJD5589UNI=
+github.com/btouchard/shm v1.2.0 h1:4KsVAWhbvvLnTKEagvbt47DxwwBq8PvglW8Tlsg+bFc=
+github.com/btouchard/shm v1.2.0/go.mod h1:9+E/t1eveTZwmXGnsTqBn7HeckuQfp7OyCHLE64uS/A=
 github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG8PI=
 github.com/containerd/errdefs v1.0.0/go.mod h1:+YBYIdtsnF4Iw6nWZhJcqGSg/dwvV7tyJ/kCkyJ2k+M=
 github.com/containerd/errdefs/pkg v0.3.0 h1:9IKJ06FvyNlexW690DXuQNx2KA2cUJXx151Xdx3ZPPE=

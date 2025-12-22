@@ -52,6 +52,7 @@ services:
       ACKIFY_AUTH_RATE_LIMIT: "1000"
       ACKIFY_DOCUMENT_RATE_LIMIT: "1000"
       ACKIFY_GENERAL_RATE_LIMIT: "1000"
+      ACKIFY_TELEMETRY: false
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully

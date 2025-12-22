@@ -27,6 +27,8 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+
+	sdk "github.com/btouchard/shm/sdk/golang"
 )
 
 // Server represents the HTTP server with all its dependencies.
@@ -86,7 +88,7 @@ type ServerBuilder struct {
 	magicLinkEnabled bool
 }
 
-// NewServerBuilder creates a new server builder with required configuration.
+// NewServerBuilder creates a new server builder with the required configuration.
 func NewServerBuilder(cfg *config.Config, frontend embed.FS, version string) *ServerBuilder {
 	return &ServerBuilder{
 		cfg:              cfg,
@@ -213,6 +215,11 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 
 	// Create repositories
 	repos := b.createRepositories()
+
+	// Initialize Telemetry if is enabled
+	if err := b.initializeTelemetry(ctx); err != nil {
+		return nil, err
+	}
 
 	// Initialize workers and services
 	whPublisher, whWorker, err := b.initializeWebhookSystem(repos)
@@ -346,6 +353,29 @@ func (b *ServerBuilder) createRepositories() *repositories {
 		magicLink:       database.NewMagicLinkRepository(b.db),
 		oauthSession:    database.NewOAuthSessionRepository(b.db, b.tenantProvider),
 	}
+}
+
+func (b *ServerBuilder) initializeTelemetry(ctx context.Context) error {
+	telemetry, err := sdk.New(sdk.Config{
+		ServerURL:   "https://metrics.kolapsis.com",
+		AppName:     "Ackify",
+		AppVersion:  b.version,
+		Environment: "production",
+		Enabled:     b.cfg.Telemetry,
+	})
+	if err != nil {
+		return err
+	}
+	telemetry.SetProvider(func() map[string]interface{} {
+		return map[string]interface{}{
+			"documents":     b.documentService.CountDocs(ctx),
+			"confirmations": b.signatureService.CountSigns(ctx),
+			"webhooks":      b.webhookService.CountWebhooks(ctx),
+			"reminds_sent":  b.reminderService.CountSent(ctx),
+		}
+	})
+	go telemetry.Start(context.Background())
+	return nil
 }
 
 // initializeWebhookSystem initializes webhook publisher and worker.

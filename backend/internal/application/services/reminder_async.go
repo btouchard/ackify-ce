@@ -308,10 +308,10 @@ func (s *ReminderAsyncService) SendReminders(
 }
 
 // CountSent returns the number of sent reminders for a document
-func (s *ReminderAsyncService) CountSent(ctx context.Context) (int, error) {
+func (s *ReminderAsyncService) CountSent(ctx context.Context) int {
 	c, err := s.reminderRepo.Count(ctx)
 	if err != nil {
-		return 0, err
+		return 0
 	}
-	return c, nil
+	return c
 }
