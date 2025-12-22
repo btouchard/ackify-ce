@@ -258,7 +258,7 @@ func Load() (*Config, error) {
 	config.App.ImportMaxSigners = getEnvInt("ACKIFY_IMPORT_MAX_SIGNERS", 500)
 
 	// Telemetry configuration
-	config.Telemetry = getEnv("ACKIFY_TELEMETRY", "") != "false" && getEnv("DO_NOT_TRACK", "") != "1"
+	config.Telemetry = getEnv("ACKIFY_TELEMETRY", "false") != "false" && getEnv("DO_NOT_TRACK", "") != "1"
 
 	// Validation: At least one authentication method must be enabled
 	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {

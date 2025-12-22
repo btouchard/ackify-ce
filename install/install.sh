@@ -307,6 +307,41 @@ if [ "$ENABLE_OAUTH" = false ] && [ "$ENABLE_MAGICLINK" = false ]; then
 fi
 
 # ==========================================
+# Telemetry Configuration
+# ==========================================
+print_header "📊 Anonymous Telemetry"
+echo ""
+print_info "Ackify can collect anonymous usage metrics to help improve the project."
+echo ""
+print_info "What is collected (business metrics only):"
+print_info "  - Number of documents created"
+print_info "  - Number of signatures/confirmations"
+print_info "  - Number of webhooks configured"
+print_info "  - Number of email reminders sent"
+echo ""
+print_info "What is NOT collected:"
+print_info "  - No personal data"
+print_info "  - No user information"
+print_info "  - No document content"
+print_info "  - No email addresses"
+print_info "  - No IP addresses"
+echo ""
+print_info "This telemetry is:"
+print_success "  ✓ GDPR compliant"
+print_success "  ✓ Non-intrusive (background only)"
+print_success "  ✓ Helps us improve Ackify for everyone"
+echo ""
+
+ENABLE_TELEMETRY=false
+if prompt_yes_no "Enable anonymous telemetry to help improve Ackify?" "y"; then
+    ENABLE_TELEMETRY=true
+    print_success "Thank you for helping improve Ackify!"
+else
+    print_info "Telemetry disabled. You can enable it later in .env (ACKIFY_TELEMETRY=true)"
+fi
+echo ""
+
+# ==========================================
 # Admin Configuration
 # ==========================================
 print_header "👤 Admin Configuration"
@@ -498,6 +533,16 @@ APP_DNS=${APP_DNS}
 EOF
 fi
 
+# Telemetry configuration
+cat >> .env <<EOF
+# ==========================================
+# Telemetry Configuration
+# ==========================================
+# Anonymous usage metrics (GDPR compliant, no personal data)
+ACKIFY_TELEMETRY=${ENABLE_TELEMETRY}
+
+EOF
+
 print_success ".env file created successfully"
 echo ""
 
@@ -545,6 +590,13 @@ if [ "$ENABLE_TRAEFIK" = true ]; then
     print_info "TLS Certificate: ${TRAEFIK_CERTRESOLVER}"
 else
     print_info "Reverse Proxy: None (direct port 8080 exposure)"
+fi
+echo ""
+
+if [ "$ENABLE_TELEMETRY" = true ]; then
+    print_success "Telemetry: Enabled (thank you!)"
+else
+    print_info "Telemetry: Disabled"
 fi
 echo ""
 
