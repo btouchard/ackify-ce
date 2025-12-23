@@ -518,6 +518,7 @@
     "back": "Volver",
     "next": "Siguiente",
     "previous": "Anterior",
-    "skipToContent": "Ir al contenido principal"
+    "skipToContent": "Ir al contenido principal",
+    "refresh": "Actualizar"
   }
 }

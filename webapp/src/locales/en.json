@@ -518,6 +518,7 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
-    "skipToContent": "Skip to main content"
+    "skipToContent": "Skip to main content",
+    "refresh": "Refresh"
   }
 }

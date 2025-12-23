@@ -3,8 +3,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Menu, X, ChevronDown, User, LogOut, Shield, FileSignature } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
+import { Menu, X, ChevronDown, LogOut, Shield } from 'lucide-vue-next'
 import ThemeToggle from './ThemeToggle.vue'
 import LanguageSelect from './LanguageSelect.vue'
 import AppLogo from '@/components/AppLogo.vue'
@@ -23,6 +22,21 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const user = computed(() => authStore.user)
 
+// User initials for avatar
+const userInitials = computed(() => {
+  if (!user.value?.name && !user.value?.email) return '?'
+  const name = user.value.name || user.value.email || ''
+  const parts = name.split(/[\s@]+/).filter(p => p.length > 0)
+  if (parts.length >= 2) {
+    const first = parts[0] ?? ''
+    const second = parts[1] ?? ''
+    if (first.length > 0 && second.length > 0) {
+      return (first.charAt(0) + second.charAt(0)).toUpperCase()
+    }
+  }
+  return name.slice(0, 2).toUpperCase()
+})
+
 const isActive = (path: string) => {
   return route.path === path
 }
@@ -36,7 +50,7 @@ const toggleUserMenu = () => {
 }
 
 const login = () => {
-  router.push({name: 'auth-choice'})
+  router.push({ name: 'auth-choice' })
 }
 
 const logout = async () => {
@@ -44,35 +58,35 @@ const logout = async () => {
   userMenuOpen.value = false
 }
 
-// Close mobile menu when clicking outside
 const closeMobileMenu = () => {
   mobileMenuOpen.value = false
 }
 
-// Close user menu when clicking outside
 const closeUserMenu = () => {
   userMenuOpen.value = false
 }
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 w-full border-b border-border/40 clay-card backdrop-blur supports-[backdrop-filter]:bg-background/60">
-    <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" :aria-label="t('nav.mainNavigation')">
+  <header class="sticky top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+    <nav class="mx-auto max-w-6xl px-4 sm:px-6" :aria-label="t('nav.mainNavigation')">
       <div class="flex h-16 items-center justify-between">
         <!-- Logo -->
         <div class="flex items-center">
-          <router-link to="/" class="focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-md">
+          <router-link to="/" class="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg">
             <AppLogo size="md" :show-version="true" />
           </router-link>
         </div>
 
-        <!-- Desktop Navigation (only visible when authenticated) -->
-        <div v-if="isAuthenticated" class="hidden md:flex md:items-center md:space-x-6">
+        <!-- Desktop Navigation -->
+        <div v-if="isAuthenticated" class="hidden md:flex md:items-center md:space-x-1">
           <router-link
             to="/"
             :class="[
-              'text-sm font-medium transition-colors hover:text-primary',
-              isActive('/') ? 'text-primary' : 'text-muted-foreground'
+              'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+              isActive('/')
+                ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             ]"
           >
             {{ t('nav.home') }}
@@ -81,44 +95,38 @@ const closeUserMenu = () => {
           <router-link
             to="/signatures"
             :class="[
-              'text-sm font-medium transition-colors hover:text-primary',
-              isActive('/signatures') ? 'text-primary' : 'text-muted-foreground'
+              'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+              isActive('/signatures')
+                ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             ]"
           >
             {{ t('nav.myConfirmations') }}
           </router-link>
-
-          <router-link
-            v-if="isAdmin"
-            to="/admin"
-            :class="[
-              'text-sm font-medium transition-colors hover:text-primary',
-              isActive('/admin') ? 'text-primary' : 'text-muted-foreground'
-            ]"
-          >
-            {{ t('nav.admin') }}
-          </router-link>
         </div>
 
-        <!-- Right side: Language + Theme toggle + Auth -->
+        <!-- Right side: Language + Theme + Auth -->
         <div class="flex items-center space-x-2">
           <LanguageSelect />
           <ThemeToggle />
 
-          <!-- Desktop Auth -->
+          <!-- Desktop Auth - User dropdown -->
           <div v-if="isAuthenticated" class="hidden md:block relative">
             <button
               @click="toggleUserMenu"
-              class="flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              class="flex items-center space-x-2 rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               aria-haspopup="true"
               :aria-expanded="userMenuOpen"
             >
-              <User :size="18" />
-              <span class="text-foreground">{{ user?.email?.split('@')[0] }}</span>
-              <ChevronDown :size="16" class="text-muted-foreground" />
+              <!-- User avatar with initials -->
+              <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300">
+                {{ userInitials }}
+              </div>
+              <span class="text-slate-700 dark:text-slate-200 hidden lg:inline">{{ user?.name || user?.email?.split('@')[0] }}</span>
+              <ChevronDown :size="16" class="text-slate-400" />
             </button>
 
-            <!-- User dropdown -->
+            <!-- User dropdown menu -->
             <transition
               enter-active-class="transition ease-out duration-100"
               enter-from-class="transform opacity-0 scale-95"
@@ -131,42 +139,34 @@ const closeUserMenu = () => {
                 v-if="userMenuOpen"
                 @click.stop
                 v-click-outside="closeUserMenu"
-                class="absolute right-0 mt-2 w-56 origin-top-right clay-card rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                class="absolute right-0 mt-2 w-56 origin-top-right bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg focus:outline-none"
                 role="menu"
                 aria-orientation="vertical"
               >
                 <div class="p-2">
-                  <div class="px-3 py-2 text-sm text-muted-foreground border-b border-border/40 mb-2">
-                    <p class="font-medium text-foreground">{{ user?.name }}</p>
-                    <p class="text-xs truncate">{{ user?.email }}</p>
+                  <!-- User info -->
+                  <div class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-2">
+                    <p class="font-medium text-slate-900 dark:text-slate-100">{{ user?.name }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ user?.email }}</p>
                   </div>
 
-                  <router-link
-                    to="/signatures"
-                    @click="userMenuOpen = false"
-                    class="flex items-center space-x-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
-                    role="menuitem"
-                  >
-                    <FileSignature :size="16" />
-                    <span>{{ t('nav.myConfirmations') }}</span>
-                  </router-link>
-
+                  <!-- Menu items -->
                   <router-link
                     v-if="isAdmin"
                     to="/admin"
                     @click="userMenuOpen = false"
-                    class="flex items-center space-x-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
+                    class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                     role="menuitem"
                   >
                     <Shield :size="16" />
                     <span>{{ t('nav.administration') }}</span>
                   </router-link>
 
-                  <div class="border-t border-border/40 my-2"></div>
+                  <div v-if="isAdmin" class="border-t border-slate-100 dark:border-slate-700 my-2"></div>
 
                   <button
                     @click="logout"
-                    class="flex w-full items-center space-x-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                    class="flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     role="menuitem"
                   >
                     <LogOut :size="16" />
@@ -177,19 +177,24 @@ const closeUserMenu = () => {
             </transition>
           </div>
 
-          <Button v-else @click="login" variant="default" size="sm" class="hidden md:inline-flex">
+          <!-- Login button (not authenticated) -->
+          <button
+            v-else
+            @click="login"
+            class="hidden md:inline-flex trust-gradient text-white font-medium rounded-lg px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+          >
             {{ t('nav.login') }}
-          </Button>
+          </button>
 
           <!-- Mobile menu button -->
           <button
             @click="toggleMobileMenu"
-            class="md:hidden rounded-md p-2 hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            class="md:hidden rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             :aria-label="t('nav.mobileMenu')"
-            aria-expanded="false"
+            :aria-expanded="mobileMenuOpen"
           >
-            <Menu v-if="!mobileMenuOpen" :size="24" />
-            <X v-else :size="24" />
+            <Menu v-if="!mobileMenuOpen" :size="24" class="text-slate-600 dark:text-slate-300" />
+            <X v-else :size="24" class="text-slate-600 dark:text-slate-300" />
           </button>
         </div>
       </div>
@@ -204,16 +209,18 @@ const closeUserMenu = () => {
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-1"
     >
-      <div v-if="mobileMenuOpen" class="md:hidden border-t border-border/40">
-        <div class="space-y-1 px-4 pb-3 pt-2">
-          <!-- Navigation links (only when authenticated) -->
+      <div v-if="mobileMenuOpen" class="md:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+        <div class="space-y-1 px-4 pb-4 pt-2">
+          <!-- Navigation links (authenticated) -->
           <template v-if="isAuthenticated">
             <router-link
               to="/"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-md px-3 py-2 text-base font-medium transition-colors',
-                isActive('/') ? 'bg-accent text-primary' : 'hover:bg-accent'
+                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                isActive('/')
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
               {{ t('nav.home') }}
@@ -223,8 +230,10 @@ const closeUserMenu = () => {
               to="/signatures"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-md px-3 py-2 text-base font-medium transition-colors',
-                isActive('/signatures') ? 'bg-accent text-primary' : 'hover:bg-accent'
+                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                isActive('/signatures')
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
               {{ t('nav.myConfirmations') }}
@@ -235,37 +244,40 @@ const closeUserMenu = () => {
               to="/admin"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-md px-3 py-2 text-base font-medium transition-colors',
-                isActive('/admin') ? 'bg-accent text-primary' : 'hover:bg-accent'
+                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                isActive('/admin') || route.path.startsWith('/admin')
+                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
               {{ t('nav.administration') }}
             </router-link>
 
-            <div class="border-t border-border/40 pt-3 mt-3">
-              <div class="px-3 py-2 text-sm text-muted-foreground mb-2">
-                <p class="font-medium text-foreground">{{ user?.name }}</p>
-                <p class="text-xs">{{ user?.email }}</p>
+            <!-- User section -->
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
+              <div class="px-3 py-2 mb-2">
+                <p class="font-medium text-slate-900 dark:text-slate-100">{{ user?.name }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ user?.email }}</p>
               </div>
               <button
                 @click="logout"
-                class="w-full text-left rounded-md px-3 py-2 text-base font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                class="w-full text-left rounded-lg px-3 py-2.5 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 {{ t('nav.logout') }}
               </button>
             </div>
           </template>
 
-          <!-- Login button (when not authenticated) -->
-          <Button v-else @click="login" variant="default" class="w-full">
+          <!-- Login button (not authenticated) -->
+          <button
+            v-else
+            @click="login"
+            class="w-full trust-gradient text-white font-medium rounded-lg px-4 py-3 text-base hover:opacity-90 transition-opacity"
+          >
             {{ t('nav.login') }}
-          </Button>
+          </button>
         </div>
       </div>
     </transition>
   </header>
 </template>
-
-<style scoped>
-/* Click outside directive will be added via composable */
-</style>

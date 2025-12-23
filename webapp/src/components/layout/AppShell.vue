@@ -6,7 +6,7 @@ import SkipToContent from '../accessibility/SkipToContent.vue'
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-background relative">
+  <div class="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900 relative">
     <SkipToContent />
     <AppHeader class="flex-shrink-0" />
 

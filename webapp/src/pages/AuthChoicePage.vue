@@ -6,15 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { Mail, LogIn, Loader2, AlertCircle, CheckCircle2 } from 'lucide-vue-next'
-import Card from '@/components/ui/Card.vue'
-import CardHeader from '@/components/ui/CardHeader.vue'
-import CardTitle from '@/components/ui/CardTitle.vue'
-import CardDescription from '@/components/ui/CardDescription.vue'
-import CardContent from '@/components/ui/CardContent.vue'
-import Button from '@/components/ui/Button.vue'
-import Alert from '@/components/ui/Alert.vue'
-import AlertTitle from '@/components/ui/AlertTitle.vue'
-import AlertDescription from '@/components/ui/AlertDescription.vue'
+import AppLogo from '@/components/AppLogo.vue'
 
 const { t } = useI18n()
 usePageTitle('auth.choice.title')
@@ -121,110 +113,109 @@ function isValidEmail(email: string): boolean {
 </script>
 
 <template>
-  <div class="min-h-full box-border flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+  <div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 sm:px-6 py-12">
     <div class="max-w-md w-full space-y-8">
+      <!-- Header with logo -->
       <div class="text-center">
-        <h1 class="text-3xl font-bold text-foreground">
+        <div class="flex justify-center mb-6">
+          <AppLogo size="lg" :show-version="false" />
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
           {{ t('auth.choice.title') }}
         </h1>
-        <p class="mt-2 text-sm text-muted-foreground">
+        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
           {{ t('auth.choice.subtitle') }}
         </p>
       </div>
 
-      <Alert v-if="errorMessage" variant="destructive">
+      <!-- Error Alert -->
+      <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
         <div class="flex items-start">
-          <AlertCircle :size="20" class="mr-3 mt-0.5" />
+          <AlertCircle :size="20" class="mr-3 mt-0.5 text-red-600 dark:text-red-400 flex-shrink-0" />
           <div class="flex-1">
-            <AlertTitle>{{ t('common.error') }}</AlertTitle>
-            <AlertDescription>{{ errorMessage }}</AlertDescription>
+            <h3 class="font-medium text-red-900 dark:text-red-200">{{ t('common.error') }}</h3>
+            <p class="mt-1 text-sm text-red-700 dark:text-red-300">{{ errorMessage }}</p>
           </div>
         </div>
-      </Alert>
+      </div>
 
-      <Alert v-if="magicLinkSent" variant="default" class="border-green-200 bg-green-50">
+      <!-- Success Alert (Magic Link Sent) -->
+      <div v-if="magicLinkSent" class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
         <div class="flex items-start">
-          <CheckCircle2 :size="20" class="mr-3 mt-0.5 text-green-600" />
+          <CheckCircle2 :size="20" class="mr-3 mt-0.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <div class="flex-1">
-            <AlertTitle class="text-green-800">{{ t('auth.magiclink.sent.title') }}</AlertTitle>
-            <AlertDescription class="text-green-700">
+            <h3 class="font-medium text-emerald-900 dark:text-emerald-200">{{ t('auth.magiclink.sent.title') }}</h3>
+            <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
               {{ t('auth.magiclink.sent.message') }}
-              <br>
-              <span class="text-xs text-green-600">
-                {{ t('auth.magiclink.sent.expire') }}
-              </span>
-            </AlertDescription>
+            </p>
+            <p class="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
+              {{ t('auth.magiclink.sent.expire') }}
+            </p>
           </div>
         </div>
-      </Alert>
+      </div>
 
-      <!-- OAuth Login -->
-      <Card v-if="oauthEnabled">
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            <LogIn class="h-5 w-5" />
-            {{ t('auth.oauth.title') }}
-          </CardTitle>
-          <CardDescription>
-            {{ t('auth.oauth.description') }}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button
-            @click="loginWithOAuth"
-            :disabled="loading"
-            class="w-full"
-            size="lg"
-          >
-            <Loader2 v-if="loading" class="h-4 w-4 animate-spin mr-2" />
-            {{ t('auth.oauth.button') }}
-          </Button>
-        </CardContent>
-      </Card>
+      <!-- OAuth Login Card -->
+      <div v-if="oauthEnabled" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+            <LogIn :size="20" class="text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('auth.oauth.title') }}</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('auth.oauth.description') }}</p>
+          </div>
+        </div>
+        <button
+          @click="loginWithOAuth"
+          :disabled="loading"
+          class="w-full trust-gradient text-white font-medium rounded-lg px-4 py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          <Loader2 v-if="loading" class="w-4 h-4 animate-spin mr-2" />
+          {{ t('auth.oauth.button') }}
+        </button>
+      </div>
 
-      <!-- Magic Link Login -->
-      <Card v-if="magicLinkEnabled">
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2">
-            <Mail class="h-5 w-5" />
-            {{ t('auth.magiclink.title') }}
-          </CardTitle>
-          <CardDescription>
-            {{ t('auth.magiclink.description') }}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form @submit.prevent="requestMagicLink" class="space-y-4">
-            <div>
-              <label for="email" class="block text-sm font-medium text-foreground mb-1">
-                {{ t('auth.magiclink.email_label') }}
-              </label>
-              <input
-                id="email"
-                v-model="email"
-                type="email"
-                required
-                :disabled="loading"
-                :placeholder="t('auth.magiclink.email_placeholder')"
-                class="w-full px-3 py-2 border border-border rounded-md shadow-sm bg-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-            <Button
-              type="submit"
+      <!-- Magic Link Login Card -->
+      <div v-if="magicLinkEnabled" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+            <Mail :size="20" class="text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('auth.magiclink.title') }}</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('auth.magiclink.description') }}</p>
+          </div>
+        </div>
+        <form @submit.prevent="requestMagicLink" class="space-y-4">
+          <div>
+            <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+              {{ t('auth.magiclink.email_label') }}
+            </label>
+            <input
+              id="email"
+              v-model="email"
+              type="email"
+              required
               :disabled="loading"
-              class="w-full"
-              size="lg"
-              variant="outline"
-            >
-              <Loader2 v-if="loading" class="h-4 w-4 animate-spin mr-2" />
-              <Mail v-else class="h-4 w-4 mr-2" />
-              {{ t('auth.magiclink.button') }}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              :placeholder="t('auth.magiclink.email_placeholder')"
+              class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-3 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            <Loader2 v-if="loading" class="w-4 h-4 animate-spin mr-2" />
+            <Mail v-else class="w-4 h-4 mr-2" />
+            {{ t('auth.magiclink.button') }}
+          </button>
+        </form>
+      </div>
 
-      <p class="text-center text-xs text-muted-foreground">
+      <!-- Privacy note -->
+      <p class="text-center text-xs text-slate-500 dark:text-slate-400">
         {{ t('auth.choice.privacy') }}
       </p>
     </div>

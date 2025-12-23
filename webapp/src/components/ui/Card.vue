@@ -11,7 +11,7 @@ const props = defineProps<CardProps>()
 </script>
 
 <template>
-  <div :class="cn('clay-card rounded-lg text-card-foreground', props.class)">
+  <div :class="cn('bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700', props.class)">
     <slot />
   </div>
 </template>

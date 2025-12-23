@@ -5,15 +5,15 @@ import { type VariantProps, cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border p-4',
+  'relative w-full rounded-xl border p-4',
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
-        success: 'border-l-4 border-green-400 bg-green-50 text-green-900 dark:bg-green-900/20 dark:text-green-400',
-        destructive: 'border-l-4 border-red-400 bg-red-50 text-red-900 dark:bg-red-900/20 dark:text-red-400',
-        warning: 'border-l-4 border-yellow-400 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-400',
-        info: 'border-l-4 border-blue-400 bg-blue-50 text-blue-900 dark:bg-blue-900/20 dark:text-blue-400',
+        default: 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white',
+        success: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400',
+        destructive: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400',
+        warning: 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400',
+        info: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400',
       },
     },
     defaultVariants: {

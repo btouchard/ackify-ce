@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="120"
+   height="120"
+   viewBox="0 0 120 120"
+   fill="none"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="icon2.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview3"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="true"
+     inkscape:zoom="4.60625"
+     inkscape:cx="73.161465"
+     inkscape:cy="67.408412"
+     inkscape:window-width="1920"
+     inkscape:window-height="945"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg3" />
+  <g
+     transform="matrix(3.2560208,-1.1339053,1.1850946,3.1153793,-25.933317,23.475147)"
+     id="g2">
+    <rect
+       x="-24.957579"
+       y="-11.865315"
+       width="8"
+       height="32"
+       rx="4"
+       fill="#7b61ff"
+       id="rect1"
+       transform="matrix(-0.76604444,-0.64278761,-0.64278761,0.76604444,0,0)" />
+    <rect
+       x="20.971819"
+       y="14.86158"
+       width="8"
+       height="22"
+       rx="4"
+       fill="url(#paint0_linear_ackify_v3)"
+       id="rect2"
+       style="fill:url(#paint0_linear_ackify_v3)" />
+  </g>
+  <defs
+     id="defs3">
+    <linearGradient
+       id="paint0_linear_ackify_v3"
+       x1="28"
+       y1="14"
+       x2="28"
+       y2="36"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-3.0281812,0.86157951)">
+      <stop
+         stop-color="#32E6E2"
+         id="stop2" />
+      <stop
+         offset="1"
+         stop-color="#35C7BD"
+         id="stop3" />
+    </linearGradient>
+  </defs>
+</svg>

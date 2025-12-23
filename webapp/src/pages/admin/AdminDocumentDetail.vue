@@ -35,25 +35,8 @@ import {
   FileCheck,
   FileX,
   Search,
+  AlertCircle,
 } from 'lucide-vue-next'
-import Card from '@/components/ui/Card.vue'
-import CardHeader from '@/components/ui/CardHeader.vue'
-import CardTitle from '@/components/ui/CardTitle.vue'
-import CardDescription from '@/components/ui/CardDescription.vue'
-import CardContent from '@/components/ui/CardContent.vue'
-import Button from '@/components/ui/Button.vue'
-import Input from '@/components/ui/Input.vue'
-import Textarea from '@/components/ui/Textarea.vue'
-import Alert from '@/components/ui/Alert.vue'
-import AlertDescription from '@/components/ui/AlertDescription.vue'
-import Badge from '@/components/ui/Badge.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -172,7 +155,6 @@ async function loadDocumentStatus() {
 }
 
 function hasCriticalFieldsChanged(): boolean {
-  // Check if critical fields (url, checksum, checksumAlgorithm, description) have changed
   return (
     metadataForm.value.url !== originalMetadata.value.url ||
     metadataForm.value.checksum !== originalMetadata.value.checksum ||
@@ -182,7 +164,6 @@ function hasCriticalFieldsChanged(): boolean {
 }
 
 function handleSaveMetadata() {
-  // Check if document has signatures (both expected and unexpected) and critical fields changed
   const expectedSignaturesCount = stats.value?.signedCount || 0
   const unexpectedSignaturesCount = unexpectedSignatures.value?.length || 0
   const totalSignatures = expectedSignaturesCount + unexpectedSignaturesCount
@@ -190,10 +171,8 @@ function handleSaveMetadata() {
   const criticalFieldsChanged = hasCriticalFieldsChanged()
 
   if (hasSignatures && criticalFieldsChanged) {
-    // Show warning modal
     showMetadataWarningModal.value = true
   } else {
-    // Save directly
     saveMetadata()
   }
 }
@@ -224,7 +203,6 @@ async function addSigners() {
     error.value = ''
     success.value = ''
 
-    // Parse emails - support "Name <email>" or "email" format
     const lines = signersEmails.value.split('\n').filter(l => l.trim())
     let addedCount = 0
 
@@ -298,7 +276,6 @@ async function sendRemindersAction() {
     error.value = ''
     success.value = ''
 
-    // Normalize locale to base language code (it-IT -> it, en-US -> en, etc.)
     const normalizedLocale = locale.value.split('-')[0]
     console.log('Sending reminders with locale:', normalizedLocale, '(from', locale.value, ')')
 
@@ -307,7 +284,7 @@ async function sendRemindersAction() {
       {
         emails: sendMode.value === 'selected' ? selectedEmails.value : undefined,
       },
-      normalizedLocale // Pass normalized locale
+      normalizedLocale
     )
 
     selectedEmails.value = []
@@ -371,7 +348,6 @@ async function handleDeleteDocument() {
     error.value = ''
     await deleteDocument(docId.value)
     showDeleteConfirmModal.value = false
-    // Redirect to admin dashboard
     router.push('/admin')
   } catch (err) {
     error.value = extractError(err)
@@ -472,138 +448,135 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative min-h-[calc(100vh-4rem)]">
-    <div class="absolute inset-0 -z-10 overflow-hidden">
-      <div class="absolute left-1/4 top-0 h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl"></div>
-      <div class="absolute right-1/4 bottom-0 h-[400px] w-[400px] rounded-full bg-primary/5 blur-3xl"></div>
-    </div>
-
-    <main class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+  <div class="min-h-[calc(100vh-8rem)]">
+    <main class="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center space-x-3 mb-2">
-          <Button variant="ghost" size="icon" @click="router.push('/admin')" :aria-label="t('admin.documentDetail.back')">
-            <ArrowLeft :size="20" />
-          </Button>
-          <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            {{ t('admin.documentDetail.title') }} {{ docId }}
+          <button
+            @click="router.push('/admin')"
+            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            :aria-label="t('admin.documentDetail.back')"
+          >
+            <ArrowLeft :size="20" class="text-slate-600 dark:text-slate-400" />
+          </button>
+          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            {{ t('admin.documentDetail.title') }} <span class="font-mono text-blue-600 dark:text-blue-400">{{ docId }}</span>
           </h1>
         </div>
-        <div class="flex items-center gap-3 ml-14">
-          <p class="text-sm text-muted-foreground font-mono">{{ shareLink }}</p>
-          <Button @click="copyToClipboard(shareLink)" variant="ghost" size="icon" :aria-label="t('signatureList.copy')">
-            <Copy :size="16" />
-          </Button>
+        <div class="flex items-center gap-3 ml-11">
+          <p class="text-sm text-slate-500 dark:text-slate-400 font-mono truncate">{{ shareLink }}</p>
+          <button
+            @click="copyToClipboard(shareLink)"
+            class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            :aria-label="t('signatureList.copy')"
+          >
+            <Copy :size="14" class="text-slate-400" />
+          </button>
         </div>
       </div>
 
       <!-- Alerts -->
-      <Alert v-if="error" variant="destructive" class="mb-6 clay-card">
-        <AlertDescription>{{ error }}</AlertDescription>
-      </Alert>
+      <div v-if="error" class="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+        <div class="flex items-start">
+          <AlertCircle :size="20" class="mr-3 mt-0.5 text-red-600 dark:text-red-400 flex-shrink-0" />
+          <p class="text-sm text-red-700 dark:text-red-300">{{ error }}</p>
+        </div>
+      </div>
 
-      <Alert v-if="success" class="mb-6 clay-card bg-green-50 border-green-200 dark:bg-green-900/20">
-        <AlertDescription class="text-green-800 dark:text-green-200">{{ success }}</AlertDescription>
-      </Alert>
+      <div v-if="success" class="mb-6 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+        <div class="flex items-start">
+          <CheckCircle :size="20" class="mr-3 mt-0.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <p class="text-sm text-emerald-700 dark:text-emerald-300">{{ success }}</p>
+        </div>
+      </div>
 
       <!-- Loading -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
-        <Loader2 :size="48" class="animate-spin text-primary" />
-        <p class="mt-4 text-muted-foreground">{{ t('common.loading') }}</p>
+        <Loader2 :size="48" class="animate-spin text-blue-600" />
+        <p class="mt-4 text-slate-500 dark:text-slate-400">{{ t('common.loading') }}</p>
       </div>
 
       <!-- Content -->
-      <div v-else-if="documentStatus" class="space-y-8">
+      <div v-else-if="documentStatus" class="space-y-6">
         <!-- Stats Cards -->
-        <div v-if="stats && stats.expectedCount > 0" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <Card class="clay-card-hover">
-            <CardContent class="pt-6">
-              <div class="flex items-center space-x-4">
-                <div class="rounded-lg bg-blue-500/10 p-3">
-                  <Users :size="24" class="text-blue-600" />
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.expected') }}</p>
-                  <p class="text-2xl font-bold text-foreground">{{ stats.expectedCount }}</p>
-                </div>
+        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <Users :size="20" class="text-blue-600 dark:text-blue-400" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.expected') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.expectedCount }}</p>
+              </div>
+            </div>
+          </div>
 
-          <Card class="clay-card-hover">
-            <CardContent class="pt-6">
-              <div class="flex items-center space-x-4">
-                <div class="rounded-lg bg-green-500/10 p-3">
-                  <CheckCircle :size="24" class="text-green-600" />
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.signed') }}</p>
-                  <p class="text-2xl font-bold text-foreground">{{ stats.signedCount }}</p>
-                </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                <CheckCircle :size="20" class="text-emerald-600 dark:text-emerald-400" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.signed') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.signedCount }}</p>
+              </div>
+            </div>
+          </div>
 
-          <Card class="clay-card-hover">
-            <CardContent class="pt-6">
-              <div class="flex items-center space-x-4">
-                <div class="rounded-lg bg-orange-500/10 p-3">
-                  <Clock :size="24" class="text-orange-600" />
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.pending') }}</p>
-                  <p class="text-2xl font-bold text-foreground">{{ stats.pendingCount }}</p>
-                </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                <Clock :size="20" class="text-amber-600 dark:text-amber-400" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.pending') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.pendingCount }}</p>
+              </div>
+            </div>
+          </div>
 
-          <Card class="clay-card-hover">
-            <CardContent class="pt-6">
-              <div class="flex items-center space-x-4">
-                <div class="rounded-lg bg-purple-500/10 p-3">
-                  <Shield :size="24" class="text-purple-600" />
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-muted-foreground">{{ t('admin.dashboard.stats.completion') }}</p>
-                  <p class="text-2xl font-bold text-foreground">{{ Math.round(stats.completionRate) }}%</p>
-                </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <Shield :size="20" class="text-blue-600 dark:text-blue-400" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.completion') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ Math.round(stats.completionRate) }}%</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Document Metadata -->
-        <Card class="clay-card">
-          <CardHeader>
-            <div>
-              <CardTitle>{{ t('admin.documentDetail.metadata') }}</CardTitle>
-              <CardDescription>{{ t('admin.documentDetail.metadataDescription') }}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.metadata') }}</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.metadataDescription') }}</p>
+          </div>
+          <div class="p-6">
             <form @submit.prevent="handleSaveMetadata" class="space-y-4">
-              <!-- Titre et URL côte à côte -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.titleLabel') }}</label>
-                  <Input v-model="metadataForm.title" :placeholder="t('admin.documentDetail.titlePlaceholder')" />
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.titleLabel') }}</label>
+                  <input v-model="metadataForm.title" :placeholder="t('admin.documentDetail.titlePlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div>
-                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.urlLabel') }}</label>
-                  <Input v-model="metadataForm.url" type="url" :placeholder="t('admin.documentDetail.urlPlaceholder')" />
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.urlLabel') }}</label>
+                  <input v-model="metadataForm.url" type="url" :placeholder="t('admin.documentDetail.urlPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
               </div>
 
-              <!-- Checksum et Algorithme côte à côte -->
               <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
                 <div>
-                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.checksumLabel') }}</label>
-                  <Input v-model="metadataForm.checksum" :placeholder="t('admin.documentDetail.checksumPlaceholder')" class="font-mono text-sm" />
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.checksumLabel') }}</label>
+                  <input v-model="metadataForm.checksum" :placeholder="t('admin.documentDetail.checksumPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
                 <div class="md:min-w-[140px]">
-                  <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.algorithmLabel') }}</label>
-                  <select v-model="metadataForm.checksumAlgorithm" class="flex h-10 w-full rounded-md clay-input px-3 py-2 text-sm">
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.algorithmLabel') }}</label>
+                  <select v-model="metadataForm.checksumAlgorithm" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="SHA-256">SHA-256</option>
                     <option value="SHA-512">SHA-512</option>
                     <option value="MD5">MD5</option>
@@ -612,536 +585,451 @@ onMounted(() => {
               </div>
 
               <div>
-                <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.descriptionLabel') }}</label>
-                <Textarea v-model="metadataForm.description" :rows="4" :placeholder="t('admin.documentDetail.descriptionPlaceholder')" />
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.descriptionLabel') }}</label>
+                <textarea v-model="metadataForm.description" rows="4" :placeholder="t('admin.documentDetail.descriptionPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
               </div>
-              <div v-if="documentMetadata" class="text-xs text-muted-foreground pt-2 border-t">
+
+              <div v-if="documentMetadata" class="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700">
                 {{ t('admin.documentDetail.createdBy', { by: documentMetadata.createdBy, date: formatDate(documentMetadata.createdAt) }) }}
               </div>
+
               <div class="flex justify-end">
-                <Button type="submit" :disabled="savingMetadata">
+                <button type="submit" :disabled="savingMetadata" class="trust-gradient text-white font-medium rounded-lg px-6 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                  <Loader2 v-if="savingMetadata" :size="16" class="animate-spin" />
                   {{ savingMetadata ? t('admin.documentDetail.saving') : t('common.save') }}
-                </Button>
+                </button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <!-- Expected Readers -->
-        <Card class="clay-card">
-          <CardHeader>
-            <div class="flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <CardTitle>{{ t('admin.documentDetail.readers') }}</CardTitle>
-                <CardDescription v-if="stats">{{ stats.signedCount }} / {{ stats.expectedCount }} {{ t('admin.dashboard.stats.signed').toLowerCase() }}</CardDescription>
+                <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.readers') }}</h2>
+                <p v-if="stats" class="text-sm text-slate-500 dark:text-slate-400">{{ stats.signedCount }} / {{ stats.expectedCount }} {{ t('admin.dashboard.stats.signed').toLowerCase() }}</p>
               </div>
               <div class="flex gap-2">
-                <Button @click="openImportCSVModal" size="sm" variant="outline">
-                  <Upload :size="16" class="mr-2" />
+                <button @click="openImportCSVModal" class="inline-flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+                  <Upload :size="16" />
                   {{ t('admin.documentDetail.importCSV') }}
-                </Button>
-                <Button @click="showAddSignersModal = true" size="sm">
-                  <Plus :size="16" class="mr-2" />
+                </button>
+                <button @click="showAddSignersModal = true" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                  <Plus :size="16" />
                   {{ t('admin.documentDetail.addButton') }}
-                </Button>
+                </button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <!-- Filter + Expected Signers Table -->
+          </div>
+          <div class="p-6">
             <div v-if="expectedSigners.length > 0">
               <!-- Filter -->
               <div class="relative mb-4">
-                <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
-                <Input
-                  v-model="signerFilter"
-                  :placeholder="t('admin.documentDetail.filterPlaceholder')"
-                  class="pl-9"
-                  name="ackify-signer-filter"
-                  autocomplete="off"
-                  data-1p-ignore
-                  data-lpignore="true"
-                />
+                <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input v-model="signerFilter" :placeholder="t('admin.documentDetail.filterPlaceholder')" class="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" name="ackify-signer-filter" autocomplete="off" data-1p-ignore data-lpignore="true" />
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      <input type="checkbox" class="rounded"
-                             @change="(e: any) => selectedEmails = e.target.checked ? expectedSigners.filter(s => !s.hasSigned).map(s => s.email) : []" />
-                    </TableHead>
-                    <TableHead>{{ t('admin.documentDetail.reader') }}</TableHead>
-                    <TableHead>{{ t('admin.documentDetail.status') }}</TableHead>
-                    <TableHead>{{ t('admin.documentDetail.confirmedOn') }}</TableHead>
-                    <TableHead>{{ t('common.actions') }}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="signer in filteredSigners" :key="signer.email">
-                    <TableCell>
-                      <input v-if="!signer.hasSigned" type="checkbox" class="rounded"
-                             :checked="selectedEmails.includes(signer.email)"
-                             @change="toggleEmailSelection(signer.email)" />
-                    </TableCell>
-                    <TableCell>
-                      <div class="space-y-1">
-                        <p class="font-medium">{{ signer.userName || signer.name || signer.email }}</p>
-                        <p class="text-xs text-muted-foreground">{{ signer.email }}</p>
+
+              <!-- Table Desktop -->
+              <div class="hidden md:block overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-700">
+                      <th class="px-4 py-3 w-10">
+                        <input type="checkbox" class="rounded border-slate-300 dark:border-slate-600" @change="(e: any) => selectedEmails = e.target.checked ? expectedSigners.filter(s => !s.hasSigned).map(s => s.email) : []" />
+                      </th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('admin.documentDetail.reader') }}</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('admin.documentDetail.status') }}</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('admin.documentDetail.confirmedOn') }}</th>
+                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('common.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    <tr v-for="signer in filteredSigners" :key="signer.email" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                      <td class="px-4 py-3">
+                        <input v-if="!signer.hasSigned" type="checkbox" class="rounded border-slate-300 dark:border-slate-600" :checked="selectedEmails.includes(signer.email)" @change="toggleEmailSelection(signer.email)" />
+                      </td>
+                      <td class="px-4 py-3">
+                        <div>
+                          <p class="font-medium text-slate-900 dark:text-slate-100">{{ signer.userName || signer.name || signer.email }}</p>
+                          <p class="text-xs text-slate-500 dark:text-slate-400">{{ signer.email }}</p>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3">
+                        <span :class="['inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full', signer.hasSigned ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400']">
+                          {{ signer.hasSigned ? t('admin.documentDetail.statusConfirmed') : t('admin.documentDetail.statusPending') }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+                        {{ signer.signedAt ? formatDate(signer.signedAt) : '-' }}
+                      </td>
+                      <td class="px-4 py-3">
+                        <button v-if="!signer.hasSigned" @click="confirmRemoveSigner(signer.email)" class="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 :size="16" class="text-red-600 dark:text-red-400" />
+                        </button>
+                        <span v-else class="text-xs text-slate-400">-</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Cards Mobile -->
+              <div class="md:hidden space-y-3">
+                <div v-for="signer in filteredSigners" :key="signer.email" class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
+                  <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-start gap-3">
+                      <input v-if="!signer.hasSigned" type="checkbox" class="mt-1 rounded border-slate-300 dark:border-slate-600" :checked="selectedEmails.includes(signer.email)" @change="toggleEmailSelection(signer.email)" />
+                      <div>
+                        <p class="font-medium text-slate-900 dark:text-slate-100">{{ signer.userName || signer.name || signer.email }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ signer.email }}</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge :variant="signer.hasSigned ? 'default' : 'secondary'">
-                        {{ signer.hasSigned ? t('admin.documentDetail.statusConfirmed') : t('admin.documentDetail.statusPending') }}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {{ signer.signedAt ? formatDate(signer.signedAt) : '-' }}
-                    </TableCell>
-                    <TableCell>
-                      <Button v-if="!signer.hasSigned" @click="confirmRemoveSigner(signer.email)" variant="ghost" size="sm">
-                        <Trash2 :size="14" class="text-destructive" />
-                      </Button>
-                      <span v-else class="text-xs text-muted-foreground">-</span>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-            <div v-else class="text-center py-8 text-muted-foreground">
-              <Users :size="48" class="mx-auto mb-4 opacity-50" />
-              <p>{{ t('admin.documentDetail.noExpectedSigners') }}</p>
+                    </div>
+                    <span :class="['inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full', signer.hasSigned ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400']">
+                      {{ signer.hasSigned ? t('admin.documentDetail.statusConfirmed') : t('admin.documentDetail.statusPending') }}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span>{{ signer.signedAt ? formatDate(signer.signedAt) : '-' }}</span>
+                    <button v-if="!signer.hasSigned" @click="confirmRemoveSigner(signer.email)" class="p-1 text-red-600 dark:text-red-400">
+                      <Trash2 :size="14" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- Confirmations complémentaires (toujours visible si présents) -->
-            <div v-if="unexpectedSignatures.length > 0" class="mt-8 pt-8 border-t border-border">
-              <h3 class="text-lg font-semibold mb-4 flex items-center">
-                <span class="mr-2">⚠</span>
-                {{ t('admin.documentDetail.unexpectedSignatures') }}
-                <Badge variant="secondary" class="ml-2">{{ unexpectedSignatures.length }}</Badge>
-              </h3>
-              <p class="text-sm text-muted-foreground mb-4">
-                {{ t('admin.documentDetail.unexpectedDescription') }}
-              </p>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{{ t('admin.documentDetail.user') }}</TableHead>
-                    <TableHead>{{ t('admin.documentDetail.confirmedOn') }}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow v-for="(sig, idx) in unexpectedSignatures" :key="idx">
-                    <TableCell>
-                      <div class="space-y-1">
-                        <p class="font-medium">{{ sig.userName || sig.userEmail }}</p>
-                        <p class="text-xs text-muted-foreground">{{ sig.userEmail }}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{{ formatDate(sig.signedAtUTC) }}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+            <div v-else class="text-center py-8">
+              <Users :size="48" class="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
+              <p class="text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.noExpectedSigners') }}</p>
             </div>
-          </CardContent>
-        </Card>
+
+            <!-- Unexpected signatures -->
+            <div v-if="unexpectedSignatures.length > 0" class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+              <h3 class="text-base font-semibold mb-4 flex items-center text-slate-900 dark:text-slate-100">
+                <AlertTriangle :size="18" class="mr-2 text-amber-500" />
+                {{ t('admin.documentDetail.unexpectedSignatures') }}
+                <span class="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{{ unexpectedSignatures.length }}</span>
+              </h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">{{ t('admin.documentDetail.unexpectedDescription') }}</p>
+              <div class="space-y-2">
+                <div v-for="(sig, idx) in unexpectedSignatures" :key="idx" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                  <div>
+                    <p class="font-medium text-slate-900 dark:text-slate-100">{{ sig.userName || sig.userEmail }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ sig.userEmail }}</p>
+                  </div>
+                  <span class="text-sm text-slate-500 dark:text-slate-400">{{ formatDate(sig.signedAtUTC) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Email Reminders -->
-        <Card v-if="reminderStats && stats && stats.expectedCount > 0 && (smtpEnabled || reminderStats.totalSent > 0)" class="clay-card">
-          <CardHeader>
-            <CardTitle>{{ t('admin.documentDetail.reminders') }}</CardTitle>
-            <CardDescription>{{ t('admin.documentDetail.remindersDescription') }}</CardDescription>
-          </CardHeader>
-          <CardContent class="space-y-6">
-            <!-- Stats -->
-            <div class="grid gap-4 sm:grid-cols-3">
-              <div class="bg-muted rounded-lg p-4">
-                <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.remindersSent') }}</p>
-                <p class="text-2xl font-bold">{{ reminderStats.totalSent }}</p>
+        <div v-if="reminderStats && stats && stats.expectedCount > 0 && (smtpEnabled || reminderStats.totalSent > 0)" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.reminders') }}</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.remindersDescription') }}</p>
+          </div>
+          <div class="p-6 space-y-6">
+            <div class="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.remindersSent') }}</p>
+                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ reminderStats.totalSent }}</p>
               </div>
-              <div class="bg-muted rounded-lg p-4">
-                <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.toRemind') }}</p>
-                <p class="text-2xl font-bold">{{ reminderStats.pendingCount }}</p>
+              <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.toRemind') }}</p>
+                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ reminderStats.pendingCount }}</p>
               </div>
-              <div v-if="reminderStats.lastSentAt" class="bg-muted rounded-lg p-4">
-                <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.lastReminder') }}</p>
-                <p class="text-sm font-bold">{{ formatDate(reminderStats.lastSentAt) }}</p>
+              <div v-if="reminderStats.lastSentAt" class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.lastReminder') }}</p>
+                <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ formatDate(reminderStats.lastSentAt) }}</p>
               </div>
             </div>
 
-            <!-- Alert if SMTP disabled but reminders exist -->
-            <Alert v-if="!smtpEnabled" class="border-orange-500 bg-orange-50 dark:bg-orange-900/20">
-              <AlertDescription class="text-orange-800 dark:text-orange-200">
-                {{ t('admin.documentDetail.emailServiceDisabled') }}
-              </AlertDescription>
-            </Alert>
+            <div v-if="!smtpEnabled" class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <p class="text-sm text-amber-800 dark:text-amber-200">{{ t('admin.documentDetail.emailServiceDisabled') }}</p>
+            </div>
 
-            <!-- Send Form - Only shown if SMTP is enabled -->
             <div v-if="smtpEnabled" class="space-y-4">
               <div class="space-y-2">
-                <label class="flex items-center space-x-2">
-                  <input type="radio" v-model="sendMode" value="all" class="rounded-full" />
-                  <span>{{ t('admin.documentDetail.sendToAll', { count: reminderStats.pendingCount }) }}</span>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input type="radio" v-model="sendMode" value="all" class="text-blue-600 focus:ring-blue-500" />
+                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('admin.documentDetail.sendToAll', { count: reminderStats.pendingCount }) }}</span>
                 </label>
-                <label class="flex items-center space-x-2">
-                  <input type="radio" v-model="sendMode" value="selected" class="rounded-full" />
-                  <span>{{ t('admin.documentDetail.sendToSelected', { count: selectedEmails.length }) }}</span>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input type="radio" v-model="sendMode" value="selected" class="text-blue-600 focus:ring-blue-500" />
+                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('admin.documentDetail.sendToSelected', { count: selectedEmails.length }) }}</span>
                 </label>
               </div>
-              <Button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)">
-                <Mail :size="16" class="mr-2" />
+              <button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <Mail :size="16" />
                 {{ sendingReminders ? t('admin.documentDetail.sending') : t('admin.documentDetail.sendReminders') }}
-              </Button>
+              </button>
             </div>
-            <div v-else-if="smtpEnabled && reminderStats.pendingCount === 0" class="text-center py-4 text-muted-foreground">
-              {{ t('admin.documentDetail.allContacted') }}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <!-- Danger Zone -->
-        <Card class="clay-card border-destructive/50">
-          <CardHeader>
-            <CardTitle class="text-destructive">{{ t('admin.documentDetail.dangerZone') }}</CardTitle>
-            <CardDescription>{{ t('admin.documentDetail.dangerZoneDescription') }}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div class="flex items-center justify-between p-4 bg-destructive/5 rounded-lg">
-              <div class="flex-1">
-                <h3 class="font-semibold text-foreground mb-1">{{ t('admin.documentDetail.deleteDocument') }}</h3>
-                <p class="text-sm text-muted-foreground">
-                  {{ t('admin.documentDetail.deleteDocumentDescription') }}
-                </p>
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800/50">
+          <div class="p-6 border-b border-red-100 dark:border-red-800/30">
+            <h2 class="font-semibold text-red-600 dark:text-red-400">{{ t('admin.documentDetail.dangerZone') }}</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.dangerZoneDescription') }}</p>
+          </div>
+          <div class="p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+              <div>
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">{{ t('admin.documentDetail.deleteDocument') }}</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.deleteDocumentDescription') }}</p>
               </div>
-              <Button
-                @click="showDeleteConfirmModal = true"
-                variant="destructive"
-                class="ml-4"
-              >
-                <Trash2 :size="16" class="mr-2" />
+              <button @click="showDeleteConfirmModal = true" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors flex-shrink-0">
+                <Trash2 :size="16" />
                 {{ t('common.delete') }}
-              </Button>
+              </button>
             </div>
-          </CardContent>
-        </Card>
-
-        <!-- Chain Integrity - Feature not yet available in API v1 -->
-        <!-- TODO: Add chain integrity verification endpoint to API v1 -->
+          </div>
+        </div>
       </div>
     </main>
 
     <!-- Add Signers Modal -->
     <div v-if="showAddSignersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showAddSignersModal = false">
-      <Card class="max-w-2xl w-full">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle>{{ t('admin.documentDetail.addSigners') }}</CardTitle>
-            <Button variant="ghost" size="icon" @click="showAddSignersModal = false">
-              <X :size="20" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.addSigners') }}</h2>
+          <button @click="showAddSignersModal = false" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6">
           <form @submit.prevent="addSigners" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.emailsLabel') }}</label>
-              <Textarea v-model="signersEmails" :rows="8"
-                        :placeholder="t('admin.documentDetail.emailsPlaceholder')" />
-              <p class="text-xs text-muted-foreground mt-2">
-                {{ t('admin.documentDetail.emailsHelper') }}
-              </p>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.emailsLabel') }}</label>
+              <textarea v-model="signersEmails" rows="8" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ t('admin.documentDetail.emailsHelper') }}</p>
             </div>
             <div class="flex justify-end space-x-3">
-              <Button type="button" variant="outline" @click="showAddSignersModal = false">{{ t('common.cancel') }}</Button>
-              <Button type="submit" :disabled="addingSigners || !signersEmails.trim()">
+              <button type="button" @click="showAddSignersModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <Loader2 v-if="addingSigners" :size="16" class="animate-spin" />
                 {{ addingSigners ? t('admin.documentDetail.adding') : t('admin.documentDetail.addButton') }}
-              </Button>
+              </button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
 
     <!-- Import CSV Modal -->
     <div v-if="showImportCSVModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="closeImportCSVModal">
-      <Card class="max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle>{{ t('admin.documentDetail.importCSVTitle') }}</CardTitle>
-            <Button variant="ghost" size="icon" @click="closeImportCSVModal">
-              <X :size="20" />
-            </Button>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-3xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.importCSVTitle') }}</h2>
+          <button @click="closeImportCSVModal" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6">
+          <div v-if="csvError" class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <p class="text-sm text-red-700 dark:text-red-300">{{ csvError }}</p>
           </div>
-        </CardHeader>
-        <CardContent class="flex-1 overflow-auto">
-          <!-- Error Alert -->
-          <Alert v-if="csvError" variant="destructive" class="mb-4">
-            <AlertDescription>{{ csvError }}</AlertDescription>
-          </Alert>
 
-          <!-- Step 1: File Selection -->
           <div v-if="!csvPreview" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">{{ t('admin.documentDetail.selectFile') }}</label>
-              <input
-                type="file"
-                accept=".csv"
-                @change="handleCSVFileChange"
-                class="block w-full text-sm text-muted-foreground
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-md file:border-0
-                       file:text-sm file:font-medium
-                       file:bg-primary file:text-primary-foreground
-                       hover:file:bg-primary/90
-                       cursor-pointer"
-              />
-              <p class="text-xs text-muted-foreground mt-2">
-                {{ t('admin.documentDetail.csvFormatHelp') }}
-              </p>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.selectFile') }}</label>
+              <input type="file" accept=".csv" @change="handleCSVFileChange" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer" />
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ t('admin.documentDetail.csvFormatHelp') }}</p>
             </div>
             <div class="flex justify-end space-x-3">
-              <Button type="button" variant="outline" @click="closeImportCSVModal">
-                {{ t('common.cancel') }}
-              </Button>
-              <Button @click="analyzeCSV" :disabled="!csvFile || analyzingCSV">
-                <Loader2 v-if="analyzingCSV" :size="16" class="mr-2 animate-spin" />
+              <button type="button" @click="closeImportCSVModal" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+              <button @click="analyzeCSV" :disabled="!csvFile || analyzingCSV" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <Loader2 v-if="analyzingCSV" :size="16" class="animate-spin" />
                 {{ analyzingCSV ? t('admin.documentDetail.analyzing') : t('admin.documentDetail.analyze') }}
-              </Button>
+              </button>
             </div>
           </div>
 
-          <!-- Step 2: Preview -->
           <div v-else class="space-y-4">
-            <!-- Summary -->
-            <div class="grid gap-3 sm:grid-cols-3">
-              <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 flex items-center gap-3">
-                <FileCheck :size="24" class="text-green-600" />
+            <div class="grid gap-3 grid-cols-1 sm:grid-cols-3">
+              <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 flex items-center gap-3">
+                <FileCheck :size="24" class="text-emerald-600 dark:text-emerald-400" />
                 <div>
-                  <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.validEntries') }}</p>
-                  <p class="text-xl font-bold text-green-600">{{ signersToImport.length }}</p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.validEntries') }}</p>
+                  <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ signersToImport.length }}</p>
                 </div>
               </div>
-              <div v-if="csvPreview.existingEmails.length > 0" class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 flex items-center gap-3">
-                <AlertTriangle :size="24" class="text-orange-600" />
+              <div v-if="csvPreview.existingEmails.length > 0" class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 flex items-center gap-3">
+                <AlertTriangle :size="24" class="text-amber-600 dark:text-amber-400" />
                 <div>
-                  <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.existingEntries') }}</p>
-                  <p class="text-xl font-bold text-orange-600">{{ csvPreview.existingEmails.length }}</p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.existingEntries') }}</p>
+                  <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ csvPreview.existingEmails.length }}</p>
                 </div>
               </div>
-              <div v-if="csvPreview.invalidCount > 0" class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 flex items-center gap-3">
-                <FileX :size="24" class="text-red-600" />
+              <div v-if="csvPreview.invalidCount > 0" class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 flex items-center gap-3">
+                <FileX :size="24" class="text-red-600 dark:text-red-400" />
                 <div>
-                  <p class="text-sm text-muted-foreground">{{ t('admin.documentDetail.invalidEntries') }}</p>
-                  <p class="text-xl font-bold text-red-600">{{ csvPreview.invalidCount }}</p>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.invalidEntries') }}</p>
+                  <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ csvPreview.invalidCount }}</p>
                 </div>
               </div>
             </div>
 
-            <!-- Preview Table -->
-            <div class="border rounded-lg overflow-hidden">
+            <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
               <div class="max-h-64 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead class="w-16">{{ t('admin.documentDetail.lineNumber') }}</TableHead>
-                      <TableHead>{{ t('admin.documentDetail.email') }}</TableHead>
-                      <TableHead>{{ t('admin.documentDetail.name') }}</TableHead>
-                      <TableHead class="w-32">{{ t('admin.documentDetail.status') }}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow v-for="signer in csvPreview.signers" :key="signer.lineNumber" :class="getSignerStatus(signer) === 'exists' ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''">
-                      <TableCell class="text-muted-foreground">{{ signer.lineNumber }}</TableCell>
-                      <TableCell>{{ signer.email }}</TableCell>
-                      <TableCell>{{ signer.name || '-' }}</TableCell>
-                      <TableCell>
-                        <Badge :variant="getSignerStatus(signer) === 'exists' ? 'secondary' : 'default'">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50 dark:bg-slate-700/50">
+                    <tr>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.lineNumber') }}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.email') }}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.name') }}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.status') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    <tr v-for="signer in csvPreview.signers" :key="signer.lineNumber" :class="getSignerStatus(signer) === 'exists' ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''">
+                      <td class="px-4 py-2 text-slate-500 dark:text-slate-400">{{ signer.lineNumber }}</td>
+                      <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ signer.email }}</td>
+                      <td class="px-4 py-2 text-slate-500 dark:text-slate-400">{{ signer.name || '-' }}</td>
+                      <td class="px-4 py-2">
+                        <span :class="['inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full', getSignerStatus(signer) === 'exists' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400']">
                           {{ getSignerStatus(signer) === 'exists' ? t('admin.documentDetail.statusExists') : t('admin.documentDetail.statusValid') }}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <!-- Errors Table -->
-            <div v-if="csvPreview.errors.length > 0" class="border border-destructive rounded-lg overflow-hidden">
-              <div class="bg-destructive/10 px-4 py-2 font-medium text-destructive">
-                {{ t('admin.documentDetail.parseErrors') }}
-              </div>
-              <div class="max-h-32 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead class="w-16">{{ t('admin.documentDetail.lineNumber') }}</TableHead>
-                      <TableHead>{{ t('admin.documentDetail.content') }}</TableHead>
-                      <TableHead>{{ t('admin.documentDetail.errorReason') }}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow v-for="err in csvPreview.errors" :key="err.lineNumber" class="bg-red-50/50 dark:bg-red-900/10">
-                      <TableCell class="text-muted-foreground">{{ err.lineNumber }}</TableCell>
-                      <TableCell class="font-mono text-xs truncate max-w-48">{{ err.content }}</TableCell>
-                      <TableCell class="text-destructive text-sm">{{ t('admin.documentDetail.csvError.' + err.error, err.error) }}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-
-            <!-- Actions -->
             <div class="flex justify-between items-center pt-4">
-              <Button type="button" variant="ghost" @click="csvPreview = null; csvFile = null">
+              <button type="button" @click="csvPreview = null; csvFile = null" class="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
                 {{ t('admin.documentDetail.backToFileSelection') }}
-              </Button>
+              </button>
               <div class="flex gap-3">
-                <Button type="button" variant="outline" @click="closeImportCSVModal">
-                  {{ t('common.cancel') }}
-                </Button>
-                <Button @click="confirmImportCSV" :disabled="importingCSV || signersToImport.length === 0">
-                  <Loader2 v-if="importingCSV" :size="16" class="mr-2 animate-spin" />
+                <button type="button" @click="closeImportCSVModal" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+                <button @click="confirmImportCSV" :disabled="importingCSV || signersToImport.length === 0" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                  <Loader2 v-if="importingCSV" :size="16" class="animate-spin" />
                   {{ importingCSV ? t('admin.documentDetail.importing') : t('admin.documentDetail.importButton', { count: signersToImport.length }) }}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteConfirmModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirmModal = false">
-      <Card class="max-w-md w-full border-destructive">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle class="text-destructive">{{ t('admin.documentDetail.deleteConfirmTitle') }}</CardTitle>
-            <Button variant="ghost" size="icon" @click="showDeleteConfirmModal = false">
-              <X :size="20" />
-            </Button>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800 max-w-md w-full">
+        <div class="p-6 border-b border-red-100 dark:border-red-800/30 flex items-center justify-between">
+          <h2 class="font-semibold text-red-600 dark:text-red-400">{{ t('admin.documentDetail.deleteConfirmTitle') }}</h2>
+          <button @click="showDeleteConfirmModal = false" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <p class="font-semibold text-red-900 dark:text-red-200 mb-2">{{ t('admin.documentDetail.deleteWarning') }}</p>
+            <p class="text-sm text-red-700 dark:text-red-300">{{ t('admin.documentDetail.deleteWillRemove') }}</p>
+            <ul class="text-sm list-disc list-inside mt-2 space-y-1 text-red-700 dark:text-red-300">
+              <li>{{ t('admin.documentDetail.deleteItem1') }}</li>
+              <li>{{ t('admin.documentDetail.deleteItem2') }}</li>
+              <li>{{ t('admin.documentDetail.deleteItem3') }}</li>
+              <li>{{ t('admin.documentDetail.deleteItem4') }}</li>
+            </ul>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-4">
-            <Alert variant="destructive" class="border-destructive">
-              <AlertDescription>
-                <p class="font-semibold mb-2">{{ t('admin.documentDetail.deleteWarning') }}</p>
-                <p class="text-sm">
-                  {{ t('admin.documentDetail.deleteWillRemove') }}
-                </p>
-                <ul class="text-sm list-disc list-inside mt-2 space-y-1">
-                  <li>{{ t('admin.documentDetail.deleteItem1') }}</li>
-                  <li>{{ t('admin.documentDetail.deleteItem2') }}</li>
-                  <li>{{ t('admin.documentDetail.deleteItem3') }}</li>
-                  <li>{{ t('admin.documentDetail.deleteItem4') }}</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
 
-            <div class="bg-muted p-3 rounded-lg">
-              <p class="text-sm font-mono text-muted-foreground" v-html="t('admin.documentDetail.documentId') + ' ' + docId"></p>
-            </div>
-
-            <div class="flex justify-end space-x-3 pt-4">
-              <Button type="button" variant="outline" @click="showDeleteConfirmModal = false">
-                {{ t('common.cancel') }}
-              </Button>
-              <Button
-                @click="handleDeleteDocument"
-                variant="destructive"
-                :disabled="deletingDocument"
-              >
-                <Trash2 v-if="!deletingDocument" :size="16" class="mr-2" />
-                <Loader2 v-else :size="16" class="mr-2 animate-spin" />
-                {{ deletingDocument ? t('admin.documentDetail.deleting') : t('admin.documentDetail.deleteConfirmButton') }}
-              </Button>
-            </div>
+          <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg">
+            <p class="text-sm font-mono text-slate-600 dark:text-slate-400">{{ t('admin.documentDetail.documentId') }} {{ docId }}</p>
           </div>
-        </CardContent>
-      </Card>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="showDeleteConfirmModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+            <button @click="handleDeleteDocument" :disabled="deletingDocument" class="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <Trash2 v-if="!deletingDocument" :size="16" />
+              <Loader2 v-else :size="16" class="animate-spin" />
+              {{ deletingDocument ? t('admin.documentDetail.deleting') : t('admin.documentDetail.deleteConfirmButton') }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Metadata Warning Modal -->
     <div v-if="showMetadataWarningModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showMetadataWarningModal = false">
-      <Card class="max-w-lg w-full border-orange-500">
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle class="text-orange-600">{{ t('admin.documentDetail.metadataWarning.title') }}</CardTitle>
-            <Button variant="ghost" size="icon" @click="showMetadataWarningModal = false">
-              <X :size="20" />
-            </Button>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-800 max-w-lg w-full">
+        <div class="p-6 border-b border-amber-100 dark:border-amber-800/30 flex items-center justify-between">
+          <h2 class="font-semibold text-amber-600 dark:text-amber-400">{{ t('admin.documentDetail.metadataWarning.title') }}</h2>
+          <button @click="showMetadataWarningModal = false" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <p class="text-sm text-amber-800 dark:text-amber-200 mb-3">{{ t('admin.documentDetail.metadataWarning.description') }}</p>
+            <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">{{ t('admin.documentDetail.metadataWarning.warning') }}</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-4">
-            <Alert class="border-orange-500 bg-orange-50 dark:bg-orange-900/20">
-              <AlertDescription>
-                <p class="text-sm text-orange-800 dark:text-orange-200 mb-3">
-                  {{ t('admin.documentDetail.metadataWarning.description') }}
-                </p>
-                <p class="text-sm font-semibold text-orange-900 dark:text-orange-100">
-                  {{ t('admin.documentDetail.metadataWarning.warning') }}
-                </p>
-              </AlertDescription>
-            </Alert>
 
-            <div class="bg-muted p-4 rounded-lg">
-              <p class="text-sm font-medium mb-2">
-                {{ t('admin.documentDetail.metadataWarning.currentSignatures') }}
-              </p>
-              <div class="flex flex-col gap-3 mt-2">
-                <div class="flex items-center gap-2">
-                  <CheckCircle :size="20" class="text-green-600" />
-                  <span class="text-sm">
-                    <span class="font-bold text-lg">{{ (stats?.signedCount || 0) + (unexpectedSignatures?.length || 0) }}</span>
-                    <span class="text-muted-foreground ml-1">
-                      {{ ((stats?.signedCount || 0) + (unexpectedSignatures?.length || 0)) > 1 ? 'signatures' : 'signature' }}
-                    </span>
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex justify-end space-x-3 pt-4">
-              <Button type="button" variant="outline" @click="showMetadataWarningModal = false">
-                {{ t('admin.documentDetail.metadataWarning.cancel') }}
-              </Button>
-              <Button
-                @click="saveMetadata"
-                variant="destructive"
-                :disabled="savingMetadata"
-              >
-                <Loader2 v-if="savingMetadata" :size="16" class="mr-2 animate-spin" />
-                {{ savingMetadata ? 'Enregistrement...' : t('admin.documentDetail.metadataWarning.confirm') }}
-              </Button>
+          <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg">
+            <p class="text-sm font-medium mb-2 text-slate-700 dark:text-slate-300">{{ t('admin.documentDetail.metadataWarning.currentSignatures') }}</p>
+            <div class="flex items-center gap-2">
+              <CheckCircle :size="20" class="text-emerald-600 dark:text-emerald-400" />
+              <span class="text-lg font-bold text-slate-900 dark:text-slate-100">{{ (stats?.signedCount || 0) + (unexpectedSignatures?.length || 0) }}</span>
+              <span class="text-sm text-slate-500 dark:text-slate-400">signature{{ ((stats?.signedCount || 0) + (unexpectedSignatures?.length || 0)) > 1 ? 's' : '' }}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="showMetadataWarningModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('admin.documentDetail.metadataWarning.cancel') }}</button>
+            <button @click="saveMetadata" :disabled="savingMetadata" class="bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <Loader2 v-if="savingMetadata" :size="16" class="animate-spin" />
+              {{ savingMetadata ? 'Enregistrement...' : t('admin.documentDetail.metadataWarning.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Remove Signer Confirmation Dialog -->
-    <ConfirmDialog
-      v-if="showRemoveSignerModal"
-      :title="t('admin.documentDetail.removeSignerTitle')"
-      :message="t('admin.documentDetail.removeSignerMessage', { email: signerToRemove })"
-      :confirm-text="t('common.delete')"
-      :cancel-text="t('common.cancel')"
-      variant="warning"
-      @confirm="removeSigner"
-      @cancel="cancelRemoveSigner"
-    />
+    <!-- Remove Signer Modal -->
+    <div v-if="showRemoveSignerModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="cancelRemoveSigner">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-md w-full">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.removeSignerTitle') }}</h2>
+          <button @click="cancelRemoveSigner" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-slate-600 dark:text-slate-400">{{ t('admin.documentDetail.removeSignerMessage', { email: signerToRemove }) }}</p>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="cancelRemoveSigner" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+            <button @click="removeSigner" class="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors">{{ t('common.delete') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- Send Reminders Confirmation Dialog -->
-    <ConfirmDialog
-      v-if="showSendRemindersModal"
-      :title="t('admin.documentDetail.confirmSendRemindersTitle')"
-      :message="remindersMessage"
-      :confirm-text="t('common.confirm')"
-      :cancel-text="t('common.cancel')"
-      variant="default"
-      :loading="sendingReminders"
-      @confirm="sendRemindersAction"
-      @cancel="cancelSendReminders"
-    />
+    <!-- Send Reminders Modal -->
+    <div v-if="showSendRemindersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="cancelSendReminders">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-md w-full">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.confirmSendRemindersTitle') }}</h2>
+          <button @click="cancelSendReminders" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6 space-y-4">
+          <p class="text-sm text-slate-600 dark:text-slate-400">{{ remindersMessage }}</p>
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" @click="cancelSendReminders" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+            <button @click="sendRemindersAction" :disabled="sendingReminders" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <Loader2 v-if="sendingReminders" :size="16" class="animate-spin" />
+              {{ t('common.confirm') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

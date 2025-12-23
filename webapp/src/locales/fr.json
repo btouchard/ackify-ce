@@ -515,6 +515,7 @@
     "back": "Retour",
     "next": "Suivant",
     "previous": "Précédent",
-    "skipToContent": "Aller au contenu principal"
+    "skipToContent": "Aller au contenu principal",
+    "refresh": "Actualiser"
   }
 }
