@@ -18,6 +18,10 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.isAdmin ?? false)
 
+  // Check if user can create documents: admin OR only_admin_can_create is false
+  const onlyAdminCanCreate = computed(() => (window as any).ACKIFY_ONLY_ADMIN_CAN_CREATE || false)
+  const canCreateDocuments = computed(() => isAdmin.value || !onlyAdminCanCreate.value)
+
   async function checkAuth() {
     if (initialized.value) return
 
@@ -91,6 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     isAdmin,
+    canCreateDocuments,
     checkAuth,
     fetchCurrentUser,
     startOAuthLogin,

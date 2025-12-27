@@ -16,16 +16,16 @@ describe('Test 7: Admin - Document Deletion', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
+    cy.get('[data-testid="new-doc-input"]').type(docId)
     cy.contains('button', 'Confirm').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('textarea[placeholder*="Jane"]').type(`alice@test.com\n${testUser}`, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(`alice@test.com\n${testUser}`, { delay: 50 })
     cy.wait(300)
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     cy.contains('alice@test.com', { timeout: 10000 }).should('be.visible')
 
@@ -84,7 +84,7 @@ describe('Test 7: Admin - Document Deletion', () => {
     cy.visit('/admin')
 
     const safeDocId = 'safe-doc-' + Date.now()
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(safeDocId)
+    cy.get('[data-testid="new-doc-input"]').type(safeDocId)
     cy.contains('button', 'Confirm').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${safeDocId}`)

@@ -25,3 +25,4 @@ client_secret*.json
 /docker.secret
 /samples/
 /docs/reports/
+/prompts/

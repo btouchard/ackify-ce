@@ -16,6 +16,10 @@ type Document struct {
 	Checksum          string     `json:"checksum" db:"checksum"`
 	ChecksumAlgorithm string     `json:"checksum_algorithm" db:"checksum_algorithm"`
 	Description       string     `json:"description" db:"description"`
+	ReadMode          string     `json:"read_mode" db:"read_mode"`
+	AllowDownload     bool       `json:"allow_download" db:"allow_download"`
+	RequireFullRead   bool       `json:"require_full_read" db:"require_full_read"`
+	VerifyChecksum    bool       `json:"verify_checksum" db:"verify_checksum"`
 	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
 	CreatedBy         string     `json:"created_by" db:"created_by"`
@@ -29,6 +33,10 @@ type DocumentInput struct {
 	Checksum          string `json:"checksum"`
 	ChecksumAlgorithm string `json:"checksum_algorithm"`
 	Description       string `json:"description"`
+	ReadMode          string `json:"read_mode"`
+	AllowDownload     *bool  `json:"allow_download"`
+	RequireFullRead   *bool  `json:"require_full_read"`
+	VerifyChecksum    *bool  `json:"verify_checksum"`
 }
 
 // HasChecksum returns true if the document has a checksum configured

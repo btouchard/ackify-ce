@@ -89,7 +89,6 @@ func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, ba
 	processedContent := strings.ReplaceAll(string(content), "__ACKIFY_BASE_URL__", baseURL)
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_VERSION__", version)
 
-	// Convert boolean to string for JavaScript
 	oauthEnabledStr := "false"
 	if oauthEnabled {
 		oauthEnabledStr = "true"
@@ -158,8 +157,6 @@ func generateBasicMetaTags(docID string, baseURL string, signatureCount int) str
 	}
 
 	var metaTags strings.Builder
-
-	// Open Graph tags
 	metaTags.WriteString(fmt.Sprintf(`<meta property="og:title" content="%s" />`, html.EscapeString(title)))
 	metaTags.WriteString("\n    ")
 	metaTags.WriteString(fmt.Sprintf(`<meta property="og:description" content="%s" />`, html.EscapeString(description)))

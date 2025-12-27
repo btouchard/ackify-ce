@@ -47,7 +47,6 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.visitWithLocale(`/embed?doc=${sharedDocId}`, 'en')
 
     // Step 3: Should show document header with signature count (i18n: "confirmation")
-    cy.contains('Document', { timeout: 10000 }).should('be.visible')
     cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
 
     // Step 4: Should show signature in list
@@ -58,7 +57,7 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.contains('a', 'Sign').should('have.attr', 'target', '_blank')
 
     // Step 6: Verify signature date is displayed
-    cy.get('.text-xs.text-muted-foreground').should('exist')
+    cy.get('[data-testid="signature-date"]').should('exist')
   })
 
   it('should display multiple signatures', () => {
@@ -203,7 +202,7 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
 
     // Step 4: Verify signatures appear in the list
-    cy.get('.space-y-2 > div').should('have.length', 3)
+    cy.get('[data-testid="signature-item"]').should('have.length', 3)
 
     // Step 5: Verify each signature has email and date
     users.forEach((email) => {

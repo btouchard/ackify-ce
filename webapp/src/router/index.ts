@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 
 const HomePage = () => import('@/pages/HomePage.vue')
 const SignaturesPage = () => import('@/pages/SignaturesPage.vue')
+const MyDocumentsPage = () => import('@/pages/MyDocumentsPage.vue')
+const DocumentEditPage = () => import('@/pages/DocumentEditPage.vue')
 const AuthChoicePage = () => import('@/pages/AuthChoicePage.vue')
 const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
 const AdminDocumentDetail = () => import('@/pages/admin/AdminDocumentDetail.vue')
@@ -29,6 +31,18 @@ const routes: RouteRecordRaw[] = [
     path: '/signatures',
     name: 'signatures',
     component: SignaturesPage,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/documents',
+    name: 'my-documents',
+    component: MyDocumentsPage,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/documents/:id',
+    name: 'document-edit',
+    component: DocumentEditPage,
     meta: { requiresAuth: true }
   },
   {

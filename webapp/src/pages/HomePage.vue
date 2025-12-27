@@ -7,17 +7,33 @@ import { useSignatureStore } from '@/stores/signatures'
 import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 usePageTitle('sign.title')
 
-import { AlertTriangle, CheckCircle2, FileText, Info, Users, Loader2, Shield, Zap, Clock } from 'lucide-vue-next'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  Users,
+  Loader2,
+  Shield,
+  Zap,
+  Clock,
+  ExternalLink,
+  Download,
+  Check,
+  Eye,
+  ArrowRight,
+  Sparkles,
+  Lock
+} from 'lucide-vue-next'
 import SignButton from '@/components/SignButton.vue'
 import SignatureList from '@/components/SignatureList.vue'
+import DocumentViewer from '@/components/viewer/DocumentViewer.vue'
 import { documentService, type FindOrCreateDocumentResponse } from '@/services/documents'
 import { detectReference } from '@/services/referenceDetector'
 import { calculateFileChecksum } from '@/services/checksumCalculator'
 import { updateDocumentMetadata } from '@/services/admin'
-import DocumentForm from "@/components/DocumentForm.vue"
 
 const route = useRoute()
 const router = useRouter()
@@ -26,12 +42,14 @@ const signatureStore = useSignatureStore()
 
 const docId = ref<string | undefined>(undefined)
 const user = computed(() => authStore.user)
-const isAdmin = computed(() => authStore.isAdmin)
-
-// Check if document creation is restricted to admins
-const onlyAdminCanCreate = (window as any).ACKIFY_ONLY_ADMIN_CAN_CREATE || false
-const canCreateDocument = computed(() => !onlyAdminCanCreate || isAdmin.value)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const canCreateDocuments = computed(() => authStore.canCreateDocuments)
 const currentDocument = ref<FindOrCreateDocumentResponse | null>(null)
+
+// Quick create form
+const quickCreateUrl = ref('')
+const quickCreateLoading = ref(false)
+const quickCreateError = ref<string | null>(null)
 
 const documentSignatures = ref<any[]>([])
 const loadingSignatures = ref(false)
@@ -41,12 +59,36 @@ const errorMessage = ref<string | null>(null)
 const needsAuth = ref(false)
 const calculatingChecksum = ref(false)
 
+// New state for integrated viewer
+const readComplete = ref(false)
+const certifyChecked = ref(false)
+
 // Check if current user has signed this document
 const userHasSigned = computed(() => {
   if (!user.value?.email || documentSignatures.value.length === 0) {
     return false
   }
   return documentSignatures.value.some(sig => sig.userEmail === user.value?.email)
+})
+
+// Get user's signature if exists
+const userSignature = computed(() => {
+  if (!user.value?.email || documentSignatures.value.length === 0) {
+    return null
+  }
+  return documentSignatures.value.find(sig => sig.userEmail === user.value?.email)
+})
+
+// Document properties
+const isIntegratedMode = computed(() => currentDocument.value?.readMode === 'integrated')
+const requiresFullRead = computed(() => currentDocument.value?.requireFullRead ?? false)
+const allowDownload = computed(() => currentDocument.value?.allowDownload ?? false)
+
+// Can confirm: checkbox checked AND (if requireFullRead: must have completed read)
+const canConfirm = computed(() => {
+  if (!certifyChecked.value) return false
+  if (isIntegratedMode.value && requiresFullRead.value && !readComplete.value) return false
+  return true
 })
 
 async function loadDocumentSignatures() {
@@ -67,6 +109,8 @@ async function handleDocumentReference(ref: string) {
     loadingDocument.value = true
     errorMessage.value = null
     needsAuth.value = false
+    readComplete.value = false
+    certifyChecked.value = false
 
     console.log('Loading document for reference:', ref)
 
@@ -87,7 +131,6 @@ async function handleDocumentReference(ref: string) {
         name: route.name as string,
         query: { doc: doc.docId }
       })
-      // Continue loading even after redirect
     }
 
     // If new document AND downloadable URL → calculate checksum
@@ -100,7 +143,6 @@ async function handleDocumentReference(ref: string) {
   } catch (error: any) {
     console.error('Failed to load/create document:', error)
 
-    // Handle 401 Unauthorized - user needs to authenticate
     if (error.response?.status === 401) {
       errorMessage.value = t('sign.error.authRequired')
       needsAuth.value = true
@@ -117,6 +159,32 @@ function handleLoginClick() {
   authStore.startOAuthLogin(route.fullPath)
 }
 
+async function handleQuickCreate() {
+  if (!quickCreateUrl.value.trim()) return
+
+  quickCreateError.value = null
+  quickCreateLoading.value = true
+
+  try {
+    // If not authenticated, redirect to login with next parameter
+    if (!isAuthenticated.value) {
+      // Store the URL to create after login
+      const nextUrl = `/documents/new?ref=${encodeURIComponent(quickCreateUrl.value.trim())}`
+      router.push({ name: 'auth-choice', query: { next: nextUrl } })
+      return
+    }
+
+    // Create document and redirect to edit page
+    const doc = await documentService.findOrCreateDocument(quickCreateUrl.value.trim())
+    router.push({ name: 'document-edit', params: { id: doc.docId } })
+  } catch (error: any) {
+    console.error('Failed to create document:', error)
+    quickCreateError.value = error.message || t('home.hero.createError')
+  } finally {
+    quickCreateLoading.value = false
+  }
+}
+
 async function calculateAndUpdateChecksum(docId: string, url: string) {
   try {
     calculatingChecksum.value = true
@@ -125,14 +193,12 @@ async function calculateAndUpdateChecksum(docId: string, url: string) {
     const checksumData = await calculateFileChecksum(url)
     console.log('Checksum calculated:', checksumData.checksum)
 
-    // Update document metadata with checksum (if user is admin)
     if (authStore.isAdmin) {
       await updateDocumentMetadata(docId, {
         checksum: checksumData.checksum,
         checksumAlgorithm: checksumData.algorithm
       })
 
-      // Update local document reference
       if (currentDocument.value) {
         currentDocument.value.checksum = checksumData.checksum
         currentDocument.value.checksumAlgorithm = checksumData.algorithm
@@ -144,20 +210,22 @@ async function calculateAndUpdateChecksum(docId: string, url: string) {
     }
   } catch (error) {
     console.warn('Checksum calculation failed:', error)
-    // Don't fail the whole operation if checksum fails
   } finally {
     calculatingChecksum.value = false
   }
 }
 
+function handleReadComplete() {
+  readComplete.value = true
+}
+
 async function handleSigned() {
   showSuccessMessage.value = true
   errorMessage.value = null
+  certifyChecked.value = false
 
-  // Reload signatures to show the new one
   await loadDocumentSignatures()
 
-  // Hide success message after 5 seconds
   setTimeout(() => {
     showSuccessMessage.value = false
   }, 5000)
@@ -168,12 +236,52 @@ function handleError(error: string) {
   showSuccessMessage.value = false
 }
 
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString(locale.value, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+function downloadProof() {
+  if (!userSignature.value || !currentDocument.value) return
+
+  const proof = {
+    document: {
+      id: currentDocument.value.docId,
+      title: currentDocument.value.title,
+      url: currentDocument.value.url,
+      checksum: currentDocument.value.checksum,
+      algorithm: currentDocument.value.checksumAlgorithm
+    },
+    signature: {
+      email: userSignature.value.userEmail,
+      name: userSignature.value.userName,
+      signedAt: userSignature.value.signedAt,
+      signature: userSignature.value.signature,
+      payloadHash: userSignature.value.payloadHash,
+      nonce: userSignature.value.nonce
+    },
+    generatedAt: new Date().toISOString()
+  }
+
+  const blob = new Blob([JSON.stringify(proof, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `proof-${currentDocument.value.docId}-${Date.now()}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // Helper to wait for auth to be initialized by App.vue
 async function waitForAuth() {
-  // If already initialized, return immediately
   if (authStore.initialized) return
 
-  // Otherwise wait for initialized to become true
   return new Promise<void>((resolve) => {
     const stopWatch = watch(
       () => authStore.initialized,
@@ -188,33 +296,28 @@ async function waitForAuth() {
   })
 }
 
-// Watch for route query changes (only for changes, not initial mount)
+// Watch for route query changes
 watch(() => route.query.doc, async (newRef, oldRef) => {
-  // Only process if the doc query parameter actually changed
   if (newRef === oldRef) return
 
-  // Reset state
   showSuccessMessage.value = false
   errorMessage.value = null
   needsAuth.value = false
   docId.value = undefined
   currentDocument.value = null
   documentSignatures.value = []
+  readComplete.value = false
+  certifyChecked.value = false
 
-  // If we have a reference, load/create the document
   if (newRef && typeof newRef === 'string') {
-    // Wait for App.vue to finish checking auth
     await waitForAuth()
     await handleDocumentReference(newRef)
   }
 })
 
 onMounted(async () => {
-  // CRITICAL: Wait for App.vue to finish auth check before doing anything
-  // App.vue calls checkAuth() which will set initialized=true when done
   await waitForAuth()
 
-  // Now handle the document reference if present in URL
   const ref = route.query.doc as string | undefined
   if (ref) {
     await handleDocumentReference(ref)
@@ -224,17 +327,7 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-[calc(100vh-8rem)]">
-    <!-- Main Content -->
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-      <!-- Page Header -->
-      <div class="mb-8 text-center">
-        <h1 class="mb-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-          {{ t('sign.title') }}
-        </h1>
-        <p class="text-base sm:text-lg text-slate-500 dark:text-slate-400">
-          {{ t('sign.subtitle') }}
-        </p>
-      </div>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8">
 
       <!-- Error Message -->
       <transition
@@ -268,41 +361,192 @@ onMounted(async () => {
       <div v-if="loadingDocument" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
         <Loader2 :size="48" class="mx-auto mb-4 animate-spin text-blue-600" />
         <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{{ t('sign.loading.title') }}</h2>
-        <p class="text-slate-500 dark:text-slate-400">
-          {{ t('sign.loading.description') }}
-        </p>
+        <p class="text-slate-500 dark:text-slate-400">{{ t('sign.loading.description') }}</p>
       </div>
 
-      <!-- No Document: Show help message -->
-      <div v-else-if="!docId" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
-        <div class="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
-          <FileText :size="28" class="text-blue-600 dark:text-blue-400" />
-        </div>
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{{ t('sign.noDocument.title') }}</h2>
-        <p class="text-slate-500 dark:text-slate-400 mb-4 max-w-md mx-auto">
-          {{ t('sign.noDocument.description', { code: '?doc=' }) }}
-        </p>
-        <div class="text-sm text-slate-500 dark:text-slate-400 space-y-2 max-w-md mx-auto">
-          <p class="font-medium text-slate-700 dark:text-slate-300">{{ t('sign.noDocument.examples') }}</p>
-          <code class="block px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=https://example.com/policy.pdf</code>
-          <code class="block px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=/path/to/document</code>
-          <code class="block px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=my-unique-ref</code>
+      <!-- No Document: Hero Section -->
+      <div v-else-if="!docId" class="space-y-16">
+        <!-- Hero -->
+        <div class="text-center pt-8 sm:pt-12">
+          <h1 class="mb-4 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            {{ t('home.hero.title') }}
+          </h1>
+          <p class="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-8">
+            {{ t('home.hero.subtitle') }}
+          </p>
 
-          <!-- Document creation form -->
-          <DocumentForm v-if="canCreateDocument" class="mt-6" />
+          <!-- Quick Create Card -->
+          <div class="max-w-xl mx-auto">
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+              <!-- Error message -->
+              <div v-if="quickCreateError" class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                <div class="flex items-start gap-2">
+                  <AlertTriangle :size="16" class="mt-0.5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                  <p class="text-sm text-red-800 dark:text-red-200">{{ quickCreateError }}</p>
+                </div>
+              </div>
 
-          <!-- Restricted message -->
-          <div v-else class="mt-4 accent-border bg-amber-50 dark:bg-amber-900/20 rounded-r-lg p-4 text-left">
-            <div class="flex items-start">
-              <AlertTriangle :size="18" class="mr-3 mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-              <p class="text-sm text-amber-700 dark:text-amber-300">{{ t('sign.documentCreation.restrictedToAdmins') }}</p>
+              <!-- Creation restricted message -->
+              <div v-if="isAuthenticated && !canCreateDocuments" class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                  <Lock :size="20" class="mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <div class="text-left">
+                    <p class="font-medium text-amber-900 dark:text-amber-200">{{ t('home.hero.restricted.title') }}</p>
+                    <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">{{ t('home.hero.restricted.description') }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form -->
+              <form v-else @submit.prevent="handleQuickCreate" class="space-y-4">
+                <div>
+                  <label for="quick-create-url" class="sr-only">{{ t('home.hero.form.label') }}</label>
+                  <div class="flex gap-2">
+                    <input
+                      id="quick-create-url"
+                      v-model="quickCreateUrl"
+                      type="text"
+                      :placeholder="t('home.hero.form.placeholder')"
+                      :disabled="quickCreateLoading"
+                      class="flex-1 px-4 py-3 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <button
+                      type="submit"
+                      :disabled="!quickCreateUrl.trim() || quickCreateLoading"
+                      class="inline-flex items-center gap-2 trust-gradient text-white font-medium rounded-lg px-6 py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Loader2 v-if="quickCreateLoading" :size="18" class="animate-spin" />
+                      <template v-else>
+                        {{ isAuthenticated ? t('home.hero.form.submit') : t('home.hero.form.submitLogin') }}
+                        <ArrowRight :size="16" />
+                      </template>
+                    </button>
+                  </div>
+                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    {{ t('home.hero.form.hint') }}
+                  </p>
+                </div>
+              </form>
             </div>
+          </div>
+        </div>
+
+        <!-- How it Works Section -->
+        <div class="border-t border-slate-200 dark:border-slate-700 pt-16">
+          <div class="text-center mb-12">
+            <h2 class="mb-3 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              {{ t('home.howItWorks.title') }}
+            </h2>
+            <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+              {{ t('home.howItWorks.subtitle') }}
+            </p>
+          </div>
+
+          <!-- Steps Grid -->
+          <div class="grid gap-8 grid-cols-1 md:grid-cols-3 mb-12">
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center hover:shadow-md transition-shadow">
+              <div class="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                <FileText :size="28" class="text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('home.howItWorks.step1.title') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                {{ t('home.howItWorks.step1.description') }}
+              </p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center hover:shadow-md transition-shadow">
+              <div class="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+                <Eye :size="28" class="text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('home.howItWorks.step2.title') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                {{ t('home.howItWorks.step2.description') }}
+              </p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center hover:shadow-md transition-shadow">
+              <div class="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
+                <Shield :size="28" class="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('home.howItWorks.step3.title') }}</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                {{ t('home.howItWorks.step3.description') }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Features -->
+          <div class="grid gap-6 grid-cols-1 md:grid-cols-3">
+            <div class="flex items-start space-x-3">
+              <div class="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-2 mt-1 flex-shrink-0">
+                <Shield :size="20" class="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1">{{ t('home.features.crypto.title') }}</h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  {{ t('home.features.crypto.description') }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3">
+              <div class="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-2 mt-1 flex-shrink-0">
+                <Zap :size="20" class="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1">{{ t('home.features.instant.title') }}</h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  {{ t('home.features.instant.description') }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3">
+              <div class="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-2 mt-1 flex-shrink-0">
+                <Clock :size="20" class="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1">{{ t('home.features.timestamp.title') }}</h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  {{ t('home.features.timestamp.description') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SaaS CTA Section -->
+        <div class="border-t border-slate-200 dark:border-slate-700 pt-16">
+          <div class="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-800 dark:to-blue-900/20 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 sm:p-12 text-center">
+            <!-- Coming Soon Badge -->
+            <div class="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-medium px-3 py-1 rounded-full mb-6">
+              <Sparkles :size="14" />
+              {{ t('home.saas.badge') }}
+            </div>
+
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+              {{ t('home.saas.title') }}
+            </h2>
+            <p class="text-slate-600 dark:text-slate-400 max-w-xl mx-auto mb-8">
+              {{ t('home.saas.description') }}
+            </p>
+
+            <button
+              disabled
+              class="inline-flex items-center gap-2 bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 font-medium rounded-lg px-6 py-3 text-sm cursor-not-allowed"
+            >
+              {{ t('home.saas.button') }}
+            </button>
+
+            <p class="mt-4 text-xs text-slate-500 dark:text-slate-500">
+              {{ t('home.saas.note') }}
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Main Content when doc ID is present -->
-      <div v-else-if="docId" class="space-y-6">
+      <div v-else-if="docId && currentDocument" class="space-y-6">
         <!-- Success Message -->
         <transition
           enter-active-class="transition ease-out duration-300"
@@ -323,188 +567,193 @@ onMounted(async () => {
           </div>
         </transition>
 
-        <!-- Document Info Card -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
-          <!-- Header with icon -->
-          <div class="flex items-start gap-4 mb-6">
-            <div class="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-              <FileText :size="28" class="text-blue-600 dark:text-blue-400" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-100">
-                {{ t('sign.document.title') }}<template v-if="currentDocument?.title"> : {{ currentDocument.title }}</template>
-              </h2>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                <template v-if="currentDocument?.url">
-                  <a
-                    :href="currentDocument.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-xs break-all"
-                  >
-                    {{ currentDocument.url }}
-                  </a>
-                </template>
-                <template v-else>
-                  <span class="font-mono text-xs">{{ docId }}</span>
-                </template>
-              </p>
-            </div>
-          </div>
-
-          <!-- Sign Button -->
-          <div class="pb-4">
-            <SignButton
-              :doc-id="docId"
-              :signatures="documentSignatures"
-              @signed="handleSigned"
-              @error="handleError"
-            />
-          </div>
-
-          <!-- Info Box (only shown if user hasn't signed yet) -->
-          <div v-if="!userHasSigned" class="accent-border bg-blue-50 dark:bg-blue-900/20 rounded-r-lg p-4">
-            <div class="flex items-start">
-              <Info :size="18" class="mr-3 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-              <div class="flex-1 space-y-2 text-sm text-blue-800 dark:text-blue-200">
-                <p>{{ t('sign.info.description') }}</p>
-                <p class="font-medium">{{ t('sign.info.recorded') }}</p>
-                <ul class="list-disc space-y-1 pl-5 text-blue-700 dark:text-blue-300">
-                  <li>{{ t('sign.info.email') }} : <strong class="text-blue-900 dark:text-blue-100">{{ user?.email }}</strong></li>
-                  <li>{{ t('sign.info.timestamp') }}</li>
-                  <li>{{ t('sign.info.signature') }}</li>
-                  <li>{{ t('sign.info.hash') }}</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Existing Confirmations -->
-        <div v-if="documentSignatures.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <!-- Header -->
-          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                <Users :size="20" class="text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('sign.confirmations.title') }}</h3>
-                <p class="text-sm text-slate-500 dark:text-slate-400">
-                  {{ t('sign.confirmations.count', { count: documentSignatures.length }, documentSignatures.length) }}
-                  {{ t('sign.confirmations.recorded', {}, documentSignatures.length) }}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- List -->
-          <div class="p-6">
-            <SignatureList
-              :signatures="documentSignatures"
-              :loading="loadingSignatures"
-              :show-user-info="true"
-              :show-details="true"
-            />
-          </div>
-        </div>
-
-        <!-- Empty State -->
-        <div v-else-if="!loadingSignatures" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
-          <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700">
-            <Users :size="28" class="text-slate-400" />
-          </div>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-            {{ t('sign.empty.title') }}
-          </h3>
-          <p class="text-sm text-slate-500 dark:text-slate-400">
-            {{ t('sign.empty.description') }}
-          </p>
-        </div>
-      </div>
-
-      <!-- How it Works Section -->
-      <div class="mt-16 pt-12 border-t border-slate-200 dark:border-slate-700">
-        <div class="text-center mb-12">
-          <h2 class="mb-3 text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            {{ t('sign.howItWorks.title') }}
-          </h2>
-          <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-            {{ t('sign.howItWorks.subtitle') }}
-          </p>
-        </div>
-
-        <!-- Steps Grid -->
-        <div class="grid gap-6 sm:gap-8 grid-cols-1 md:grid-cols-3 mb-12">
-          <!-- Step 1 -->
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center hover:shadow-md transition-shadow">
-            <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+        <!-- Document Header -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
               <FileText :size="24" class="text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('sign.howItWorks.step1.title') }}</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ t('sign.howItWorks.step1.description', { code: '?doc=URL' }) }}
-            </p>
-          </div>
-
-          <!-- Step 2 -->
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center hover:shadow-md transition-shadow">
-            <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
-              <Shield :size="24" class="text-blue-600 dark:text-blue-400" />
+            <div class="flex-1 min-w-0">
+              <h1 class="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100">
+                {{ currentDocument.title || t('sign.document.title') }}
+              </h1>
+              <p v-if="currentDocument.url" class="mt-1 text-sm text-slate-500 dark:text-slate-400 font-mono text-xs break-all">
+                {{ currentDocument.url }}
+              </p>
+              <p v-else class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                <span class="font-mono text-xs">{{ t('sign.document.id') }}: {{ docId }}</span>
+              </p>
             </div>
-            <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('sign.howItWorks.step2.title') }}</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ t('sign.howItWorks.step2.description') }}
-            </p>
-          </div>
-
-          <!-- Step 3 -->
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 text-center hover:shadow-md transition-shadow">
-            <div class="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
-              <CheckCircle2 :size="24" class="text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <h3 class="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('sign.howItWorks.step3.title') }}</h3>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ t('sign.howItWorks.step3.description') }}
-            </p>
           </div>
         </div>
 
-        <!-- Features -->
-        <div class="grid gap-6 grid-cols-1 md:grid-cols-3">
-          <div class="flex items-start space-x-3">
-            <div class="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-2 mt-1 flex-shrink-0">
-              <Shield :size="20" class="text-blue-600 dark:text-blue-400" />
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Left: Document Zone (2/3) -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- Integrated Viewer -->
+            <div v-if="isIntegratedMode && currentDocument.url">
+              <DocumentViewer
+                :document-id="docId"
+                :url="currentDocument.url"
+                :allow-download="allowDownload"
+                :require-full-read="requiresFullRead"
+                @read-complete="handleReadComplete"
+              />
             </div>
-            <div>
-              <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1">{{ t('sign.howItWorks.features.crypto.title') }}</h4>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                {{ t('sign.howItWorks.features.crypto.description') }}
+
+            <!-- External Mode -->
+            <div v-else class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
+              <div class="w-16 h-16 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
+                <ExternalLink :size="32" class="text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                {{ t('sign.external.title') }}
+              </h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
+                {{ t('sign.external.description') }}
               </p>
+              <a
+                v-if="currentDocument.url"
+                :href="currentDocument.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 trust-gradient text-white font-medium rounded-lg px-6 py-3 text-sm hover:opacity-90 transition-opacity"
+              >
+                <ExternalLink :size="18" />
+                {{ t('sign.external.openDocument') }}
+              </a>
+              <p v-else class="text-sm text-slate-400 dark:text-slate-500 italic">
+                {{ t('sign.external.noUrl') }}
+              </p>
+            </div>
+
+            <!-- Existing Confirmations (Below document on mobile, here on desktop) -->
+            <div v-if="documentSignatures.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div class="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Users :size="20" class="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('sign.confirmations.title') }}</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                      {{ t('sign.confirmations.count', { count: documentSignatures.length }, documentSignatures.length) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="p-4 sm:p-6">
+                <SignatureList
+                  :signatures="documentSignatures"
+                  :loading="loadingSignatures"
+                  :show-user-info="true"
+                  :show-details="true"
+                />
+              </div>
             </div>
           </div>
 
-          <div class="flex items-start space-x-3">
-            <div class="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-2 mt-1 flex-shrink-0">
-              <Zap :size="20" class="text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1">{{ t('sign.howItWorks.features.instant.title') }}</h4>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                {{ t('sign.howItWorks.features.instant.description') }}
-              </p>
-            </div>
-          </div>
+          <!-- Right: Confirmation Panel (1/3) -->
+          <div class="lg:col-span-1">
+            <div class="lg:sticky lg:top-24 space-y-4">
+              <!-- Already Signed Panel -->
+              <div v-if="userHasSigned && userSignature" class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800 p-6">
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                    <Check :size="20" class="text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 class="font-semibold text-emerald-900 dark:text-emerald-200">{{ t('sign.alreadySigned.title') }}</h3>
+                    <p class="text-xs text-emerald-700 dark:text-emerald-400">{{ formatDate(userSignature.signedAt) }}</p>
+                  </div>
+                </div>
 
-          <div class="flex items-start space-x-3">
-            <div class="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-2 mt-1 flex-shrink-0">
-              <Clock :size="20" class="text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h4 class="font-medium text-slate-900 dark:text-slate-100 mb-1">{{ t('sign.howItWorks.features.timestamp.title') }}</h4>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
-                {{ t('sign.howItWorks.features.timestamp.description') }}
-              </p>
+                <div class="space-y-3 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-emerald-700 dark:text-emerald-400">{{ t('sign.alreadySigned.signedBy') }}</span>
+                    <span class="font-medium text-emerald-900 dark:text-emerald-200">{{ userSignature.userName || userSignature.userEmail }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-emerald-700 dark:text-emerald-400">{{ t('sign.alreadySigned.email') }}</span>
+                    <span class="font-mono text-xs text-emerald-900 dark:text-emerald-200">{{ userSignature.userEmail }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-emerald-700 dark:text-emerald-400">{{ t('sign.alreadySigned.signatureType') }}</span>
+                    <span class="font-mono text-xs text-emerald-900 dark:text-emerald-200">Ed25519</span>
+                  </div>
+                </div>
+
+                <button
+                  @click="downloadProof"
+                  class="mt-4 w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors"
+                >
+                  <Download :size="16" />
+                  {{ t('sign.alreadySigned.downloadProof') }}
+                </button>
+              </div>
+
+              <!-- Not Yet Signed Panel -->
+              <div v-else class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-4">{{ t('sign.confirm.title') }}</h3>
+
+                <!-- Warning if requireFullRead and not completed -->
+                <div v-if="isIntegratedMode && requiresFullRead && !readComplete" class="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <div class="flex items-start gap-2">
+                    <AlertTriangle :size="16" class="mt-0.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <p class="text-sm text-amber-800 dark:text-amber-200">{{ t('sign.confirm.readRequired') }}</p>
+                  </div>
+                </div>
+
+                <!-- Info box -->
+                <div class="accent-border bg-blue-50 dark:bg-blue-900/20 rounded-r-lg p-3 mb-4">
+                  <p class="text-xs text-blue-800 dark:text-blue-200">{{ t('sign.info.description') }}</p>
+                </div>
+
+                <!-- What will be recorded -->
+                <div class="mb-4">
+                  <p class="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">{{ t('sign.info.recorded') }}</p>
+                  <ul class="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                    <li class="flex items-center gap-2">
+                      <div class="w-1 h-1 rounded-full bg-blue-500"></div>
+                      {{ t('sign.info.email') }}: <span class="font-medium text-slate-700 dark:text-slate-300">{{ user?.email }}</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <div class="w-1 h-1 rounded-full bg-blue-500"></div>
+                      {{ t('sign.info.timestamp') }}
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <div class="w-1 h-1 rounded-full bg-blue-500"></div>
+                      {{ t('sign.info.signature') }}
+                    </li>
+                    <li class="flex items-center gap-2">
+                      <div class="w-1 h-1 rounded-full bg-blue-500"></div>
+                      {{ t('sign.info.hash') }}
+                    </li>
+                  </ul>
+                </div>
+
+                <!-- Checkbox -->
+                <label class="flex items-start gap-3 mb-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    v-model="certifyChecked"
+                    class="mt-0.5 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span class="text-sm text-slate-700 dark:text-slate-300">
+                    {{ t('sign.confirm.certify') }}
+                  </span>
+                </label>
+
+                <!-- Sign Button -->
+                <SignButton
+                  :doc-id="docId"
+                  :signatures="documentSignatures"
+                  :disabled="!canConfirm"
+                  @signed="handleSigned"
+                  @error="handleError"
+                />
+              </div>
             </div>
           </div>
         </div>

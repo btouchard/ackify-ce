@@ -20,6 +20,7 @@ import (
 	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/documents"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/health"
+	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/proxy"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/signatures"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/users"
@@ -53,6 +54,9 @@ type documentService interface {
 	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
 	GetExpectedSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
 	ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	ListByCreatedBy(ctx context.Context, createdBy string, limit, offset int) ([]*models.Document, error)
+	SearchByCreatedBy(ctx context.Context, createdBy, query string, limit, offset int) ([]*models.Document, error)
+	CountByCreatedBy(ctx context.Context, createdBy, searchQuery string) (int, error)
 }
 
 // reminderService defines reminder operations
@@ -177,6 +181,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		cfg.Authorizer,
 	)
 	signaturesHandler := signatures.NewHandler(cfg.SignatureService, cfg.AdminService, cfg.WebhookPublisher)
+	proxyHandler := proxy.NewHandler(cfg.DocumentService)
 
 	// Public routes
 	r.Group(func(r chi.Router) {
@@ -185,6 +190,9 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 		// CSRF token
 		r.Get("/csrf", authHandler.HandleGetCSRFToken)
+
+		// Proxy for streaming external documents (has its own rate limiting)
+		r.Get("/proxy", proxyHandler.HandleProxy)
 
 		// Auth endpoints
 		r.Route("/auth", func(r chi.Router) {
@@ -251,6 +259,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		// User endpoints
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/me", usersHandler.HandleGetCurrentUser)
+			r.Get("/me/documents", documentsHandler.HandleListMyDocuments)
 		})
 
 		// Signature endpoints

@@ -17,23 +17,23 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
+    cy.get('[data-testid="new-doc-input"]').type(docId)
     cy.contains('button', 'Confirm').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
 
     // Wait for modal
     cy.wait(500)
 
-    cy.get('textarea[placeholder*="Jane"]').type(`${alice}{enter}${bob}`, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(`${alice}{enter}${bob}`, { delay: 50 })
 
     // Wait for Vue reactivity
     cy.wait(300)
 
     // Submit form
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Verify signers added
     cy.contains(alice, { timeout: 10000 }).should('be.visible')

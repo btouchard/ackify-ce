@@ -37,7 +37,6 @@ type ErrorDetail struct {
 	Details map[string]interface{} `json:"details,omitempty"`
 }
 
-// WriteError writes a standardized error response
 func WriteError(w http.ResponseWriter, statusCode int, code ErrorCode, message string, details map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -53,7 +52,6 @@ func WriteError(w http.ResponseWriter, statusCode int, code ErrorCode, message s
 	json.NewEncoder(w).Encode(response)
 }
 
-// WriteValidationError writes a validation error response
 func WriteValidationError(w http.ResponseWriter, message string, fieldErrors map[string]string) {
 	details := make(map[string]interface{})
 	if fieldErrors != nil {
@@ -62,7 +60,6 @@ func WriteValidationError(w http.ResponseWriter, message string, fieldErrors map
 	WriteError(w, http.StatusBadRequest, ErrCodeValidation, message, details)
 }
 
-// WriteUnauthorized writes an unauthorized error response
 func WriteUnauthorized(w http.ResponseWriter, message string) {
 	if message == "" {
 		message = "Authentication required"
@@ -70,7 +67,6 @@ func WriteUnauthorized(w http.ResponseWriter, message string) {
 	WriteError(w, http.StatusUnauthorized, ErrCodeUnauthorized, message, nil)
 }
 
-// WriteForbidden writes a forbidden error response
 func WriteForbidden(w http.ResponseWriter, message string) {
 	if message == "" {
 		message = "Access denied"
@@ -78,7 +74,6 @@ func WriteForbidden(w http.ResponseWriter, message string) {
 	WriteError(w, http.StatusForbidden, ErrCodeForbidden, message, nil)
 }
 
-// WriteNotFound writes a not found error response
 func WriteNotFound(w http.ResponseWriter, resource string) {
 	message := "Resource not found"
 	if resource != "" {
@@ -87,7 +82,6 @@ func WriteNotFound(w http.ResponseWriter, resource string) {
 	WriteError(w, http.StatusNotFound, ErrCodeNotFound, message, nil)
 }
 
-// WriteConflict writes a conflict error response
 func WriteConflict(w http.ResponseWriter, message string) {
 	if message == "" {
 		message = "Resource conflict"
@@ -95,7 +89,6 @@ func WriteConflict(w http.ResponseWriter, message string) {
 	WriteError(w, http.StatusConflict, ErrCodeConflict, message, nil)
 }
 
-// WriteInternalError writes an internal server error response
 func WriteInternalError(w http.ResponseWriter) {
 	WriteError(w, http.StatusInternalServerError, ErrCodeInternal, "An internal error occurred", nil)
 }

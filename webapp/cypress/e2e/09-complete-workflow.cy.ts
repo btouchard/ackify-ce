@@ -19,17 +19,17 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
+    cy.get('[data-testid="new-doc-input"]').type(docId)
     cy.contains('button', 'Confirm').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // ===== STEP 2: Admin adds 3 expected signers =====
     cy.log('STEP 2: Admin adds 3 expected signers')
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('textarea[placeholder*="Jane"]').type(`${alice}\n${bob}\n${charlie}`, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(`${alice}\n${bob}\n${charlie}`, { delay: 50 })
     cy.wait(300)
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     cy.contains(alice, { timeout: 10000 }).should('be.visible')
     cy.contains(bob).should('be.visible')

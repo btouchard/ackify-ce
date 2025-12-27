@@ -196,7 +196,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Create Document Section -->
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 mb-8">
         <div class="flex items-start gap-4 mb-4">
           <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
@@ -213,6 +212,7 @@ onMounted(() => {
               v-model="newDocId"
               type="text"
               required
+              data-testid="new-doc-input"
               :placeholder="t('admin.documents.idPlaceholder')"
               class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -223,6 +223,7 @@ onMounted(() => {
           <button
             type="submit"
             :disabled="!newDocId || creating"
+            data-testid="create-doc-btn"
             class="trust-gradient text-white font-medium rounded-lg px-6 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:self-start"
           >
             <FileText v-if="!creating" :size="16" />
@@ -232,7 +233,6 @@ onMounted(() => {
         </form>
       </div>
 
-      <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
         <Loader2 :size="48" class="animate-spin text-blue-600" />
         <p class="mt-4 text-slate-500 dark:text-slate-400">{{ t('admin.loading') }}</p>
@@ -301,9 +301,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Documents List Card -->
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <!-- Header -->
           <div class="p-6 border-b border-slate-100 dark:border-slate-700">
             <div class="flex flex-col gap-4">
               <div>
@@ -311,7 +309,6 @@ onMounted(() => {
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('admin.subtitle') }}</p>
               </div>
 
-              <!-- Search -->
               <div class="relative">
                 <Search v-if="!searching" :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <Loader2 v-else :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
@@ -325,7 +322,6 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Content -->
           <div class="p-6">
             <!-- Desktop Table -->
             <div v-if="documents.length > 0" class="hidden md:block overflow-x-auto">

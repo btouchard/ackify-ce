@@ -19,16 +19,16 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
+    cy.get('[data-testid="new-doc-input"]').type(docId)
     cy.contains('button', 'Confirm').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Add alice and bob as expected signers
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('textarea[placeholder*="Jane"]').type(`${alice}\n${bob}`, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(`${alice}\n${bob}`, { delay: 50 })
     cy.wait(300)
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     cy.contains(alice, { timeout: 10000 }).should('be.visible')
     cy.contains(bob).should('be.visible')
@@ -115,16 +115,16 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(multiDocId)
+    cy.get('[data-testid="new-doc-input"]').type(multiDocId)
     cy.contains('button', 'Confirm').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${multiDocId}`)
 
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('textarea[placeholder*="Jane"]').type(expected1, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(expected1, { delay: 50 })
     cy.wait(300)
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     cy.contains(expected1, { timeout: 10000 }).should('be.visible')
 

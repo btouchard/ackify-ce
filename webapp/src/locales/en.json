@@ -5,6 +5,7 @@
   "nav": {
     "home": "Home",
     "myConfirmations": "My confirmations",
+    "myDocuments": "My documents",
     "admin": "Admin",
     "administration": "Administration",
     "login": "Sign in",
@@ -53,12 +54,86 @@
       "error_send": "Failed to send magic link"
     }
   },
+  "home": {
+    "hero": {
+      "title": "Reading Confirmation",
+      "subtitle": "Cryptographically certify that your documents have been read and understood",
+      "createError": "Unable to create document",
+      "restricted": {
+        "title": "Creation restricted",
+        "description": "Document creation is restricted to administrators. Contact your administrator to get a document link."
+      },
+      "form": {
+        "label": "Document URL",
+        "placeholder": "URL, path or document reference",
+        "hint": "Accepts URLs, file paths or simple identifiers",
+        "submit": "Create",
+        "submitLogin": "Sign in"
+      }
+    },
+    "howItWorks": {
+      "title": "How does it work?",
+      "subtitle": "Ackify allows you to cryptographically prove that your documents have been read",
+      "step1": {
+        "title": "1. Access the document",
+        "description": "Enter the URL or reference of the document to confirm"
+      },
+      "step2": {
+        "title": "2. Read the content",
+        "description": "View the document in the integrated viewer or via the external link"
+      },
+      "step3": {
+        "title": "3. Confirm",
+        "description": "Your confirmation is recorded with an Ed25519 cryptographic signature"
+      }
+    },
+    "features": {
+      "crypto": {
+        "title": "Cryptographic security",
+        "description": "Non-repudiable Ed25519 signatures guaranteeing authenticity"
+      },
+      "instant": {
+        "title": "Instant",
+        "description": "Two-click confirmation with immediate cryptographic verification"
+      },
+      "timestamp": {
+        "title": "Precise timestamping",
+        "description": "Each confirmation is timestamped and chained to ensure integrity"
+      }
+    },
+    "saas": {
+      "badge": "Coming soon",
+      "title": "Need more?",
+      "description": "Team management, advanced API, dashboards, integrations and dedicated support for enterprises.",
+      "button": "Discover Ackify Pro",
+      "note": "Available soon"
+    }
+  },
   "sign": {
     "title": "Reading Confirmation",
     "subtitle": "Certify your reading with an Ed25519 cryptographic confirmation",
     "loading": {
       "title": "Loading document...",
       "description": "Please wait while we prepare the document for signing."
+    },
+    "external": {
+      "title": "External document",
+      "description": "Please read the document below before confirming your reading.",
+      "openDocument": "Open document",
+      "noUrl": "No URL available for this document"
+    },
+    "alreadySigned": {
+      "title": "Reading already confirmed",
+      "signedBy": "Confirmed by",
+      "email": "Email",
+      "signatureType": "Confirmation type",
+      "ed25519": "Ed25519 cryptographic",
+      "downloadProof": "Download proof"
+    },
+    "confirm": {
+      "title": "Confirm your reading",
+      "readRequired": "Please read the entire document before confirming.",
+      "certify": "I certify that I have read and understood the content of this document"
     },
     "noDocument": {
       "title": "No document specified",
@@ -520,5 +595,209 @@
     "previous": "Previous",
     "skipToContent": "Skip to main content",
     "refresh": "Refresh"
+  },
+  "documentViewer": {
+    "loading": "Loading document...",
+    "toolbar": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "download": "Download",
+      "openInNewTab": "Open in new tab",
+      "page": "Page {current} / {total}"
+    },
+    "progress": "{percent}% read",
+    "scrollToRead": "Scroll to read the document",
+    "readComplete": "Reading complete",
+    "pdfViewer": "PDF viewer",
+    "htmlViewer": "HTML content",
+    "imageAlt": "Document image",
+    "error": {
+      "title": "Unable to load document",
+      "loadFailed": "Failed to load document",
+      "retry": "Retry",
+      "openExternal": "Open link"
+    },
+    "unsupported": {
+      "title": "Unsupported format",
+      "description": "This document type cannot be displayed in the embedded viewer.",
+      "openExternal": "Open document"
+    }
+  },
+  "documentCreateForm": {
+    "url": {
+      "label": "Document",
+      "placeholder": "URL, PATH or document ID",
+      "helper": "Accepts URLs, file paths or simple identifiers"
+    },
+    "submit": "Create",
+    "submitting": "Creating...",
+    "title": {
+      "label": "Title",
+      "placeholder": "Auto-detected if empty"
+    },
+    "readMode": {
+      "label": "Reading mode",
+      "integrated": "Integrated viewer",
+      "external": "External link"
+    },
+    "options": {
+      "title": "Advanced options",
+      "allowDownload": "Allow download",
+      "requireFullRead": "Require full reading",
+      "verifyChecksum": "Verify checksum on each read"
+    },
+    "checksum": {
+      "label": "Checksum",
+      "placeholder": "Auto-calculated if empty"
+    },
+    "algorithm": {
+      "label": "Algorithm"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Document description..."
+    },
+    "error": {
+      "urlRequired": "Document URL is required",
+      "createFailed": "Failed to create document"
+    }
+  },
+  "myDocuments": {
+    "title": "My Documents",
+    "subtitle": "Manage documents you have created",
+    "listTitle": "Document list",
+    "results": "{count} result | {count} results",
+    "searchPlaceholder": "Search by title or URL...",
+    "signatureCount": "signature | signatures",
+    "totalCount": "{count} document in total | {count} documents in total",
+    "noResults": "No results",
+    "tryAnotherSearch": "Try another search",
+    "stats": {
+      "total": "Total",
+      "pending": "Pending",
+      "completed": "Completed",
+      "totalDocuments": "Total documents",
+      "pendingDocuments": "Pending signatures",
+      "completedDocuments": "Completed"
+    },
+    "columns": {
+      "document": "Document",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "copyLink": "Copy link",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No documents",
+      "description": "Create your first document to start tracking reading confirmations"
+    },
+    "deleteConfirm": {
+      "title": "Delete this document?",
+      "message": "This will permanently delete the document \"{title}\" and all associated data."
+    },
+    "pagination": {
+      "page": "Page {current}/{total}"
+    }
+  },
+  "documentEdit": {
+    "title": "Edit document",
+    "back": "Back",
+    "breadcrumb": {
+      "myDocuments": "My documents"
+    },
+    "unauthorized": {
+      "title": "Unauthorized access",
+      "description": "You do not have permission to access this document.",
+      "backToDocuments": "Back to my documents"
+    },
+    "shareLink": {
+      "title": "Share link",
+      "copy": "Copy",
+      "copied": "Copied!"
+    },
+    "stats": {
+      "expected": "Expected readers",
+      "confirmed": "Confirmed",
+      "pending": "Pending"
+    },
+    "metadata": {
+      "title": "Metadata",
+      "description": "Basic document information",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Document title",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com/document.pdf",
+      "checksumLabel": "Checksum",
+      "checksumPlaceholder": "File fingerprint (optional)",
+      "algorithmLabel": "Algorithm",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Document description...",
+      "createdBy": "Created by {by} on {date}",
+      "saving": "Saving..."
+    },
+    "metadataSaved": "Metadata saved successfully",
+    "readers": {
+      "title": "Expected readers",
+      "confirmed": "confirmed",
+      "add": "Add",
+      "filterPlaceholder": "Filter by email or name...",
+      "reader": "Reader",
+      "status": "Status",
+      "confirmedOn": "Confirmed on",
+      "statusConfirmed": "Confirmed",
+      "statusPending": "Pending",
+      "noReaders": "No expected readers"
+    },
+    "signersAdded": "{count} reader(s) added",
+    "signerRemoved": "Reader {email} removed",
+    "addSigners": {
+      "title": "Add readers",
+      "emailsLabel": "Email addresses",
+      "emailsPlaceholder": "email{'@'}example.com\nFirst Last <other{'@'}example.com>",
+      "emailsHelper": "One email address per line. Format: email or Name <email>",
+      "adding": "Adding...",
+      "add": "Add"
+    },
+    "removeSigner": {
+      "title": "Remove this reader?",
+      "message": "Are you sure you want to remove {email} from the expected readers list?"
+    },
+    "reminders": {
+      "title": "Email reminders",
+      "description": "Send reminders to pending readers",
+      "sent": "Reminders sent",
+      "toRemind": "To remind",
+      "lastSent": "Last sent",
+      "emailDisabled": "The email service is not configured.",
+      "sendToAll": "Send to all pending readers ({count})",
+      "sendToSelected": "Send to selected readers ({count})",
+      "sending": "Sending...",
+      "send": "Send reminders"
+    },
+    "confirmSendReminders": "Send reminders to {count} pending reader(s)?",
+    "confirmSendRemindersSelected": "Send reminders to {count} selected reader(s)?",
+    "remindersSentSuccess": "{count} reminder(s) sent successfully",
+    "remindersSentPartial": "{sent} reminder(s) sent, {failed} failed",
+    "remindersSentGeneric": "Reminders sent",
+    "sendReminders": {
+      "title": "Confirm sending"
+    },
+    "danger": {
+      "title": "Danger zone",
+      "description": "Irreversible actions on this document",
+      "deleteDocument": "Delete document",
+      "deleteDescription": "This will permanently delete the document and all associated data."
+    },
+    "deleteConfirm": {
+      "title": "Delete this document?",
+      "warning": "Warning!",
+      "message": "This action is irreversible. All confirmations, expected readers and history will be deleted.",
+      "deleting": "Deleting...",
+      "confirm": "Delete permanently"
+    }
   }
 }

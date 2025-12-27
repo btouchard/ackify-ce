@@ -45,22 +45,18 @@ func main() {
 		"build_date", BuildDate,
 		"telemetry", cfg.Telemetry)
 
-	// Initialize DB
 	db, err := database.InitDB(ctx, database.Config{DSN: cfg.Database.DSN})
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
 
-	// Initialize tenant provider
 	tenantProvider, err := tenant.NewSingleTenantProviderWithContext(ctx, db)
 	if err != nil {
 		log.Fatalf("failed to initialize tenant provider: %v", err)
 	}
 
-	// Create OAuth session repository
 	oauthSessionRepo := database.NewOAuthSessionRepository(db, tenantProvider)
 
-	// Create OAuth service (internal infrastructure)
 	var oauthService *auth.OauthService
 	if cfg.Auth.OAuthEnabled || cfg.Auth.MagicLinkEnabled {
 		oauthService = auth.NewOAuthService(auth.Config{
@@ -79,10 +75,7 @@ func main() {
 		})
 	}
 
-	// Create OAuth provider adapter
 	oauthProvider := webauth.NewOAuthProvider(oauthService, cfg.Auth.OAuthEnabled)
-
-	// Create Authorizer
 	authorizer := webauth.NewSimpleAuthorizer(cfg.App.AdminEmails, cfg.App.OnlyAdminCanCreate)
 
 	// === Build Server ===
@@ -97,7 +90,6 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	// Start server
 	go func() {
 		log.Printf("Community Edition server starting on %s", server.GetAddr())
 		if err := server.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -105,7 +97,6 @@ func main() {
 		}
 	}()
 
-	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

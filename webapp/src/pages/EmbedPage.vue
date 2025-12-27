@@ -58,10 +58,11 @@
         </div>
 
         <!-- Signatures list -->
-        <div class="space-y-2">
+        <div class="space-y-2" data-testid="signatures-list">
           <div
             v-for="signature in documentData.signatures"
             :key="signature.id"
+            data-testid="signature-item"
             class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between gap-3"
           >
             <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -72,7 +73,7 @@
               </div>
               <span class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ signature.userEmail }}</span>
             </div>
-            <span class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ formatDateCompact(signature.signedAt) }}</span>
+            <span data-testid="signature-date" class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{{ formatDateCompact(signature.signedAt) }}</span>
           </div>
         </div>
       </div>

@@ -28,6 +28,9 @@ type documentService interface {
 	GetByDocID(ctx context.Context, docID string) (*models.Document, error)
 	GetExpectedSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
 	ListExpectedSigners(ctx context.Context, docID string) ([]*models.ExpectedSigner, error)
+	ListByCreatedBy(ctx context.Context, createdBy string, limit, offset int) ([]*models.Document, error)
+	SearchByCreatedBy(ctx context.Context, createdBy, query string, limit, offset int) ([]*models.Document, error)
+	CountByCreatedBy(ctx context.Context, createdBy, searchQuery string) (int, error)
 }
 
 // webhookPublisher defines minimal publish capability
@@ -106,7 +109,6 @@ type CreateDocumentResponse struct {
 func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Check if user can create documents
 	user, authenticated := shared.GetUserFromContext(ctx)
 	userEmail := ""
 	if authenticated && user != nil {
@@ -127,7 +129,6 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body
 	var req CreateDocumentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.Logger.Warn("Invalid document creation request body",
@@ -137,7 +138,6 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate reference field
 	if req.Reference == "" {
 		logger.Logger.Warn("Document creation request missing reference field",
 			"remote_addr", r.RemoteAddr)
@@ -150,13 +150,11 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 		"has_title", req.Title != "",
 		"remote_addr", r.RemoteAddr)
 
-	// Create document request
 	docRequest := services.CreateDocumentRequest{
 		Reference: req.Reference,
 		Title:     req.Title,
 	}
 
-	// Create document
 	doc, err := h.documentService.CreateDocument(ctx, docRequest)
 	if err != nil {
 		logger.Logger.Error("Document creation failed in handler",
@@ -197,11 +195,9 @@ func (h *Handler) HandleCreateDocument(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Parse pagination and search parameters
 	pagination := shared.ParsePaginationParams(r, 20, 100)
 	searchQuery := r.URL.Query().Get("search")
 
-	// Fetch documents from service
 	var docs []*models.Document
 	var err error
 
@@ -228,7 +224,6 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get total count of documents (with or without search filter)
 	totalCount, err := h.documentService.Count(ctx, searchQuery)
 	if err != nil {
 		logger.Logger.Warn("Failed to count documents, using result count",
@@ -237,7 +232,6 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 		totalCount = len(docs)
 	}
 
-	// Convert to DTOs (enriched with counts)
 	documents := make([]DocumentDTO, 0, len(docs))
 	for _, doc := range docs {
 		dto := DocumentDTO{
@@ -248,12 +242,10 @@ func (h *Handler) HandleListDocuments(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:   doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 
-		// Get signature count
 		if sigs, err := h.signatureService.GetDocumentSignatures(ctx, doc.DocID); err == nil {
 			dto.SignatureCount = len(sigs)
 		}
 
-		// Get expected signer count
 		if stats, err := h.documentService.GetExpectedSignerStats(ctx, doc.DocID); err == nil {
 			dto.ExpectedSignerCount = stats.ExpectedCount
 		}
@@ -274,7 +266,6 @@ func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get document from service
 	doc, err := h.documentService.GetByDocID(ctx, docID)
 	if err != nil {
 		logger.Logger.Error("Failed to get document", "doc_id", docID, "error", err.Error())
@@ -286,7 +277,6 @@ func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get signatures for the document
 	signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID)
 	if err != nil {
 		logger.Logger.Error("Failed to get signatures", "doc_id", docID, "error", err.Error())
@@ -404,6 +394,10 @@ type FindOrCreateDocumentResponse struct {
 	Checksum          string `json:"checksum,omitempty"`
 	ChecksumAlgorithm string `json:"checksumAlgorithm,omitempty"`
 	Description       string `json:"description,omitempty"`
+	ReadMode          string `json:"readMode"`
+	AllowDownload     bool   `json:"allowDownload"`
+	RequireFullRead   bool   `json:"requireFullRead"`
+	VerifyChecksum    bool   `json:"verifyChecksum"`
 	CreatedAt         string `json:"createdAt"`
 	IsNew             bool   `json:"isNew"`
 }
@@ -452,6 +446,10 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 			Checksum:          existingDoc.Checksum,
 			ChecksumAlgorithm: existingDoc.ChecksumAlgorithm,
 			Description:       existingDoc.Description,
+			ReadMode:          existingDoc.ReadMode,
+			AllowDownload:     existingDoc.AllowDownload,
+			RequireFullRead:   existingDoc.RequireFullRead,
+			VerifyChecksum:    existingDoc.VerifyChecksum,
 			CreatedAt:         existingDoc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			IsNew:             false,
 		}
@@ -502,6 +500,10 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		Checksum:          doc.Checksum,
 		ChecksumAlgorithm: doc.ChecksumAlgorithm,
 		Description:       doc.Description,
+		ReadMode:          doc.ReadMode,
+		AllowDownload:     doc.AllowDownload,
+		RequireFullRead:   doc.RequireFullRead,
+		VerifyChecksum:    doc.VerifyChecksum,
 		CreatedAt:         doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		IsNew:             isNew,
 	}
@@ -522,3 +524,90 @@ func detectReferenceType(ref string) ReferenceType {
 }
 
 type ReferenceType string
+
+// MyDocumentDTO represents a document with stats for the current user's documents list
+type MyDocumentDTO struct {
+	ID                  string `json:"id"`
+	Title               string `json:"title"`
+	URL                 string `json:"url,omitempty"`
+	Description         string `json:"description"`
+	CreatedAt           string `json:"createdAt"`
+	UpdatedAt           string `json:"updatedAt"`
+	SignatureCount      int    `json:"signatureCount"`
+	ExpectedSignerCount int    `json:"expectedSignerCount"`
+}
+
+// HandleListMyDocuments handles GET /api/v1/users/me/documents
+// Returns documents created by the current authenticated user
+func (h *Handler) HandleListMyDocuments(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	user, authenticated := shared.GetUserFromContext(ctx)
+	if !authenticated || user == nil {
+		shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required", nil)
+		return
+	}
+
+	pagination := shared.ParsePaginationParams(r, 20, 100)
+	searchQuery := r.URL.Query().Get("search")
+
+	var docs []*models.Document
+	var err error
+
+	if searchQuery != "" {
+		docs, err = h.documentService.SearchByCreatedBy(ctx, user.Email, searchQuery, pagination.PageSize, pagination.Offset)
+		logger.Logger.Debug("User document search request",
+			"user_email", user.Email,
+			"query", searchQuery,
+			"limit", pagination.PageSize,
+			"offset", pagination.Offset)
+	} else {
+		docs, err = h.documentService.ListByCreatedBy(ctx, user.Email, pagination.PageSize, pagination.Offset)
+		logger.Logger.Debug("User document list request",
+			"user_email", user.Email,
+			"limit", pagination.PageSize,
+			"offset", pagination.Offset)
+	}
+
+	if err != nil {
+		logger.Logger.Error("Failed to fetch user documents",
+			"user_email", user.Email,
+			"search", searchQuery,
+			"error", err.Error())
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to fetch documents", nil)
+		return
+	}
+
+	totalCount, err := h.documentService.CountByCreatedBy(ctx, user.Email, searchQuery)
+	if err != nil {
+		logger.Logger.Warn("Failed to count user documents, using result count",
+			"error", err.Error(),
+			"user_email", user.Email,
+			"search", searchQuery)
+		totalCount = len(docs)
+	}
+
+	documents := make([]MyDocumentDTO, 0, len(docs))
+	for _, doc := range docs {
+		dto := MyDocumentDTO{
+			ID:          doc.DocID,
+			Title:       doc.Title,
+			URL:         doc.URL,
+			Description: doc.Description,
+			CreatedAt:   doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:   doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+
+		if sigs, err := h.signatureService.GetDocumentSignatures(ctx, doc.DocID); err == nil {
+			dto.SignatureCount = len(sigs)
+		}
+
+		if stats, err := h.documentService.GetExpectedSignerStats(ctx, doc.DocID); err == nil {
+			dto.ExpectedSignerCount = stats.ExpectedCount
+		}
+
+		documents = append(documents, dto)
+	}
+
+	shared.WritePaginatedJSON(w, documents, pagination.Page, pagination.PageSize, totalCount)
+}

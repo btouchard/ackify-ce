@@ -20,8 +20,35 @@ export interface FindOrCreateDocumentResponse {
   checksum?: string
   checksumAlgorithm?: string
   description?: string
+  readMode: 'external' | 'integrated'
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
   createdAt: string
   isNew: boolean // true if created, false if found
+}
+
+// MyDocument represents a document in the user's document list
+export interface MyDocument {
+  id: string
+  title: string
+  url?: string
+  description: string
+  createdAt: string
+  updatedAt: string
+  signatureCount: number
+  expectedSignerCount: number
+}
+
+// PaginatedResponse for paginated API responses
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
 }
 
 /**
@@ -47,6 +74,43 @@ export const documentService = {
       { params: { ref: reference } }
     )
     return response.data.data
+  },
+
+  /**
+   * List documents created by the current user
+   * @param limit Number of documents per page (default: 20)
+   * @param page Page number (1-indexed)
+   * @param search Optional search query
+   * @returns Paginated list of user's documents
+   */
+  async listMyDocuments(
+    limit = 20,
+    page = 1,
+    search?: string
+  ): Promise<PaginatedResponse<MyDocument>> {
+    const params: Record<string, any> = { limit, page }
+    if (search && search.trim()) {
+      params.search = search.trim()
+    }
+
+    const response = await http.get<{
+      data: MyDocument[]
+      success: boolean
+      meta: { page: number; pageSize: number; total: number; totalPages: number }
+    }>('/users/me/documents', { params })
+
+    return {
+      data: response.data.data,
+      meta: response.data.meta
+    }
+  },
+
+  /**
+   * Delete a document by ID
+   * @param docId Document ID to delete
+   */
+  async deleteDocument(docId: string): Promise<void> {
+    await http.delete(`/admin/documents/${docId}`)
   },
 }
 

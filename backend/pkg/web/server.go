@@ -200,28 +200,22 @@ func (b *ServerBuilder) WithReminderService(service *services.ReminderAsyncServi
 
 // Build constructs the server with all dependencies.
 func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
-	// Validate required capability providers
 	if err := b.validateProviders(); err != nil {
 		return nil, err
 	}
 
-	// Set defaults for optional providers
 	b.setDefaultProviders()
 
-	// Initialize infrastructure
 	if err := b.initializeInfrastructure(); err != nil {
 		return nil, err
 	}
 
-	// Create repositories
 	repos := b.createRepositories()
 
-	// Initialize Telemetry if is enabled
 	if err := b.initializeTelemetry(ctx); err != nil {
 		return nil, err
 	}
 
-	// Initialize workers and services
 	whPublisher, whWorker, err := b.initializeWebhookSystem(repos)
 	if err != nil {
 		return nil, err
@@ -232,25 +226,17 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	// Initialize core services
 	b.initializeCoreServices(repos)
-
-	// Initialize MagicLink service and worker
 	magicLinkWorker := b.initializeMagicLinkService(ctx, repos)
-
-	// Initialize reminder service
 	b.initializeReminderService(repos)
 
-	// Initialize session worker
 	sessionWorker, err := b.initializeSessionWorker(repos)
 	if err != nil {
 		return nil, err
 	}
 
-	// Build router
 	router := b.buildRouter(repos, whPublisher)
 
-	// Create HTTP server
 	httpServer := &http.Server{
 		Addr:    b.cfg.Server.ListenAddr,
 		Handler: handlers.RequestLogger(handlers.SecureHeaders(router)),
@@ -299,7 +285,6 @@ func (b *ServerBuilder) setDefaultProviders() {
 func (b *ServerBuilder) initializeInfrastructure() error {
 	var err error
 
-	// Initialize Ed25519 signer if not provided
 	if b.signer == nil {
 		b.signer, err = crypto.NewEd25519Signer()
 		if err != nil {
@@ -307,7 +292,6 @@ func (b *ServerBuilder) initializeInfrastructure() error {
 		}
 	}
 
-	// Initialize i18n if not provided
 	if b.i18nService == nil {
 		localesDir := getLocalesDir()
 		b.i18nService, err = i18n.NewI18n(localesDir)
@@ -316,7 +300,6 @@ func (b *ServerBuilder) initializeInfrastructure() error {
 		}
 	}
 
-	// Initialize email sender if not provided
 	if b.emailSender == nil && b.cfg.Mail.Host != "" {
 		emailTemplatesDir := getTemplatesDir()
 		renderer := email.NewRenderer(emailTemplatesDir, b.cfg.App.BaseURL, b.cfg.App.Organisation,

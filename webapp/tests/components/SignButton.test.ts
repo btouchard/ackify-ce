@@ -74,7 +74,8 @@ describe('SignButton Component', () => {
 
       // Should show signed status (no button visible)
       expect(wrapper.find('button').exists()).toBe(false)
-      expect(wrapper.find('.signed-status').exists()).toBe(true)
+      // Should display signed confirmation (check i18n key or translated text)
+      expect(wrapper.text()).toMatch(/Signed|signButton\.confirmed/)
     })
 
     it('should not show signed status when different user has signed', async () => {

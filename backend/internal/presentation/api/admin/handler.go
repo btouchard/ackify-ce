@@ -73,6 +73,10 @@ type DocumentResponse struct {
 	Checksum          string `json:"checksum,omitempty"`
 	ChecksumAlgorithm string `json:"checksumAlgorithm,omitempty"`
 	Description       string `json:"description"`
+	ReadMode          string `json:"readMode"`
+	AllowDownload     bool   `json:"allowDownload"`
+	RequireFullRead   bool   `json:"requireFullRead"`
+	VerifyChecksum    bool   `json:"verifyChecksum"`
 	CreatedAt         string `json:"createdAt"`
 	UpdatedAt         string `json:"updatedAt"`
 	CreatedBy         string `json:"createdBy"`
@@ -328,6 +332,10 @@ func toDocumentResponse(doc *models.Document) *DocumentResponse {
 		Checksum:          doc.Checksum,
 		ChecksumAlgorithm: doc.ChecksumAlgorithm,
 		Description:       doc.Description,
+		ReadMode:          doc.ReadMode,
+		AllowDownload:     doc.AllowDownload,
+		RequireFullRead:   doc.RequireFullRead,
+		VerifyChecksum:    doc.VerifyChecksum,
 		CreatedAt:         doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:         doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		CreatedBy:         doc.CreatedBy,
@@ -488,6 +496,10 @@ type UpdateDocumentMetadataRequest struct {
 	Checksum          *string `json:"checksum,omitempty"`
 	ChecksumAlgorithm *string `json:"checksumAlgorithm,omitempty"`
 	Description       *string `json:"description,omitempty"`
+	ReadMode          *string `json:"readMode,omitempty"`
+	AllowDownload     *bool   `json:"allowDownload,omitempty"`
+	RequireFullRead   *bool   `json:"requireFullRead,omitempty"`
+	VerifyChecksum    *bool   `json:"verifyChecksum,omitempty"`
 }
 
 // HandleUpdateDocumentMetadata handles PUT /api/v1/admin/documents/{docId}/metadata
@@ -540,6 +552,18 @@ func (h *Handler) HandleUpdateDocumentMetadata(w http.ResponseWriter, r *http.Re
 	if req.Description != nil {
 		doc.Description = *req.Description
 	}
+	if req.ReadMode != nil {
+		doc.ReadMode = *req.ReadMode
+	}
+	if req.AllowDownload != nil {
+		doc.AllowDownload = *req.AllowDownload
+	}
+	if req.RequireFullRead != nil {
+		doc.RequireFullRead = *req.RequireFullRead
+	}
+	if req.VerifyChecksum != nil {
+		doc.VerifyChecksum = *req.VerifyChecksum
+	}
 
 	// Save document using CreateOrUpdate
 	input := models.DocumentInput{
@@ -548,6 +572,10 @@ func (h *Handler) HandleUpdateDocumentMetadata(w http.ResponseWriter, r *http.Re
 		Checksum:          doc.Checksum,
 		ChecksumAlgorithm: doc.ChecksumAlgorithm,
 		Description:       doc.Description,
+		ReadMode:          doc.ReadMode,
+		AllowDownload:     &doc.AllowDownload,
+		RequireFullRead:   &doc.RequireFullRead,
+		VerifyChecksum:    &doc.VerifyChecksum,
 	}
 	doc, err = h.adminService.UpdateDocumentMetadata(ctx, docID, input, user.Email)
 	if err != nil {

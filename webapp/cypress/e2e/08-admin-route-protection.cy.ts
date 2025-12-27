@@ -72,7 +72,7 @@ describe('Test 8: Admin Route Protection', () => {
     // Create document first as admin
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(targetDoc)
+    cy.get('[data-testid="new-doc-input"]').type(targetDoc)
     cy.contains('button', 'Confirm').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${targetDoc}`)
 

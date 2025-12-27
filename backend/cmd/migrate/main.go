@@ -157,7 +157,6 @@ func ensureAppRole(db *sql.DB) error {
 		return nil
 	}
 
-	// Check if role exists
 	var exists bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = 'ackify_app')").Scan(&exists)
 	if err != nil {
@@ -165,14 +164,12 @@ func ensureAppRole(db *sql.DB) error {
 	}
 
 	if exists {
-		// Update password to ensure it matches environment
 		_, err = db.Exec(fmt.Sprintf("ALTER ROLE ackify_app WITH PASSWORD '%s'", escapePassword(password)))
 		if err != nil {
 			return fmt.Errorf("failed to update ackify_app password: %w", err)
 		}
 		log.Println("ackify_app role exists, password updated")
 	} else {
-		// Create the role with all necessary attributes
 		createSQL := fmt.Sprintf(`
 			CREATE ROLE ackify_app WITH
 				LOGIN

@@ -5,6 +5,7 @@
   "nav": {
     "home": "Accueil",
     "myConfirmations": "Mes confirmations",
+    "myDocuments": "Mes documents",
     "admin": "Admin",
     "administration": "Administration",
     "login": "Se connecter",
@@ -53,12 +54,86 @@
       "error_send": "Échec de l'envoi du lien magique"
     }
   },
+  "home": {
+    "hero": {
+      "title": "Confirmation de Lecture",
+      "subtitle": "Certifiez cryptographiquement que vos documents ont été lus et compris",
+      "createError": "Impossible de créer le document",
+      "restricted": {
+        "title": "Création restreinte",
+        "description": "La création de documents est réservée aux administrateurs. Contactez votre administrateur pour obtenir un lien de document."
+      },
+      "form": {
+        "label": "URL du document",
+        "placeholder": "URL, chemin ou référence du document",
+        "hint": "Accepte les URLs, chemins de fichiers ou identifiants simples",
+        "submit": "Créer",
+        "submitLogin": "Se connecter"
+      }
+    },
+    "howItWorks": {
+      "title": "Comment ça fonctionne ?",
+      "subtitle": "Ackify vous permet de prouver cryptographiquement que vos documents ont été lus",
+      "step1": {
+        "title": "1. Accédez au document",
+        "description": "Entrez l'URL ou la référence du document à confirmer"
+      },
+      "step2": {
+        "title": "2. Lisez le contenu",
+        "description": "Consultez le document dans le lecteur intégré ou via le lien externe"
+      },
+      "step3": {
+        "title": "3. Confirmez",
+        "description": "Votre confirmation est enregistrée avec une signature cryptographique Ed25519"
+      }
+    },
+    "features": {
+      "crypto": {
+        "title": "Sécurité cryptographique",
+        "description": "Signatures Ed25519 non répudiables garantissant l'authenticité"
+      },
+      "instant": {
+        "title": "Instantané",
+        "description": "Confirmation en deux clics avec vérification cryptographique immédiate"
+      },
+      "timestamp": {
+        "title": "Horodatage précis",
+        "description": "Chaque confirmation est horodatée et chaînée pour garantir l'intégrité"
+      }
+    },
+    "saas": {
+      "badge": "Bientôt disponible",
+      "title": "Besoin de plus ?",
+      "description": "Gestion d'équipes, API avancée, tableaux de bord, intégrations et support dédié pour les entreprises.",
+      "button": "Découvrir Ackify Pro",
+      "note": "Disponible prochainement"
+    }
+  },
   "sign": {
     "title": "Confirmation de Lecture",
     "subtitle": "Certifiez votre lecture avec une confirmation cryptographique Ed25519",
     "loading": {
       "title": "Chargement du document...",
       "description": "Veuillez patienter pendant que nous préparons le document pour la signature."
+    },
+    "external": {
+      "title": "Document externe",
+      "description": "Veuillez lire le document ci-dessous avant de confirmer votre lecture.",
+      "openDocument": "Ouvrir le document",
+      "noUrl": "Aucune URL disponible pour ce document"
+    },
+    "alreadySigned": {
+      "title": "Lecture déjà confirmée",
+      "signedBy": "Confirmé par",
+      "email": "Email",
+      "signatureType": "Type de confirmation",
+      "ed25519": "Ed25519 cryptographique",
+      "downloadProof": "Télécharger la preuve"
+    },
+    "confirm": {
+      "title": "Confirmer votre lecture",
+      "readRequired": "Veuillez lire l'intégralité du document avant de confirmer.",
+      "certify": "Je certifie avoir lu et compris le contenu de ce document"
     },
     "noDocument": {
       "title": "Aucun document spécifié",
@@ -517,5 +592,209 @@
     "previous": "Précédent",
     "skipToContent": "Aller au contenu principal",
     "refresh": "Actualiser"
+  },
+  "documentViewer": {
+    "loading": "Chargement du document...",
+    "toolbar": {
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière",
+      "download": "Télécharger",
+      "openInNewTab": "Ouvrir dans un nouvel onglet",
+      "page": "Page {current} / {total}"
+    },
+    "progress": "{percent}% lu",
+    "scrollToRead": "Faites défiler pour lire le document",
+    "readComplete": "Lecture complète",
+    "pdfViewer": "Lecteur PDF",
+    "htmlViewer": "Contenu HTML",
+    "imageAlt": "Document image",
+    "error": {
+      "title": "Impossible de charger le document",
+      "loadFailed": "Le chargement du document a échoué",
+      "retry": "Réessayer",
+      "openExternal": "Ouvrir le lien"
+    },
+    "unsupported": {
+      "title": "Format non supporté",
+      "description": "Ce type de document ne peut pas être affiché dans le lecteur intégré.",
+      "openExternal": "Ouvrir le document"
+    }
+  },
+  "documentCreateForm": {
+    "url": {
+      "label": "Document",
+      "placeholder": "URL, PATH ou ID du document",
+      "helper": "Accepte les URLs, les chemins de fichiers ou les identifiants simples"
+    },
+    "submit": "Créer",
+    "submitting": "Création...",
+    "title": {
+      "label": "Titre",
+      "placeholder": "Auto-détecté si vide"
+    },
+    "readMode": {
+      "label": "Mode de lecture",
+      "integrated": "Lecteur intégré",
+      "external": "Lien externe"
+    },
+    "options": {
+      "title": "Options avancées",
+      "allowDownload": "Autoriser le téléchargement",
+      "requireFullRead": "Exiger la lecture complète",
+      "verifyChecksum": "Vérifier le checksum à chaque lecture"
+    },
+    "checksum": {
+      "label": "Checksum",
+      "placeholder": "Auto-calculé si vide"
+    },
+    "algorithm": {
+      "label": "Algorithme"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Description du document..."
+    },
+    "error": {
+      "urlRequired": "L'URL du document est requise",
+      "createFailed": "Échec de la création du document"
+    }
+  },
+  "myDocuments": {
+    "title": "Mes documents",
+    "subtitle": "Gérer les documents que vous avez créés",
+    "listTitle": "Liste des documents",
+    "results": "{count} résultat | {count} résultats",
+    "searchPlaceholder": "Rechercher par titre ou URL...",
+    "signatureCount": "signature | signatures",
+    "totalCount": "{count} document au total | {count} documents au total",
+    "noResults": "Aucun résultat",
+    "tryAnotherSearch": "Essayez une autre recherche",
+    "stats": {
+      "total": "Total",
+      "pending": "En attente",
+      "completed": "Complétés",
+      "totalDocuments": "Documents totaux",
+      "pendingDocuments": "En attente de signatures",
+      "completedDocuments": "Complétés"
+    },
+    "columns": {
+      "document": "Document",
+      "status": "Statut",
+      "createdAt": "Créé le",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "Voir",
+      "copyLink": "Copier le lien",
+      "delete": "Supprimer"
+    },
+    "empty": {
+      "title": "Aucun document",
+      "description": "Créez votre premier document pour commencer à suivre les confirmations de lecture"
+    },
+    "deleteConfirm": {
+      "title": "Supprimer ce document ?",
+      "message": "Cette action supprimera définitivement le document \"{title}\" et toutes les données associées."
+    },
+    "pagination": {
+      "page": "Page {current}/{total}"
+    }
+  },
+  "documentEdit": {
+    "title": "Édition du document",
+    "back": "Retour",
+    "breadcrumb": {
+      "myDocuments": "Mes documents"
+    },
+    "unauthorized": {
+      "title": "Accès non autorisé",
+      "description": "Vous n'avez pas les droits pour accéder à ce document.",
+      "backToDocuments": "Retour à mes documents"
+    },
+    "shareLink": {
+      "title": "Lien de partage",
+      "copy": "Copier",
+      "copied": "Copié !"
+    },
+    "stats": {
+      "expected": "Lecteurs attendus",
+      "confirmed": "Confirmés",
+      "pending": "En attente"
+    },
+    "metadata": {
+      "title": "Métadonnées",
+      "description": "Informations de base du document",
+      "titleLabel": "Titre",
+      "titlePlaceholder": "Titre du document",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://exemple.com/document.pdf",
+      "checksumLabel": "Checksum",
+      "checksumPlaceholder": "Empreinte du fichier (optionnel)",
+      "algorithmLabel": "Algorithme",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Description du document...",
+      "createdBy": "Créé par {by} le {date}",
+      "saving": "Enregistrement..."
+    },
+    "metadataSaved": "Métadonnées enregistrées avec succès",
+    "readers": {
+      "title": "Lecteurs attendus",
+      "confirmed": "confirmés",
+      "add": "Ajouter",
+      "filterPlaceholder": "Filtrer par email ou nom...",
+      "reader": "Lecteur",
+      "status": "Statut",
+      "confirmedOn": "Confirmé le",
+      "statusConfirmed": "Confirmé",
+      "statusPending": "En attente",
+      "noReaders": "Aucun lecteur attendu"
+    },
+    "signersAdded": "{count} lecteur(s) ajouté(s)",
+    "signerRemoved": "Lecteur {email} retiré",
+    "addSigners": {
+      "title": "Ajouter des lecteurs",
+      "emailsLabel": "Adresses email",
+      "emailsPlaceholder": "email{'@'}exemple.com\nNom Prénom <autre{'@'}exemple.com>",
+      "emailsHelper": "Une adresse email par ligne. Format: email ou Nom <email>",
+      "adding": "Ajout en cours...",
+      "add": "Ajouter"
+    },
+    "removeSigner": {
+      "title": "Retirer ce lecteur ?",
+      "message": "Êtes-vous sûr de vouloir retirer {email} de la liste des lecteurs attendus ?"
+    },
+    "reminders": {
+      "title": "Relances par email",
+      "description": "Envoyez des rappels aux lecteurs en attente",
+      "sent": "Rappels envoyés",
+      "toRemind": "À relancer",
+      "lastSent": "Dernier envoi",
+      "emailDisabled": "Le service d'envoi d'email n'est pas configuré.",
+      "sendToAll": "Envoyer à tous les lecteurs en attente ({count})",
+      "sendToSelected": "Envoyer aux lecteurs sélectionnés ({count})",
+      "sending": "Envoi en cours...",
+      "send": "Envoyer les rappels"
+    },
+    "confirmSendReminders": "Envoyer des rappels à {count} lecteur(s) en attente ?",
+    "confirmSendRemindersSelected": "Envoyer des rappels à {count} lecteur(s) sélectionné(s) ?",
+    "remindersSentSuccess": "{count} rappel(s) envoyé(s) avec succès",
+    "remindersSentPartial": "{sent} rappel(s) envoyé(s), {failed} échec(s)",
+    "remindersSentGeneric": "Rappels envoyés",
+    "sendReminders": {
+      "title": "Confirmer l'envoi"
+    },
+    "danger": {
+      "title": "Zone de danger",
+      "description": "Actions irréversibles sur ce document",
+      "deleteDocument": "Supprimer le document",
+      "deleteDescription": "Cette action supprimera définitivement le document et toutes les données associées."
+    },
+    "deleteConfirm": {
+      "title": "Supprimer ce document ?",
+      "warning": "Attention !",
+      "message": "Cette action est irréversible. Toutes les confirmations, lecteurs attendus et l'historique seront supprimés.",
+      "deleting": "Suppression...",
+      "confirm": "Supprimer définitivement"
+    }
   }
 }

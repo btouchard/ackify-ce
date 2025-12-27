@@ -450,7 +450,6 @@ onMounted(() => {
 <template>
   <div class="min-h-[calc(100vh-8rem)]">
     <main class="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-      <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center space-x-3 mb-2">
           <button
@@ -491,13 +490,11 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Loading -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
         <Loader2 :size="48" class="animate-spin text-blue-600" />
         <p class="mt-4 text-slate-500 dark:text-slate-400">{{ t('common.loading') }}</p>
       </div>
 
-      <!-- Content -->
       <div v-else-if="documentStatus" class="space-y-6">
         <!-- Stats Cards -->
         <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -616,7 +613,7 @@ onMounted(() => {
                   <Upload :size="16" />
                   {{ t('admin.documentDetail.importCSV') }}
                 </button>
-                <button @click="showAddSignersModal = true" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                <button @click="showAddSignersModal = true" data-testid="open-add-signers-btn" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
                   <Plus :size="16" />
                   {{ t('admin.documentDetail.addButton') }}
                 </button>
@@ -625,7 +622,6 @@ onMounted(() => {
           </div>
           <div class="p-6">
             <div v-if="expectedSigners.length > 0">
-              <!-- Filter -->
               <div class="relative mb-4">
                 <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input v-model="signerFilter" :placeholder="t('admin.documentDetail.filterPlaceholder')" class="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" name="ackify-signer-filter" autocomplete="off" data-1p-ignore data-lpignore="true" />
@@ -793,8 +789,7 @@ onMounted(() => {
       </div>
     </main>
 
-    <!-- Add Signers Modal -->
-    <div v-if="showAddSignersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showAddSignersModal = false">
+    <div v-if="showAddSignersModal" data-testid="add-signers-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showAddSignersModal = false">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-auto">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.addSigners') }}</h2>
@@ -806,12 +801,12 @@ onMounted(() => {
           <form @submit.prevent="addSigners" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.emailsLabel') }}</label>
-              <textarea v-model="signersEmails" rows="8" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              <textarea v-model="signersEmails" rows="8" data-testid="signers-textarea" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ t('admin.documentDetail.emailsHelper') }}</p>
             </div>
             <div class="flex justify-end space-x-3">
               <button type="button" @click="showAddSignersModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" data-testid="add-signers-btn" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
                 <Loader2 v-if="addingSigners" :size="16" class="animate-spin" />
                 {{ addingSigners ? t('admin.documentDetail.adding') : t('admin.documentDetail.addButton') }}
               </button>
@@ -821,7 +816,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Import CSV Modal -->
     <div v-if="showImportCSVModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="closeImportCSVModal">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-3xl w-full max-h-[90vh] overflow-auto">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -919,7 +913,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteConfirmModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirmModal = false">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800 max-w-md w-full">
         <div class="p-6 border-b border-red-100 dark:border-red-800/30 flex items-center justify-between">
@@ -991,7 +984,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Remove Signer Modal -->
     <div v-if="showRemoveSignerModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="cancelRemoveSigner">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-md w-full">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -1010,7 +1002,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Send Reminders Modal -->
     <div v-if="showSendRemindersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="cancelSendReminders">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-md w-full">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
