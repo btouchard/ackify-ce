@@ -55,15 +55,16 @@
   },
   "sign": {
     "title": "Confirmación de Lectura",
-    "subtitle": "Certifique su lectura con una confirmación criptográfica Ed25519",
+    "subtitle": "Certifique su lectura con una confirmación segura e irrefutable",
     "loading": {
       "title": "Cargando el documento...",
-      "description": "Por favor, espere mientras preparamos el documento para la firma."
+      "description": "Por favor, espere mientras preparamos el documento."
     },
     "noDocument": {
       "title": "Ningún documento especificado",
-      "description": "Para firmar un documento, añada el parámetro {code} a la URL",
-      "examples": "Ejemplos:"
+      "description": "Para confirmar la lectura de un documento, añada el parámetro {code} a la URL",
+      "examples": "Ejemplos:",
+      "orEnterReference": "O introduzca su referencia documental a continuación"
     },
     "success": {
       "title": "¡Lectura confirmada con éxito!",
@@ -87,7 +88,7 @@
       "recorded": "Su confirmación será registrada con la siguiente información:",
       "email": "Su dirección de email",
       "timestamp": "Marca de tiempo precisa de la confirmación",
-      "signature": "Confirmación criptográfica Ed25519",
+      "signature": "Huella criptográfica segura",
       "hash": "Hash SHA-256 del contenido"
     },
     "confirmations": {
@@ -101,7 +102,7 @@
     },
     "howItWorks": {
       "title": "¿Cómo funciona?",
-      "subtitle": "Ackify le permite probar criptográficamente que ha leído un documento",
+      "subtitle": "Ackify le permite atestiguar oficialmente que ha leído un documento",
       "step1": {
         "title": "1. Acceda al documento",
         "description": "Añada {code} a la dirección de esta página"
@@ -112,12 +113,12 @@
       },
       "step3": {
         "title": "3. Confirme la lectura",
-        "description": "Su confirmación se registra con una firma Ed25519"
+        "description": "Su confirmación se registra de manera segura y verificable"
       },
       "features": {
         "crypto": {
           "title": "Seguridad criptográfica",
-          "description": "Firmas Ed25519 irrefutables que garantizan la autenticidad"
+          "description": "Confirmaciones irrefutables que garantizan la autenticidad"
         },
         "instant": {
           "title": "Instantáneo",
@@ -206,7 +207,7 @@
     "allConfirmations": "Todas mis confirmaciones",
     "about": {
       "title": "Acerca de las confirmaciones",
-      "description": "Cada confirmación se registra criptográficamente con Ed25519 y se encadena para garantizar la integridad. Las confirmaciones son irrefutables y tienen una marca de tiempo precisa."
+      "description": "Cada confirmación se registra criptográficamente y se encadena para garantizar la integridad. Las confirmaciones son irrefutables y tienen una marca de tiempo precisa."
     },
     "search": "Buscar...",
     "error": {
@@ -447,17 +448,17 @@
     }
   },
   "embed": {
-    "loading": "Cargando información de la firma...",
-    "title": "Firma para",
+    "loading": "Cargando información de la confirmación...",
+    "title": "Confirmación para",
     "document": "Documento:",
-    "signedBy": "Firmado por",
+    "signedBy": "Confirmado por",
     "on": "el",
     "verified": "Verificado",
     "viewAll": "Ver todas las confirmaciones",
-    "error": "Imposible cargar la información de la firma",
-    "sign": "Firmar",
-    "signDocument": "Firmar este documento",
-    "noSignatures": "Ninguna firma para este documento",
+    "error": "Imposible cargar la información de la confirmación",
+    "sign": "Confirmar",
+    "signDocument": "Confirmar este documento",
+    "noSignatures": "Ninguna confirmación para este documento",
     "confirmationsCount": "{count} confirmación(es)",
     "poweredBy": "Desarrollado por Ackify",
     "missingDocId": "ID de documento faltante"
@@ -468,7 +469,7 @@
     "home": "Volver al inicio"
   },
   "footer": {
-    "description": "Solución de código abierto de confirmación criptográfica de lectura de documentos con firmas Ed25519 irrefutables.",
+    "description": "Solución de código abierto de confirmación criptográfica de lectura de documentos con atestaciones irrefutables.",
     "navigation": {
       "title": "Navegación"
     },

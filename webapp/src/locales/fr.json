@@ -55,15 +55,16 @@
   },
   "sign": {
     "title": "Confirmation de Lecture",
-    "subtitle": "Certifiez votre lecture avec une confirmation cryptographique Ed25519",
+    "subtitle": "Certifiez votre lecture avec une confirmation sécurisée et non répudiable",
     "loading": {
       "title": "Chargement du document...",
-      "description": "Veuillez patienter pendant que nous préparons le document pour la signature."
+      "description": "Veuillez patienter pendant que nous préparons le document."
     },
     "noDocument": {
       "title": "Aucun document spécifié",
-      "description": "Pour signer un document, ajoutez le paramètre {code} à l'URL",
-      "examples": "Exemples :"
+      "description": "Pour confirmer la lecture d'un document, ajoutez le paramètre {code} à l'URL",
+      "examples": "Exemples :",
+      "orEnterReference": "Ou saisissez votre référence documentaire ci-dessous"
     },
     "success": {
       "title": "Lecture confirmée avec succès !",
@@ -87,7 +88,7 @@
       "recorded": "Votre confirmation sera enregistrée avec les informations suivantes :",
       "email": "Votre adresse email",
       "timestamp": "Horodatage précis de la confirmation",
-      "signature": "Confirmation cryptographique Ed25519",
+      "signature": "Empreinte cryptographique sécurisée",
       "hash": "Hash SHA-256 du contenu"
     },
     "confirmations": {
@@ -101,7 +102,7 @@
     },
     "howItWorks": {
       "title": "Comment ça fonctionne ?",
-      "subtitle": "Ackify vous permet de prouver cryptographiquement que vous avez lu un document",
+      "subtitle": "Ackify vous permet d'attester officiellement que vous avez pris connaissance d'un document",
       "step1": {
         "title": "1. Accédez au document",
         "description": "Ajoutez {code} à l'adresse de cette page"
@@ -112,12 +113,12 @@
       },
       "step3": {
         "title": "3. Confirmez la lecture",
-        "description": "Votre confirmation est enregistrée avec une signature Ed25519"
+        "description": "Votre confirmation est enregistrée de manière sécurisée et vérifiable"
       },
       "features": {
         "crypto": {
           "title": "Sécurité cryptographique",
-          "description": "Signatures Ed25519 non répudiables garantissant l'authenticité"
+          "description": "Confirmations non répudiables garantissant l'authenticité"
         },
         "instant": {
           "title": "Instantané",
@@ -206,7 +207,7 @@
     "allConfirmations": "Toutes mes confirmations",
     "about": {
       "title": "À propos des confirmations",
-      "description": "Chaque confirmation est enregistrée de manière cryptographique avec Ed25519 et chaînée pour garantir l'intégrité. Les confirmations sont non répudiables et horodatées de façon précise."
+      "description": "Chaque confirmation est enregistrée de manière cryptographique et chaînée pour garantir l'intégrité. Les confirmations sont non répudiables et horodatées de façon précise."
     },
     "search": "Rechercher...",
     "error": {
@@ -444,17 +445,17 @@
     }
   },
   "embed": {
-    "loading": "Chargement des informations de signature...",
-    "title": "Signature pour",
+    "loading": "Chargement des informations de confirmation...",
+    "title": "Confirmation pour",
     "document": "Document:",
-    "signedBy": "Signé par",
+    "signedBy": "Confirmé par",
     "on": "le",
     "verified": "Vérifié",
     "viewAll": "Voir toutes les confirmations",
-    "error": "Impossible de charger les informations de signature",
-    "sign": "Signer",
-    "signDocument": "Signer ce document",
-    "noSignatures": "Aucune signature pour ce document",
+    "error": "Impossible de charger les informations de confirmation",
+    "sign": "Confirmer",
+    "signDocument": "Confirmer ce document",
+    "noSignatures": "Aucune confirmation pour ce document",
     "confirmationsCount": "{count} confirmation(s)",
     "poweredBy": "Powered by Ackify",
     "missingDocId": "ID de document manquant"
@@ -465,7 +466,7 @@
     "home": "Retour à l'accueil"
   },
   "footer": {
-    "description": "Solution open-source de confirmation cryptographique de lecture de documents avec signatures Ed25519 non répudiables.",
+    "description": "Solution open-source de confirmation cryptographique de lecture de documents avec attestations non répudiables.",
     "navigation": {
       "title": "Navigation"
     },

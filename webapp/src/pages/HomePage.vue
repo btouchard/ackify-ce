@@ -282,14 +282,17 @@ onMounted(async () => {
         <p class="text-slate-500 dark:text-slate-400 mb-4 max-w-md mx-auto">
           {{ t('sign.noDocument.description', { code: '?doc=' }) }}
         </p>
-        <div class="text-sm text-slate-500 dark:text-slate-400 space-y-2 max-w-md mx-auto">
+        <div class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
           <p class="font-medium text-slate-700 dark:text-slate-300">{{ t('sign.noDocument.examples') }}</p>
-          <code class="block px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=https://example.com/policy.pdf</code>
-          <code class="block px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=/path/to/document</code>
-          <code class="block px-3 py-2 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=my-unique-ref</code>
+          <div class="space-y-1 mt-2">
+            <code class="block px-3 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=https://example.com/policy.pdf</code>
+            <code class="block px-3 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=/path/to/document</code>
+            <code class="block px-3 bg-slate-50 dark:bg-slate-900 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400">/?doc=my-unique-ref</code>
+          </div>
 
           <!-- Document creation form -->
-          <DocumentForm v-if="canCreateDocument" class="mt-6" />
+          <p v-if="canCreateDocument" class="mt-6 mb-3 font-medium text-slate-700 dark:text-slate-300">{{ t('sign.noDocument.orEnterReference') }}</p>
+          <DocumentForm v-if="canCreateDocument" />
 
           <!-- Restricted message -->
           <div v-else class="mt-4 accent-border bg-amber-50 dark:bg-amber-900/20 rounded-r-lg p-4 text-left">

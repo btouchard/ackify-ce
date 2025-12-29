@@ -55,15 +55,16 @@
   },
   "sign": {
     "title": "Lesebestätigung",
-    "subtitle": "Bestätigen Sie Ihre Lektüre mit einer kryptografischen Ed25519-Bestätigung",
+    "subtitle": "Bestätigen Sie Ihre Lektüre mit einer sicheren und unwiderruflichen Bestätigung",
     "loading": {
       "title": "Dokument wird geladen...",
-      "description": "Bitte warten Sie, während wir das Dokument zur Signatur vorbereiten."
+      "description": "Bitte warten Sie, während wir das Dokument vorbereiten."
     },
     "noDocument": {
       "title": "Kein Dokument angegeben",
-      "description": "Um ein Dokument zu signieren, fügen Sie den Parameter {code} zur URL hinzu",
-      "examples": "Beispiele:"
+      "description": "Um die Lektüre eines Dokuments zu bestätigen, fügen Sie den Parameter {code} zur URL hinzu",
+      "examples": "Beispiele:",
+      "orEnterReference": "Oder geben Sie Ihre Dokumentenreferenz unten ein"
     },
     "success": {
       "title": "Lektüre erfolgreich bestätigt!",
@@ -87,7 +88,7 @@
       "recorded": "Ihre Bestätigung wird mit den folgenden Informationen aufgezeichnet:",
       "email": "Ihre E-Mail-Adresse",
       "timestamp": "Präziser Zeitstempel der Bestätigung",
-      "signature": "Kryptografische Ed25519-Bestätigung",
+      "signature": "Sicherer kryptografischer Fingerabdruck",
       "hash": "SHA-256-Hash des Inhalts"
     },
     "confirmations": {
@@ -101,7 +102,7 @@
     },
     "howItWorks": {
       "title": "Wie funktioniert es?",
-      "subtitle": "Ackify ermöglicht es Ihnen, kryptografisch zu beweisen, dass Sie ein Dokument gelesen haben",
+      "subtitle": "Ackify ermöglicht es Ihnen, offiziell zu bezeugen, dass Sie ein Dokument gelesen haben",
       "step1": {
         "title": "1. Auf das Dokument zugreifen",
         "description": "Fügen Sie {code} zur Adresse dieser Seite hinzu"
@@ -112,12 +113,12 @@
       },
       "step3": {
         "title": "3. Lektüre bestätigen",
-        "description": "Ihre Bestätigung wird mit einer Ed25519-Signatur aufgezeichnet"
+        "description": "Ihre Bestätigung wird sicher und überprüfbar aufgezeichnet"
       },
       "features": {
         "crypto": {
           "title": "Kryptografische Sicherheit",
-          "description": "Unwiderrufliche Ed25519-Signaturen garantieren die Authentizität"
+          "description": "Unwiderrufliche Bestätigungen garantieren die Authentizität"
         },
         "instant": {
           "title": "Sofort",
@@ -206,7 +207,7 @@
     "allConfirmations": "Alle meine Bestätigungen",
     "about": {
       "title": "Über Bestätigungen",
-      "description": "Jede Bestätigung wird kryptografisch mit Ed25519 aufgezeichnet und verkettet, um die Integrität zu gewährleisten. Bestätigungen sind unwiderruflich und präzise mit Zeitstempel versehen."
+      "description": "Jede Bestätigung wird kryptografisch aufgezeichnet und verkettet, um die Integrität zu gewährleisten. Bestätigungen sind unwiderruflich und präzise mit Zeitstempel versehen."
     },
     "search": "Suchen...",
     "error": {
@@ -447,17 +448,17 @@
     }
   },
   "embed": {
-    "loading": "Signaturinformationen werden geladen...",
-    "title": "Signatur für",
+    "loading": "Bestätigungsinformationen werden geladen...",
+    "title": "Bestätigung für",
     "document": "Dokument:",
-    "signedBy": "Signiert von",
+    "signedBy": "Bestätigt von",
     "on": "am",
     "verified": "Verifiziert",
     "viewAll": "Alle Bestätigungen ansehen",
-    "error": "Signaturinformationen können nicht geladen werden",
-    "sign": "Signieren",
-    "signDocument": "Dieses Dokument signieren",
-    "noSignatures": "Keine Signatur für dieses Dokument",
+    "error": "Bestätigungsinformationen können nicht geladen werden",
+    "sign": "Bestätigen",
+    "signDocument": "Dieses Dokument bestätigen",
+    "noSignatures": "Keine Bestätigung für dieses Dokument",
     "confirmationsCount": "{count} Bestätigung(en)",
     "poweredBy": "Powered by Ackify",
     "missingDocId": "Dokument-ID fehlt"
@@ -468,7 +469,7 @@
     "home": "Zurück zur Startseite"
   },
   "footer": {
-    "description": "Open-Source-Lösung für kryptografische Dokumentlesebestätigung mit unwiderruflichen Ed25519-Signaturen.",
+    "description": "Open-Source-Lösung für kryptografische Dokumentlesebestätigung mit unwiderruflichen Attestierungen.",
     "navigation": {
       "title": "Navigation"
     },

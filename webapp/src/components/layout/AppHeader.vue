@@ -22,19 +22,64 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const user = computed(() => authStore.user)
 
+// Extract name parts from email (before @, split by . - _)
+function extractNamePartsFromEmail(email: string): string[] {
+  const localPart = email.split('@')[0] || ''
+  return localPart.split(/[.\-_]+/).filter(p => p.length > 0)
+}
+
+// Capitalize first letter of a string
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+// Display name (for menu and header)
+const displayName = computed(() => {
+  // If user has a real name that's not just the email, use it
+  if (user.value?.name && user.value.name !== user.value.email) {
+    return user.value.name
+  }
+  // Otherwise extract from email
+  if (user.value?.email) {
+    const parts = extractNamePartsFromEmail(user.value.email)
+    if (parts.length > 0) {
+      return parts.map(capitalize).join(' ')
+    }
+  }
+  return user.value?.email || ''
+})
+
 // User initials for avatar
 const userInitials = computed(() => {
   if (!user.value?.name && !user.value?.email) return '?'
-  const name = user.value.name || user.value.email || ''
-  const parts = name.split(/[\s@]+/).filter(p => p.length > 0)
-  if (parts.length >= 2) {
-    const first = parts[0] ?? ''
-    const second = parts[1] ?? ''
-    if (first.length > 0 && second.length > 0) {
+
+  // If user has a real name, use it for initials
+  if (user.value?.name && user.value.name !== user.value.email) {
+    const nameParts = user.value.name.split(/\s+/).filter(p => p.length > 0)
+    if (nameParts.length >= 2) {
+      const first = nameParts[0] ?? ''
+      const second = nameParts[1] ?? ''
       return (first.charAt(0) + second.charAt(0)).toUpperCase()
     }
+    return user.value.name.slice(0, 2).toUpperCase()
   }
-  return name.slice(0, 2).toUpperCase()
+
+  // Extract from email
+  if (user.value?.email) {
+    const parts = extractNamePartsFromEmail(user.value.email)
+    if (parts.length >= 2) {
+      // nom.prenom@ or prenom.nom@ → 2 initials
+      const first = parts[0] ?? ''
+      const second = parts[1] ?? ''
+      return (first.charAt(0) + second.charAt(0)).toUpperCase()
+    }
+    if (parts.length === 1 && parts[0]) {
+      // Single word → 1 initial only
+      return parts[0].charAt(0).toUpperCase()
+    }
+  }
+
+  return '?'
 })
 
 const isActive = (path: string) => {
@@ -122,7 +167,7 @@ const closeUserMenu = () => {
               <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300">
                 {{ userInitials }}
               </div>
-              <span class="text-slate-700 dark:text-slate-200 hidden lg:inline">{{ user?.name || user?.email?.split('@')[0] }}</span>
+              <span class="text-slate-700 dark:text-slate-200 hidden lg:inline">{{ displayName }}</span>
               <ChevronDown :size="16" class="text-slate-400" />
             </button>
 
@@ -146,7 +191,7 @@ const closeUserMenu = () => {
                 <div class="p-2">
                   <!-- User info -->
                   <div class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-2">
-                    <p class="font-medium text-slate-900 dark:text-slate-100">{{ user?.name }}</p>
+                    <p class="font-medium text-slate-900 dark:text-slate-100">{{ displayName }}</p>
                     <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ user?.email }}</p>
                   </div>
 
@@ -256,7 +301,7 @@ const closeUserMenu = () => {
             <!-- User section -->
             <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
               <div class="px-3 py-2 mb-2">
-                <p class="font-medium text-slate-900 dark:text-slate-100">{{ user?.name }}</p>
+                <p class="font-medium text-slate-900 dark:text-slate-100">{{ displayName }}</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ user?.email }}</p>
               </div>
               <button

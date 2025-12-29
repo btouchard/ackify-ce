@@ -55,15 +55,16 @@
   },
   "sign": {
     "title": "Conferma di Lettura",
-    "subtitle": "Certifica la tua lettura con una conferma crittografica Ed25519",
+    "subtitle": "Certifica la tua lettura con una conferma sicura e non ripudiabile",
     "loading": {
       "title": "Caricamento del documento...",
-      "description": "Attendi mentre prepariamo il documento per la firma."
+      "description": "Attendi mentre prepariamo il documento."
     },
     "noDocument": {
       "title": "Nessun documento specificato",
-      "description": "Per firmare un documento, aggiungi il parametro {code} all'URL",
-      "examples": "Esempi:"
+      "description": "Per confermare la lettura di un documento, aggiungi il parametro {code} all'URL",
+      "examples": "Esempi:",
+      "orEnterReference": "Oppure inserisci il riferimento del documento qui sotto"
     },
     "success": {
       "title": "Lettura confermata con successo!",
@@ -87,7 +88,7 @@
       "recorded": "La tua conferma sarà registrata con le seguenti informazioni:",
       "email": "Il tuo indirizzo email",
       "timestamp": "Timestamp preciso della conferma",
-      "signature": "Conferma crittografica Ed25519",
+      "signature": "Impronta crittografica sicura",
       "hash": "Hash SHA-256 del contenuto"
     },
     "confirmations": {
@@ -101,7 +102,7 @@
     },
     "howItWorks": {
       "title": "Come funziona?",
-      "subtitle": "Ackify ti permette di provare crittograficamente di aver letto un documento",
+      "subtitle": "Ackify ti permette di attestare ufficialmente di aver letto un documento",
       "step1": {
         "title": "1. Accedi al documento",
         "description": "Aggiungi {code} all'indirizzo di questa pagina"
@@ -112,12 +113,12 @@
       },
       "step3": {
         "title": "3. Conferma la lettura",
-        "description": "La tua conferma è registrata con una firma Ed25519"
+        "description": "La tua conferma è registrata in modo sicuro e verificabile"
       },
       "features": {
         "crypto": {
           "title": "Sicurezza crittografica",
-          "description": "Firme Ed25519 non ripudiabili che garantiscono l'autenticità"
+          "description": "Conferme non ripudiabili che garantiscono l'autenticità"
         },
         "instant": {
           "title": "Istantaneo",
@@ -206,7 +207,7 @@
     "allConfirmations": "Tutte le mie conferme",
     "about": {
       "title": "Informazioni sulle conferme",
-      "description": "Ogni conferma viene registrata crittograficamente con Ed25519 e concatenata per garantire l'integrità. Le conferme sono irrevocabili e timestampate in modo preciso."
+      "description": "Ogni conferma viene registrata crittograficamente e concatenata per garantire l'integrità. Le conferme sono irrevocabili e timestampate in modo preciso."
     },
     "search": "Cerca...",
     "error": {
@@ -447,17 +448,17 @@
     }
   },
   "embed": {
-    "loading": "Caricamento delle informazioni di firma...",
-    "title": "Firma per",
+    "loading": "Caricamento delle informazioni di conferma...",
+    "title": "Conferma per",
     "document": "Documento:",
-    "signedBy": "Firmato da",
+    "signedBy": "Confermato da",
     "on": "il",
     "verified": "Verificato",
     "viewAll": "Vedi tutte le conferme",
-    "error": "Impossibile caricare le informazioni di firma",
-    "sign": "Firma",
-    "signDocument": "Firma questo documento",
-    "noSignatures": "Nessuna firma per questo documento",
+    "error": "Impossibile caricare le informazioni di conferma",
+    "sign": "Conferma",
+    "signDocument": "Conferma questo documento",
+    "noSignatures": "Nessuna conferma per questo documento",
     "confirmationsCount": "{count} conferma/e",
     "poweredBy": "Powered by Ackify",
     "missingDocId": "ID documento mancante"
@@ -468,7 +469,7 @@
     "home": "Torna alla home"
   },
   "footer": {
-    "description": "Soluzione open-source di conferma crittografica di lettura di documenti con firme Ed25519 non ripudiabili.",
+    "description": "Soluzione open-source di conferma crittografica di lettura di documenti con attestazioni non ripudiabili.",
     "navigation": {
       "title": "Navigazione"
     },
