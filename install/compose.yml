@@ -84,9 +84,9 @@ services:
     container_name: ackify-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: ackify
     volumes:
       - ackify_data:/var/lib/postgresql/data
     networks:
