@@ -6,6 +6,7 @@
       v-if="!isSigned"
       @click="handleSign"
       :disabled="loading || disabled || !docId"
+      data-testid="sign-button"
       :class="[
         'w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-medium rounded-lg transition-all min-h-[48px]',
         loading || disabled || !docId
@@ -56,7 +57,7 @@
     </button>
 
     <!-- Signed Status -->
-    <div v-else class="bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-4 sm:p-5">
+    <div v-else data-testid="sign-success" class="bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-xl p-4 sm:p-5">
       <div class="flex items-center justify-center gap-3">
         <div class="w-10 h-10 rounded-full verified-gradient flex items-center justify-center flex-shrink-0">
           <svg

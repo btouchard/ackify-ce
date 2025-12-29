@@ -24,16 +24,16 @@ describe('Test 1: User Signature Workflow (MagicLink)', () => {
     })
 
     // Step 4: Sign the document
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible').click()
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
 
     // Step 5: Verify success message
-    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
 
     // Step 6: Verify signature appears in the list
     cy.contains('confirmation', { timeout: 5000 }).should('be.visible')
     cy.contains(testEmail).should('be.visible')
 
     // Step 7: Verify button is no longer present (already confirmed)
-    cy.contains('button', 'Confirm reading').should('not.exist')
+    cy.get('[data-testid="sign-button"]').should('not.exist')
   })
 })

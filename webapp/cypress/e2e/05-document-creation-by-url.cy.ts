@@ -25,7 +25,7 @@ describe('Test 5: Document Creation by URL', () => {
     cy.contains('example.com/policy.pdf', { timeout: 10000 }).should('be.visible')
 
     // Step 5: Should be able to sign
-    cy.contains('button', 'Confirm reading').should('be.visible')
+    cy.get('[data-testid="sign-button"]').should('be.visible')
   })
 
   it('should accept full URL as docId and create document', () => {
@@ -40,7 +40,7 @@ describe('Test 5: Document Creation by URL', () => {
     cy.url({ timeout: 15000 }).should('include', '/?doc=')
 
     // Document should be created and signable
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible')
 
     // Should display the URL in metadata
     cy.contains('docs.example.com/terms').should('be.visible')
@@ -57,7 +57,7 @@ describe('Test 5: Document Creation by URL', () => {
     cy.url({ timeout: 10000 }).should('include', '/?doc=')
 
     // Should be signable
-    cy.contains('button', 'Confirm reading').should('be.visible')
+    cy.get('[data-testid="sign-button"]').should('be.visible')
   })
 
   it('should handle simple docId references', () => {
@@ -71,6 +71,6 @@ describe('Test 5: Document Creation by URL', () => {
     cy.url({ timeout: 10000 }).should('include', `/?doc=${simpleDocId}`)
 
     // Should create document
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible')
   })
 })

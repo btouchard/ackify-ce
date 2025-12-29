@@ -64,6 +64,7 @@ const handleSubmit = async () => {
       <Input
         v-model="documentUrl"
         type="text"
+        data-testid="doc-form-input"
         :placeholder="$t('admin.documentForm.placeholder')"
         class="flex-1 h-11"
         :disabled="isSubmitting"
@@ -72,6 +73,7 @@ const handleSubmit = async () => {
       <Button
         @click="handleSubmit"
         size="lg"
+        data-testid="doc-form-submit"
         class="group whitespace-nowrap"
         :disabled="isSubmitting"
       >

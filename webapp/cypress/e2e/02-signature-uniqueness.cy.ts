@@ -17,10 +17,10 @@ describe('Test 2: Signature Uniqueness Verification', () => {
 
     // Step 2: Sign the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible').click()
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
 
     // Step 3: Verify success and button changes
-    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
     cy.contains('Confirmed').should('be.visible')
 
     // Step 4: Verify signature in list
@@ -32,7 +32,7 @@ describe('Test 2: Signature Uniqueness Verification', () => {
 
     // Step 6: Verify "already signed" status persists
     cy.contains('Confirmed', { timeout: 10000 }).should('be.visible')
-    cy.contains('button', 'Confirm reading').should('not.exist')
+    cy.get('[data-testid="sign-button"]').should('not.exist')
 
     // Step 7: Verify signature still in list
     cy.contains(testEmail).should('be.visible')

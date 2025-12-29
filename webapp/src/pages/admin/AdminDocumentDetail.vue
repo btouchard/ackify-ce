@@ -500,51 +500,51 @@ onMounted(() => {
       <!-- Content -->
       <div v-else-if="documentStatus" class="space-y-6">
         <!-- Stats Cards -->
-        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-4" data-testid="stats-cards">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-expected">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                 <Users :size="20" class="text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.expected') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.expectedCount }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-expected-value">{{ stats.expectedCount }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-signed">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                 <CheckCircle :size="20" class="text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.signed') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.signedCount }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-signed-value">{{ stats.signedCount }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-pending">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
                 <Clock :size="20" class="text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.pending') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.pendingCount }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-pending-value">{{ stats.pendingCount }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-completion">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                 <Shield :size="20" class="text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.completion') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ Math.round(stats.completionRate) }}%</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-completion-value">{{ Math.round(stats.completionRate) }}%</p>
               </div>
             </div>
           </div>
@@ -616,7 +616,7 @@ onMounted(() => {
                   <Upload :size="16" />
                   {{ t('admin.documentDetail.importCSV') }}
                 </button>
-                <button @click="showAddSignersModal = true" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                <button @click="showAddSignersModal = true" data-testid="add-signers-btn" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
                   <Plus :size="16" />
                   {{ t('admin.documentDetail.addButton') }}
                 </button>
@@ -763,7 +763,7 @@ onMounted(() => {
                   <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('admin.documentDetail.sendToSelected', { count: selectedEmails.length }) }}</span>
                 </label>
               </div>
-              <button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)" data-testid="send-reminders-btn" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
                 <Mail :size="16" />
                 {{ sendingReminders ? t('admin.documentDetail.sending') : t('admin.documentDetail.sendReminders') }}
               </button>
@@ -783,7 +783,7 @@ onMounted(() => {
                 <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">{{ t('admin.documentDetail.deleteDocument') }}</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.deleteDocumentDescription') }}</p>
               </div>
-              <button @click="showDeleteConfirmModal = true" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors flex-shrink-0">
+              <button @click="showDeleteConfirmModal = true" data-testid="delete-doc-btn" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors flex-shrink-0">
                 <Trash2 :size="16" />
                 {{ t('common.delete') }}
               </button>
@@ -794,7 +794,7 @@ onMounted(() => {
     </main>
 
     <!-- Add Signers Modal -->
-    <div v-if="showAddSignersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showAddSignersModal = false">
+    <div v-if="showAddSignersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" data-testid="add-signers-modal" @click.self="showAddSignersModal = false">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-auto">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.addSigners') }}</h2>
@@ -806,12 +806,12 @@ onMounted(() => {
           <form @submit.prevent="addSigners" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.emailsLabel') }}</label>
-              <textarea v-model="signersEmails" rows="8" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              <textarea v-model="signersEmails" rows="8" data-testid="add-signers-textarea" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ t('admin.documentDetail.emailsHelper') }}</p>
             </div>
             <div class="flex justify-end space-x-3">
               <button type="button" @click="showAddSignersModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" data-testid="add-signers-submit" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
                 <Loader2 v-if="addingSigners" :size="16" class="animate-spin" />
                 {{ addingSigners ? t('admin.documentDetail.adding') : t('admin.documentDetail.addButton') }}
               </button>
@@ -946,7 +946,7 @@ onMounted(() => {
 
           <div class="flex justify-end space-x-3 pt-4">
             <button type="button" @click="showDeleteConfirmModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-            <button @click="handleDeleteDocument" :disabled="deletingDocument" class="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+            <button @click="handleDeleteDocument" :disabled="deletingDocument" data-testid="delete-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
               <Trash2 v-if="!deletingDocument" :size="16" />
               <Loader2 v-else :size="16" class="animate-spin" />
               {{ deletingDocument ? t('admin.documentDetail.deleting') : t('admin.documentDetail.deleteConfirmButton') }}

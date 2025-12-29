@@ -72,9 +72,10 @@ describe('SignButton Component', () => {
 
       await flushPromises()
 
-      // Should show signed status (no button visible)
+      // Should show signed status (no button visible, confirmed status visible)
       expect(wrapper.find('button').exists()).toBe(false)
-      expect(wrapper.find('.signed-status').exists()).toBe(true)
+      // Check for emerald-colored status container (signed state UI)
+      expect(wrapper.find('.bg-emerald-50').exists()).toBe(true)
     })
 
     it('should not show signed status when different user has signed', async () => {

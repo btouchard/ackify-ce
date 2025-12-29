@@ -20,24 +20,24 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     cy.contains('Administration', { timeout: 10000 }).should('be.visible')
 
     // Step 3: Create new document
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
+    cy.get('[data-testid="admin-create-doc-btn"]').click()
 
     // Step 4: Should redirect to document detail page
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
     cy.contains('Document').should('be.visible')
 
     // Step 5: Add 3 expected signers
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Modal should appear
-    cy.contains('Add expected readers').should('be.visible')
+    cy.get('[data-testid="add-signers-modal"]').should('be.visible')
 
     // Wait for modal to be fully rendered
     cy.wait(500)
 
     // Add signers (Name <email> format and plain email)
-    cy.get('textarea[placeholder*="Jane"]').type(
+    cy.get('[data-testid="add-signers-textarea"]').type(
       'Alice Smith <alice@test.com>{enter}bob@test.com{enter}Charlie Brown <charlie@test.com>',
       { delay: 50 }
     )
@@ -45,8 +45,8 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     // Wait a bit for Vue reactivity
     cy.wait(300)
 
-    // Submit the form by clicking the submit button (find button of type submit)
-    cy.get('button[type="submit"]').contains('Add').click()
+    // Submit the form
+    cy.get('[data-testid="add-signers-submit"]').click()
 
     // Wait for modal to close
     cy.contains('Add expected readers', { timeout: 15000 }).should('not.exist')
@@ -74,24 +74,24 @@ describe('Test 3: Admin - Expected Signers Management', () => {
 
     // Create document
     const removeDocId = 'test-remove-signer-' + Date.now()
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(removeDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="admin-new-doc-input"]').type(removeDocId)
+    cy.get('[data-testid="admin-create-doc-btn"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${removeDocId}`)
 
     // Add 2 signers
-    cy.contains('button', 'Add').first().click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Wait for modal to be fully rendered
     cy.wait(500)
 
-    cy.get('textarea[placeholder*="Jane"]').type('alice@test.com{enter}bob@test.com', { delay: 50 })
+    cy.get('[data-testid="add-signers-textarea"]').type('alice@test.com{enter}bob@test.com', { delay: 50 })
 
     // Wait a bit for Vue reactivity
     cy.wait(300)
 
-    // Submit the form by clicking the submit button (find button of type submit)
-    cy.get('button[type="submit"]').contains('Add').click()
+    // Submit the form
+    cy.get('[data-testid="add-signers-submit"]').click()
 
     // Wait for modal to close
     cy.contains('Add expected readers', { timeout: 15000 }).should('not.exist')

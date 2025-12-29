@@ -213,6 +213,7 @@ onMounted(() => {
               v-model="newDocId"
               type="text"
               required
+              data-testid="admin-new-doc-input"
               :placeholder="t('admin.documents.idPlaceholder')"
               class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
@@ -223,6 +224,7 @@ onMounted(() => {
           <button
             type="submit"
             :disabled="!newDocId || creating"
+            data-testid="admin-create-doc-btn"
             class="trust-gradient text-white font-medium rounded-lg px-6 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 sm:self-start"
           >
             <FileText v-if="!creating" :size="16" />

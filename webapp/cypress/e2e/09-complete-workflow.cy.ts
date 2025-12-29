@@ -19,17 +19,17 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
+    cy.get('[data-testid="admin-create-doc-btn"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // ===== STEP 2: Admin adds 3 expected signers =====
     cy.log('STEP 2: Admin adds 3 expected signers')
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('textarea[placeholder*="Jane"]').type(`${alice}\n${bob}\n${charlie}`, { delay: 50 })
+    cy.get('[data-testid="add-signers-textarea"]').type(`${alice}\n${bob}\n${charlie}`, { delay: 50 })
     cy.wait(300)
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-submit"]').click()
 
     cy.contains(alice, { timeout: 10000 }).should('be.visible')
     cy.contains(bob).should('be.visible')
@@ -43,7 +43,7 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.log('STEP 3: Admin sends reminders to all signers')
     cy.clearMailbox()
 
-    cy.contains('button', 'Send reminders').click()
+    cy.get('[data-testid="send-reminders-btn"]').click()
     cy.contains('This action is irreversible', { timeout: 5000 }).should('be.visible')
     cy.contains('button', 'Confirm').click()
 
@@ -82,8 +82,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
       cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
 
       // Alice signs
-      cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
-      cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+      cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+      cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
     })
 
     // ===== STEP 5: Verify stats: 1/3 signed (33%) =====
@@ -102,8 +102,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginViaMagicLink(bob, `/?doc=${docId}`)
 
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
-    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 7: Verify stats: 2/3 signed (66%) =====
     cy.log('STEP 7: Verify completion stats after Bob signs')
@@ -119,7 +119,7 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.log('STEP 8: Admin sends reminder to remaining signer')
     cy.clearMailbox()
 
-    cy.contains('button', 'Send reminders').click()
+    cy.get('[data-testid="send-reminders-btn"]').click()
     cy.contains('This action is irreversible', { timeout: 5000 }).should('be.visible')
     cy.contains('button', 'Confirm').click()
 
@@ -153,8 +153,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginViaMagicLink(charlie, `/?doc=${docId}`)
 
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
-    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 10: Verify stats: 3/3 signed (100% completion) =====
     cy.log('STEP 10: Verify 100% completion')

@@ -26,16 +26,16 @@
     <!-- Document info and signatures -->
     <div v-else-if="documentData" class="max-w-2xl mx-auto">
       <!-- Document header with signatures -->
-      <div v-if="documentData.signatures.length > 0">
+      <div v-if="documentData.signatures.length > 0" data-testid="embed-has-signatures">
         <!-- Header Card -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 mb-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 mb-4" data-testid="embed-header">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div class="min-w-0">
               <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">
                 {{ documentData.title }}
               </h2>
               <div class="flex items-center gap-2 mt-2 text-sm text-slate-500 dark:text-slate-400">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium rounded-full" data-testid="embed-signature-count">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                   </svg>
@@ -47,6 +47,7 @@
             <a
               :href="signUrl"
               target="_blank"
+              data-testid="embed-sign-link"
               class="inline-flex items-center justify-center gap-2 trust-gradient text-white font-medium rounded-lg px-5 py-2.5 hover:opacity-90 transition-opacity whitespace-nowrap min-h-[44px]"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,10 +59,11 @@
         </div>
 
         <!-- Signatures list -->
-        <div class="space-y-2">
+        <div class="space-y-2" data-testid="embed-signatures-list">
           <div
             v-for="signature in documentData.signatures"
             :key="signature.id"
+            data-testid="embed-signature-item"
             class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between gap-3"
           >
             <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -78,7 +80,7 @@
       </div>
 
       <!-- Empty state - No signatures yet -->
-      <div v-else class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 sm:p-12 text-center">
+      <div v-else data-testid="embed-empty-state" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 sm:p-12 text-center">
         <div class="w-16 h-16 mx-auto bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-4">
           <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>

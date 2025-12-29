@@ -16,16 +16,16 @@ describe('Test 7: Admin - Document Deletion', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
+    cy.get('[data-testid="admin-create-doc-btn"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('textarea[placeholder*="Jane"]').type(`alice@test.com\n${testUser}`, { delay: 50 })
+    cy.get('[data-testid="add-signers-textarea"]').type(`alice@test.com\n${testUser}`, { delay: 50 })
     cy.wait(300)
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-submit"]').click()
 
     cy.contains('alice@test.com', { timeout: 10000 }).should('be.visible')
 
@@ -35,8 +35,8 @@ describe('Test 7: Admin - Document Deletion', () => {
 
     // Step 4: User signs the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
-    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
 
     // Step 5: Logout and login back as admin
     cy.logout()
@@ -48,12 +48,12 @@ describe('Test 7: Admin - Document Deletion', () => {
 
     // Step 7: Delete the document
     cy.contains('Danger zone', { timeout: 10000 }).should('be.visible')
-    cy.contains('button', 'Delete').click()
+    cy.get('[data-testid="delete-doc-btn"]').click()
 
     // Step 8: Confirm deletion in modal
     cy.contains('This action is irreversible', { timeout: 5000 }).should('be.visible')
     cy.contains(docId).should('be.visible')
-    cy.contains('button', 'Delete permanently').click()
+    cy.get('[data-testid="delete-confirm-btn"]').click()
 
     // Step 9: Should redirect to admin dashboard
     cy.url({ timeout: 10000 }).should('eq', Cypress.config('baseUrl') + '/admin')
@@ -84,13 +84,13 @@ describe('Test 7: Admin - Document Deletion', () => {
     cy.visit('/admin')
 
     const safeDocId = 'safe-doc-' + Date.now()
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(safeDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="admin-new-doc-input"]').type(safeDocId)
+    cy.get('[data-testid="admin-create-doc-btn"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${safeDocId}`)
 
     // Try to delete
-    cy.contains('button', 'Delete').click()
+    cy.get('[data-testid="delete-doc-btn"]').click()
 
     // Modal should appear with warning
     cy.contains('This action is irreversible', { timeout: 5000 }).should('be.visible')

@@ -17,23 +17,23 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('input#newDocId, input#newDocIdMobile').first().type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
+    cy.get('[data-testid="admin-create-doc-btn"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
-    cy.contains('button', 'Add').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Wait for modal
     cy.wait(500)
 
-    cy.get('textarea[placeholder*="Jane"]').type(`${alice}{enter}${bob}`, { delay: 50 })
+    cy.get('[data-testid="add-signers-textarea"]').type(`${alice}{enter}${bob}`, { delay: 50 })
 
     // Wait for Vue reactivity
     cy.wait(300)
 
     // Submit form
-    cy.get('button[type="submit"]').contains('Add').click()
+    cy.get('[data-testid="add-signers-submit"]').click()
 
     // Verify signers added
     cy.contains(alice, { timeout: 10000 }).should('be.visible')
@@ -45,8 +45,8 @@ describe('Test 4: Admin - Email Reminders', () => {
 
     // Step 4: Alice signs the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible').click()
-    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
+    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
+    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
 
     // Step 5: Logout Alice and login back as admin
     cy.logout()
@@ -64,7 +64,7 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.clearMailbox() // Clear previous emails
 
     // Click send reminders button
-    cy.contains('button', 'Send reminders').click()
+    cy.get('[data-testid="send-reminders-btn"]').click()
 
     // Confirm in modal
     cy.contains('Send reminders', { timeout: 5000 }).should('be.visible')
