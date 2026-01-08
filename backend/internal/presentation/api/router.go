@@ -23,8 +23,10 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/proxy"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/signatures"
+	apiStorage "github.com/btouchard/ackify-ce/backend/internal/presentation/api/storage"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/users"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
+	"github.com/btouchard/ackify-ce/backend/pkg/storage"
 )
 
 // magicLinkService defines magic link authentication operations
@@ -117,6 +119,10 @@ type RouterConfig struct {
 	WebhookService   webhookService
 	WebhookPublisher webhookPublisher
 
+	// Storage
+	StorageProvider  storage.Provider // Optional, for document file storage
+	StorageMaxSizeMB int64            // Maximum upload size in MB
+
 	// Configuration
 	BaseURL           string
 	AutoLogin         bool
@@ -182,6 +188,13 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	)
 	signaturesHandler := signatures.NewHandler(cfg.SignatureService, cfg.AdminService, cfg.WebhookPublisher)
 	proxyHandler := proxy.NewHandler(cfg.DocumentService)
+
+	// Storage handler (optional - only if storage is configured)
+	maxSizeMB := cfg.StorageMaxSizeMB
+	if maxSizeMB == 0 {
+		maxSizeMB = 50 // Default: 50 MB
+	}
+	storageHandler := apiStorage.NewHandler(cfg.StorageProvider, cfg.DocumentService, maxSizeMB)
 
 	// Public routes
 	r.Group(func(r chi.Router) {
@@ -249,6 +262,9 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 				r.Get("/find-or-create", documentsHandler.HandleFindOrCreateDocument)
 			})
 		})
+
+		// Storage configuration endpoint (public, tells frontend if storage is enabled)
+		r.Get("/storage/config", storageHandler.HandleStorageConfig)
 	})
 
 	// Authenticated routes
@@ -270,6 +286,17 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 		// Document signature status (authenticated)
 		r.Get("/documents/{docId}/signatures/status", signaturesHandler.HandleGetSignatureStatus)
+
+		// Document content (authenticated - serves stored files)
+		r.Get("/documents/{docId}/content", storageHandler.HandleContent)
+
+		// Document upload (authenticated, with rate limiting)
+		if storageHandler.IsEnabled() {
+			r.Group(func(r chi.Router) {
+				r.Use(documentRateLimit.Middleware)
+				r.Post("/documents/upload", storageHandler.HandleUpload)
+			})
+		}
 	})
 
 	// Admin routes

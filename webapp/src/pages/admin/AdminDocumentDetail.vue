@@ -23,7 +23,6 @@ import {
   Users,
   CheckCircle,
   Mail,
-  Shield,
   Plus,
   Loader2,
   Copy,
@@ -36,6 +35,14 @@ import {
   FileX,
   Search,
   AlertCircle,
+  ChevronRight,
+  ExternalLink,
+  Check,
+  FileText,
+  Eye,
+  Download,
+  ScrollText,
+  ShieldCheck,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -74,12 +81,20 @@ const metadataForm = ref<Partial<{
   checksum: string
   checksumAlgorithm: string
   description: string
+  readMode: string
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
 }>>({
   title: '',
   url: '',
   checksum: '',
   checksumAlgorithm: 'SHA-256',
   description: '',
+  readMode: 'integrated',
+  allowDownload: true,
+  requireFullRead: false,
+  verifyChecksum: true,
 })
 const originalMetadata = ref<Partial<{
   title: string
@@ -87,6 +102,10 @@ const originalMetadata = ref<Partial<{
   checksum: string
   checksumAlgorithm: string
   description: string
+  readMode: string
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
 }>>({})
 const savingMetadata = ref(false)
 
@@ -124,6 +143,11 @@ const filteredSigners = computed(() => {
 })
 const unexpectedSignatures = computed(() => documentStatus.value?.unexpectedSignatures || [])
 const documentMetadata = computed(() => documentStatus.value?.document)
+const documentTitle = computed(() => documentMetadata.value?.title || docId.value)
+const isStoredDocument = computed(() => !!documentMetadata.value?.storageKey)
+
+// Copy feedback
+const copied = ref(false)
 
 // Methods
 async function loadDocumentStatus() {
@@ -142,6 +166,10 @@ async function loadDocumentStatus() {
         checksum: doc.checksum || '',
         checksumAlgorithm: doc.checksumAlgorithm || 'SHA-256',
         description: doc.description || '',
+        readMode: doc.readMode || 'integrated',
+        allowDownload: doc.allowDownload ?? true,
+        requireFullRead: doc.requireFullRead ?? false,
+        verifyChecksum: doc.verifyChecksum ?? true,
       }
       metadataForm.value = { ...metadata }
       originalMetadata.value = { ...metadata }
@@ -159,7 +187,9 @@ function hasCriticalFieldsChanged(): boolean {
     metadataForm.value.url !== originalMetadata.value.url ||
     metadataForm.value.checksum !== originalMetadata.value.checksum ||
     metadataForm.value.checksumAlgorithm !== originalMetadata.value.checksumAlgorithm ||
-    metadataForm.value.description !== originalMetadata.value.description
+    metadataForm.value.description !== originalMetadata.value.description ||
+    metadataForm.value.readMode !== originalMetadata.value.readMode ||
+    metadataForm.value.requireFullRead !== originalMetadata.value.requireFullRead
   )
 }
 
@@ -315,10 +345,14 @@ function cancelSendReminders() {
   showSendRemindersModal.value = false
 }
 
-function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text)
-  success.value = t('admin.documentDetail.copiedToClipboard')
-  setTimeout(() => (success.value = ''), 2000)
+async function copyToClipboard() {
+  try {
+    await navigator.clipboard.writeText(shareLink.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 2000)
+  } catch (err) {
+    console.error('Failed to copy:', err)
+  }
 }
 
 function formatDate(dateString: string | undefined): string {
@@ -450,29 +484,33 @@ onMounted(() => {
 <template>
   <div class="min-h-[calc(100vh-8rem)]">
     <main class="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-      <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-2">
-          <button
-            @click="router.push('/admin')"
-            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            :aria-label="t('admin.documentDetail.back')"
-          >
-            <ArrowLeft :size="20" class="text-slate-600 dark:text-slate-400" />
-          </button>
-          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            {{ t('admin.documentDetail.title') }} <span class="font-mono text-blue-600 dark:text-blue-400">{{ docId }}</span>
-          </h1>
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 text-sm mb-6">
+        <router-link to="/admin" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+          {{ t('admin.title') }}
+        </router-link>
+        <ChevronRight :size="16" class="text-slate-300 dark:text-slate-600" />
+        <span class="text-slate-900 dark:text-slate-100 font-medium truncate max-w-[200px]">{{ documentTitle }}</span>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+            <FileText class="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{{ documentTitle }}</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ t('admin.documentDetail.subtitle') }}</p>
+          </div>
         </div>
-        <div class="flex items-center gap-3 ml-11">
-          <p class="text-sm text-slate-500 dark:text-slate-400 font-mono truncate">{{ shareLink }}</p>
-          <button
-            @click="copyToClipboard(shareLink)"
-            class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            :aria-label="t('signatureList.copy')"
-          >
-            <Copy :size="14" class="text-slate-400" />
-          </button>
-        </div>
+        <button
+          @click="router.push('/admin')"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium rounded-lg px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
+        >
+          <ArrowLeft :size="18" />
+          {{ t('common.back') }}
+        </button>
       </div>
 
       <!-- Alerts -->
@@ -496,15 +534,45 @@ onMounted(() => {
       </div>
 
       <div v-else-if="documentStatus" class="space-y-6">
+        <!-- Share Link Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100 mb-4">{{ t('documentEdit.shareLink.title') }}</h2>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1 relative">
+              <input
+                type="text"
+                :value="shareLink"
+                readonly
+                class="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm font-mono"
+              />
+              <a
+                :href="shareLink"
+                target="_blank"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <ExternalLink :size="16" />
+              </a>
+            </div>
+            <button
+              @click="copyToClipboard"
+              class="inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+            >
+              <Check v-if="copied" :size="16" class="text-emerald-500" />
+              <Copy v-else :size="16" />
+              {{ copied ? t('documentEdit.shareLink.copied') : t('documentEdit.shareLink.copy') }}
+            </button>
+          </div>
+        </div>
+
         <!-- Stats Cards -->
-        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-3">
           <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                 <Users :size="20" class="text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.expected') }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('documentEdit.stats.expected') }}</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.expectedCount }}</p>
               </div>
             </div>
@@ -516,7 +584,7 @@ onMounted(() => {
                 <CheckCircle :size="20" class="text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.signed') }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('documentEdit.stats.confirmed') }}</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.signedCount }}</p>
               </div>
             </div>
@@ -528,20 +596,8 @@ onMounted(() => {
                 <Clock :size="20" class="text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.pending') }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('documentEdit.stats.pending') }}</p>
                 <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.pendingCount }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                <Shield :size="20" class="text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.completion') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ Math.round(stats.completionRate) }}%</p>
               </div>
             </div>
           </div>
@@ -555,12 +611,12 @@ onMounted(() => {
           </div>
           <div class="p-6">
             <form @submit.prevent="handleSaveMetadata" class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div :class="['grid gap-4', isStoredDocument ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2']">
                 <div>
                   <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.titleLabel') }}</label>
-                  <input v-model="metadataForm.title" :placeholder="t('admin.documentDetail.titlePlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input v-model="metadataForm.title" data-testid="document-title-input" :placeholder="t('admin.documentDetail.titlePlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
-                <div>
+                <div v-if="!isStoredDocument">
                   <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.urlLabel') }}</label>
                   <input v-model="metadataForm.url" type="url" :placeholder="t('admin.documentDetail.urlPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
@@ -584,6 +640,46 @@ onMounted(() => {
               <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.descriptionLabel') }}</label>
                 <textarea v-model="metadataForm.description" rows="4" :placeholder="t('admin.documentDetail.descriptionPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              </div>
+
+              <!-- Reader Options -->
+              <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">{{ t('documentCreateForm.readMode.label') }}</h3>
+
+                <!-- Read mode -->
+                <div class="flex gap-4 mb-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="metadataForm.readMode" value="integrated" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+                    <Eye class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.readMode.integrated') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="metadataForm.readMode" value="external" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+                    <ExternalLink class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.readMode.external') }}</span>
+                  </label>
+                </div>
+
+                <!-- Integrated mode options -->
+                <div v-if="metadataForm.readMode === 'integrated'" class="pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-3 mb-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="metadataForm.allowDownload" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    <Download class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.allowDownload') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="metadataForm.requireFullRead" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    <ScrollText class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.requireFullRead') }}</span>
+                  </label>
+                </div>
+
+                <!-- Verify checksum -->
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="metadataForm.verifyChecksum" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                  <ShieldCheck class="w-4 h-4 text-slate-500" />
+                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.verifyChecksum') }}</span>
+                </label>
               </div>
 
               <div v-if="documentMetadata" class="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700">

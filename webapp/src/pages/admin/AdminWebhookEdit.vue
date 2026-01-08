@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { availableWebhookEvents, createWebhook, getWebhook, updateWebhook, type WebhookInput, type Webhook } from '@/services/webhooks'
 import { extractError } from '@/services/http'
-import { Loader2, Save, ArrowLeft, Webhook as WebhookIcon } from 'lucide-vue-next'
+import { Loader2, Save, ArrowLeft, Webhook as WebhookIcon, ChevronRight } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -87,7 +87,22 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-sm mb-6">
+      <router-link to="/admin" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+        {{ t('admin.title') }}
+      </router-link>
+      <ChevronRight :size="16" class="text-slate-300 dark:text-slate-600" />
+      <router-link :to="{ name: 'admin-webhooks' }" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+        {{ t('admin.webhooks.title') }}
+      </router-link>
+      <ChevronRight :size="16" class="text-slate-300 dark:text-slate-600" />
+      <span class="text-slate-900 dark:text-slate-100 font-medium truncate max-w-[200px]">
+        {{ isNew ? t('admin.webhooks.new') : (title || t('admin.webhooks.editTitle')) }}
+      </span>
+    </nav>
+
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
       <div class="flex items-start gap-4">

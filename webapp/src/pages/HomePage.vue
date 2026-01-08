@@ -23,13 +23,13 @@ import {
   Download,
   Check,
   Eye,
-  ArrowRight,
   Sparkles,
   Lock
 } from 'lucide-vue-next'
 import SignButton from '@/components/SignButton.vue'
 import SignatureList from '@/components/SignatureList.vue'
 import DocumentViewer from '@/components/viewer/DocumentViewer.vue'
+import DocumentCreateForm from '@/components/DocumentCreateForm.vue'
 import { documentService, type FindOrCreateDocumentResponse } from '@/services/documents'
 import { detectReference } from '@/services/referenceDetector'
 import { calculateFileChecksum } from '@/services/checksumCalculator'
@@ -46,10 +46,6 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const canCreateDocuments = computed(() => authStore.canCreateDocuments)
 const currentDocument = ref<FindOrCreateDocumentResponse | null>(null)
 
-// Quick create form
-const quickCreateUrl = ref('')
-const quickCreateLoading = ref(false)
-const quickCreateError = ref<string | null>(null)
 
 const documentSignatures = ref<any[]>([])
 const loadingSignatures = ref(false)
@@ -97,6 +93,11 @@ async function loadDocumentSignatures() {
   loadingSignatures.value = true
   try {
     documentSignatures.value = await signatureStore.fetchDocumentSignatures(docId.value)
+
+    // If user has already signed, mark read as complete
+    if (userHasSigned.value) {
+      readComplete.value = true
+    }
   } catch (error) {
     console.error('Failed to load document signatures:', error)
   } finally {
@@ -159,31 +160,6 @@ function handleLoginClick() {
   authStore.startOAuthLogin(route.fullPath)
 }
 
-async function handleQuickCreate() {
-  if (!quickCreateUrl.value.trim()) return
-
-  quickCreateError.value = null
-  quickCreateLoading.value = true
-
-  try {
-    // If not authenticated, redirect to login with next parameter
-    if (!isAuthenticated.value) {
-      // Store the URL to create after login
-      const nextUrl = `/documents/new?ref=${encodeURIComponent(quickCreateUrl.value.trim())}`
-      router.push({ name: 'auth-choice', query: { next: nextUrl } })
-      return
-    }
-
-    // Create document and redirect to edit page
-    const doc = await documentService.findOrCreateDocument(quickCreateUrl.value.trim())
-    router.push({ name: 'document-edit', params: { id: doc.docId } })
-  } catch (error: any) {
-    console.error('Failed to create document:', error)
-    quickCreateError.value = error.message || t('home.hero.createError')
-  } finally {
-    quickCreateLoading.value = false
-  }
-}
 
 async function calculateAndUpdateChecksum(docId: string, url: string) {
   try {
@@ -378,14 +354,6 @@ onMounted(async () => {
           <!-- Quick Create Card -->
           <div class="max-w-xl mx-auto">
             <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-              <!-- Error message -->
-              <div v-if="quickCreateError" class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                <div class="flex items-start gap-2">
-                  <AlertTriangle :size="16" class="mt-0.5 text-red-600 dark:text-red-400 flex-shrink-0" />
-                  <p class="text-sm text-red-800 dark:text-red-200">{{ quickCreateError }}</p>
-                </div>
-              </div>
-
               <!-- Creation restricted message -->
               <div v-if="isAuthenticated && !canCreateDocuments" class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                 <div class="flex items-start gap-3">
@@ -397,36 +365,17 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- Form -->
-              <form v-else @submit.prevent="handleQuickCreate" class="space-y-4">
-                <div>
-                  <label for="quick-create-url" class="sr-only">{{ t('home.hero.form.label') }}</label>
-                  <div class="flex gap-2">
-                    <input
-                      id="quick-create-url"
-                      v-model="quickCreateUrl"
-                      type="text"
-                      :placeholder="t('home.hero.form.placeholder')"
-                      :disabled="quickCreateLoading"
-                      class="flex-1 px-4 py-3 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <button
-                      type="submit"
-                      :disabled="!quickCreateUrl.trim() || quickCreateLoading"
-                      class="inline-flex items-center gap-2 trust-gradient text-white font-medium rounded-lg px-6 py-3 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Loader2 v-if="quickCreateLoading" :size="18" class="animate-spin" />
-                      <template v-else>
-                        {{ isAuthenticated ? t('home.hero.form.submit') : t('home.hero.form.submitLogin') }}
-                        <ArrowRight :size="16" />
-                      </template>
-                    </button>
-                  </div>
-                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {{ t('home.hero.form.hint') }}
-                  </p>
-                </div>
-              </form>
+              <!-- Document Create Form -->
+              <DocumentCreateForm
+                v-else
+                mode="hero"
+                :show-upload-button="isAuthenticated"
+                redirect-route="document-edit"
+              />
+
+              <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+                {{ t('home.hero.form.hint') }}
+              </p>
             </div>
           </div>
         </div>
@@ -592,12 +541,18 @@ onMounted(async () => {
           <!-- Left: Document Zone (2/3) -->
           <div class="lg:col-span-2 space-y-6">
             <!-- Integrated Viewer -->
-            <div v-if="isIntegratedMode && currentDocument.url">
+            <div v-if="isIntegratedMode && (currentDocument.url || currentDocument.storageKey)">
               <DocumentViewer
                 :document-id="docId"
-                :url="currentDocument.url"
+                :url="currentDocument.url || ''"
                 :allow-download="allowDownload"
                 :require-full-read="requiresFullRead"
+                :is-stored="!!currentDocument.storageKey"
+                :stored-mime-type="currentDocument.mimeType"
+                :already-read="userHasSigned"
+                :verify-checksum="currentDocument.verifyChecksum"
+                :stored-checksum="currentDocument.checksum"
+                :checksum-algorithm="currentDocument.checksumAlgorithm"
                 @read-complete="handleReadComplete"
               />
             </div>

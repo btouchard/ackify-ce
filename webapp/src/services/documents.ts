@@ -1,9 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import http, { type ApiResponse } from './http'
+import axios from 'axios'
+import http, { type ApiResponse, API_BASE } from './http'
 
 export interface CreateDocumentRequest {
   reference: string
   title?: string
+}
+
+export interface UploadDocumentResponse {
+  doc_id: string
+  title: string
+  storage_key: string
+  storage_provider: string
+  file_size: number
+  mime_type: string
+  checksum: string
+  checksum_algorithm: string
+  created_at: string
+  is_new: boolean
+}
+
+export interface UploadProgress {
+  loaded: number
+  total: number
+  percent: number
 }
 
 export interface CreateDocumentResponse {
@@ -26,6 +46,9 @@ export interface FindOrCreateDocumentResponse {
   verifyChecksum: boolean
   createdAt: string
   isNew: boolean // true if created, false if found
+  // Storage fields for uploaded documents
+  storageKey?: string
+  mimeType?: string
 }
 
 // MyDocument represents a document in the user's document list
@@ -111,6 +134,53 @@ export const documentService = {
    */
   async deleteDocument(docId: string): Promise<void> {
     await http.delete(`/admin/documents/${docId}`)
+  },
+
+  /**
+   * Upload a file and create a document
+   * @param file File to upload
+   * @param title Optional title for the document
+   * @param onProgress Optional callback for upload progress
+   * @returns Upload response with document info
+   */
+  async uploadDocument(
+    file: File,
+    title?: string,
+    onProgress?: (progress: UploadProgress) => void
+  ): Promise<UploadDocumentResponse> {
+    // Get CSRF token first
+    const csrfResponse = await axios.get(`${API_BASE}/csrf`, { withCredentials: true })
+    const csrfToken = csrfResponse.data.data?.token || csrfResponse.data.token
+
+    const formData = new FormData()
+    formData.append('file', file)
+    if (title) {
+      formData.append('title', title)
+    }
+
+    const response = await axios.post<ApiResponse<UploadDocumentResponse>>(
+      `${API_BASE}/documents/upload`,
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-CSRF-Token': csrfToken,
+        },
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            onProgress({
+              loaded: progressEvent.loaded,
+              total: progressEvent.total,
+              percent,
+            })
+          }
+        },
+      }
+    )
+
+    return response.data.data
   },
 }
 

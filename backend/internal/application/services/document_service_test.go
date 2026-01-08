@@ -401,6 +401,18 @@ func (m *mockDocumentRepository) Count(_ context.Context, _ string) (int, error)
 	return 0, nil
 }
 
+func (m *mockDocumentRepository) ListByCreatedBy(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
+}
+
+func (m *mockDocumentRepository) SearchByCreatedBy(_ context.Context, _, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
+}
+
+func (m *mockDocumentRepository) CountByCreatedBy(_ context.Context, _, _ string) (int, error) {
+	return 0, nil
+}
+
 // Test CreateDocument with URL reference
 func TestDocumentService_CreateDocument_WithURL(t *testing.T) {
 	mockRepo := &mockDocumentRepository{}

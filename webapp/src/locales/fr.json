@@ -395,6 +395,7 @@
     },
     "documentDetail": {
       "title": "Document",
+      "subtitle": "Gérer les métadonnées et les lecteurs attendus",
       "metadata": "📄 Informations sur le document",
       "metadataDescription": "Métadonnées et checksum du document",
       "checksum": "Checksum",
@@ -618,13 +619,36 @@
       "title": "Format non supporté",
       "description": "Ce type de document ne peut pas être affiché dans le lecteur intégré.",
       "openExternal": "Ouvrir le document"
+    },
+    "pdfFallback": {
+      "title": "Aperçu PDF indisponible",
+      "description": "Votre navigateur ne peut pas afficher ce PDF en ligne. Veuillez le télécharger ou l'ouvrir dans un nouvel onglet."
+    },
+    "pdfReadConfirm": {
+      "message": "Veuillez confirmer que vous avez lu ce document en entier.",
+      "button": "J'ai lu ce document"
+    },
+    "checksum": {
+      "valid": "Intégrité vérifiée",
+      "invalid": "Intégrité compromise",
+      "mismatchTitle": "Attention : Le document a été modifié",
+      "mismatchDescription": "Le checksum du document ne correspond pas à celui enregistré. Le document peut avoir été altéré depuis sa création.",
+      "expected": "Attendu",
+      "actual": "Calculé"
     }
   },
   "documentCreateForm": {
     "url": {
       "label": "Document",
       "placeholder": "URL, PATH ou ID du document",
-      "helper": "Accepte les URLs, les chemins de fichiers ou les identifiants simples"
+      "placeholderWithUpload": "Référence, URL ou cliquez sur l'icône pour uploader",
+      "helper": "Accepte les URLs, les chemins de fichiers ou les identifiants simples",
+      "helperWithUpload": "Accepte les URLs, chemins, identifiants ou fichiers uploadés (PDF, images, documents)"
+    },
+    "upload": {
+      "button": "Uploader un fichier",
+      "submit": "Uploader",
+      "uploading": "Upload en cours..."
     },
     "submit": "Créer",
     "submitting": "Création...",
@@ -702,6 +726,7 @@
   },
   "documentEdit": {
     "title": "Édition du document",
+    "subtitle": "Gérer les métadonnées et les lecteurs attendus",
     "back": "Retour",
     "breadcrumb": {
       "myDocuments": "Mes documents"

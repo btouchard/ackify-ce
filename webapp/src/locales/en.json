@@ -398,6 +398,7 @@
     },
     "documentDetail": {
       "title": "Document",
+      "subtitle": "Manage metadata and expected readers",
       "metadata": "📄 Document information",
       "metadataDescription": "Document metadata and checksum",
       "checksum": "Checksum",
@@ -621,13 +622,36 @@
       "title": "Unsupported format",
       "description": "This document type cannot be displayed in the embedded viewer.",
       "openExternal": "Open document"
+    },
+    "pdfFallback": {
+      "title": "PDF preview unavailable",
+      "description": "Your browser cannot display this PDF inline. Please download or open it in a new tab."
+    },
+    "pdfReadConfirm": {
+      "message": "Please confirm that you have fully read this document.",
+      "button": "I have read this document"
+    },
+    "checksum": {
+      "valid": "Integrity verified",
+      "invalid": "Integrity compromised",
+      "mismatchTitle": "Warning: Document has been modified",
+      "mismatchDescription": "The document checksum does not match the one recorded. The document may have been altered since its creation.",
+      "expected": "Expected",
+      "actual": "Calculated"
     }
   },
   "documentCreateForm": {
     "url": {
       "label": "Document",
       "placeholder": "URL, PATH or document ID",
-      "helper": "Accepts URLs, file paths or simple identifiers"
+      "placeholderWithUpload": "Reference, URL or click the icon to upload",
+      "helper": "Accepts URLs, file paths or simple identifiers",
+      "helperWithUpload": "Accepts URLs, paths, identifiers or uploaded files (PDF, images, documents)"
+    },
+    "upload": {
+      "button": "Upload a file",
+      "submit": "Upload",
+      "uploading": "Uploading..."
     },
     "submit": "Create",
     "submitting": "Creating...",
@@ -705,6 +729,7 @@
   },
   "documentEdit": {
     "title": "Edit document",
+    "subtitle": "Manage metadata and expected readers",
     "back": "Back",
     "breadcrumb": {
       "myDocuments": "My documents"

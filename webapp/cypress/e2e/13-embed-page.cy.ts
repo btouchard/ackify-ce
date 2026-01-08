@@ -37,7 +37,7 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.visitWithLocale(`/?doc=${sharedDocId}`, 'en')
 
     // Wait for page to load and show the confirm button
-    cy.contains('button', 'Confirm', { timeout: 10000 }).should('be.visible').click()
+    cy.confirmReading()
 
     // Wait for success message
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
@@ -67,7 +67,7 @@ describe('Test 13: Embed Page Functionality', () => {
     users.forEach((email) => {
       cy.loginViaMagicLink(email)
       cy.visitWithLocale(`/?doc=${sharedDocId}`, 'en')
-      cy.contains('button', 'Confirm', { timeout: 10000 }).click()
+      cy.confirmReading()
       cy.contains('successfully', { timeout: 10000 }).should('be.visible')
       cy.clearCookies()
     })
@@ -94,10 +94,8 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.loginViaMagicLink(uniqueEmail)
     cy.visitWithLocale(`/?doc=${encodeURIComponent(embedDocUrl)}`, 'en')
 
-    // Wait for button to be clickable
-    cy.contains('button', 'Confirm', { timeout: 10000 }).should('be.visible')
-    cy.wait(500) // Small wait for page stabilization
-    cy.contains('button', 'Confirm').click()
+    // Sign the document
+    cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
     // Step 2: Visit embed page with URL
@@ -139,14 +137,14 @@ describe('Test 13: Embed Page Functionality', () => {
     // Step 1: Create signature for doc1
     cy.loginViaMagicLink('embed-nav-user1@test.com')
     cy.visitWithLocale(`/?doc=${doc1}`, 'en')
-    cy.contains('button', 'Confirm', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
     // Step 2: Create signature for doc2 with different user
     cy.clearCookies()
     cy.loginViaMagicLink('embed-nav-user2@test.com')
     cy.visitWithLocale(`/?doc=${doc2}`, 'en')
-    cy.contains('button', 'Confirm', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
     // Step 3: Visit embed page for doc1
@@ -185,7 +183,7 @@ describe('Test 13: Embed Page Functionality', () => {
     users.forEach((email, index) => {
       cy.loginViaMagicLink(email)
       cy.visitWithLocale(`/?doc=${chronoDocId}`, 'en')
-      cy.contains('button', 'Confirm', { timeout: 10000 }).click()
+      cy.confirmReading()
       cy.contains('successfully', { timeout: 10000 }).should('be.visible')
       cy.clearCookies()
 
@@ -217,7 +215,7 @@ describe('Test 13: Embed Page Functionality', () => {
     // Step 1: Create signature with long email
     cy.loginViaMagicLink(longEmail)
     cy.visitWithLocale(`/?doc=${longEmailDocId}`, 'en')
-    cy.contains('button', 'Confirm', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
     // Step 2: Visit embed page

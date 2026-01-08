@@ -400,6 +400,9 @@ type FindOrCreateDocumentResponse struct {
 	VerifyChecksum    bool   `json:"verifyChecksum"`
 	CreatedAt         string `json:"createdAt"`
 	IsNew             bool   `json:"isNew"`
+	// Storage fields for uploaded documents
+	StorageKey string `json:"storageKey,omitempty"`
+	MimeType   string `json:"mimeType,omitempty"`
 }
 
 // HandleFindOrCreateDocument handles GET /api/v1/documents/find-or-create?ref={reference}
@@ -452,6 +455,8 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 			VerifyChecksum:    existingDoc.VerifyChecksum,
 			CreatedAt:         existingDoc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			IsNew:             false,
+			StorageKey:        existingDoc.StorageKey,
+			MimeType:          existingDoc.MimeType,
 		}
 
 		shared.WriteJSON(w, http.StatusOK, response)
@@ -506,6 +511,8 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		VerifyChecksum:    doc.VerifyChecksum,
 		CreatedAt:         doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		IsNew:             isNew,
+		StorageKey:        doc.StorageKey,
+		MimeType:          doc.MimeType,
 	}
 
 	shared.WriteJSON(w, http.StatusOK, response)

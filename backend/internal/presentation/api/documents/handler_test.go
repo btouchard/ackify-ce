@@ -148,6 +148,18 @@ func (m *mockDocumentService) ListExpectedSigners(_ context.Context, _ string) (
 	return []*models.ExpectedSigner{}, nil
 }
 
+func (m *mockDocumentService) ListByCreatedBy(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{testDoc}, nil
+}
+
+func (m *mockDocumentService) SearchByCreatedBy(_ context.Context, _, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{testDoc}, nil
+}
+
+func (m *mockDocumentService) CountByCreatedBy(_ context.Context, _, _ string) (int, error) {
+	return 1, nil
+}
+
 // Mock signature service
 type mockSignatureService struct {
 	getDocumentSignaturesFunc func(ctx context.Context, docID string) ([]*models.Signature, error)

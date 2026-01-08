@@ -29,8 +29,9 @@ type SignatureRepository interface {
 // __ACKIFY_OAUTH_ENABLED__ and __ACKIFY_MAGICLINK_ENABLED__ with auth method flags,
 // __ACKIFY_SMTP_ENABLED__ with SMTP availability flag,
 // __ACKIFY_ONLY_ADMIN_CAN_CREATE__ with document creation restriction flag,
+// __ACKIFY_STORAGE_ENABLED__ with storage availability flag,
 // and __META_TAGS__ with dynamic meta tags based on query parameters
-func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, signatureRepo SignatureRepository) http.HandlerFunc {
+func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, storageEnabled bool, signatureRepo SignatureRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fsys, err := fs.Sub(fsEmbed, targetPath)
 		if err != nil {
@@ -69,7 +70,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 		defer file.Close()
 
 		if shouldServeIndex || strings.HasSuffix(cleanPath, "index.html") {
-			serveIndexTemplate(w, r, file, baseURL, version, oauthEnabled, magicLinkEnabled, smtpEnabled, onlyAdminCanCreate, signatureRepo)
+			serveIndexTemplate(w, r, file, baseURL, version, oauthEnabled, magicLinkEnabled, smtpEnabled, onlyAdminCanCreate, storageEnabled, signatureRepo)
 			return
 		}
 
@@ -78,7 +79,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 	}
 }
 
-func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, signatureRepo SignatureRepository) {
+func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, storageEnabled bool, signatureRepo SignatureRepository) {
 	content, err := io.ReadAll(file)
 	if err != nil {
 		logger.Logger.Error("Failed to read index.html", "error", err.Error())
@@ -105,11 +106,16 @@ func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, ba
 	if onlyAdminCanCreate {
 		onlyAdminCanCreateStr = "true"
 	}
+	storageEnabledStr := "false"
+	if storageEnabled {
+		storageEnabledStr = "true"
+	}
 
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_OAUTH_ENABLED__", oauthEnabledStr)
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_MAGICLINK_ENABLED__", magicLinkEnabledStr)
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_SMTP_ENABLED__", smtpEnabledStr)
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_ONLY_ADMIN_CAN_CREATE__", onlyAdminCanCreateStr)
+	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_STORAGE_ENABLED__", storageEnabledStr)
 
 	metaTags := generateMetaTags(r, baseURL, signatureRepo)
 	processedContent = strings.ReplaceAll(processedContent, "__META_TAGS__", metaTags)

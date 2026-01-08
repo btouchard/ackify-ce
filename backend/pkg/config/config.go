@@ -19,8 +19,29 @@ type Config struct {
 	Auth      AuthConfig
 	OAuth     OAuthConfig
 	Mail      MailConfig
+	Storage   StorageConfig
 	Logger    LoggerConfig
 	Telemetry bool
+}
+
+type StorageConfig struct {
+	Type      string // "local", "s3", or "" (disabled)
+	MaxSizeMB int64  // Max file size in MB (default: 50)
+
+	// Local storage
+	LocalPath string // Path for local storage (default: /data/documents)
+
+	// S3-compatible storage
+	S3Endpoint  string
+	S3Bucket    string
+	S3AccessKey string
+	S3SecretKey string
+	S3Region    string
+	S3UseSSL    bool
+}
+
+func (s *StorageConfig) IsEnabled() bool {
+	return s.Type == "local" || s.Type == "s3"
 }
 
 type AuthConfig struct {
@@ -256,6 +277,29 @@ func Load() (*Config, error) {
 
 	// CSV import configuration
 	config.App.ImportMaxSigners = getEnvInt("ACKIFY_IMPORT_MAX_SIGNERS", 500)
+
+	// Storage configuration (optional, disabled if ACKIFY_STORAGE_TYPE not set)
+	storageType := strings.ToLower(getEnv("ACKIFY_STORAGE_TYPE", ""))
+	if storageType == "local" || storageType == "s3" {
+		config.Storage.Type = storageType
+		config.Storage.MaxSizeMB = getEnvInt64("ACKIFY_STORAGE_MAX_SIZE_MB", 50)
+
+		if storageType == "local" {
+			config.Storage.LocalPath = getEnv("ACKIFY_STORAGE_LOCAL_PATH", "/data/documents")
+		} else if storageType == "s3" {
+			config.Storage.S3Endpoint = getEnv("ACKIFY_STORAGE_S3_ENDPOINT", "")
+			config.Storage.S3Bucket = getEnv("ACKIFY_STORAGE_S3_BUCKET", "")
+			config.Storage.S3AccessKey = getEnv("ACKIFY_STORAGE_S3_ACCESS_KEY", "")
+			config.Storage.S3SecretKey = getEnv("ACKIFY_STORAGE_S3_SECRET_KEY", "")
+			config.Storage.S3Region = getEnv("ACKIFY_STORAGE_S3_REGION", "us-east-1")
+			config.Storage.S3UseSSL = getEnvBool("ACKIFY_STORAGE_S3_USE_SSL", true)
+
+			// Validate S3 configuration
+			if config.Storage.S3Bucket == "" {
+				return nil, fmt.Errorf("S3 storage enabled but ACKIFY_STORAGE_S3_BUCKET not set")
+			}
+		}
+	}
 
 	// Telemetry configuration
 	config.Telemetry = getEnv("ACKIFY_TELEMETRY", "false") != "false" && getEnv("DO_NOT_TRACK", "") != "1"

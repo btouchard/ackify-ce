@@ -12,9 +12,17 @@ export interface Document {
   checksum?: string
   checksumAlgorithm?: string
   description: string
+  readMode: string
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
   createdAt: string
   updatedAt: string
   createdBy: string
+  storageKey?: string
+  storageProvider?: string
+  fileSize?: number
+  mimeType?: string
 }
 
 export interface ExpectedSigner {
@@ -106,6 +114,10 @@ export async function updateDocumentMetadata(
     checksum: string
     checksumAlgorithm: string
     description: string
+    readMode: string
+    allowDownload: boolean
+    requireFullRead: boolean
+    verifyChecksum: boolean
   }>
 ): Promise<ApiResponse<{ message: string; document: Document }>> {
   const response = await http.put(`/admin/documents/${docId}/metadata`, metadata)

@@ -34,6 +34,7 @@ Prouvez que vos collaborateurs ont lu et pris connaissance de documents importan
 - ✅ Piste d'audit immutable
 - ✅ Tracking signataires attendus avec rappels email
 - ✅ Vérification checksums documents (SHA-256/512, MD5)
+- ✅ Stockage de documents optionnel (système de fichiers local ou compatible S3)
 - ✅ Widgets intégrables publics (Notion, Outline, etc.)
 - ✅ Dashboard admin (Vue.js 3 + mode sombre)
 - ✅ Multilingue (fr, en, es, de, it)
@@ -173,6 +174,7 @@ Voir [docs/fr/configuration.md](docs/fr/configuration.md) pour toutes les option
 - **[Signatures](docs/fr/features/signatures.md)** - Flow cryptographique Ed25519
 - **[Signataires Attendus](docs/fr/features/expected-signers.md)** - Tracking & rappels
 - **[Checksums](docs/fr/features/checksums.md)** - Vérification intégrité documents
+- **[Stockage Documents](docs/fr/features/storage.md)** - Upload optionnel (local ou S3)
 - **[Embedding](docs/fr/features/embedding.md)** - oEmbed, iframes, intégrations
 - **[i18n](docs/fr/features/i18n.md)** - Internationalisation (5 langues)
 

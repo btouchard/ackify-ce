@@ -80,6 +80,10 @@ type DocumentResponse struct {
 	CreatedAt         string `json:"createdAt"`
 	UpdatedAt         string `json:"updatedAt"`
 	CreatedBy         string `json:"createdBy"`
+	StorageKey        string `json:"storageKey,omitempty"`
+	StorageProvider   string `json:"storageProvider,omitempty"`
+	FileSize          int64  `json:"fileSize,omitempty"`
+	MimeType          string `json:"mimeType,omitempty"`
 }
 
 // ExpectedSignerResponse represents an expected signer in API responses
@@ -339,6 +343,10 @@ func toDocumentResponse(doc *models.Document) *DocumentResponse {
 		CreatedAt:         doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		UpdatedAt:         doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		CreatedBy:         doc.CreatedBy,
+		StorageKey:        doc.StorageKey,
+		StorageProvider:   doc.StorageProvider,
+		FileSize:          doc.FileSize,
+		MimeType:          doc.MimeType,
 	}
 }
 
@@ -565,7 +573,7 @@ func (h *Handler) HandleUpdateDocumentMetadata(w http.ResponseWriter, r *http.Re
 		doc.VerifyChecksum = *req.VerifyChecksum
 	}
 
-	// Save document using CreateOrUpdate
+	// Save document using CreateOrUpdate (preserve storage fields from existing document)
 	input := models.DocumentInput{
 		Title:             doc.Title,
 		URL:               doc.URL,
@@ -576,6 +584,11 @@ func (h *Handler) HandleUpdateDocumentMetadata(w http.ResponseWriter, r *http.Re
 		AllowDownload:     &doc.AllowDownload,
 		RequireFullRead:   &doc.RequireFullRead,
 		VerifyChecksum:    &doc.VerifyChecksum,
+		StorageKey:        doc.StorageKey,
+		StorageProvider:   doc.StorageProvider,
+		FileSize:          doc.FileSize,
+		MimeType:          doc.MimeType,
+		OriginalFilename:  doc.OriginalFilename,
 	}
 	doc, err = h.adminService.UpdateDocumentMetadata(ctx, docID, input, user.Email)
 	if err != nil {

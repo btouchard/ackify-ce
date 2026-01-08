@@ -31,6 +31,11 @@ import {
   ChevronRight,
   ExternalLink,
   Check,
+  FileText,
+  Eye,
+  Download,
+  ScrollText,
+  ShieldCheck,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -62,12 +67,20 @@ const metadataForm = ref<Partial<{
   checksum: string
   checksumAlgorithm: string
   description: string
+  readMode: string
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
 }>>({
   title: '',
   url: '',
   checksum: '',
   checksumAlgorithm: 'SHA-256',
   description: '',
+  readMode: 'integrated',
+  allowDownload: true,
+  requireFullRead: false,
+  verifyChecksum: true,
 })
 const savingMetadata = ref(false)
 
@@ -108,6 +121,7 @@ const filteredSigners = computed(() => {
 })
 const documentMetadata = computed(() => documentStatus.value?.document)
 const documentTitle = computed(() => documentMetadata.value?.title || docId.value)
+const isStoredDocument = computed(() => !!documentMetadata.value?.storageKey)
 
 // Methods
 async function loadDocumentStatus() {
@@ -133,6 +147,10 @@ async function loadDocumentStatus() {
         checksum: doc.checksum || '',
         checksumAlgorithm: doc.checksumAlgorithm || 'SHA-256',
         description: doc.description || '',
+        readMode: doc.readMode || 'integrated',
+        allowDownload: doc.allowDownload ?? true,
+        requireFullRead: doc.requireFullRead ?? false,
+        verifyChecksum: doc.verifyChecksum ?? true,
       }
     }
   } catch (err: any) {
@@ -341,19 +359,23 @@ onMounted(async () => {
       </nav>
 
       <!-- Page Header -->
-      <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-2">
-          <button
-            @click="router.push('/documents')"
-            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            :aria-label="t('documentEdit.back')"
-          >
-            <ArrowLeft :size="20" class="text-slate-600 dark:text-slate-400" />
-          </button>
-          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            {{ documentTitle }}
-          </h1>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+            <FileText class="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{{ documentTitle }}</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ t('documentEdit.subtitle') }}</p>
+          </div>
         </div>
+        <button
+          @click="router.push('/documents')"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium rounded-lg px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
+        >
+          <ArrowLeft :size="18" />
+          {{ t('common.back') }}
+        </button>
       </div>
 
       <!-- Alerts -->
@@ -472,12 +494,12 @@ onMounted(async () => {
           </div>
           <div class="p-6">
             <form @submit.prevent="saveMetadata" class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div :class="['grid gap-4', isStoredDocument ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2']">
                 <div>
                   <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('documentEdit.metadata.titleLabel') }}</label>
                   <input v-model="metadataForm.title" :placeholder="t('documentEdit.metadata.titlePlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
-                <div>
+                <div v-if="!isStoredDocument">
                   <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('documentEdit.metadata.urlLabel') }}</label>
                   <input v-model="metadataForm.url" type="url" :placeholder="t('documentEdit.metadata.urlPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
@@ -501,6 +523,46 @@ onMounted(async () => {
               <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('documentEdit.metadata.descriptionLabel') }}</label>
                 <textarea v-model="metadataForm.description" rows="4" :placeholder="t('documentEdit.metadata.descriptionPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              </div>
+
+              <!-- Reader Options -->
+              <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">{{ t('documentCreateForm.readMode.label') }}</h3>
+
+                <!-- Read mode -->
+                <div class="flex gap-4 mb-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="metadataForm.readMode" value="integrated" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+                    <Eye class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.readMode.integrated') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="metadataForm.readMode" value="external" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+                    <ExternalLink class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.readMode.external') }}</span>
+                  </label>
+                </div>
+
+                <!-- Integrated mode options -->
+                <div v-if="metadataForm.readMode === 'integrated'" class="pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-3 mb-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="metadataForm.allowDownload" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    <Download class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.allowDownload') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="metadataForm.requireFullRead" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    <ScrollText class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.requireFullRead') }}</span>
+                  </label>
+                </div>
+
+                <!-- Verify checksum -->
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="metadataForm.verifyChecksum" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                  <ShieldCheck class="w-4 h-4 text-slate-500" />
+                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.verifyChecksum') }}</span>
+                </label>
               </div>
 
               <div v-if="documentMetadata" class="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700">

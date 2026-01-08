@@ -82,7 +82,7 @@ describe('Test 9: Complete End-to-End Workflow', () => {
       cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
 
       // Alice signs
-      cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+      cy.confirmReading()
       cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
     })
 
@@ -102,7 +102,7 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginViaMagicLink(bob, `/?doc=${docId}`)
 
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 7: Verify stats: 2/3 signed (66%) =====
@@ -153,7 +153,7 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginViaMagicLink(charlie, `/?doc=${docId}`)
 
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 10: Verify stats: 3/3 signed (100% completion) =====

@@ -45,7 +45,7 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
 
     // Charlie can still sign (document is not restricted)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible').click()
+    cy.confirmReading()
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 3: Verify in admin that Charlie appears in "Unexpected Signatures" section =====
@@ -80,7 +80,7 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginViaMagicLink(alice, `/?doc=${docId}`)
 
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 5: Verify stats update correctly =====
@@ -131,11 +131,11 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     // Two unexpected users sign
     cy.logout()
     cy.loginViaMagicLink(unexpected1, `/?doc=${multiDocId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+    cy.confirmReading()
 
     cy.logout()
     cy.loginViaMagicLink(unexpected2, `/?doc=${multiDocId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+    cy.confirmReading()
 
     // Verify both appear in unexpected section
     cy.logout()

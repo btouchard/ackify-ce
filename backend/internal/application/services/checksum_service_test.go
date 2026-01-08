@@ -137,6 +137,18 @@ func (f *fakeDocumentRepository) Count(_ context.Context, _ string) (int, error)
 	return len(f.documents), nil
 }
 
+func (f *fakeDocumentRepository) ListByCreatedBy(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
+}
+
+func (f *fakeDocumentRepository) SearchByCreatedBy(_ context.Context, _, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
+}
+
+func (f *fakeDocumentRepository) CountByCreatedBy(_ context.Context, _, _ string) (int, error) {
+	return 0, nil
+}
+
 func TestChecksumService_ValidateChecksumFormat(t *testing.T) {
 	service := NewChecksumService(newFakeVerificationRepository(), newFakeDocumentRepository())
 

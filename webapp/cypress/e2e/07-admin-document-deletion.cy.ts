@@ -35,7 +35,7 @@ describe('Test 7: Admin - Document Deletion', () => {
 
     // Step 4: User signs the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).click()
+    cy.confirmReading()
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Step 5: Logout and login back as admin

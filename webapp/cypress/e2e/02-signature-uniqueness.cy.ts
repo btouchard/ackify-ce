@@ -17,7 +17,7 @@ describe('Test 2: Signature Uniqueness Verification', () => {
 
     // Step 2: Sign the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible').click()
+    cy.confirmReading()
 
     // Step 3: Verify success and button changes
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')

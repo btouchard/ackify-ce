@@ -139,7 +139,7 @@ function viewDocument(doc: MyDocument) {
 }
 
 async function copyShareLink(doc: MyDocument) {
-  const shareUrl = `${baseUrl.value}/sign?doc=${doc.id}`
+  const shareUrl = `${baseUrl.value}/?doc=${doc.id}`
   try {
     await navigator.clipboard.writeText(shareUrl)
     copiedDocId.value = doc.id

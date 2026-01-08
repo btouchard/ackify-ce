@@ -45,7 +45,7 @@ describe('Test 4: Admin - Email Reminders', () => {
 
     // Step 4: Alice signs the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.contains('button', 'Confirm reading', { timeout: 10000 }).should('be.visible').click()
+    cy.confirmReading()
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Step 5: Logout Alice and login back as admin

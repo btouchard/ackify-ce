@@ -379,6 +379,49 @@ fi
 echo ""
 
 # ==========================================
+# Storage Configuration
+# ==========================================
+print_header "📁 Document Storage Configuration"
+echo ""
+print_info "Ackify can store uploaded documents locally or in S3-compatible storage."
+print_info "This allows users to upload documents directly instead of providing URLs."
+echo ""
+print_info "Options:"
+print_info "  none  - No document upload (users must provide URLs)"
+print_info "  local - Store documents on the server filesystem"
+print_info "  s3    - Store documents in S3-compatible storage (AWS, MinIO, Wasabi, etc.)"
+echo ""
+
+STORAGE_TYPE=""
+echo -e "${BLUE}Select storage type (none/local/s3) [none]: ${NC}"
+read STORAGE_TYPE_INPUT
+STORAGE_TYPE="${STORAGE_TYPE_INPUT:-none}"
+
+if [ "$STORAGE_TYPE" = "local" ]; then
+    STORAGE_MAX_SIZE=$(prompt_input "Maximum file size in MB" "50")
+    print_success "Local storage enabled (max ${STORAGE_MAX_SIZE}MB per file)"
+elif [ "$STORAGE_TYPE" = "s3" ]; then
+    STORAGE_MAX_SIZE=$(prompt_input "Maximum file size in MB" "50")
+    echo ""
+    print_info "S3-compatible storage configuration"
+    STORAGE_S3_ENDPOINT=$(prompt_input "S3 Endpoint (e.g., https://s3.amazonaws.com or https://minio.example.com)")
+    STORAGE_S3_BUCKET=$(prompt_input "S3 Bucket name" "ackify-documents")
+    STORAGE_S3_ACCESS_KEY=$(prompt_input "S3 Access Key")
+    STORAGE_S3_SECRET_KEY=$(prompt_password "S3 Secret Key")
+    STORAGE_S3_REGION=$(prompt_input "S3 Region" "us-east-1")
+    if prompt_yes_no "Use SSL for S3 connection?" "y"; then
+        STORAGE_S3_USE_SSL="true"
+    else
+        STORAGE_S3_USE_SSL="false"
+    fi
+    print_success "S3 storage enabled (${STORAGE_S3_ENDPOINT})"
+else
+    STORAGE_TYPE=""
+    print_info "Document storage disabled (users must provide URLs)"
+fi
+echo ""
+
+# ==========================================
 # Generate Secrets
 # ==========================================
 print_header "🔑 Generating Secure Secrets"
@@ -533,6 +576,34 @@ APP_DNS=${APP_DNS}
 EOF
 fi
 
+# Storage configuration
+if [ -n "$STORAGE_TYPE" ]; then
+    cat >> .env <<EOF
+# ==========================================
+# Document Storage Configuration
+# ==========================================
+ACKIFY_STORAGE_TYPE=${STORAGE_TYPE}
+ACKIFY_STORAGE_MAX_SIZE_MB=${STORAGE_MAX_SIZE}
+EOF
+
+    if [ "$STORAGE_TYPE" = "local" ]; then
+        echo "ACKIFY_STORAGE_LOCAL_PATH=/data/documents" >> .env
+    elif [ "$STORAGE_TYPE" = "s3" ]; then
+        cat >> .env <<EOF
+ACKIFY_STORAGE_S3_ENDPOINT=${STORAGE_S3_ENDPOINT}
+ACKIFY_STORAGE_S3_BUCKET=${STORAGE_S3_BUCKET}
+ACKIFY_STORAGE_S3_ACCESS_KEY=${STORAGE_S3_ACCESS_KEY}
+ACKIFY_STORAGE_S3_SECRET_KEY=${STORAGE_S3_SECRET_KEY}
+ACKIFY_STORAGE_S3_REGION=${STORAGE_S3_REGION}
+ACKIFY_STORAGE_S3_USE_SSL=${STORAGE_S3_USE_SSL}
+EOF
+    fi
+    echo "" >> .env
+else
+    echo "# Document storage disabled (users must provide URLs)" >> .env
+    echo "" >> .env
+fi
+
 # Telemetry configuration
 cat >> .env <<EOF
 # ==========================================
@@ -590,6 +661,15 @@ if [ "$ENABLE_TRAEFIK" = true ]; then
     print_info "TLS Certificate: ${TRAEFIK_CERTRESOLVER}"
 else
     print_info "Reverse Proxy: None (direct port 8080 exposure)"
+fi
+echo ""
+
+if [ "$STORAGE_TYPE" = "local" ]; then
+    print_success "Document Storage: Local filesystem (max ${STORAGE_MAX_SIZE}MB)"
+elif [ "$STORAGE_TYPE" = "s3" ]; then
+    print_success "Document Storage: S3 (${STORAGE_S3_ENDPOINT}, max ${STORAGE_MAX_SIZE}MB)"
+else
+    print_info "Document Storage: Disabled (URL-only mode)"
 fi
 echo ""
 

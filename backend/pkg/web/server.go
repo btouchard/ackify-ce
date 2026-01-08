@@ -27,6 +27,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/storage"
 
 	sdk "github.com/btouchard/shm/sdk/golang"
 )
@@ -72,8 +73,9 @@ type ServerBuilder struct {
 	auditLogger   AuditLogger
 
 	// Optional infrastructure
-	i18nService *i18n.I18n
-	emailSender email.Sender
+	i18nService     *i18n.I18n
+	emailSender     email.Sender
+	storageProvider storage.Provider
 
 	// Core services (created internally or injected)
 	magicLinkService *services.MagicLinkService
@@ -307,6 +309,17 @@ func (b *ServerBuilder) initializeInfrastructure() error {
 		b.emailSender = email.NewSMTPSender(b.cfg.Mail, renderer)
 	}
 
+	if b.storageProvider == nil && b.cfg.Storage.IsEnabled() {
+		provider, err := storage.NewProvider(b.cfg.Storage)
+		if err != nil {
+			return fmt.Errorf("failed to initialize storage provider: %w", err)
+		}
+		b.storageProvider = provider
+		if provider != nil {
+			logger.Logger.Info("Storage provider initialized", "type", provider.Type())
+		}
+	}
+
 	return nil
 }
 
@@ -498,6 +511,8 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 		ReminderService:   b.reminderService,
 		WebhookService:    b.webhookService,
 		WebhookPublisher:  whPublisher,
+		StorageProvider:   b.storageProvider,
+		StorageMaxSizeMB:  b.cfg.Storage.MaxSizeMB,
 		BaseURL:           b.cfg.App.BaseURL,
 		AutoLogin:         b.cfg.OAuth.AutoLogin,
 		OAuthEnabled:      b.oauthEnabled,
@@ -513,7 +528,7 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 	router.Get("/oembed", handlers.HandleOEmbed(b.cfg.App.BaseURL))
 	router.NotFound(EmbedFolder(b.frontend, "web/dist", b.cfg.App.BaseURL, b.version,
 		b.oauthEnabled, b.magicLinkEnabled, b.cfg.App.SMTPEnabled,
-		b.cfg.App.OnlyAdminCanCreate, repos.signature))
+		b.cfg.App.OnlyAdminCanCreate, b.cfg.Storage.IsEnabled(), repos.signature))
 
 	return router
 }
