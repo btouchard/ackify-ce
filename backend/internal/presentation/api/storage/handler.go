@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,66 @@ import (
 	"github.com/btouchard/ackify-ce/backend/pkg/storage"
 	"github.com/go-chi/chi/v5"
 )
+
+// extensionMIMETypes maps file extensions to their correct MIME types
+// Used to override incorrect detection from http.DetectContentType
+var extensionMIMETypes = map[string]string{
+	// Text formats (detected as text/plain)
+	".md":       "text/markdown",
+	".markdown": "text/markdown",
+	".txt":      "text/plain",
+
+	// XML-based formats (detected as text/xml)
+	".html": "text/html",
+	".htm":  "text/html",
+	".svg":  "image/svg+xml",
+
+	// ZIP-based formats (detected as application/zip)
+	".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	".odt":  "application/vnd.oasis.opendocument.text",
+	".ods":  "application/vnd.oasis.opendocument.spreadsheet",
+}
+
+// ambiguousDetectedTypes lists MIME types from http.DetectContentType that
+// should be refined using file extension
+var ambiguousDetectedTypes = map[string]bool{
+	"text/plain":               true, // .md, .txt detected as this
+	"text/xml":                 true, // .svg, .html sometimes detected as this
+	"application/octet-stream": true, // fallback type
+	"application/zip":          true, // .docx, .xlsx, .odt, .ods detected as this
+	"application/x-zip":        true, // alternative zip type
+	"application/x-gzip":       true, // some zip variants
+}
+
+// isTextBasedMIME returns true if the MIME type is text-based and needs charset
+func isTextBasedMIME(mimeType string) bool {
+	return strings.HasPrefix(mimeType, "text/") ||
+		mimeType == "application/json" ||
+		mimeType == "application/xml" ||
+		mimeType == "image/svg+xml"
+}
+
+// refineContentType improves content type detection using file extension
+// when content detection returns an ambiguous type
+func refineContentType(detectedType, filename string) string {
+	// Extract base MIME type without parameters
+	baseType := strings.Split(detectedType, ";")[0]
+	baseType = strings.TrimSpace(baseType)
+
+	// If detection gave a specific non-ambiguous type, trust it
+	if !ambiguousDetectedTypes[baseType] {
+		return baseType
+	}
+
+	// For ambiguous types, use file extension to determine correct type
+	ext := strings.ToLower(filepath.Ext(filename))
+	if mimeType, ok := extensionMIMETypes[ext]; ok {
+		return mimeType
+	}
+
+	return baseType
+}
 
 type documentService interface {
 	CreateDocument(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
@@ -99,14 +160,17 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		title = header.Filename
 	}
 
-	// Detect content type
+	// Detect content type from file content
 	buffer := make([]byte, 512)
 	n, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		shared.WriteInternalError(w)
 		return
 	}
-	contentType := http.DetectContentType(buffer[:n])
+	detectedType := http.DetectContentType(buffer[:n])
+
+	// Refine content type using file extension for text-based formats
+	contentType := refineContentType(detectedType, header.Filename)
 
 	// Validate content type
 	if !storage.IsAllowedMIMEType(contentType) {
@@ -241,8 +305,12 @@ func (h *Handler) HandleContent(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:")
 	}
 
-	// Set content headers
-	w.Header().Set("Content-Type", contentType)
+	// Set content headers with charset for text-based formats
+	finalContentType := contentType
+	if isTextBasedMIME(contentType) {
+		finalContentType = contentType + "; charset=utf-8"
+	}
+	w.Header().Set("Content-Type", finalContentType)
 	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 
 	// Set content disposition based on query param

@@ -4,6 +4,7 @@ package storage
 import (
 	"context"
 	"io"
+	"mime"
 )
 
 type Provider interface {
@@ -30,12 +31,19 @@ var AllowedMIMETypes = map[string]bool{
 	"text/plain":         true,
 	"text/html":          true,
 	"text/markdown":      true,
-	"application/msword": true,
-	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
-	"application/vnd.ms-excel": true,
-	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
+	"text/x-markdown":    true, // Alternative MIME type for markdown
+	"application/msword": true, // .doc
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true, // .docx
+	"application/vnd.ms-excel": true, // .xls
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true, // .xlsx
+	"application/vnd.oasis.opendocument.text":                           true, // .odt
+	"application/vnd.oasis.opendocument.spreadsheet":                    true, // .ods
 }
 
 func IsAllowedMIMEType(mimeType string) bool {
-	return AllowedMIMETypes[mimeType]
+	mediaType, _, err := mime.ParseMediaType(mimeType)
+	if err != nil {
+		return AllowedMIMETypes[mimeType]
+	}
+	return AllowedMIMETypes[mediaType]
 }

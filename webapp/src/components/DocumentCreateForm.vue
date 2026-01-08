@@ -216,7 +216,7 @@ watch(readMode, (newMode) => {
       ref="fileInputRef"
       type="file"
       class="hidden"
-      accept=".pdf,.doc,.docx,.txt,.html,.htm,.png,.jpg,.jpeg,.gif,.webp"
+      accept=".pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.txt,.md,.html,.htm,.png,.jpg,.jpeg,.gif,.webp,.svg"
       @change="handleFileSelect"
     />
 
