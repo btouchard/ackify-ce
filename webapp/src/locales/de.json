@@ -3,15 +3,20 @@
     "name": "Ackify"
   },
   "nav": {
-    "home": "Accueil",
-    "myConfirmations": "Mes confirmations",
-    "myDocuments": "Mes documents",
+    "home": "Startseite",
+    "myConfirmations": "Meine Bestätigungen",
+    "myDocuments": "Meine Dokumente",
     "admin": "Admin",
     "administration": "Administration",
-    "login": "Se connecter",
-    "logout": "Déconnexion",
-    "mobileMenu": "Menu mobile",
-    "mainNavigation": "Navigation principale"
+    "adminMenu": {
+      "allDocuments": "Alle Dokumente",
+      "settings": "Einstellungen",
+      "webhooks": "Webhooks"
+    },
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "mobileMenu": "Mobiles Menü",
+    "mainNavigation": "Hauptnavigation"
   },
   "theme": {
     "toggle": "Changer de thème"
@@ -340,6 +345,152 @@
       "pagination": {
         "page": "Page {current}/{total}",
         "pageOf": "Page {current} sur {total}"
+      }
+    },
+    "settings": {
+      "title": "Einstellungen",
+      "subtitle": "Konfigurieren Sie Ihre Ackify-Instanz",
+      "manage": "Einstellungen",
+      "loading": "Einstellungen werden geladen...",
+      "lastUpdated": "Letzte Aktualisierung: {date}",
+      "saveSuccess": "Einstellungen erfolgreich gespeichert",
+      "saveError": "Fehler beim Speichern der Einstellungen",
+      "testSuccess": "Verbindungstest erfolgreich",
+      "testError": "Verbindungstest fehlgeschlagen",
+      "resetSuccess": "Einstellungen aus Umgebung zurückgesetzt",
+      "resetError": "Fehler beim Zurücksetzen der Einstellungen",
+      "sections": {
+        "general": "Allgemein",
+        "oidc": "OAuth / OIDC",
+        "magiclink": "Magic Link",
+        "smtp": "E-Mail (SMTP)",
+        "storage": "Speicher"
+      },
+      "general": {
+        "title": "Allgemeine Einstellungen",
+        "description": "Grundkonfiguration Ihrer Ackify-Instanz",
+        "organisation": "Organisationsname",
+        "organisationPlaceholder": "Meine Firma",
+        "organisationHelper": "Wird in E-Mails und Oberfläche angezeigt",
+        "onlyAdminCanCreate": "Nur Admins können Dokumente erstellen",
+        "onlyAdminCanCreateHelper": "Wenn aktiviert, können nur Administratoren neue Dokumente erstellen"
+      },
+      "oidc": {
+        "title": "OAuth / OIDC Konfiguration",
+        "description": "OAuth 2.0 / OpenID Connect Authentifizierung konfigurieren",
+        "enabled": "OAuth-Authentifizierung aktivieren",
+        "provider": "Anbieter",
+        "providerPlaceholder": "Anbieter auswählen",
+        "providers": {
+          "google": "Google",
+          "github": "GitHub",
+          "gitlab": "GitLab",
+          "custom": "Benutzerdefiniert"
+        },
+        "clientId": "Client-ID",
+        "clientIdPlaceholder": "Geben Sie Ihre Client-ID ein",
+        "clientSecret": "Client-Secret",
+        "clientSecretPlaceholder": "Geben Sie Ihr Client-Secret ein",
+        "clientSecretHelper": "Leer lassen, um den bestehenden Wert beizubehalten",
+        "authUrl": "Autorisierungs-URL",
+        "authUrlPlaceholder": "https://provider.com/oauth/authorize",
+        "tokenUrl": "Token-URL",
+        "tokenUrlPlaceholder": "https://provider.com/oauth/token",
+        "userinfoUrl": "Userinfo-URL",
+        "userinfoUrlPlaceholder": "https://provider.com/userinfo",
+        "logoutUrl": "Logout-URL (optional)",
+        "logoutUrlPlaceholder": "https://provider.com/logout",
+        "scopes": "Scopes",
+        "scopesPlaceholder": "openid email profile",
+        "scopesHelper": "Durch Leerzeichen getrennte Liste von OAuth-Scopes",
+        "allowedDomain": "Erlaubte Domain (optional)",
+        "allowedDomainPlaceholder": "@firma.com",
+        "allowedDomainHelper": "Auf bestimmte E-Mail-Domain beschränken",
+        "autoLogin": "Auto-Login",
+        "autoLoginHelper": "Automatisch zu OAuth weiterleiten, wenn Sitzung existiert",
+        "testConnection": "Verbindung testen"
+      },
+      "magiclink": {
+        "title": "Magic Link Konfiguration",
+        "description": "Passwortlose E-Mail-Authentifizierung konfigurieren",
+        "enabled": "Magic Link Authentifizierung aktivieren",
+        "enabledHelper": "Erfordert konfiguriertes SMTP"
+      },
+      "smtp": {
+        "title": "E-Mail (SMTP) Konfiguration",
+        "description": "SMTP-Server für E-Mail-Versand konfigurieren",
+        "host": "SMTP-Host",
+        "hostPlaceholder": "smtp.beispiel.com",
+        "port": "Port",
+        "portPlaceholder": "587",
+        "username": "Benutzername",
+        "usernamePlaceholder": "user@beispiel.com",
+        "password": "Passwort",
+        "passwordPlaceholder": "Passwort eingeben",
+        "passwordHelper": "Leer lassen, um den bestehenden Wert beizubehalten",
+        "tls": "TLS verwenden",
+        "tlsHelper": "Implizite TLS-Verbindung verwenden",
+        "starttls": "STARTTLS verwenden",
+        "starttlsHelper": "Verbindung auf TLS upgraden",
+        "insecureSkipVerify": "Zertifikatsprüfung überspringen",
+        "insecureSkipVerifyHelper": "Nicht für Produktion empfohlen",
+        "timeout": "Timeout",
+        "timeoutPlaceholder": "10s",
+        "from": "Absenderadresse",
+        "fromPlaceholder": "noreply@beispiel.com",
+        "fromName": "Absendername",
+        "fromNamePlaceholder": "Ackify",
+        "subjectPrefix": "Betreff-Präfix (optional)",
+        "subjectPrefixPlaceholder": "[Ackify]",
+        "testConnection": "SMTP testen"
+      },
+      "storage": {
+        "title": "Speicherkonfiguration",
+        "description": "Dokumentenspeicher-Backend konfigurieren",
+        "type": "Speichertyp",
+        "types": {
+          "none": "Deaktiviert",
+          "local": "Lokales Dateisystem",
+          "s3": "S3 / MinIO"
+        },
+        "maxSizeMb": "Max. Dateigröße (MB)",
+        "maxSizeMbHelper": "Maximale Upload-Dateigröße in Megabytes",
+        "localPath": "Lokaler Pfad",
+        "localPathPlaceholder": "/data/documents",
+        "localPathHelper": "Verzeichnispfad zum Speichern von Dateien",
+        "s3Endpoint": "S3-Endpoint",
+        "s3EndpointPlaceholder": "s3.amazonaws.com oder minio.beispiel.com",
+        "s3Bucket": "Bucket-Name",
+        "s3BucketPlaceholder": "ackify-documents",
+        "s3AccessKey": "Zugriffsschlüssel",
+        "s3AccessKeyPlaceholder": "AKIAIOSFODNN7EXAMPLE",
+        "s3SecretKey": "Geheimschlüssel",
+        "s3SecretKeyPlaceholder": "Geheimschlüssel eingeben",
+        "s3SecretKeyHelper": "Leer lassen, um den bestehenden Wert beizubehalten",
+        "s3Region": "Region",
+        "s3RegionPlaceholder": "us-east-1",
+        "s3UseSsl": "SSL verwenden",
+        "s3UseSslHelper": "HTTPS für S3-Verbindung verwenden",
+        "testConnection": "S3-Verbindung testen"
+      },
+      "actions": {
+        "save": "Speichern",
+        "saving": "Speichern...",
+        "test": "Testen",
+        "testing": "Testen...",
+        "reset": "Aus ENV zurücksetzen",
+        "resetting": "Zurücksetzen..."
+      },
+      "resetConfirm": {
+        "title": "Einstellungen zurücksetzen?",
+        "message": "Dies setzt alle Einstellungen auf die Werte aus den Umgebungsvariablen zurück. Alle in der Datenbank gespeicherten Konfigurationen werden überschrieben.",
+        "confirm": "Zurücksetzen",
+        "cancel": "Abbrechen"
+      },
+      "validation": {
+        "authRequired": "Mindestens eine Authentifizierungsmethode (OAuth oder Magic Link) muss aktiviert sein",
+        "magiclinkRequiresSmtp": "Magic Link erfordert konfiguriertes SMTP",
+        "oidcCustomRequiresUrls": "Benutzerdefinierter OIDC-Anbieter erfordert auth_url, token_url und userinfo_url"
       }
     },
     "webhooks": {

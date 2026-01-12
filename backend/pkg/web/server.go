@@ -84,6 +84,7 @@ type ServerBuilder struct {
 	adminService     *services.AdminService
 	webhookService   *services.WebhookService
 	reminderService  *services.ReminderAsyncService
+	configService    *services.ConfigService
 
 	// Flags
 	oauthEnabled     bool
@@ -200,6 +201,12 @@ func (b *ServerBuilder) WithReminderService(service *services.ReminderAsyncServi
 	return b
 }
 
+// WithConfigService injects a configuration service.
+func (b *ServerBuilder) WithConfigService(service *services.ConfigService) *ServerBuilder {
+	b.configService = service
+	return b
+}
+
 // Build constructs the server with all dependencies.
 func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 	if err := b.validateProviders(); err != nil {
@@ -229,6 +236,7 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 	}
 
 	b.initializeCoreServices(repos)
+	b.initializeConfigService(ctx, repos)
 	magicLinkWorker := b.initializeMagicLinkService(ctx, repos)
 	b.initializeReminderService(repos)
 
@@ -334,6 +342,7 @@ type repositories struct {
 	webhookDelivery *database.WebhookDeliveryRepository
 	magicLink       services.MagicLinkRepository // Interface, not concrete type
 	oauthSession    *database.OAuthSessionRepository
+	config          *database.ConfigRepository
 }
 
 // createRepositories creates all repository instances.
@@ -348,6 +357,7 @@ func (b *ServerBuilder) createRepositories() *repositories {
 		webhookDelivery: database.NewWebhookDeliveryRepository(b.db, b.tenantProvider),
 		magicLink:       database.NewMagicLinkRepository(b.db),
 		oauthSession:    database.NewOAuthSessionRepository(b.db, b.tenantProvider),
+		config:          database.NewConfigRepository(b.db, b.tenantProvider),
 	}
 }
 
@@ -430,6 +440,25 @@ func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
 		logger.Logger.Info("OAuth authentication enabled")
 	} else {
 		logger.Logger.Info("OAuth authentication disabled")
+	}
+}
+
+// initializeConfigService initializes the configuration service with hot-reload.
+func (b *ServerBuilder) initializeConfigService(ctx context.Context, repos *repositories) {
+	if b.configService == nil {
+		encryptionKey := b.cfg.OAuth.CookieSecret
+		b.configService = services.NewConfigService(repos.config, b.cfg, encryptionKey)
+
+		// Initialize will seed from ENV on first start or load from DB
+		// Must use tenant context for RLS to work correctly
+		err := tenant.WithTenantContextFromProvider(ctx, b.db, b.tenantProvider, func(txCtx context.Context) error {
+			return b.configService.Initialize(txCtx)
+		})
+		if err != nil {
+			logger.Logger.Warn("Failed to initialize config service, using ENV config", "error", err)
+			return
+		}
+		logger.Logger.Info("Configuration service initialized")
 	}
 }
 
@@ -521,6 +550,7 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 		DocumentRateLimit: b.cfg.App.DocumentRateLimit,
 		GeneralRateLimit:  b.cfg.App.GeneralRateLimit,
 		ImportMaxSigners:  b.cfg.App.ImportMaxSigners,
+		ConfigService:     b.configService,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)

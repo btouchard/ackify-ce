@@ -18,6 +18,7 @@ import {
   Loader2,
   Search,
   Webhook,
+  Settings,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
@@ -197,6 +198,12 @@ onMounted(() => {
             <button class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
               <Webhook :size="16" />
               <span class="hidden sm:inline">{{ t('admin.webhooks.manage') }}</span>
+            </button>
+          </router-link>
+          <router-link :to="{ name: 'admin-settings' }">
+            <button class="inline-flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              <Settings :size="16" />
+              <span class="hidden sm:inline">{{ t('admin.settings.manage') }}</span>
             </button>
           </router-link>
           <button

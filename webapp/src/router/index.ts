@@ -11,6 +11,7 @@ const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
 const AdminDocumentDetail = () => import('@/pages/admin/AdminDocumentDetail.vue')
 const AdminWebhooks = () => import('@/pages/admin/AdminWebhooks.vue')
 const AdminWebhookEdit = () => import('@/pages/admin/AdminWebhookEdit.vue')
+const AdminSettings = () => import('@/pages/admin/AdminSettings.vue')
 const EmbedPage = () => import('@/pages/EmbedPage.vue')
 const NotFoundPage = () => import('@/pages/NotFoundPage.vue')
 
@@ -73,6 +74,12 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/docs/:docId',
     name: 'admin-document',
     component: AdminDocumentDetail,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/settings',
+    name: 'admin-settings',
+    component: AdminSettings,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {

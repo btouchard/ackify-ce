@@ -99,6 +99,16 @@ type webhookService interface {
 	ListDeliveries(ctx context.Context, webhookID int64, limit, offset int) ([]*models.WebhookDelivery, error)
 }
 
+// configService defines configuration management operations
+type configService interface {
+	GetConfig() *models.MutableConfig
+	UpdateSection(ctx context.Context, category models.ConfigCategory, input json.RawMessage, updatedBy string) error
+	TestSMTP(ctx context.Context, cfg models.SMTPConfig) error
+	TestS3(ctx context.Context, cfg models.StorageConfig) error
+	TestOIDC(ctx context.Context, cfg models.OIDCConfig) error
+	ResetFromENV(ctx context.Context, updatedBy string) error
+}
+
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
 	// Database for RLS middleware
@@ -118,6 +128,7 @@ type RouterConfig struct {
 	ReminderService  reminderService
 	WebhookService   webhookService
 	WebhookPublisher webhookPublisher
+	ConfigService    configService
 
 	// Storage
 	StorageProvider  storage.Provider // Optional, for document file storage
@@ -351,6 +362,17 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 				r.Delete("/{id}", webhooksHandler.HandleDeleteWebhook)
 				r.Get("/{id}/deliveries", webhooksHandler.HandleListDeliveries)
 			})
+
+			// Settings management (configuration)
+			if cfg.ConfigService != nil {
+				settingsHandler := apiAdmin.NewSettingsHandler(cfg.ConfigService)
+				r.Route("/settings", func(r chi.Router) {
+					r.Get("/", settingsHandler.HandleGetSettings)
+					r.Put("/{section}", settingsHandler.HandleUpdateSection)
+					r.Post("/test/{type}", settingsHandler.HandleTestConnection)
+					r.Post("/reset", settingsHandler.HandleResetFromENV)
+				})
+			}
 		})
 	})
 
