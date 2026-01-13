@@ -2,53 +2,36 @@
 package auth
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
-	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
+	"github.com/btouchard/ackify-ce/backend/pkg/types"
 )
-
-// magicLinkService defines magic link operations
-type magicLinkService interface {
-	RequestMagicLink(ctx context.Context, email, redirectTo, ip, userAgent, locale string) error
-	VerifyMagicLink(ctx context.Context, token, ip, userAgent string) (*models.MagicLinkToken, error)
-	VerifyReminderAuthToken(ctx context.Context, token, ip, userAgent string) (*models.MagicLinkToken, error)
-}
 
 // middleware defines CSRF middleware operations
 type middleware interface {
 	GenerateCSRFToken() (string, error)
 }
 
-// Handler handles authentication API requests
+// Handler handles authentication API requests using unified AuthProvider
 type Handler struct {
-	authProvider     providers.AuthProvider
-	oauthProvider    providers.OAuthAuthProvider
-	magicLinkService magicLinkService
-	middleware       middleware
-	baseURL          string
-	oauthEnabled     bool
-	magicLinkEnabled bool
+	authProvider providers.AuthProvider
+	middleware   middleware
+	baseURL      string
 }
 
-// NewHandler creates a new auth handler
-func NewHandler(authProvider providers.AuthProvider, oauthProvider providers.OAuthAuthProvider, magicLinkService magicLinkService, middleware middleware, baseURL string, oauthEnabled bool, magicLinkEnabled bool) *Handler {
+// NewHandler creates a new auth handler with unified AuthProvider
+func NewHandler(authProvider providers.AuthProvider, middleware middleware, baseURL string) *Handler {
 	return &Handler{
-		authProvider:     authProvider,
-		oauthProvider:    oauthProvider,
-		magicLinkService: magicLinkService,
-		middleware:       middleware,
-		baseURL:          baseURL,
-		oauthEnabled:     oauthEnabled,
-		magicLinkEnabled: magicLinkEnabled,
+		authProvider: authProvider,
+		middleware:   middleware,
+		baseURL:      baseURL,
 	}
 }
 
@@ -60,15 +43,14 @@ func (h *Handler) HandleGetCSRFToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set cookie for the token
 	http.SetCookie(w, &http.Cookie{
 		Name:     shared.CSRFTokenCookie,
 		Value:    token,
 		Path:     "/",
-		HttpOnly: false, // Allow JS to read it
+		HttpOnly: false,
 		Secure:   r.TLS != nil,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400, // 24 hours
+		MaxAge:   86400,
 	})
 
 	shared.WriteJSON(w, http.StatusOK, map[string]string{
@@ -77,18 +59,18 @@ func (h *Handler) HandleGetCSRFToken(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleGetAuthConfig handles GET /api/v1/auth/config
-// Returns available authentication methods
+// Returns available authentication methods (dynamically from config)
 func (h *Handler) HandleGetAuthConfig(w http.ResponseWriter, r *http.Request) {
 	shared.WriteJSON(w, http.StatusOK, map[string]bool{
-		"oauth":     h.oauthEnabled,
-		"magiclink": h.magicLinkEnabled,
+		"oauth":     h.authProvider.IsOIDCEnabled(),
+		"magiclink": h.authProvider.IsMagicLinkEnabled(),
 	})
 }
 
-// HandleStartOAuth handles POST /api/v1/auth/start
-func (h *Handler) HandleStartOAuth(w http.ResponseWriter, r *http.Request) {
-	if h.oauthProvider == nil {
-		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "OAuth not configured", nil)
+// HandleStartOIDC handles POST /api/v1/auth/start
+func (h *Handler) HandleStartOIDC(w http.ResponseWriter, r *http.Request) {
+	if !h.authProvider.IsOIDCEnabled() {
+		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "OIDC not enabled", nil)
 		return
 	}
 
@@ -97,29 +79,28 @@ func (h *Handler) HandleStartOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		// If no body, that's fine, use default redirect
 		req.RedirectTo = "/"
 	}
 
-	// Default to home if no redirect specified
 	if req.RedirectTo == "" {
 		req.RedirectTo = "/"
 	}
 
-	// Generate OAuth URL and save state in session
-	// This is critical - CreateAuthURL saves the state token in session
-	// which will be validated when Google redirects to /api/v1/auth/callback
-	authURL := h.oauthProvider.CreateAuthURL(w, r, req.RedirectTo)
+	authURL := h.authProvider.StartOIDC(w, r, req.RedirectTo)
+	if authURL == "" {
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to generate auth URL", nil)
+		return
+	}
 
-	// Return redirect URL for SPA to handle
 	shared.WriteJSON(w, http.StatusOK, map[string]string{
 		"redirectUrl": authURL,
 	})
 }
 
-func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
-	if h.oauthProvider == nil {
-		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "OAuth not configured", nil)
+// HandleOIDCCallback handles GET /api/v1/auth/callback
+func (h *Handler) HandleOIDCCallback(w http.ResponseWriter, r *http.Request) {
+	if !h.authProvider.IsOIDCEnabled() {
+		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "OIDC not enabled", nil)
 		return
 	}
 
@@ -128,21 +109,11 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	oauthError := r.URL.Query().Get("error")
 	errorDescription := r.URL.Query().Get("error_description")
 
-	logger.Logger.Debug("HandleOAuthCallback: received callback",
-		"code_present", code != "",
-		"state_present", state != "",
-		"error", oauthError,
-		"query_params", r.URL.Query().Encode())
-
-	// Gérer les erreurs OAuth (ex: prompt=none sans session active)
+	// Handle OAuth errors (e.g., prompt=none without active session)
 	if oauthError != "" {
-		logger.Logger.Debug("HandleOAuthCallback: OAuth error received",
-			"error", oauthError,
-			"description", errorDescription)
+		logger.Logger.Debug("OIDC error received", "error", oauthError, "description", errorDescription)
 
-		// Si c'est une erreur de silent login (prompt=none), rediriger silencieusement
 		if oauthError == "login_required" || oauthError == "interaction_required" || oauthError == "consent_required" {
-			// Extraire next_url du state
 			parts := strings.SplitN(state, ":", 2)
 			nextURL := "/"
 			if len(parts) == 2 {
@@ -150,56 +121,41 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 					nextURL = string(nb)
 				}
 			}
-
-			logger.Logger.Debug("HandleOAuthCallback: silent login failed, redirecting to original URL",
-				"next_url", nextURL)
 			http.Redirect(w, r, nextURL, http.StatusFound)
 			return
 		}
 
-		// Pour d'autres erreurs, afficher un message
 		http.Error(w, "OAuth error: "+oauthError, http.StatusBadRequest)
 		return
 	}
 
 	if code == "" {
-		logger.Logger.Warn("HandleOAuthCallback: missing authorization code")
 		http.Error(w, "Missing authorization code", http.StatusBadRequest)
 		return
 	}
 
-	// Validate OAuth state for CSRF protection
+	// Validate state
 	parts := strings.SplitN(state, ":", 2)
 	token := ""
 	if len(parts) > 0 {
 		token = parts[0]
 	}
 
-	logger.Logger.Debug("HandleOAuthCallback: validating state",
-		"token_length", len(token),
-		"state_parts", len(parts))
-
-	if token == "" || !h.oauthProvider.VerifyState(w, r, token) {
-		logger.Logger.Warn("HandleOAuthCallback: invalid OAuth state",
-			"token_empty", token == "")
+	if token == "" || !h.authProvider.VerifyOIDCState(w, r, token) {
 		http.Error(w, "Invalid OAuth state", http.StatusBadRequest)
 		return
 	}
 
 	ctx := r.Context()
-	user, nextURL, err := h.oauthProvider.HandleCallback(ctx, w, r, code, state)
+	user, nextURL, err := h.authProvider.HandleOIDCCallback(ctx, w, r, code, state)
 	if err != nil {
-		logger.Logger.Error("OAuth callback failed", "error", err.Error())
-		handlers.HandleError(w, err)
+		logger.Logger.Error("OIDC callback failed", "error", err.Error())
+		http.Error(w, "Authentication failed: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
 
-	logger.Logger.Debug("HandleOAuthCallback: user authenticated",
-		"user_email", user.Email,
-		"next_url", nextURL)
-
 	if err := h.authProvider.SetCurrentUser(w, r, user); err != nil {
-		logger.Logger.Error("HandleOAuthCallback: failed to set user session", "error", err.Error())
+		logger.Logger.Error("Failed to set user session", "error", err.Error())
 		http.Error(w, "Failed to set user session", http.StatusInternalServerError)
 		return
 	}
@@ -210,29 +166,17 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	if parsedURL, err := url.Parse(nextURL); err != nil ||
 		(parsedURL.Host != "" && parsedURL.Host != r.Host) {
-		logger.Logger.Debug("HandleOAuthCallback: invalid nextURL, using /",
-			"original_next", nextURL,
-			"parse_error", err != nil)
 		nextURL = "/"
 	}
-
-	logger.Logger.Debug("HandleOAuthCallback: redirecting user",
-		"final_next_url", nextURL)
 
 	http.Redirect(w, r, nextURL, http.StatusFound)
 }
 
 // HandleLogout handles GET /api/v1/auth/logout
 func (h *Handler) HandleLogout(w http.ResponseWriter, r *http.Request) {
-	// Clear session
 	h.authProvider.Logout(w, r)
 
-	// Check if SSO logout is configured (OAuth only)
-	var logoutURL string
-	if h.oauthProvider != nil {
-		logoutURL = h.oauthProvider.GetLogoutURL()
-	}
-
+	logoutURL := h.authProvider.GetOIDCLogoutURL()
 	if logoutURL != "" {
 		returnURL := h.baseURL + "/"
 		fullLogoutURL := logoutURL + "?post_logout_redirect_uri=" + url.QueryEscape(returnURL)
@@ -266,4 +210,131 @@ func (h *Handler) HandleAuthCheck(w http.ResponseWriter, r *http.Request) {
 			"name":  user.Name,
 		},
 	})
+}
+
+// === MagicLink Handlers ===
+
+// HandleRequestMagicLink handles POST /api/v1/auth/magic-link/request
+func (h *Handler) HandleRequestMagicLink(w http.ResponseWriter, r *http.Request) {
+	if !h.authProvider.IsMagicLinkEnabled() {
+		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "Magic Link not enabled", nil)
+		return
+	}
+
+	var req struct {
+		Email      string `json:"email"`
+		RedirectTo string `json:"redirectTo"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeValidation, "Invalid request body", nil)
+		return
+	}
+
+	if req.Email == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeValidation, "Email is required", nil)
+		return
+	}
+
+	if req.RedirectTo == "" {
+		req.RedirectTo = "/"
+	}
+
+	ip := r.RemoteAddr
+	userAgent := r.UserAgent()
+	locale := r.Header.Get("Accept-Language")
+
+	ctx := r.Context()
+	if err := h.authProvider.RequestMagicLink(ctx, req.Email, req.RedirectTo, ip, userAgent, locale); err != nil {
+		logger.Logger.Error("Failed to request magic link", "error", err.Error())
+		// Don't reveal if email exists or not
+		shared.WriteJSON(w, http.StatusOK, map[string]string{
+			"message": "If the email exists, a magic link has been sent",
+		})
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "If the email exists, a magic link has been sent",
+	})
+}
+
+// HandleVerifyMagicLink handles GET /api/v1/auth/magic-link/verify
+func (h *Handler) HandleVerifyMagicLink(w http.ResponseWriter, r *http.Request) {
+	if !h.authProvider.IsMagicLinkEnabled() {
+		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "Magic Link not enabled", nil)
+		return
+	}
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeValidation, "Token is required", nil)
+		return
+	}
+
+	ip := r.RemoteAddr
+	userAgent := r.UserAgent()
+
+	ctx := r.Context()
+	result, err := h.authProvider.VerifyMagicLink(ctx, token, ip, userAgent)
+	if err != nil {
+		logger.Logger.Error("Failed to verify magic link", "error", err.Error())
+		http.Redirect(w, r, "/?error=invalid_token", http.StatusFound)
+		return
+	}
+
+	// Create user from magic link result
+	user := &types.User{
+		Sub:   "magiclink:" + result.Email,
+		Email: result.Email,
+		Name:  result.Email,
+	}
+
+	if err := h.authProvider.SetCurrentUser(w, r, user); err != nil {
+		logger.Logger.Error("Failed to set user session", "error", err.Error())
+		http.Redirect(w, r, "/?error=session_error", http.StatusFound)
+		return
+	}
+
+	redirectTo := result.RedirectTo
+	if redirectTo == "" {
+		redirectTo = "/"
+	}
+
+	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+// HandleVerifyReminderAuthLink handles GET /api/v1/auth/reminder-link/verify
+func (h *Handler) HandleVerifyReminderAuthLink(w http.ResponseWriter, r *http.Request) {
+	if !h.authProvider.IsMagicLinkEnabled() {
+		shared.WriteError(w, http.StatusServiceUnavailable, shared.ErrCodeServiceUnavailable, "Magic Link not enabled", nil)
+		return
+	}
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeValidation, "Token is required", nil)
+		return
+	}
+
+	ip := r.RemoteAddr
+	userAgent := r.UserAgent()
+
+	ctx := r.Context()
+	result, err := h.authProvider.VerifyReminderAuthToken(ctx, token, ip, userAgent)
+	if err != nil {
+		logger.Logger.Error("Failed to verify reminder auth token", "error", err.Error())
+		http.Redirect(w, r, "/?error=invalid_token", http.StatusFound)
+		return
+	}
+
+	redirectTo := result.RedirectTo
+	if redirectTo == "" && result.DocID != nil {
+		redirectTo = "/?doc=" + *result.DocID
+	}
+	if redirectTo == "" {
+		redirectTo = "/"
+	}
+
+	http.Redirect(w, r, redirectTo, http.StatusFound)
 }

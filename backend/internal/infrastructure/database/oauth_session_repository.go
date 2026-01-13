@@ -13,15 +13,6 @@ import (
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
 
-// oauthSessionRepository defines the interface for OAuth session operations
-type oauthSessionRepository interface {
-	Create(ctx context.Context, session *models.OAuthSession) error
-	GetBySessionID(ctx context.Context, sessionID string) (*models.OAuthSession, error)
-	UpdateRefreshToken(ctx context.Context, sessionID string, encryptedToken []byte, expiresAt time.Time) error
-	DeleteBySessionID(ctx context.Context, sessionID string) error
-	DeleteExpired(ctx context.Context, olderThan time.Duration) (int64, error)
-}
-
 // OAuthSessionRepository implements the OAuth session repository
 type OAuthSessionRepository struct {
 	db      *sql.DB

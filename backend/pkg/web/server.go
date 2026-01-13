@@ -46,7 +46,6 @@ type Server struct {
 
 	// Capability providers
 	authProvider  AuthProvider
-	oauthProvider OAuthAuthProvider
 	authorizer    Authorizer
 	quotaEnforcer QuotaEnforcer
 	auditLogger   AuditLogger
@@ -67,7 +66,6 @@ type ServerBuilder struct {
 
 	// Capability providers (auth and authorizer are REQUIRED)
 	authProvider  AuthProvider
-	oauthProvider OAuthAuthProvider
 	authorizer    Authorizer
 	quotaEnforcer QuotaEnforcer
 	auditLogger   AuditLogger
@@ -85,20 +83,14 @@ type ServerBuilder struct {
 	webhookService   *services.WebhookService
 	reminderService  *services.ReminderAsyncService
 	configService    *services.ConfigService
-
-	// Flags
-	oauthEnabled     bool
-	magicLinkEnabled bool
 }
 
 // NewServerBuilder creates a new server builder with the required configuration.
 func NewServerBuilder(cfg *config.Config, frontend embed.FS, version string) *ServerBuilder {
 	return &ServerBuilder{
-		cfg:              cfg,
-		frontend:         frontend,
-		version:          version,
-		oauthEnabled:     cfg.Auth.OAuthEnabled,
-		magicLinkEnabled: cfg.Auth.MagicLinkEnabled,
+		cfg:      cfg,
+		frontend: frontend,
+		version:  version,
 	}
 }
 
@@ -155,13 +147,6 @@ func (b *ServerBuilder) WithQuotaEnforcer(enforcer QuotaEnforcer) *ServerBuilder
 // WithAuditLogger injects an audit logger (optional, defaults to LogOnly).
 func (b *ServerBuilder) WithAuditLogger(logger AuditLogger) *ServerBuilder {
 	b.auditLogger = logger
-	return b
-}
-
-// WithOAuthProvider injects an OAuth authentication provider (optional).
-func (b *ServerBuilder) WithOAuthProvider(provider OAuthAuthProvider) *ServerBuilder {
-	b.authProvider = provider
-	b.oauthProvider = provider
 	return b
 }
 
@@ -263,7 +248,6 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 		magicLinkWorker: magicLinkWorker,
 		baseURL:         b.cfg.App.BaseURL,
 		authProvider:    b.authProvider,
-		oauthProvider:   b.oauthProvider,
 		authorizer:      b.authorizer,
 		quotaEnforcer:   b.quotaEnforcer,
 		auditLogger:     b.auditLogger,
@@ -434,13 +418,6 @@ func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
 	if b.webhookService == nil {
 		b.webhookService = services.NewWebhookService(repos.webhook, repos.webhookDelivery)
 	}
-
-	// Log authentication configuration
-	if b.oauthEnabled {
-		logger.Logger.Info("OAuth authentication enabled")
-	} else {
-		logger.Logger.Info("OAuth authentication disabled")
-	}
 }
 
 // initializeConfigService initializes the configuration service with hot-reload.
@@ -476,14 +453,9 @@ func (b *ServerBuilder) initializeMagicLinkService(ctx context.Context, repos *r
 		})
 	}
 
-	var magicLinkWorker *workers.MagicLinkCleanupWorker
-	if b.magicLinkEnabled {
-		logger.Logger.Info("Magic Link authentication enabled")
-		magicLinkWorker = workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
-		go magicLinkWorker.Start(ctx)
-	} else {
-		logger.Logger.Info("Magic Link authentication disabled")
-	}
+	// Always start cleanup worker - it will clean expired tokens regardless of config
+	magicLinkWorker := workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
+	go magicLinkWorker.Start(ctx)
 
 	return magicLinkWorker
 }
@@ -523,42 +495,40 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 	router.Use(i18n.Middleware(b.i18nService))
 	router.Use(EmbedDocumentMiddleware(b.documentService, whPublisher))
 
-	// Build API router config using providers
+	// Build API router config using unified auth provider
 	apiConfig := api.RouterConfig{
 		// Database for RLS middleware
 		DB:             b.db,
 		TenantProvider: b.tenantProvider,
 
-		// Capability providers
-		AuthProvider:      b.authProvider,
-		OAuthProvider:     b.oauthProvider,
-		Authorizer:        b.authorizer,
-		MagicLinkService:  b.magicLinkService,
-		SignatureService:  b.signatureService,
-		DocumentService:   b.documentService,
-		AdminService:      b.adminService,
-		ReminderService:   b.reminderService,
-		WebhookService:    b.webhookService,
-		WebhookPublisher:  whPublisher,
-		StorageProvider:   b.storageProvider,
-		StorageMaxSizeMB:  b.cfg.Storage.MaxSizeMB,
-		BaseURL:           b.cfg.App.BaseURL,
-		AutoLogin:         b.cfg.OAuth.AutoLogin,
-		OAuthEnabled:      b.oauthEnabled,
-		MagicLinkEnabled:  b.magicLinkEnabled,
+		// Capability providers (AuthProvider handles OIDC + MagicLink dynamically)
+		AuthProvider:     b.authProvider,
+		Authorizer:       b.authorizer,
+		SignatureService: b.signatureService,
+		DocumentService:  b.documentService,
+		AdminService:     b.adminService,
+		ReminderService:  b.reminderService,
+		WebhookService:   b.webhookService,
+		WebhookPublisher: whPublisher,
+		StorageProvider:  b.storageProvider,
+		StorageMaxSizeMB: b.cfg.Storage.MaxSizeMB,
+		BaseURL:          b.cfg.App.BaseURL,
+
+		// Rate limiting
 		AuthRateLimit:     b.cfg.App.AuthRateLimit,
 		DocumentRateLimit: b.cfg.App.DocumentRateLimit,
 		GeneralRateLimit:  b.cfg.App.GeneralRateLimit,
 		ImportMaxSigners:  b.cfg.App.ImportMaxSigners,
-		ConfigService:     b.configService,
+
+		// Config service for dynamic settings
+		ConfigService: b.configService,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)
 
 	router.Get("/oembed", handlers.HandleOEmbed(b.cfg.App.BaseURL))
 	router.NotFound(EmbedFolder(b.frontend, "web/dist", b.cfg.App.BaseURL, b.version,
-		b.oauthEnabled, b.magicLinkEnabled, b.cfg.App.SMTPEnabled,
-		b.cfg.App.OnlyAdminCanCreate, b.cfg.Storage.IsEnabled(), repos.signature))
+		b.configService, repos.signature))
 
 	return router
 }

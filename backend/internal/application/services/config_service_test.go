@@ -590,18 +590,19 @@ func TestMutableConfig_MagicLinkRequiresSMTP(t *testing.T) {
 		name         string
 		magicEnabled bool
 		smtpHost     string
+		smtpFrom     string
 		expected     bool
 	}{
-		{"MagicLink disabled", false, "", true},
-		{"MagicLink enabled with SMTP", true, "smtp.test.com", true},
-		{"MagicLink enabled without SMTP", true, "", false},
+		{"MagicLink disabled", false, "", "", true},
+		{"MagicLink enabled with SMTP", true, "smtp.test.com", "noreply@test.com", true},
+		{"MagicLink enabled without SMTP", true, "", "", false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := &models.MutableConfig{
 				MagicLink: models.MagicLinkConfig{Enabled: tc.magicEnabled},
-				SMTP:      models.SMTPConfig{Host: tc.smtpHost},
+				SMTP:      models.SMTPConfig{Host: tc.smtpHost, From: tc.smtpFrom},
 			}
 			result := cfg.MagicLinkRequiresSMTP()
 			if result != tc.expected {

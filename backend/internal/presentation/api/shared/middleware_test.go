@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/btouchard/ackify-ce/backend/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,7 +61,7 @@ func (m *mockAuthProvider) GetCurrentUser(r *http.Request) (*types.User, error) 
 	return nil, http.ErrNoCookie
 }
 
-func (m *mockAuthProvider) SetCurrentUser(w http.ResponseWriter, r *http.Request, user *types.User) error {
+func (m *mockAuthProvider) SetCurrentUser(w http.ResponseWriter, _ *http.Request, user *types.User) error {
 	sessionID := user.Sub
 	m.users[sessionID] = user
 	http.SetCookie(w, &http.Cookie{
@@ -71,7 +72,7 @@ func (m *mockAuthProvider) SetCurrentUser(w http.ResponseWriter, r *http.Request
 	return nil
 }
 
-func (m *mockAuthProvider) Logout(w http.ResponseWriter, r *http.Request) {
+func (m *mockAuthProvider) Logout(w http.ResponseWriter, _ *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:   "test_session",
 		Value:  "",
@@ -82,6 +83,33 @@ func (m *mockAuthProvider) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (m *mockAuthProvider) IsConfigured() bool {
 	return true
+}
+
+// OIDC methods (not used in middleware tests)
+func (m *mockAuthProvider) IsOIDCEnabled() bool                                         { return false }
+func (m *mockAuthProvider) StartOIDC(http.ResponseWriter, *http.Request, string) string { return "" }
+func (m *mockAuthProvider) VerifyOIDCState(http.ResponseWriter, *http.Request, string) bool {
+	return false
+}
+func (m *mockAuthProvider) HandleOIDCCallback(context.Context, http.ResponseWriter, *http.Request, string, string) (*types.User, string, error) {
+	return nil, "", nil
+}
+func (m *mockAuthProvider) GetOIDCLogoutURL() string    { return "" }
+func (m *mockAuthProvider) IsAllowedDomain(string) bool { return true }
+
+// MagicLink methods (not used in middleware tests)
+func (m *mockAuthProvider) IsMagicLinkEnabled() bool { return false }
+func (m *mockAuthProvider) RequestMagicLink(context.Context, string, string, string, string, string) error {
+	return nil
+}
+func (m *mockAuthProvider) VerifyMagicLink(context.Context, string, string, string) (*providers.MagicLinkResult, error) {
+	return nil, nil
+}
+func (m *mockAuthProvider) VerifyReminderAuthToken(context.Context, string, string, string) (*providers.MagicLinkResult, error) {
+	return nil, nil
+}
+func (m *mockAuthProvider) CreateReminderAuthToken(context.Context, string, string) (string, error) {
+	return "", nil
 }
 
 // mockAuthorizer is a test implementation of providers.Authorizer

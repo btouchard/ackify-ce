@@ -12,13 +12,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gorilla/securecookie"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/btouchard/ackify-ce/backend/pkg/types"
 )
 
@@ -27,27 +26,19 @@ import (
 // ============================================================================
 
 const (
-	testBaseURL      = "https://example.com"
-	testClientID     = "test-client-id"
-	testClientSecret = "test-client-secret"
-	testAuthURL      = "https://oauth.example.com/authorize"
-	testTokenURL     = "https://oauth.example.com/token"
-	testUserInfoURL  = "https://oauth.example.com/userinfo"
-	testLogoutURL    = "https://oauth.example.com/logout"
+	testBaseURL   = "https://example.com"
+	testAuthURL   = "https://oauth.example.com/authorize"
+	testLogoutURL = "https://oauth.example.com/logout"
 )
 
-var (
-	testCookieSecret = securecookie.GenerateRandomKey(32)
-
-	testUser = &models.User{
-		Sub:   "oauth2|123456789",
-		Email: "user@example.com",
-		Name:  "Test User",
-	}
-)
+var testUser = &models.User{
+	Sub:   "oauth2|123456789",
+	Email: "user@example.com",
+	Name:  "Test User",
+}
 
 // ============================================================================
-// HELPER FUNCTIONS
+// MOCK IMPLEMENTATIONS
 // ============================================================================
 
 // mockAuthorizer is a test implementation of providers.Authorizer
@@ -78,12 +69,24 @@ func (m *mockAuthorizer) CanCreateDocument(_ context.Context, userEmail string) 
 	return m.adminEmails[strings.ToLower(userEmail)]
 }
 
-// mockAuthProvider is a test implementation of providers.AuthProvider
+// mockAuthProvider is a unified test implementation of providers.AuthProvider
 type mockAuthProvider struct {
-	mu          sync.RWMutex
-	currentUser *types.User
+	mu               sync.RWMutex
+	currentUser      *types.User
+	oidcEnabled      bool
+	magicLinkEnabled bool
+	logoutURL        string
 }
 
+func newMockAuthProvider() *mockAuthProvider {
+	return &mockAuthProvider{
+		oidcEnabled:      true,
+		magicLinkEnabled: false,
+		logoutURL:        testLogoutURL,
+	}
+}
+
+// Session methods
 func (m *mockAuthProvider) GetCurrentUser(_ *http.Request) (*types.User, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -107,57 +110,25 @@ func (m *mockAuthProvider) Logout(_ http.ResponseWriter, _ *http.Request) {
 }
 
 func (m *mockAuthProvider) IsConfigured() bool {
-	return true
+	return m.oidcEnabled || m.magicLinkEnabled
 }
 
-// mockOAuthProvider is a test implementation of providers.OAuthAuthProvider
-type mockOAuthProvider struct {
-	mu          sync.RWMutex
-	currentUser *types.User
-	logoutURL   string
-}
-
-func newMockOAuthProvider() *mockOAuthProvider {
-	return &mockOAuthProvider{
-		logoutURL: testLogoutURL,
-	}
-}
-
-func (m *mockOAuthProvider) GetCurrentUser(_ *http.Request) (*types.User, error) {
+// OIDC methods
+func (m *mockAuthProvider) IsOIDCEnabled() bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if m.currentUser == nil {
-		return nil, http.ErrNoCookie
-	}
-	return m.currentUser, nil
+	return m.oidcEnabled
 }
 
-func (m *mockOAuthProvider) SetCurrentUser(_ http.ResponseWriter, _ *http.Request, user *types.User) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.currentUser = user
-	return nil
-}
-
-func (m *mockOAuthProvider) Logout(_ http.ResponseWriter, _ *http.Request) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.currentUser = nil
-}
-
-func (m *mockOAuthProvider) IsConfigured() bool {
-	return true
-}
-
-func (m *mockOAuthProvider) CreateAuthURL(_ http.ResponseWriter, _ *http.Request, nextURL string) string {
+func (m *mockAuthProvider) StartOIDC(_ http.ResponseWriter, _ *http.Request, nextURL string) string {
 	return testAuthURL + "?redirect_uri=" + testBaseURL + "/api/v1/auth/callback&state=test-state&next=" + nextURL
 }
 
-func (m *mockOAuthProvider) VerifyState(_ http.ResponseWriter, _ *http.Request, _ string) bool {
+func (m *mockAuthProvider) VerifyOIDCState(_ http.ResponseWriter, _ *http.Request, _ string) bool {
 	return true
 }
 
-func (m *mockOAuthProvider) HandleCallback(_ context.Context, _ http.ResponseWriter, _ *http.Request, _, _ string) (*types.User, string, error) {
+func (m *mockAuthProvider) HandleOIDCCallback(_ context.Context, _ http.ResponseWriter, _ *http.Request, _, _ string) (*types.User, string, error) {
 	return &types.User{
 		Sub:   testUser.Sub,
 		Email: testUser.Email,
@@ -165,34 +136,66 @@ func (m *mockOAuthProvider) HandleCallback(_ context.Context, _ http.ResponseWri
 	}, "/", nil
 }
 
-func (m *mockOAuthProvider) GetLogoutURL() string {
+func (m *mockAuthProvider) GetOIDCLogoutURL() string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.logoutURL
 }
 
-func (m *mockOAuthProvider) IsAllowedDomain(_ string) bool {
+func (m *mockAuthProvider) IsAllowedDomain(_ string) bool {
 	return true
 }
 
-func createTestAuthService() *auth.OauthService {
-	return auth.NewOAuthService(auth.Config{
-		BaseURL:       testBaseURL,
-		ClientID:      testClientID,
-		ClientSecret:  testClientSecret,
-		AuthURL:       testAuthURL,
-		TokenURL:      testTokenURL,
-		UserInfoURL:   testUserInfoURL,
-		LogoutURL:     testLogoutURL,
-		Scopes:        []string{"openid", "email", "profile"},
-		AllowedDomain: "",
-		CookieSecret:  testCookieSecret,
-		SecureCookies: false, // false for testing (no HTTPS)
-	})
+// MagicLink methods
+func (m *mockAuthProvider) IsMagicLinkEnabled() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.magicLinkEnabled
+}
+
+func (m *mockAuthProvider) RequestMagicLink(_ context.Context, _, _, _, _, _ string) error {
+	return nil
+}
+
+func (m *mockAuthProvider) VerifyMagicLink(_ context.Context, _, _, _ string) (*providers.MagicLinkResult, error) {
+	return &providers.MagicLinkResult{
+		Email:      "test@example.com",
+		RedirectTo: "/",
+	}, nil
+}
+
+func (m *mockAuthProvider) VerifyReminderAuthToken(_ context.Context, _, _, _ string) (*providers.MagicLinkResult, error) {
+	return &providers.MagicLinkResult{
+		Email:      "test@example.com",
+		RedirectTo: "/",
+	}, nil
+}
+
+func (m *mockAuthProvider) CreateReminderAuthToken(_ context.Context, _, _ string) (string, error) {
+	return "test-token", nil
+}
+
+// Helper for tests
+func (m *mockAuthProvider) setOIDCEnabled(enabled bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.oidcEnabled = enabled
+}
+
+func (m *mockAuthProvider) setMagicLinkEnabled(enabled bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.magicLinkEnabled = enabled
+}
+
+func (m *mockAuthProvider) setLogoutURL(url string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.logoutURL = url
 }
 
 func createTestMiddleware() *shared.Middleware {
-	authProvider := &mockAuthProvider{}
+	authProvider := newMockAuthProvider()
 	authorizer := newMockAuthorizer([]string{}, false)
 	return shared.NewMiddleware(authProvider, testBaseURL, authorizer)
 }
@@ -222,9 +225,9 @@ func TestNewHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			authProvider := &mockAuthProvider{}
+			authProvider := newMockAuthProvider()
 			middleware := createTestMiddleware()
-			handler := NewHandler(authProvider, nil, nil, middleware, tt.baseURL, true, true)
+			handler := NewHandler(authProvider, middleware, tt.baseURL)
 
 			assert.NotNil(t, handler)
 			assert.NotNil(t, handler.authProvider)
@@ -241,27 +244,22 @@ func TestNewHandler(t *testing.T) {
 func TestHandler_HandleAuthCheck_Authenticated(t *testing.T) {
 	t.Parallel()
 
-	// Use mockAuthProvider with pre-set user to test authenticated response
-	authProvider := &mockAuthProvider{
-		currentUser: &types.User{
-			Sub:   testUser.Sub,
-			Email: testUser.Email,
-			Name:  testUser.Name,
-		},
+	authProvider := newMockAuthProvider()
+	authProvider.currentUser = &types.User{
+		Sub:   testUser.Sub,
+		Email: testUser.Email,
+		Name:  testUser.Name,
 	}
-	handler := NewHandler(authProvider, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 	rec := httptest.NewRecorder()
 
-	// Execute
 	handler.HandleAuthCheck(rec, req)
 
-	// Assert
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
-	// Parse response
 	var wrapper struct {
 		Data struct {
 			Authenticated bool                   `json:"authenticated"`
@@ -271,7 +269,6 @@ func TestHandler_HandleAuthCheck_Authenticated(t *testing.T) {
 	err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
 	require.NoError(t, err, "Response should be valid JSON")
 
-	// Validate fields
 	assert.True(t, wrapper.Data.Authenticated)
 	assert.NotNil(t, wrapper.Data.User)
 	assert.Equal(t, testUser.Sub, wrapper.Data.User["id"])
@@ -289,7 +286,7 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 		{
 			name: "no session cookie",
 			setupFunc: func(req *http.Request) *http.Request {
-				return req // No modifications
+				return req
 			},
 		},
 		{
@@ -308,19 +305,16 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+			handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 			req = tt.setupFunc(req)
 			rec := httptest.NewRecorder()
 
-			// Execute
 			handler.HandleAuthCheck(rec, req)
 
-			// Assert
 			assert.Equal(t, http.StatusOK, rec.Code)
 
-			// Parse response
 			var wrapper struct {
 				Data struct {
 					Authenticated bool `json:"authenticated"`
@@ -337,33 +331,27 @@ func TestHandler_HandleAuthCheck_NotAuthenticated(t *testing.T) {
 func TestHandler_HandleAuthCheck_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 	rec := httptest.NewRecorder()
 
 	handler.HandleAuthCheck(rec, req)
 
-	// Check Content-Type
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Validate JSON structure
 	var response map[string]interface{}
 	err := json.Unmarshal(rec.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	// Check wrapper structure
 	assert.Contains(t, response, "data")
 
-	// Get data object
 	data, ok := response["data"].(map[string]interface{})
 	require.True(t, ok, "data should be an object")
 
-	// Check required field
 	assert.Contains(t, data, "authenticated")
 
-	// Validate field type
 	_, ok = data["authenticated"].(bool)
 	assert.True(t, ok, "authenticated should be a boolean")
 }
@@ -375,64 +363,46 @@ func TestHandler_HandleAuthCheck_ResponseFormat(t *testing.T) {
 func TestHandler_HandleLogout_WithSSO(t *testing.T) {
 	t.Parallel()
 
-	oauthProvider := newMockOAuthProvider()
-	authService := createTestAuthService()
-	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
 
-	// Set user in session first
-	err := authService.SetUser(rec, req, testUser)
-	require.NoError(t, err)
+	handler.HandleLogout(rec, req)
 
-	// Get the session cookie
-	cookies := rec.Result().Cookies()
-	req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
-	for _, cookie := range cookies {
-		req2.AddCookie(cookie)
-	}
-	rec2 := httptest.NewRecorder()
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
-	// Execute logout
-	handler.HandleLogout(rec2, req2)
-
-	// Assert
-	assert.Equal(t, http.StatusOK, rec2.Code)
-	assert.Equal(t, "application/json", rec2.Header().Get("Content-Type"))
-
-	// Parse response
 	var wrapper struct {
 		Data struct {
 			Message     string `json:"message"`
 			RedirectURL string `json:"redirectUrl"`
 		} `json:"data"`
 	}
-	err = json.Unmarshal(rec2.Body.Bytes(), &wrapper)
+	err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
 	require.NoError(t, err)
 
 	assert.Equal(t, "Successfully logged out", wrapper.Data.Message)
 	assert.Contains(t, wrapper.Data.RedirectURL, testLogoutURL)
 	assert.Contains(t, wrapper.Data.RedirectURL, "post_logout_redirect_uri")
-	// testBaseURL is URL-encoded in the redirect URL
 	assert.Contains(t, wrapper.Data.RedirectURL, url.QueryEscape(testBaseURL))
 }
 
 func TestHandler_HandleLogout_WithoutSSO(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	authProvider.setLogoutURL("")
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
 
-	// Execute
 	handler.HandleLogout(rec, req)
 
-	// Assert
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Parse response
 	var wrapper struct {
 		Data struct {
 			Message     string `json:"message"`
@@ -449,47 +419,36 @@ func TestHandler_HandleLogout_WithoutSSO(t *testing.T) {
 func TestHandler_HandleLogout_ClearsSession(t *testing.T) {
 	t.Parallel()
 
-	oauthProvider := newMockOAuthProvider()
-	authService := createTestAuthService()
-	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	authProvider.currentUser = &types.User{Sub: "test"}
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
-	// Set user in session
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
 	rec := httptest.NewRecorder()
-	err := authService.SetUser(rec, req, testUser)
-	require.NoError(t, err)
 
-	// Get the session cookie
-	cookies := rec.Result().Cookies()
-	req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/logout", nil)
-	for _, cookie := range cookies {
-		req2.AddCookie(cookie)
-	}
-	rec2 := httptest.NewRecorder()
+	handler.HandleLogout(rec, req)
 
-	// Execute logout
-	handler.HandleLogout(rec2, req2)
+	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Verify that logout was called by checking status code
-	assert.Equal(t, http.StatusOK, rec2.Code)
-
-	// Verify the response contains the expected structure
 	var wrapper struct {
 		Data struct {
 			Message     string `json:"message"`
 			RedirectURL string `json:"redirectUrl"`
 		} `json:"data"`
 	}
-	err = json.Unmarshal(rec2.Body.Bytes(), &wrapper)
+	err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
 	require.NoError(t, err)
 	assert.Equal(t, "Successfully logged out", wrapper.Data.Message)
+
+	// Verify session was cleared
+	assert.Nil(t, authProvider.currentUser)
 }
 
 // ============================================================================
-// TESTS - HandleStartOAuth
+// TESTS - HandleStartOIDC
 // ============================================================================
 
-func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
+func TestHandler_HandleStartOIDC_WithRedirect(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -518,8 +477,8 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			oauthProvider := newMockOAuthProvider()
-			handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+			authProvider := newMockAuthProvider()
+			handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 			body, err := json.Marshal(tt.requestBody)
 			require.NoError(t, err)
@@ -528,14 +487,11 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 
-			// Execute
-			handler.HandleStartOAuth(rec, req)
+			handler.HandleStartOIDC(rec, req)
 
-			// Assert
 			assert.Equal(t, http.StatusOK, rec.Code)
 			assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
-			// Parse response
 			var wrapper struct {
 				Data struct {
 					RedirectURL string `json:"redirectUrl"`
@@ -544,29 +500,25 @@ func TestHandler_HandleStartOAuth_WithRedirect(t *testing.T) {
 			err = json.Unmarshal(rec.Body.Bytes(), &wrapper)
 			require.NoError(t, err)
 
-			// Validate redirect URL contains OAuth provider URL
 			assert.NotEmpty(t, wrapper.Data.RedirectURL)
 			assert.Contains(t, wrapper.Data.RedirectURL, testAuthURL)
 		})
 	}
 }
 
-func TestHandler_HandleStartOAuth_NoBody(t *testing.T) {
+func TestHandler_HandleStartOIDC_NoBody(t *testing.T) {
 	t.Parallel()
 
-	oauthProvider := newMockOAuthProvider()
-	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 	rec := httptest.NewRecorder()
 
-	// Execute
-	handler.HandleStartOAuth(rec, req)
+	handler.HandleStartOIDC(rec, req)
 
-	// Assert
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Parse response
 	var wrapper struct {
 		Data struct {
 			RedirectURL string `json:"redirectUrl"`
@@ -575,28 +527,24 @@ func TestHandler_HandleStartOAuth_NoBody(t *testing.T) {
 	err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
 	require.NoError(t, err)
 
-	// Should default to root redirect
 	assert.NotEmpty(t, wrapper.Data.RedirectURL)
 	assert.Contains(t, wrapper.Data.RedirectURL, testAuthURL)
 }
 
-func TestHandler_HandleStartOAuth_InvalidJSON(t *testing.T) {
+func TestHandler_HandleStartOIDC_InvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	oauthProvider := newMockOAuthProvider()
-	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", bytes.NewReader([]byte("invalid-json")))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 
-	// Execute
-	handler.HandleStartOAuth(rec, req)
+	handler.HandleStartOIDC(rec, req)
 
-	// Assert - should still succeed and default to "/"
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Parse response
 	var wrapper struct {
 		Data struct {
 			RedirectURL string `json:"redirectUrl"`
@@ -608,37 +556,46 @@ func TestHandler_HandleStartOAuth_InvalidJSON(t *testing.T) {
 	assert.NotEmpty(t, wrapper.Data.RedirectURL)
 }
 
-func TestHandler_HandleStartOAuth_ResponseFormat(t *testing.T) {
+func TestHandler_HandleStartOIDC_Disabled(t *testing.T) {
 	t.Parallel()
 
-	oauthProvider := newMockOAuthProvider()
-	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	authProvider.setOIDCEnabled(false)
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 	rec := httptest.NewRecorder()
 
-	handler.HandleStartOAuth(rec, req)
+	handler.HandleStartOIDC(rec, req)
 
-	// Check Content-Type
+	assert.Equal(t, http.StatusServiceUnavailable, rec.Code)
+}
+
+func TestHandler_HandleStartOIDC_ResponseFormat(t *testing.T) {
+	t.Parallel()
+
+	authProvider := newMockAuthProvider()
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
+	rec := httptest.NewRecorder()
+
+	handler.HandleStartOIDC(rec, req)
+
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Validate JSON structure
 	var response map[string]interface{}
 	err := json.Unmarshal(rec.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	// Check wrapper structure
 	assert.Contains(t, response, "data")
 
-	// Get data object
 	data, ok := response["data"].(map[string]interface{})
 	require.True(t, ok, "data should be an object")
 
-	// Check required field
 	assert.Contains(t, data, "redirectUrl")
 
-	// Validate field type
 	redirectURL, ok := data["redirectUrl"].(string)
 	assert.True(t, ok, "redirectUrl should be a string")
 	assert.NotEmpty(t, redirectURL)
@@ -651,19 +608,16 @@ func TestHandler_HandleStartOAuth_ResponseFormat(t *testing.T) {
 func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	rec := httptest.NewRecorder()
 
-	// Execute
 	handler.HandleGetCSRFToken(rec, req)
 
-	// Assert
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 
-	// Parse response
 	var wrapper struct {
 		Data struct {
 			Token string `json:"token"`
@@ -672,11 +626,9 @@ func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 	err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
 	require.NoError(t, err)
 
-	// Validate token
 	assert.NotEmpty(t, wrapper.Data.Token)
 	assert.Greater(t, len(wrapper.Data.Token), 20, "CSRF token should be sufficiently long")
 
-	// Check cookie was set
 	cookies := rec.Result().Cookies()
 	var csrfCookie *http.Cookie
 	for _, cookie := range cookies {
@@ -697,36 +649,95 @@ func TestHandler_HandleGetCSRFToken_Success(t *testing.T) {
 func TestHandler_HandleGetCSRFToken_ResponseFormat(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	rec := httptest.NewRecorder()
 
 	handler.HandleGetCSRFToken(rec, req)
 
-	// Check Content-Type
 	assert.Equal(t, "application/json", rec.Header().Get("Content-Type"))
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Validate JSON structure
 	var response map[string]interface{}
 	err := json.Unmarshal(rec.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	// Check wrapper structure
 	assert.Contains(t, response, "data")
 
-	// Get data object
 	data, ok := response["data"].(map[string]interface{})
 	require.True(t, ok, "data should be an object")
 
-	// Check required field
 	assert.Contains(t, data, "token")
 
-	// Validate field type
 	token, ok := data["token"].(string)
 	assert.True(t, ok, "token should be a string")
 	assert.NotEmpty(t, token)
+}
+
+// ============================================================================
+// TESTS - HandleGetAuthConfig
+// ============================================================================
+
+func TestHandler_HandleGetAuthConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		oidcEnabled      bool
+		magicLinkEnabled bool
+	}{
+		{
+			name:             "both enabled",
+			oidcEnabled:      true,
+			magicLinkEnabled: true,
+		},
+		{
+			name:             "only oidc",
+			oidcEnabled:      true,
+			magicLinkEnabled: false,
+		},
+		{
+			name:             "only magiclink",
+			oidcEnabled:      false,
+			magicLinkEnabled: true,
+		},
+		{
+			name:             "neither enabled",
+			oidcEnabled:      false,
+			magicLinkEnabled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			authProvider := newMockAuthProvider()
+			authProvider.setOIDCEnabled(tt.oidcEnabled)
+			authProvider.setMagicLinkEnabled(tt.magicLinkEnabled)
+			handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
+
+			req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/config", nil)
+			rec := httptest.NewRecorder()
+
+			handler.HandleGetAuthConfig(rec, req)
+
+			assert.Equal(t, http.StatusOK, rec.Code)
+
+			var wrapper struct {
+				Data struct {
+					OAuth     bool `json:"oauth"`
+					MagicLink bool `json:"magiclink"`
+				} `json:"data"`
+			}
+			err := json.Unmarshal(rec.Body.Bytes(), &wrapper)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.oidcEnabled, wrapper.Data.OAuth)
+			assert.Equal(t, tt.magicLinkEnabled, wrapper.Data.MagicLink)
+		})
+	}
 }
 
 // ============================================================================
@@ -736,55 +747,32 @@ func TestHandler_HandleGetCSRFToken_ResponseFormat(t *testing.T) {
 func TestHandler_HandleAuthCheck_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	authService := createTestAuthService()
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
 	errors := make(chan error, numRequests)
 
-	// Spawn concurrent requests
 	for i := 0; i < numRequests; i++ {
-		go func(id int) {
+		go func() {
 			defer func() { done <- true }()
 
 			req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
 			rec := httptest.NewRecorder()
 
-			// Half with session, half without
-			if id%2 == 0 {
-				err := authService.SetUser(rec, req, testUser)
-				if err != nil {
-					errors <- err
-					return
-				}
-				cookies := rec.Result().Cookies()
-				req2 := httptest.NewRequest(http.MethodGet, "/api/v1/auth/check", nil)
-				for _, cookie := range cookies {
-					req2.AddCookie(cookie)
-				}
-				rec2 := httptest.NewRecorder()
-				handler.HandleAuthCheck(rec2, req2)
+			handler.HandleAuthCheck(rec, req)
 
-				if rec2.Code != http.StatusOK {
-					errors <- assert.AnError
-				}
-			} else {
-				handler.HandleAuthCheck(rec, req)
-				if rec.Code != http.StatusOK {
-					errors <- assert.AnError
-				}
+			if rec.Code != http.StatusOK {
+				errors <- assert.AnError
 			}
-		}(i)
+		}()
 	}
 
-	// Wait for all requests
 	for i := 0; i < numRequests; i++ {
 		<-done
 	}
 	close(errors)
 
-	// Check for errors
 	var errCount int
 	for err := range errors {
 		t.Logf("Concurrent request error: %v", err)
@@ -797,13 +785,12 @@ func TestHandler_HandleAuthCheck_Concurrent(t *testing.T) {
 func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
 	errors := make(chan error, numRequests)
 
-	// Spawn concurrent logout requests
 	for i := 0; i < numRequests; i++ {
 		go func() {
 			defer func() { done <- true }()
@@ -828,13 +815,11 @@ func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 		}()
 	}
 
-	// Wait for all requests
 	for i := 0; i < numRequests; i++ {
 		<-done
 	}
 	close(errors)
 
-	// Check for errors
 	var errCount int
 	for err := range errors {
 		t.Logf("Concurrent request error: %v", err)
@@ -844,17 +829,16 @@ func TestHandler_HandleLogout_Concurrent(t *testing.T) {
 	assert.Equal(t, 0, errCount, "All concurrent requests should succeed")
 }
 
-func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
+func TestHandler_HandleStartOIDC_Concurrent(t *testing.T) {
 	t.Parallel()
 
-	oauthProvider := newMockOAuthProvider()
-	handler := NewHandler(oauthProvider, oauthProvider, nil, createTestMiddleware(), testBaseURL, true, true)
+	authProvider := newMockAuthProvider()
+	handler := NewHandler(authProvider, createTestMiddleware(), testBaseURL)
 
 	const numRequests = 100
 	done := make(chan bool, numRequests)
 	errors := make(chan error, numRequests)
 
-	// Spawn concurrent OAuth start requests
 	for i := 0; i < numRequests; i++ {
 		go func() {
 			defer func() { done <- true }()
@@ -862,7 +846,7 @@ func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 			rec := httptest.NewRecorder()
 
-			handler.HandleStartOAuth(rec, req)
+			handler.HandleStartOIDC(rec, req)
 
 			if rec.Code != http.StatusOK {
 				errors <- assert.AnError
@@ -884,13 +868,11 @@ func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 		}()
 	}
 
-	// Wait for all requests
 	for i := 0; i < numRequests; i++ {
 		<-done
 	}
 	close(errors)
 
-	// Check for errors
 	var errCount int
 	for err := range errors {
 		t.Logf("Concurrent request error: %v", err)
@@ -905,7 +887,7 @@ func TestHandler_HandleStartOAuth_Concurrent(t *testing.T) {
 // ============================================================================
 
 func BenchmarkHandler_HandleAuthCheck(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.ResetTimer()
 
@@ -918,7 +900,7 @@ func BenchmarkHandler_HandleAuthCheck(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleAuthCheck_Parallel(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -931,7 +913,7 @@ func BenchmarkHandler_HandleAuthCheck_Parallel(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleLogout(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.ResetTimer()
 
@@ -944,7 +926,7 @@ func BenchmarkHandler_HandleLogout(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleLogout_Parallel(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -956,8 +938,8 @@ func BenchmarkHandler_HandleLogout_Parallel(b *testing.B) {
 	})
 }
 
-func BenchmarkHandler_HandleStartOAuth(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+func BenchmarkHandler_HandleStartOIDC(b *testing.B) {
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.ResetTimer()
 
@@ -965,25 +947,25 @@ func BenchmarkHandler_HandleStartOAuth(b *testing.B) {
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 		rec := httptest.NewRecorder()
 
-		handler.HandleStartOAuth(rec, req)
+		handler.HandleStartOIDC(rec, req)
 	}
 }
 
-func BenchmarkHandler_HandleStartOAuth_Parallel(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+func BenchmarkHandler_HandleStartOIDC_Parallel(b *testing.B) {
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/start", nil)
 			rec := httptest.NewRecorder()
 
-			handler.HandleStartOAuth(rec, req)
+			handler.HandleStartOIDC(rec, req)
 		}
 	})
 }
 
 func BenchmarkHandler_HandleGetCSRFToken(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.ResetTimer()
 
@@ -996,7 +978,7 @@ func BenchmarkHandler_HandleGetCSRFToken(b *testing.B) {
 }
 
 func BenchmarkHandler_HandleGetCSRFToken_Parallel(b *testing.B) {
-	handler := NewHandler(&mockAuthProvider{}, nil, nil, createTestMiddleware(), testBaseURL, true, true)
+	handler := NewHandler(newMockAuthProvider(), createTestMiddleware(), testBaseURL)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

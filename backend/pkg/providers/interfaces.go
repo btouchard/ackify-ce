@@ -19,12 +19,13 @@ const (
 	ErrProviderDisabledMsg = "provider is disabled"
 )
 
-// AuthProvider defines the interface for authentication providers.
-// Implementations: OAuth2Provider, MagicLinkProvider, CompositeAuthProvider (CE),
-// Auth0Provider, KeycloakProvider (SaaS), etc.
+// AuthProvider defines the unified interface for all authentication methods.
+// This single interface handles sessions, OIDC, MagicLink, and future auth methods.
+// Configuration is read dynamically from ConfigService to support hot-reload.
 type AuthProvider interface {
-	// GetCurrentUser returns the authenticated user from the request context/session.
-	// Returns error if no user is authenticated.
+	// === Session Management (always available) ===
+
+	// GetCurrentUser returns the authenticated user from the session.
 	GetCurrentUser(r *http.Request) (*types.User, error)
 
 	// SetCurrentUser stores the authenticated user in the session.
@@ -33,31 +34,52 @@ type AuthProvider interface {
 	// Logout clears the user session.
 	Logout(w http.ResponseWriter, r *http.Request)
 
-	// IsConfigured returns true if this provider is properly configured and enabled.
+	// IsConfigured returns true if at least one auth method is enabled.
 	IsConfigured() bool
+
+	// === OIDC Authentication (dynamically enabled via config) ===
+
+	// IsOIDCEnabled returns true if OIDC is enabled in current config.
+	IsOIDCEnabled() bool
+
+	// StartOIDC generates the OAuth2/OIDC authorization URL.
+	StartOIDC(w http.ResponseWriter, r *http.Request, nextURL string) string
+
+	// VerifyOIDCState verifies the OAuth2 state token to prevent CSRF.
+	VerifyOIDCState(w http.ResponseWriter, r *http.Request, stateToken string) bool
+
+	// HandleOIDCCallback processes the OAuth2/OIDC callback.
+	HandleOIDCCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, code, state string) (*types.User, string, error)
+
+	// GetOIDCLogoutURL returns the OIDC provider's logout URL if configured.
+	GetOIDCLogoutURL() string
+
+	// IsAllowedDomain checks if the email domain is allowed for OIDC.
+	IsAllowedDomain(email string) bool
+
+	// === MagicLink Authentication (dynamically enabled via config) ===
+
+	// IsMagicLinkEnabled returns true if MagicLink is enabled in current config.
+	IsMagicLinkEnabled() bool
+
+	// RequestMagicLink sends a magic link email.
+	RequestMagicLink(ctx context.Context, email, redirectTo, ip, userAgent, locale string) error
+
+	// VerifyMagicLink verifies a magic link token and returns user info.
+	VerifyMagicLink(ctx context.Context, token, ip, userAgent string) (*MagicLinkResult, error)
+
+	// VerifyReminderAuthToken verifies a reminder auth token.
+	VerifyReminderAuthToken(ctx context.Context, token, ip, userAgent string) (*MagicLinkResult, error)
+
+	// CreateReminderAuthToken creates an auth token for reminder emails.
+	CreateReminderAuthToken(ctx context.Context, email, docID string) (string, error)
 }
 
-// OAuthAuthProvider extends AuthProvider with OAuth2-specific methods.
-// Used when OAuth2 authentication is enabled.
-type OAuthAuthProvider interface {
-	AuthProvider
-
-	// CreateAuthURL generates the OAuth2 authorization URL.
-	// The nextURL parameter specifies where to redirect after successful auth.
-	CreateAuthURL(w http.ResponseWriter, r *http.Request, nextURL string) string
-
-	// VerifyState verifies the OAuth2 state token to prevent CSRF.
-	VerifyState(w http.ResponseWriter, r *http.Request, stateToken string) bool
-
-	// HandleCallback processes the OAuth2 callback.
-	// Returns the authenticated user and the redirect URL.
-	HandleCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, code, state string) (*types.User, string, error)
-
-	// GetLogoutURL returns the OAuth2 provider's logout URL if available.
-	GetLogoutURL() string
-
-	// IsAllowedDomain checks if the email domain is allowed.
-	IsAllowedDomain(email string) bool
+// MagicLinkResult represents the result of verifying a magic link.
+type MagicLinkResult struct {
+	Email      string
+	RedirectTo string
+	DocID      *string // Non-nil for reminder auth tokens
 }
 
 // Authorizer defines the interface for authorization decisions.
@@ -69,4 +91,12 @@ type Authorizer interface {
 
 	// CanCreateDocument returns true if the user can create documents.
 	CanCreateDocument(ctx context.Context, userEmail string) bool
+}
+
+// === Legacy interfaces for backward compatibility ===
+// These will be removed in a future version.
+
+// OAuthAuthProvider is deprecated. Use AuthProvider instead.
+type OAuthAuthProvider interface {
+	AuthProvider
 }

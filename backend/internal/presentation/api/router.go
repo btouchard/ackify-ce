@@ -116,12 +116,11 @@ type RouterConfig struct {
 	TenantProvider tenant.Provider // Required for tenant context
 
 	// Capability providers
-	AuthProvider  providers.AuthProvider      // Required for session management
-	OAuthProvider providers.OAuthAuthProvider // Optional, for OAuth authentication
-	Authorizer    providers.Authorizer        // Required for authorization decisions
+	// AuthProvider handles all auth methods (sessions, OIDC, MagicLink) dynamically
+	AuthProvider providers.AuthProvider // Required - unified auth provider
+	Authorizer   providers.Authorizer   // Required for authorization decisions
 
 	// Services
-	MagicLinkService magicLinkService
 	SignatureService signatureService
 	DocumentService  documentService
 	AdminService     adminService
@@ -136,9 +135,6 @@ type RouterConfig struct {
 
 	// Configuration
 	BaseURL           string
-	AutoLogin         bool
-	OAuthEnabled      bool
-	MagicLinkEnabled  bool
 	AuthRateLimit     int // Global auth rate limit (requests per minute), default: 5
 	DocumentRateLimit int // Document creation rate limit (requests per minute), default: 10
 	GeneralRateLimit  int // General API rate limit (requests per minute), default: 100
@@ -189,7 +185,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 	// Initialize handlers
 	healthHandler := health.NewHandler()
-	authHandler := apiAuth.NewHandler(cfg.AuthProvider, cfg.OAuthProvider, cfg.MagicLinkService, apiMiddleware, cfg.BaseURL, cfg.OAuthEnabled, cfg.MagicLinkEnabled)
+	authHandler := apiAuth.NewHandler(cfg.AuthProvider, apiMiddleware, cfg.BaseURL)
 	usersHandler := users.NewHandler(cfg.Authorizer)
 	documentsHandler := documents.NewHandler(
 		cfg.SignatureService,
@@ -218,7 +214,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		// Proxy for streaming external documents (has its own rate limiting)
 		r.Get("/proxy", proxyHandler.HandleProxy)
 
-		// Auth endpoints
+		// Auth endpoints - all routes defined, handlers check if method is enabled
 		r.Route("/auth", func(r chi.Router) {
 			// Public endpoint to expose available authentication methods
 			r.Get("/config", authHandler.HandleGetAuthConfig)
@@ -227,28 +223,18 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 			r.Group(func(r chi.Router) {
 				r.Use(authRateLimit.Middleware)
 
-				// OAuth endpoints (conditional)
-				if cfg.OAuthEnabled {
-					r.Post("/start", authHandler.HandleStartOAuth)
-					r.Get("/callback", authHandler.HandleOAuthCallback)
+				// OIDC endpoints (handler checks if enabled dynamically)
+				r.Post("/start", authHandler.HandleStartOIDC)
+				r.Get("/callback", authHandler.HandleOIDCCallback)
+				r.Get("/check", authHandler.HandleAuthCheck)
 
-					if cfg.AutoLogin {
-						r.Get("/check", authHandler.HandleAuthCheck)
-					}
-				}
+				// Magic Link endpoints (handler checks if enabled dynamically)
+				r.Post("/magic-link/request", authHandler.HandleRequestMagicLink)
+				r.Get("/magic-link/verify", authHandler.HandleVerifyMagicLink)
+				r.Get("/reminder-link/verify", authHandler.HandleVerifyReminderAuthLink)
 
-				// Magic Link endpoints (conditional)
-				if cfg.MagicLinkEnabled {
-					r.Post("/magic-link/request", authHandler.HandleRequestMagicLink)
-					r.Get("/magic-link/verify", authHandler.HandleVerifyMagicLink)
-					// Reminder auth link (authentification via email de reminder)
-					r.Get("/reminder-link/verify", authHandler.HandleVerifyReminderAuthLink)
-				}
-
-				// Logout endpoint (available for both OAuth and MagicLink)
-				if cfg.OAuthEnabled || cfg.MagicLinkEnabled {
-					r.Get("/logout", authHandler.HandleLogout)
-				}
+				// Logout endpoint (always available)
+				r.Get("/logout", authHandler.HandleLogout)
 			})
 		})
 

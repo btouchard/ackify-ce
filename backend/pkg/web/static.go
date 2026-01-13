@@ -23,15 +23,10 @@ type SignatureRepository interface {
 }
 
 // EmbedFolder returns an http.HandlerFunc that serves an embedded filesystem
-// with SPA fallback support (serves index.html for non-existent routes)
-// For index.html, it replaces __ACKIFY_BASE_URL__ placeholder with the actual base URL,
-// __ACKIFY_VERSION__ with the application version,
-// __ACKIFY_OAUTH_ENABLED__ and __ACKIFY_MAGICLINK_ENABLED__ with auth method flags,
-// __ACKIFY_SMTP_ENABLED__ with SMTP availability flag,
-// __ACKIFY_ONLY_ADMIN_CAN_CREATE__ with document creation restriction flag,
-// __ACKIFY_STORAGE_ENABLED__ with storage availability flag,
-// and __META_TAGS__ with dynamic meta tags based on query parameters
-func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, storageEnabled bool, signatureRepo SignatureRepository) http.HandlerFunc {
+// with SPA fallback support (serves index.html for non-existent routes).
+// Configuration values are fetched dynamically from ConfigProvider on each request
+// to support hot-reload.
+func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, configProvider ConfigProvider, signatureRepo SignatureRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fsys, err := fs.Sub(fsEmbed, targetPath)
 		if err != nil {
@@ -70,6 +65,14 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 		defer file.Close()
 
 		if shouldServeIndex || strings.HasSuffix(cleanPath, "index.html") {
+			// Get dynamic config values from ConfigProvider
+			cfg := configProvider.GetConfig()
+			oauthEnabled := cfg.OIDC.Enabled
+			magicLinkEnabled := cfg.MagicLink.Enabled
+			smtpEnabled := cfg.SMTP.Host != ""
+			onlyAdminCanCreate := cfg.General.OnlyAdminCanCreate
+			storageEnabled := cfg.Storage.Type != ""
+
 			serveIndexTemplate(w, r, file, baseURL, version, oauthEnabled, magicLinkEnabled, smtpEnabled, onlyAdminCanCreate, storageEnabled, signatureRepo)
 			return
 		}

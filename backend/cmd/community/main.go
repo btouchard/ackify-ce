@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
@@ -55,36 +56,47 @@ func main() {
 		log.Fatalf("failed to initialize tenant provider: %v", err)
 	}
 
+	// Create repositories needed for auth
 	oauthSessionRepo := database.NewOAuthSessionRepository(db, tenantProvider)
+	configRepo := database.NewConfigRepository(db, tenantProvider)
 
-	var oauthService *auth.OauthService
-	if cfg.Auth.OAuthEnabled || cfg.Auth.MagicLinkEnabled {
-		oauthService = auth.NewOAuthService(auth.Config{
-			BaseURL:       cfg.App.BaseURL,
-			ClientID:      cfg.OAuth.ClientID,
-			ClientSecret:  cfg.OAuth.ClientSecret,
-			AuthURL:       cfg.OAuth.AuthURL,
-			TokenURL:      cfg.OAuth.TokenURL,
-			UserInfoURL:   cfg.OAuth.UserInfoURL,
-			LogoutURL:     cfg.OAuth.LogoutURL,
-			Scopes:        cfg.OAuth.Scopes,
-			AllowedDomain: cfg.OAuth.AllowedDomain,
-			CookieSecret:  cfg.OAuth.CookieSecret,
-			SecureCookies: cfg.App.SecureCookies,
-			SessionRepo:   oauthSessionRepo,
-		})
+	// Create ConfigService (needed for dynamic auth config)
+	encryptionKey := cfg.OAuth.CookieSecret
+	configService := services.NewConfigService(configRepo, cfg, encryptionKey)
+
+	// Initialize config from DB or ENV
+	err = tenant.WithTenantContextFromProvider(ctx, db, tenantProvider, func(txCtx context.Context) error {
+		return configService.Initialize(txCtx)
+	})
+	if err != nil {
+		logger.Logger.Warn("Failed to initialize config service, using ENV config", "error", err)
 	}
 
-	oauthProvider := webauth.NewOAuthProvider(oauthService, cfg.Auth.OAuthEnabled)
+	// Create SessionService (always needed for session management)
+	sessionService := auth.NewSessionService(auth.SessionServiceConfig{
+		CookieSecret:  cfg.OAuth.CookieSecret,
+		SecureCookies: cfg.App.SecureCookies,
+		SessionRepo:   oauthSessionRepo,
+	})
+
+	// Create DynamicAuthProvider (unified auth for OIDC + MagicLink)
+	authProvider := webauth.NewDynamicAuthProvider(webauth.DynamicAuthProviderConfig{
+		ConfigProvider: configService,
+		SessionService: sessionService,
+		BaseURL:        cfg.App.BaseURL,
+		// MagicLinkService will be set by ServerBuilder
+	})
+
+	// Create authorizer
 	authorizer := webauth.NewSimpleAuthorizer(cfg.App.AdminEmails, cfg.App.OnlyAdminCanCreate)
 
 	// === Build Server ===
 	server, err := web.NewServerBuilder(cfg, frontend, Version).
 		WithDB(db).
 		WithTenantProvider(tenantProvider).
-		WithOAuthProvider(oauthProvider). // OAuth provider for OAuth-specific operations
-		WithAuthorizer(authorizer).       // Authorization decisions
-		// QuotaEnforcer and AuditLogger use defaults (NoLimit, LogOnly)
+		WithAuthProvider(authProvider).
+		WithAuthorizer(authorizer).
+		WithConfigService(configService).
 		Build(ctx)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
