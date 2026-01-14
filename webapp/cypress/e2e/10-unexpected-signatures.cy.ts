@@ -19,8 +19,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="new-doc-input"]').type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Add alice and bob as expected signers
@@ -35,7 +35,7 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
 
     // Verify initial stats
     cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('Signed').parent().should('contain', '0')
+    cy.contains('Confirmed').parent().should('contain', '0')
 
     // ===== STEP 2: Charlie (not expected) accesses and signs the document =====
     cy.log('STEP 2: Unexpected user (Charlie) signs the document')
@@ -61,7 +61,7 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
 
     // Stats should show: 0/2 expected signed, but there's an unexpected signature
     cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('Signed').parent().should('contain', '0') // 0 expected signed
+    cy.contains('Confirmed').parent().should('contain', '0') // 0 expected signed
 
     // Unexpected signatures section should exist
     cy.contains(/Unexpected|Additional.*confirmations/, { timeout: 10000 }).should('be.visible')
@@ -89,10 +89,9 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit(`/admin/docs/${docId}`)
 
-    // Expected stats: 1/2 signed (50%)
-    cy.contains('Signed', { timeout: 10000 }).parent().should('contain', '1')
+    // Expected stats: 1/2 signed
+    cy.contains('Confirmed', { timeout: 10000 }).parent().should('contain', '1')
     cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('50%').should('be.visible')
 
     // Alice should show "Confirmed" in expected section
     cy.contains('tr', alice).should('contain', 'Confirmed')
@@ -115,8 +114,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="new-doc-input"]').type(multiDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(multiDocId)
+    cy.get('[data-testid="submit-button"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${multiDocId}`)
 

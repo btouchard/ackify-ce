@@ -17,8 +17,8 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="new-doc-input"]').type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
@@ -57,7 +57,7 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 7: Verify stats (1 signed, 1 pending)
-    cy.contains('Signed').parent().should('contain', '1')
+    cy.contains('Confirmed').parent().should('contain', '1')
     cy.contains('Pending').parent().should('contain', '1')
 
     // Step 8: Send reminders to all pending
@@ -68,7 +68,7 @@ describe('Test 4: Admin - Email Reminders', () => {
 
     // Confirm in modal
     cy.contains('Send reminders', { timeout: 5000 }).should('be.visible')
-    cy.contains('button', 'Confirm').click({ force: true })
+    cy.get('[data-testid="confirm-button"]').click({ force: true })
 
     // Step 9: Wait for API call to complete
     cy.wait(2000)

@@ -20,8 +20,8 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     cy.contains('Administration', { timeout: 10000 }).should('be.visible')
 
     // Step 3: Create new document
-    cy.get('[data-testid="new-doc-input"]').type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
 
     // Step 4: Should redirect to document detail page
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
@@ -63,8 +63,7 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     // Step 8: Verify stats
     cy.contains('Expected').should('be.visible')
     cy.contains('3').should('be.visible') // 3 expected signers
-    cy.contains('0').should('be.visible') // 0 signed
-    cy.contains('0%').should('be.visible') // 0% completion rate (nobody signed yet)
+    cy.contains('Confirmed').parent().should('contain', '0') // 0 confirmed
   })
 
   it('should allow admin to remove expected signer', () => {
@@ -74,8 +73,8 @@ describe('Test 3: Admin - Expected Signers Management', () => {
 
     // Create document
     const removeDocId = 'test-remove-signer-' + Date.now()
-    cy.get('[data-testid="new-doc-input"]').type(removeDocId)
-    cy.get('[data-testid="create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(removeDocId)
+    cy.get('[data-testid="submit-button"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${removeDocId}`)
 

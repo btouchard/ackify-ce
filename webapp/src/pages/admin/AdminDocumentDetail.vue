@@ -1109,8 +1109,8 @@ onMounted(() => {
         <div class="p-6 space-y-4">
           <p class="text-sm text-slate-600 dark:text-slate-400">{{ remindersMessage }}</p>
           <div class="flex justify-end space-x-3 pt-4">
-            <button type="button" @click="cancelSendReminders" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-            <button @click="sendRemindersAction" :disabled="sendingReminders" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+            <button type="button" data-testid="cancel-button" @click="cancelSendReminders" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+            <button data-testid="confirm-button" @click="sendRemindersAction" :disabled="sendingReminders" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
               <Loader2 v-if="sendingReminders" :size="16" class="animate-spin" />
               {{ t('common.confirm') }}
             </button>

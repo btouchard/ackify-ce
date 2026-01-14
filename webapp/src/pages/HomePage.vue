@@ -602,8 +602,8 @@ onMounted(async () => {
                 <SignatureList
                   :signatures="documentSignatures"
                   :loading="loadingSignatures"
-                  :show-user-info="true"
                   :show-details="true"
+                  :compact="true"
                 />
               </div>
             </div>

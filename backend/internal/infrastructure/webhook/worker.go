@@ -66,7 +66,7 @@ type Worker struct {
 	started  bool
 }
 
-func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig, db *sql.DB, tenants tenant.Provider) *Worker {
+func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig, parentCtx context.Context, db *sql.DB, tenants tenant.Provider) *Worker {
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 10
 	}
@@ -85,7 +85,7 @@ func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig, d
 	if cfg.RequestTimeout <= 0 {
 		cfg.RequestTimeout = 10 * time.Second
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(parentCtx)
 	return &Worker{repo: repo, http: httpClient, cfg: cfg, db: db, tenants: tenants, ctx: ctx, cancel: cancel, stopChan: make(chan struct{})}
 }
 

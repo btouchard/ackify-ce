@@ -16,8 +16,8 @@ describe('Test 7: Admin - Document Deletion', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="new-doc-input"]').type(docId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
@@ -84,8 +84,8 @@ describe('Test 7: Admin - Document Deletion', () => {
     cy.visit('/admin')
 
     const safeDocId = 'safe-doc-' + Date.now()
-    cy.get('[data-testid="new-doc-input"]').type(safeDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(safeDocId)
+    cy.get('[data-testid="submit-button"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${safeDocId}`)
 

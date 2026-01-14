@@ -13,8 +13,8 @@ describe('Test 14: CSV Import Preview', () => {
     // Step 1: Login as admin and create document
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('[data-testid="new-doc-input"]').type(testDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(testDocId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${testDocId}`)
 
     // Step 2: Click Import CSV button
@@ -108,8 +108,8 @@ david@test.com,David New`
     // Step 1: Login and create new document
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('[data-testid="new-doc-input"]').type(invalidCsvDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(invalidCsvDocId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${invalidCsvDocId}`)
 
     // Step 2: Click Import CSV button
@@ -154,8 +154,8 @@ missing-domain@,Missing Domain`
     // Step 1: Login and create new document
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('[data-testid="new-doc-input"]').type(emptyDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(emptyDocId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${emptyDocId}`)
 
     // Step 2: Click Import CSV button
@@ -185,8 +185,8 @@ missing-domain@,Missing Domain`
     // Step 1: Login and create new document
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('[data-testid="new-doc-input"]').type(missingColDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(missingColDocId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${missingColDocId}`)
 
     // Step 2: Click Import CSV button
@@ -217,8 +217,8 @@ Bob Johnson,Development`
     // Step 1: Login and create new document
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('[data-testid="new-doc-input"]').type(largeCsvDocId)
-    cy.contains('button', 'Confirm').click()
+    cy.get('[data-testid="doc-url-input"]').type(largeCsvDocId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${largeCsvDocId}`)
 
     // Step 2: Generate large CSV with 50 emails

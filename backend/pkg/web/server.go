@@ -73,6 +73,7 @@ type ServerBuilder struct {
 	// Optional infrastructure
 	i18nService     *i18n.I18n
 	emailSender     email.Sender
+	emailRenderer   *email.Renderer
 	storageProvider storage.Provider
 
 	// Core services (created internally or injected)
@@ -121,6 +122,12 @@ func (b *ServerBuilder) WithI18nService(i18n *i18n.I18n) *ServerBuilder {
 // WithEmailSender injects an email sender.
 func (b *ServerBuilder) WithEmailSender(sender email.Sender) *ServerBuilder {
 	b.emailSender = sender
+	return b
+}
+
+// WithEmailRenderer injects an email renderer.
+func (b *ServerBuilder) WithEmailRenderer(renderer *email.Renderer) *ServerBuilder {
+	b.emailRenderer = renderer
 	return b
 }
 
@@ -210,22 +217,22 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	whPublisher, whWorker, err := b.initializeWebhookSystem(repos)
+	whPublisher, whWorker, err := b.initializeWebhookSystem(ctx, repos)
 	if err != nil {
 		return nil, err
 	}
 
-	emailWorker, err := b.initializeEmailWorker(repos, whPublisher)
+	emailWorker, err := b.initializeEmailWorker(ctx, repos, whPublisher)
 	if err != nil {
 		return nil, err
 	}
 
 	b.initializeCoreServices(repos)
 	b.initializeConfigService(ctx, repos)
-	magicLinkWorker := b.initializeMagicLinkService(ctx, repos)
+	magicLinkWorker := b.initializeMagicLinkCleanupWorker(ctx)
 	b.initializeReminderService(repos)
 
-	sessionWorker, err := b.initializeSessionWorker(repos)
+	sessionWorker, err := b.initializeSessionWorker(ctx, repos)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +282,8 @@ func (b *ServerBuilder) setDefaultProviders() {
 	}
 }
 
-// initializeInfrastructure initializes i18n and email sender.
+// initializeInfrastructure initializes signer and storage provider.
+// i18n and emailSender are expected to be injected from main.go.
 func (b *ServerBuilder) initializeInfrastructure() error {
 	var err error
 
@@ -284,21 +292,6 @@ func (b *ServerBuilder) initializeInfrastructure() error {
 		if err != nil {
 			return fmt.Errorf("failed to initialize signer: %w", err)
 		}
-	}
-
-	if b.i18nService == nil {
-		localesDir := getLocalesDir()
-		b.i18nService, err = i18n.NewI18n(localesDir)
-		if err != nil {
-			return fmt.Errorf("failed to initialize i18n: %w", err)
-		}
-	}
-
-	if b.emailSender == nil && b.cfg.Mail.Host != "" {
-		emailTemplatesDir := getTemplatesDir()
-		renderer := email.NewRenderer(emailTemplatesDir, b.cfg.App.BaseURL, b.cfg.App.Organisation,
-			b.cfg.Mail.FromName, b.cfg.Mail.From, "fr", b.i18nService)
-		b.emailSender = email.NewSMTPSender(b.cfg.Mail, renderer)
 	}
 
 	if b.storageProvider == nil && b.cfg.Storage.IsEnabled() {
@@ -324,7 +317,6 @@ type repositories struct {
 	emailQueue      *database.EmailQueueRepository
 	webhook         *database.WebhookRepository
 	webhookDelivery *database.WebhookDeliveryRepository
-	magicLink       services.MagicLinkRepository // Interface, not concrete type
 	oauthSession    *database.OAuthSessionRepository
 	config          *database.ConfigRepository
 }
@@ -339,7 +331,6 @@ func (b *ServerBuilder) createRepositories() *repositories {
 		emailQueue:      database.NewEmailQueueRepository(b.db, b.tenantProvider),
 		webhook:         database.NewWebhookRepository(b.db, b.tenantProvider),
 		webhookDelivery: database.NewWebhookDeliveryRepository(b.db, b.tenantProvider),
-		magicLink:       database.NewMagicLinkRepository(b.db),
 		oauthSession:    database.NewOAuthSessionRepository(b.db, b.tenantProvider),
 		config:          database.NewConfigRepository(b.db, b.tenantProvider),
 	}
@@ -369,10 +360,10 @@ func (b *ServerBuilder) initializeTelemetry(ctx context.Context) error {
 }
 
 // initializeWebhookSystem initializes webhook publisher and worker.
-func (b *ServerBuilder) initializeWebhookSystem(repos *repositories) (*services.WebhookPublisher, *webhook.Worker, error) {
+func (b *ServerBuilder) initializeWebhookSystem(ctx context.Context, repos *repositories) (*services.WebhookPublisher, *webhook.Worker, error) {
 	whPublisher := services.NewWebhookPublisher(repos.webhook, repos.webhookDelivery)
 	whCfg := webhook.DefaultWorkerConfig()
-	whWorker := webhook.NewWorker(repos.webhookDelivery, &http.Client{}, whCfg, b.db, b.tenantProvider)
+	whWorker := webhook.NewWorker(repos.webhookDelivery, &http.Client{}, whCfg, ctx, b.db, b.tenantProvider)
 
 	if err := whWorker.Start(); err != nil {
 		return nil, nil, fmt.Errorf("failed to start webhook worker: %w", err)
@@ -382,15 +373,14 @@ func (b *ServerBuilder) initializeWebhookSystem(repos *repositories) (*services.
 }
 
 // initializeEmailWorker initializes email worker for async processing.
-func (b *ServerBuilder) initializeEmailWorker(repos *repositories, whPublisher *services.WebhookPublisher) (*email.Worker, error) {
-	if b.emailSender == nil || b.cfg.Mail.Host == "" {
+// emailRenderer is expected to be injected from main.go via WithEmailRenderer().
+func (b *ServerBuilder) initializeEmailWorker(ctx context.Context, repos *repositories, whPublisher *services.WebhookPublisher) (*email.Worker, error) {
+	if b.emailSender == nil || b.cfg.Mail.Host == "" || b.emailRenderer == nil {
 		return nil, nil
 	}
 
-	renderer := email.NewRenderer(getTemplatesDir(), b.cfg.App.BaseURL, b.cfg.App.Organisation,
-		b.cfg.Mail.FromName, b.cfg.Mail.From, "fr", b.i18nService)
 	workerConfig := email.DefaultWorkerConfig()
-	emailWorker := email.NewWorker(repos.emailQueue, b.emailSender, renderer, workerConfig, b.db, b.tenantProvider)
+	emailWorker := email.NewWorker(repos.emailQueue, b.emailSender, b.emailRenderer, workerConfig, ctx, b.db, b.tenantProvider)
 
 	if whPublisher != nil {
 		emailWorker.SetPublisher(whPublisher)
@@ -420,43 +410,17 @@ func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
 	}
 }
 
-// initializeConfigService initializes the configuration service with hot-reload.
-func (b *ServerBuilder) initializeConfigService(ctx context.Context, repos *repositories) {
-	if b.configService == nil {
-		encryptionKey := b.cfg.OAuth.CookieSecret
-		b.configService = services.NewConfigService(repos.config, b.cfg, encryptionKey)
-
-		// Initialize will seed from ENV on first start or load from DB
-		// Must use tenant context for RLS to work correctly
-		err := tenant.WithTenantContextFromProvider(ctx, b.db, b.tenantProvider, func(txCtx context.Context) error {
-			return b.configService.Initialize(txCtx)
-		})
-		if err != nil {
-			logger.Logger.Warn("Failed to initialize config service, using ENV config", "error", err)
-			return
-		}
-		logger.Logger.Info("Configuration service initialized")
-	}
+// initializeConfigService is a no-op when configService is injected from main.go.
+// Kept for API compatibility.
+func (b *ServerBuilder) initializeConfigService(_ context.Context, _ *repositories) {
+	// configService is expected to be injected and initialized from main.go
 }
 
-// initializeMagicLinkService initializes MagicLink service and cleanup worker.
-func (b *ServerBuilder) initializeMagicLinkService(ctx context.Context, repos *repositories) *workers.MagicLinkCleanupWorker {
-	if b.magicLinkService == nil {
-		b.magicLinkService = services.NewMagicLinkService(services.MagicLinkServiceConfig{
-			Repository:        repos.magicLink,
-			EmailSender:       b.emailSender,
-			I18n:              b.i18nService,
-			BaseURL:           b.cfg.App.BaseURL,
-			AppName:           b.cfg.App.Organisation,
-			RateLimitPerEmail: b.cfg.Auth.MagicLinkRateLimitEmail,
-			RateLimitPerIP:    b.cfg.Auth.MagicLinkRateLimitIP,
-		})
-	}
-
-	// Always start cleanup worker - it will clean expired tokens regardless of config
+// initializeMagicLinkCleanupWorker starts the cleanup worker for expired magic link tokens.
+// magicLinkService is expected to be injected from main.go.
+func (b *ServerBuilder) initializeMagicLinkCleanupWorker(ctx context.Context) *workers.MagicLinkCleanupWorker {
 	magicLinkWorker := workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
 	go magicLinkWorker.Start(ctx)
-
 	return magicLinkWorker
 }
 
@@ -475,13 +439,13 @@ func (b *ServerBuilder) initializeReminderService(repos *repositories) {
 }
 
 // initializeSessionWorker initializes OAuth session cleanup worker.
-func (b *ServerBuilder) initializeSessionWorker(repos *repositories) (*auth.SessionWorker, error) {
+func (b *ServerBuilder) initializeSessionWorker(ctx context.Context, repos *repositories) (*auth.SessionWorker, error) {
 	if repos.oauthSession == nil {
 		return nil, nil
 	}
 
 	workerConfig := auth.DefaultSessionWorkerConfig()
-	sessionWorker := auth.NewSessionWorker(repos.oauthSession, workerConfig, b.db, b.tenantProvider)
+	sessionWorker := auth.NewSessionWorker(repos.oauthSession, workerConfig, ctx, b.db, b.tenantProvider)
 	if err := sessionWorker.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start OAuth session worker: %w", err)
 	}

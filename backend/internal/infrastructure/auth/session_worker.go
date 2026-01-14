@@ -45,7 +45,7 @@ func DefaultSessionWorkerConfig() SessionWorkerConfig {
 }
 
 // NewSessionWorker creates a new OAuth session cleanup worker
-func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig, db *sql.DB, tenants tenant.Provider) *SessionWorker {
+func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig, parentCtx context.Context, db *sql.DB, tenants tenant.Provider) *SessionWorker {
 	// Apply defaults
 	if config.CleanupInterval <= 0 {
 		config.CleanupInterval = 24 * time.Hour
@@ -54,7 +54,7 @@ func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig,
 		config.CleanupAge = 37 * 24 * time.Hour
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(parentCtx)
 
 	return &SessionWorker{
 		sessionRepo:     sessionRepo,

@@ -187,20 +187,20 @@ func (r *SignatureRepository) GetByDoc(ctx context.Context, docID string) ([]*mo
 	return signatures, nil
 }
 
-// GetByUser retrieves all signatures created by a specific user, ordered by creation timestamp descending
+// GetByUserEmail retrieves all signatures created by a specific user (by email), ordered by creation timestamp descending
 // RLS policy automatically filters by tenant_id
-func (r *SignatureRepository) GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error) {
+func (r *SignatureRepository) GetByUserEmail(ctx context.Context, userEmail string) ([]*models.Signature, error) {
 	query := `
 		SELECT s.id, s.tenant_id, s.doc_id, s.user_sub, s.user_email, s.user_name, s.signed_at, s.doc_checksum,
 		       s.payload_hash, s.signature, s.nonce, s.created_at, s.referer, s.prev_hash,
 		       s.hash_version, s.doc_deleted_at, d.title, d.url
 		FROM signatures s
 		LEFT JOIN documents d ON s.doc_id = d.doc_id AND s.tenant_id = d.tenant_id
-		WHERE s.user_sub = $1
+		WHERE LOWER(s.user_email) = LOWER($1)
 		ORDER BY s.created_at DESC
 	`
 
-	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, userSub)
+	rows, err := dbctx.GetQuerier(ctx, r.db).QueryContext(ctx, query, userEmail)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query user signatures: %w", err)
 	}

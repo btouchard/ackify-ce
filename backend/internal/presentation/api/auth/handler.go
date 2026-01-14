@@ -4,10 +4,12 @@ package auth
 import (
 	"encoding/base64"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
@@ -240,11 +242,10 @@ func (h *Handler) HandleRequestMagicLink(w http.ResponseWriter, r *http.Request)
 		req.RedirectTo = "/"
 	}
 
-	ip := r.RemoteAddr
+	ip := extractIP(r.RemoteAddr)
 	userAgent := r.UserAgent()
-	locale := r.Header.Get("Accept-Language")
-
 	ctx := r.Context()
+	locale := i18n.GetLang(ctx)
 	if err := h.authProvider.RequestMagicLink(ctx, req.Email, req.RedirectTo, ip, userAgent, locale); err != nil {
 		logger.Logger.Error("Failed to request magic link", "error", err.Error())
 		// Don't reveal if email exists or not
@@ -272,7 +273,7 @@ func (h *Handler) HandleVerifyMagicLink(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	ip := r.RemoteAddr
+	ip := extractIP(r.RemoteAddr)
 	userAgent := r.UserAgent()
 
 	ctx := r.Context()
@@ -317,7 +318,7 @@ func (h *Handler) HandleVerifyReminderAuthLink(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ip := r.RemoteAddr
+	ip := extractIP(r.RemoteAddr)
 	userAgent := r.UserAgent()
 
 	ctx := r.Context()
@@ -325,6 +326,19 @@ func (h *Handler) HandleVerifyReminderAuthLink(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		logger.Logger.Error("Failed to verify reminder auth token", "error", err.Error())
 		http.Redirect(w, r, "/?error=invalid_token", http.StatusFound)
+		return
+	}
+
+	// Create user session from reminder auth result
+	user := &types.User{
+		Sub:   "reminder:" + result.Email,
+		Email: result.Email,
+		Name:  result.Email,
+	}
+
+	if err := h.authProvider.SetCurrentUser(w, r, user); err != nil {
+		logger.Logger.Error("Failed to set user session", "error", err.Error())
+		http.Redirect(w, r, "/?error=session_error", http.StatusFound)
 		return
 	}
 
@@ -337,4 +351,12 @@ func (h *Handler) HandleVerifyReminderAuthLink(w http.ResponseWriter, r *http.Re
 	}
 
 	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+func extractIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		return remoteAddr
+	}
+	return host
 }

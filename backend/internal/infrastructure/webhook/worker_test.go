@@ -74,7 +74,7 @@ func TestWorker_ProcessBatch_Success(t *testing.T) {
 	repo := &fakeDelRepo{}
 	doer := &fakeDoer{resp: &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader("ok")), Header: http.Header{}}}
 	tenants := &mockTenantProviderWebhook{tenantID: uuid.New()}
-	w := NewWorker(repo, doer, DefaultWorkerConfig(), nil, tenants)
+	w := NewWorker(repo, doer, DefaultWorkerConfig(), context.Background(), nil, tenants)
 	w.processBatch()
 	if repo.delivered != 1 {
 		t.Fatalf("expected delivered=1, got %d", repo.delivered)

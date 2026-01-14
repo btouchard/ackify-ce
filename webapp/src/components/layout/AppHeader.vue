@@ -3,7 +3,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Menu, X, ChevronDown, LogOut, Shield, FileText, Settings, Webhook } from 'lucide-vue-next'
+import { Menu, X, ChevronDown, LogOut, FileText, Settings, Webhook, CheckSquare } from 'lucide-vue-next'
 import ThemeToggle from './ThemeToggle.vue'
 import LanguageSelect from './LanguageSelect.vue'
 import AppLogo from '@/components/AppLogo.vue'
@@ -17,7 +17,6 @@ const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const userMenuOpen = ref(false)
-const adminMenuOpen = ref(false)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
@@ -90,14 +89,6 @@ const closeMobileMenu = () => {
 const closeUserMenu = () => {
   userMenuOpen.value = false
 }
-
-const toggleAdminMenu = () => {
-  adminMenuOpen.value = !adminMenuOpen.value
-}
-
-const closeAdminMenu = () => {
-  adminMenuOpen.value = false
-}
 </script>
 
 <template>
@@ -113,19 +104,6 @@ const closeAdminMenu = () => {
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex md:items-center md:space-x-1">
-          <!-- Home - always visible -->
-          <router-link
-            to="/"
-            :class="[
-              'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-              isActive('/')
-                ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            ]"
-          >
-            {{ t('nav.home') }}
-          </router-link>
-
           <!-- My confirmations - authenticated only -->
           <router-link
             v-if="isAuthenticated"
@@ -140,89 +118,19 @@ const closeAdminMenu = () => {
             {{ t('nav.myConfirmations') }}
           </router-link>
 
-          <!-- My documents - authenticated + can create -->
+          <!-- My documents - if can create -->
           <router-link
-            v-if="isAuthenticated && canCreateDocuments"
-            to="/documents"
-            :class="[
+              v-if="canCreateDocuments"
+              to="/documents"
+              :class="[
               'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-              isActive('/documents') || route.path.startsWith('/documents/')
+              isActive('/documents')
                 ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
             ]"
           >
             {{ t('nav.myDocuments') }}
           </router-link>
-
-          <!-- Admin dropdown - admin only -->
-          <div v-if="isAuthenticated && isAdmin" class="relative">
-            <button
-              @click="toggleAdminMenu"
-              :class="[
-                'flex items-center space-x-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                route.path.startsWith('/admin')
-                  ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-              ]"
-              aria-haspopup="true"
-              :aria-expanded="adminMenuOpen"
-            >
-              <Shield :size="16" />
-              <span>{{ t('nav.administration') }}</span>
-              <ChevronDown :size="14" />
-            </button>
-
-            <!-- Admin dropdown menu -->
-            <transition
-              enter-active-class="transition ease-out duration-100"
-              enter-from-class="transform opacity-0 scale-95"
-              enter-to-class="transform opacity-100 scale-100"
-              leave-active-class="transition ease-in duration-75"
-              leave-from-class="transform opacity-100 scale-100"
-              leave-to-class="transform opacity-0 scale-95"
-            >
-              <div
-                v-if="adminMenuOpen"
-                @click.stop
-                v-click-outside="closeAdminMenu"
-                class="absolute left-0 mt-2 w-48 origin-top-left bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg focus:outline-none"
-                role="menu"
-                aria-orientation="vertical"
-              >
-                <div class="p-2">
-                  <router-link
-                    to="/admin"
-                    @click="adminMenuOpen = false"
-                    class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    role="menuitem"
-                  >
-                    <FileText :size="16" />
-                    <span>{{ t('nav.adminMenu.allDocuments') }}</span>
-                  </router-link>
-
-                  <router-link
-                    to="/admin/settings"
-                    @click="adminMenuOpen = false"
-                    class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    role="menuitem"
-                  >
-                    <Settings :size="16" />
-                    <span>{{ t('nav.adminMenu.settings') }}</span>
-                  </router-link>
-
-                  <router-link
-                    to="/admin/webhooks"
-                    @click="adminMenuOpen = false"
-                    class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    role="menuitem"
-                  >
-                    <Webhook :size="16" />
-                    <span>{{ t('nav.adminMenu.webhooks') }}</span>
-                  </router-link>
-                </div>
-              </div>
-            </transition>
-          </div>
         </div>
 
         <!-- Right side: Language + Theme + Auth -->
@@ -270,7 +178,42 @@ const closeAdminMenu = () => {
                     <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ user?.email }}</p>
                   </div>
 
-                  <!-- Menu items -->
+                  <!-- Admin section - if admin -->
+                  <template v-if="isAdmin">
+                    <p class="px-3 py-1 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      {{ t('nav.administration') }}
+                    </p>
+                    <router-link
+                      to="/admin"
+                      @click="userMenuOpen = false"
+                      class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <FileText :size="16" />
+                      <span>{{ t('nav.adminMenu.allDocuments') }}</span>
+                    </router-link>
+                    <router-link
+                      to="/admin/settings"
+                      @click="userMenuOpen = false"
+                      class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <Settings :size="16" />
+                      <span>{{ t('nav.adminMenu.settings') }}</span>
+                    </router-link>
+                    <router-link
+                      to="/admin/webhooks"
+                      @click="userMenuOpen = false"
+                      class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <Webhook :size="16" />
+                      <span>{{ t('nav.adminMenu.webhooks') }}</span>
+                    </router-link>
+                    <div class="border-t border-slate-100 dark:border-slate-700 my-2"></div>
+                  </template>
+
+                  <!-- Logout -->
                   <button
                     @click="logout"
                     class="flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -318,33 +261,26 @@ const closeAdminMenu = () => {
     >
       <div v-if="mobileMenuOpen" class="md:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
         <div class="space-y-1 px-4 pb-4 pt-2">
-          <!-- Home - always visible -->
-          <router-link
-            to="/"
-            @click="closeMobileMenu"
-            :class="[
-              'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
-              isActive('/')
-                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-            ]"
-          >
-            {{ t('nav.home') }}
-          </router-link>
-
           <!-- Navigation links (authenticated) -->
           <template v-if="isAuthenticated">
+            <!-- User info -->
+            <div class="px-3 py-2 mb-2">
+              <p class="font-medium text-slate-900 dark:text-slate-100">{{ displayName }}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ user?.email }}</p>
+            </div>
+
             <router-link
               to="/signatures"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
                 isActive('/signatures')
                   ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
-              {{ t('nav.myConfirmations') }}
+              <CheckSquare :size="18" />
+              <span>{{ t('nav.myConfirmations') }}</span>
             </router-link>
 
             <router-link
@@ -352,13 +288,14 @@ const closeAdminMenu = () => {
               to="/documents"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
                 isActive('/documents') || route.path.startsWith('/documents/')
                   ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
-              {{ t('nav.myDocuments') }}
+              <FileText :size="18" />
+              <span>{{ t('nav.myDocuments') }}</span>
             </router-link>
 
             <!-- Admin section -->
@@ -409,17 +346,14 @@ const closeAdminMenu = () => {
               </div>
             </template>
 
-            <!-- User section -->
+            <!-- Logout -->
             <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
-              <div class="px-3 py-2 mb-2">
-                <p class="font-medium text-slate-900 dark:text-slate-100">{{ displayName }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ user?.email }}</p>
-              </div>
               <button
                 @click="logout"
-                class="w-full text-left rounded-lg px-3 py-2.5 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                class="flex w-full items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
-                {{ t('nav.logout') }}
+                <LogOut :size="18" />
+                <span>{{ t('nav.logout') }}</span>
               </button>
             </div>
           </template>
