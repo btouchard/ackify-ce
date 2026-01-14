@@ -3,7 +3,7 @@
 
 describe('Test 1: User Signature Workflow (MagicLink)', () => {
   const testEmail = 'user1@example.com'
-  const docId = 'test-document-1'
+  const docId = 'test-document-' + Date.now()
 
   beforeEach(() => {
     cy.clearMailbox()
@@ -24,16 +24,16 @@ describe('Test 1: User Signature Workflow (MagicLink)', () => {
     })
 
     // Step 4: Sign the document
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
+    cy.confirmReading()
 
     // Step 5: Verify success message
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Step 6: Verify signature appears in the list
     cy.contains('confirmation', { timeout: 5000 }).should('be.visible')
     cy.contains(testEmail).should('be.visible')
 
     // Step 7: Verify button is no longer present (already confirmed)
-    cy.get('[data-testid="sign-button"]').should('not.exist')
+    cy.contains('button', 'Confirm reading').should('not.exist')
   })
 })

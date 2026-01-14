@@ -33,6 +33,10 @@ var (
 		Description:       "Test description",
 		Checksum:          "abc123",
 		ChecksumAlgorithm: "SHA-256",
+		ReadMode:          "integrated",
+		AllowDownload:     true,
+		RequireFullRead:   false,
+		VerifyChecksum:    true,
 		CreatedAt:         time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:         time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		CreatedBy:         "user@example.com",
@@ -142,6 +146,18 @@ func (m *mockDocumentService) GetExpectedSignerStats(_ context.Context, _ string
 
 func (m *mockDocumentService) ListExpectedSigners(_ context.Context, _ string) ([]*models.ExpectedSigner, error) {
 	return []*models.ExpectedSigner{}, nil
+}
+
+func (m *mockDocumentService) ListByCreatedBy(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{testDoc}, nil
+}
+
+func (m *mockDocumentService) SearchByCreatedBy(_ context.Context, _, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{testDoc}, nil
+}
+
+func (m *mockDocumentService) CountByCreatedBy(_ context.Context, _, _ string) (int, error) {
+	return 1, nil
 }
 
 // Mock signature service

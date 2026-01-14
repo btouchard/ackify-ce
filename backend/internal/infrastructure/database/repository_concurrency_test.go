@@ -451,14 +451,15 @@ func TestRepository_DeadlockPrevention_Integration(t *testing.T) {
 					} else {
 						testDocID := fmt.Sprintf("pattern2-doc-%d", workerID)
 						testUserSub := fmt.Sprintf("pattern2-user-%d", j)
+						testUserEmail := fmt.Sprintf("pattern2-user-%d@example.com", j)
 
 						_, _ = repo.GetByDoc(ctx, testDocID)
-						_, _ = repo.GetByUser(ctx, testUserSub)
+						_, _ = repo.GetByUserEmail(ctx, testUserEmail)
 
 						sig := factory.CreateSignatureWithDocAndUser(
 							testDocID,
 							testUserSub,
-							"pattern2@example.com",
+							testUserEmail,
 						)
 						_ = repo.Create(ctx, sig)
 					}

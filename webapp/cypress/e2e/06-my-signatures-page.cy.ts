@@ -19,18 +19,18 @@ describe('Test 6: My Signatures Page', () => {
     // Step 2: Sign 3 different documents
     // Sign doc1
     cy.visit(`/?doc=${doc1}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.confirmReading()
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Sign doc2
     cy.visit(`/?doc=${doc2}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.confirmReading()
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Sign doc3
     cy.visit(`/?doc=${doc3}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.confirmReading()
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Step 3: Navigate to /signatures
     cy.visit('/signatures')
@@ -57,10 +57,10 @@ describe('Test 6: My Signatures Page', () => {
 
     // Sign 2 documents
     cy.visit(`/?doc=${searchDoc1}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.confirmReading()
 
     cy.visit(`/?doc=${searchDoc2}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.confirmReading()
 
     // Navigate to signatures page
     cy.visit('/signatures')

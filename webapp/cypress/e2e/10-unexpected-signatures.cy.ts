@@ -19,23 +19,23 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
-    cy.get('[data-testid="admin-create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Add alice and bob as expected signers
-    cy.get('[data-testid="add-signers-btn"]').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('[data-testid="add-signers-textarea"]').type(`${alice}\n${bob}`, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(`${alice}\n${bob}`, { delay: 50 })
     cy.wait(300)
-    cy.get('[data-testid="add-signers-submit"]').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     cy.contains(alice, { timeout: 10000 }).should('be.visible')
     cy.contains(bob).should('be.visible')
 
     // Verify initial stats
     cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('Signed').parent().should('contain', '0')
+    cy.contains('Confirmed').parent().should('contain', '0')
 
     // ===== STEP 2: Charlie (not expected) accesses and signs the document =====
     cy.log('STEP 2: Unexpected user (Charlie) signs the document')
@@ -45,8 +45,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
 
     // Charlie can still sign (document is not restricted)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.confirmReading()
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 3: Verify in admin that Charlie appears in "Unexpected Signatures" section =====
     cy.log('STEP 3: Verify unexpected signature appears in admin panel')
@@ -61,7 +61,7 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
 
     // Stats should show: 0/2 expected signed, but there's an unexpected signature
     cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('Signed').parent().should('contain', '0') // 0 expected signed
+    cy.contains('Confirmed').parent().should('contain', '0') // 0 expected signed
 
     // Unexpected signatures section should exist
     cy.contains(/Unexpected|Additional.*confirmations/, { timeout: 10000 }).should('be.visible')
@@ -80,8 +80,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginViaMagicLink(alice, `/?doc=${docId}`)
 
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.confirmReading()
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // ===== STEP 5: Verify stats update correctly =====
     cy.log('STEP 5: Verify stats with mix of expected and unexpected')
@@ -89,10 +89,9 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit(`/admin/docs/${docId}`)
 
-    // Expected stats: 1/2 signed (50%)
-    cy.contains('Signed', { timeout: 10000 }).parent().should('contain', '1')
+    // Expected stats: 1/2 signed
+    cy.contains('Confirmed', { timeout: 10000 }).parent().should('contain', '1')
     cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('50%').should('be.visible')
 
     // Alice should show "Confirmed" in expected section
     cy.contains('tr', alice).should('contain', 'Confirmed')
@@ -115,27 +114,27 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="admin-new-doc-input"]').type(multiDocId)
-    cy.get('[data-testid="admin-create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(multiDocId)
+    cy.get('[data-testid="submit-button"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${multiDocId}`)
 
-    cy.get('[data-testid="add-signers-btn"]').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
     cy.wait(500)
-    cy.get('[data-testid="add-signers-textarea"]').type(expected1, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(expected1, { delay: 50 })
     cy.wait(300)
-    cy.get('[data-testid="add-signers-submit"]').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     cy.contains(expected1, { timeout: 10000 }).should('be.visible')
 
     // Two unexpected users sign
     cy.logout()
     cy.loginViaMagicLink(unexpected1, `/?doc=${multiDocId}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.confirmReading()
 
     cy.logout()
     cy.loginViaMagicLink(unexpected2, `/?doc=${multiDocId}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).click()
+    cy.confirmReading()
 
     // Verify both appear in unexpected section
     cy.logout()

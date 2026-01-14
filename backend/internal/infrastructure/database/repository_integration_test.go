@@ -252,7 +252,7 @@ func TestRepository_GetByDoc_Integration(t *testing.T) {
 	}
 }
 
-func TestRepository_GetByUser_Integration(t *testing.T) {
+func TestRepository_GetByUserEmail_Integration(t *testing.T) {
 	testDB := SetupTestDB(t)
 	repo := NewSignatureRepository(testDB.DB, testDB.TenantProvider)
 	factory := NewSignatureFactory()
@@ -270,33 +270,39 @@ func TestRepository_GetByUser_Integration(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		userSub        string
+		userEmail      string
 		expectedCount  int
 		expectedDocIDs []string
 	}{
 		{
 			name:           "get signatures for user with 2 docs",
-			userSub:        "user1",
+			userEmail:      "user1@example.com",
 			expectedCount:  2,
 			expectedDocIDs: []string{"doc2", "doc1"}, // Should be ordered by created_at DESC
 		},
 		{
 			name:           "get signatures for user with 1 doc",
-			userSub:        "user2",
+			userEmail:      "user2@example.com",
 			expectedCount:  1,
 			expectedDocIDs: []string{"doc1"},
 		},
 		{
 			name:           "get signatures for non-existent user",
-			userSub:        "non-existent",
+			userEmail:      "non-existent@example.com",
 			expectedCount:  0,
 			expectedDocIDs: []string{},
+		},
+		{
+			name:           "get signatures case insensitive",
+			userEmail:      "USER1@EXAMPLE.COM",
+			expectedCount:  2,
+			expectedDocIDs: []string{"doc2", "doc1"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := repo.GetByUser(ctx, tt.userSub)
+			result, err := repo.GetByUserEmail(ctx, tt.userEmail)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -309,10 +315,6 @@ func TestRepository_GetByUser_Integration(t *testing.T) {
 			for i, sig := range result {
 				if i < len(tt.expectedDocIDs) && sig.DocID != tt.expectedDocIDs[i] {
 					t.Errorf("Expected DocID %s at position %d, got %s", tt.expectedDocIDs[i], i, sig.DocID)
-				}
-
-				if sig.UserSub != tt.userSub {
-					t.Errorf("Expected UserSub %s, got %s", tt.userSub, sig.UserSub)
 				}
 			}
 		})

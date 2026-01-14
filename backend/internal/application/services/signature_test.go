@@ -72,14 +72,14 @@ func (f *fakeRepository) GetByDoc(_ context.Context, docID string) ([]*models.Si
 	return result, nil
 }
 
-func (f *fakeRepository) GetByUser(_ context.Context, userSub string) ([]*models.Signature, error) {
+func (f *fakeRepository) GetByUserEmail(_ context.Context, userEmail string) ([]*models.Signature, error) {
 	if f.shouldFailGet {
 		return nil, errors.New("repository get failed")
 	}
 
 	var result []*models.Signature
 	for _, sig := range f.signatures {
-		if sig.UserSub == userSub {
+		if sig.UserEmail == userEmail {
 			result = append(result, sig)
 		}
 	}

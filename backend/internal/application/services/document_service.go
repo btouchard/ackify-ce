@@ -23,6 +23,9 @@ type documentRepository interface {
 	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
 	Count(ctx context.Context, searchQuery string) (int, error)
+	ListByCreatedBy(ctx context.Context, createdBy string, limit, offset int) ([]*models.Document, error)
+	SearchByCreatedBy(ctx context.Context, createdBy, searchQuery string, limit, offset int) ([]*models.Document, error)
+	CountByCreatedBy(ctx context.Context, createdBy, searchQuery string) (int, error)
 }
 
 type docExpectedSignerRepository interface {
@@ -50,6 +53,16 @@ func NewDocumentService(repo documentRepository, expectedSignerRepo docExpectedS
 type CreateDocumentRequest struct {
 	Reference string `json:"reference" validate:"required,min=1"`
 	Title     string `json:"title"`
+	CreatedBy string `json:"created_by,omitempty"`
+
+	// Storage fields for uploaded files
+	StorageKey        string `json:"storage_key,omitempty"`
+	StorageProvider   string `json:"storage_provider,omitempty"`
+	FileSize          int64  `json:"file_size,omitempty"`
+	MimeType          string `json:"mime_type,omitempty"`
+	Checksum          string `json:"checksum,omitempty"`
+	ChecksumAlgorithm string `json:"checksum_algorithm,omitempty"`
+	OriginalFilename  string `json:"original_filename,omitempty"`
 }
 
 // CreateDocument generates a collision-resistant base36 identifier and persists document metadata
@@ -97,8 +110,23 @@ func (s *DocumentService) CreateDocument(ctx context.Context, req CreateDocument
 		URL:   url,
 	}
 
-	// Automatically compute checksum for remote URLs if enabled
-	if url != "" && s.checksumConfig != nil {
+	// Handle storage fields if provided (for uploaded files)
+	if req.StorageKey != "" {
+		input.StorageKey = req.StorageKey
+		input.StorageProvider = req.StorageProvider
+		input.FileSize = req.FileSize
+		input.MimeType = req.MimeType
+		input.OriginalFilename = req.OriginalFilename
+		// Use provided checksum for uploaded files
+		if req.Checksum != "" {
+			input.Checksum = req.Checksum
+			input.ChecksumAlgorithm = req.ChecksumAlgorithm
+			if input.ChecksumAlgorithm == "" {
+				input.ChecksumAlgorithm = "SHA-256"
+			}
+		}
+	} else if url != "" && s.checksumConfig != nil {
+		// Automatically compute checksum for remote URLs if enabled
 		checksumResult := s.computeChecksumForURL(ctx, url)
 		if checksumResult != nil {
 			input.Checksum = checksumResult.ChecksumHex
@@ -110,7 +138,10 @@ func (s *DocumentService) CreateDocument(ctx context.Context, req CreateDocument
 		}
 	}
 
-	doc, err := s.repo.Create(ctx, docID, input, "")
+	// Use provided createdBy or empty string
+	createdBy := req.CreatedBy
+
+	doc, err := s.repo.Create(ctx, docID, input, createdBy)
 	if err != nil {
 		logger.Logger.Error("Failed to create document",
 			"doc_id", docID,
@@ -496,4 +527,19 @@ func (s *DocumentService) ListExpectedSigners(ctx context.Context, docID string)
 		return nil, fmt.Errorf("expected signer repository not configured")
 	}
 	return s.expectedSignerRepo.ListByDocID(ctx, docID)
+}
+
+// ListByCreatedBy retrieves a paginated list of documents created by a specific user
+func (s *DocumentService) ListByCreatedBy(ctx context.Context, createdBy string, limit, offset int) ([]*models.Document, error) {
+	return s.repo.ListByCreatedBy(ctx, createdBy, limit, offset)
+}
+
+// SearchByCreatedBy performs a search query across documents created by a specific user
+func (s *DocumentService) SearchByCreatedBy(ctx context.Context, createdBy, query string, limit, offset int) ([]*models.Document, error) {
+	return s.repo.SearchByCreatedBy(ctx, createdBy, query, limit, offset)
+}
+
+// CountByCreatedBy returns the total number of documents created by a specific user
+func (s *DocumentService) CountByCreatedBy(ctx context.Context, createdBy, searchQuery string) (int, error) {
+	return s.repo.CountByCreatedBy(ctx, createdBy, searchQuery)
 }

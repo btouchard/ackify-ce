@@ -18,7 +18,7 @@ type repository interface {
 	Create(ctx context.Context, signature *models.Signature) error
 	GetByDocAndUser(ctx context.Context, docID, userSub string) (*models.Signature, error)
 	GetByDoc(ctx context.Context, docID string) ([]*models.Signature, error)
-	GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error)
+	GetByUserEmail(ctx context.Context, userEmail string) ([]*models.Signature, error)
 	ExistsByDocAndUser(ctx context.Context, docID, userSub string) (bool, error)
 	CheckUserSignatureStatus(ctx context.Context, docID, userIdentifier string) (bool, error)
 	GetLastSignature(ctx context.Context, docID string) (*models.Signature, error)
@@ -245,7 +245,7 @@ func (s *SignatureService) GetUserSignatures(ctx context.Context, user *models.U
 		return nil, models.ErrInvalidUser
 	}
 
-	signatures, err := s.repo.GetByUser(ctx, user.Sub)
+	signatures, err := s.repo.GetByUserEmail(ctx, user.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user signatures: %w", err)
 	}

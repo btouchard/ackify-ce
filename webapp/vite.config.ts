@@ -18,6 +18,9 @@ export default defineConfig({
       cypress: true
     })] : [])
   ],
+  optimizeDeps: {
+    include: ['pdfjs-dist'],
+  },
   build: {
     // Disable minification when instrumenting for coverage
     ...(isE2ECoverage ? {

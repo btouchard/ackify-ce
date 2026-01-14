@@ -69,15 +69,39 @@ services:
       ACKIFY_CHECKSUM_ALLOWED_TYPES: "${ACKIFY_CHECKSUM_ALLOWED_TYPES:-}"
       ACKIFY_IMPORT_MAX_SIGNERS: "${ACKIFY_IMPORT_MAX_SIGNERS:-500}"
       ACKIFY_TELEMETRY: "${ACKIFY_TELEMETRY:-false}"
+      ACKIFY_STORAGE_TYPE: "${ACKIFY_STORAGE_TYPE:-}"
+      ACKIFY_STORAGE_LOCAL_PATH: "${ACKIFY_STORAGE_LOCAL_PATH:-/data/documents}"
+      ACKIFY_STORAGE_MAX_SIZE_MB: "${ACKIFY_STORAGE_MAX_SIZE_MB:-50}"
+      ACKIFY_STORAGE_S3_ENDPOINT: "${ACKIFY_STORAGE_S3_ENDPOINT:-}"
+      ACKIFY_STORAGE_S3_BUCKET: "${ACKIFY_STORAGE_S3_BUCKET:-}"
+      ACKIFY_STORAGE_S3_ACCESS_KEY: "${ACKIFY_STORAGE_S3_ACCESS_KEY:-}"
+      ACKIFY_STORAGE_S3_SECRET_KEY: "${ACKIFY_STORAGE_S3_SECRET_KEY:-}"
+      ACKIFY_STORAGE_S3_REGION: "${ACKIFY_STORAGE_S3_REGION:-}"
+      ACKIFY_STORAGE_S3_USE_SSL: "${ACKIFY_STORAGE_S3_USE_SSL:-true}"
+    volumes:
+      - ackify_storage:/data/documents
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully
       ackify-db:
         condition: service_healthy
+    #BEGIN:traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${APP_NAME}.entrypoints=websecure
+      - traefik.http.routers.${APP_NAME}.rule=Host(`${APP_DNS}`)
+      - traefik.http.routers.${APP_NAME}.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+      - traefik.http.services.${APP_NAME}.loadbalancer.server.port=8080
+    #END:traefik
     networks:
       - internal
+      #BEGIN:traefik
+      - traefik
+      #END:traefik
+    #BEGIN:ports
     ports:
       - "8080:8080"
+    #END:ports
 
   ackify-db:
     image: postgres:16-alpine
@@ -99,6 +123,12 @@ services:
 
 networks:
   internal:
+  #BEGIN:traefik
+  traefik:
+    name: ${TRAEFIK_NETWORK:-traefik}
+    external: true
+  #END:traefik
 
 volumes:
   ackify_data:
+  ackify_storage:

@@ -37,6 +37,11 @@ declare global {
        * Logout current user
        */
       logout(): Chainable<void>
+
+      /**
+       * Confirm reading of a document (check certify checkbox + click confirm button)
+       */
+      confirmReading(): Chainable<void>
     }
   }
 }
@@ -95,6 +100,20 @@ Cypress.Commands.add('logout', () => {
   cy.request('/api/v1/auth/logout').then(() => {
     cy.clearCookies()
   })
+})
+
+Cypress.Commands.add('confirmReading', () => {
+  // Check the certify checkbox (support both English and French)
+  // The label contains both the checkbox and the text span
+  cy.contains('label', /I certify|Je certifie/, { timeout: 10000 })
+    .find('input[type="checkbox"]')
+    .check({ force: true })
+
+  // Click the confirm reading button (support both English and French)
+  cy.contains('button', /Confirm reading|Confirmer la lecture/, { timeout: 10000 })
+    .should('be.visible')
+    .and('not.be.disabled')
+    .click()
 })
 
 export {}

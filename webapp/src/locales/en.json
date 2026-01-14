@@ -5,8 +5,14 @@
   "nav": {
     "home": "Home",
     "myConfirmations": "My confirmations",
+    "myDocuments": "My documents",
     "admin": "Admin",
     "administration": "Administration",
+    "adminMenu": {
+      "allDocuments": "All documents",
+      "settings": "Settings",
+      "webhooks": "Webhooks"
+    },
     "login": "Sign in",
     "logout": "Sign out",
     "mobileMenu": "Mobile menu",
@@ -53,12 +59,86 @@
       "error_send": "Failed to send magic link"
     }
   },
+  "home": {
+    "hero": {
+      "title": "Reading Confirmation",
+      "subtitle": "Cryptographically certify that your documents have been read and understood",
+      "createError": "Unable to create document",
+      "restricted": {
+        "title": "Creation restricted",
+        "description": "Document creation is restricted to administrators. Contact your administrator to get a document link."
+      },
+      "form": {
+        "label": "Document URL",
+        "placeholder": "URL, path or document reference",
+        "hint": "Accepts URLs, file paths or simple identifiers",
+        "submit": "Create",
+        "submitLogin": "Sign in"
+      }
+    },
+    "howItWorks": {
+      "title": "How does it work?",
+      "subtitle": "Ackify allows you to cryptographically prove that your documents have been read",
+      "step1": {
+        "title": "1. Access the document",
+        "description": "Enter the URL or reference of the document to confirm"
+      },
+      "step2": {
+        "title": "2. Read the content",
+        "description": "View the document in the integrated viewer or via the external link"
+      },
+      "step3": {
+        "title": "3. Confirm",
+        "description": "Your confirmation is recorded with an Ed25519 cryptographic signature"
+      }
+    },
+    "features": {
+      "crypto": {
+        "title": "Cryptographic security",
+        "description": "Non-repudiable Ed25519 signatures guaranteeing authenticity"
+      },
+      "instant": {
+        "title": "Instant",
+        "description": "Two-click confirmation with immediate cryptographic verification"
+      },
+      "timestamp": {
+        "title": "Precise timestamping",
+        "description": "Each confirmation is timestamped and chained to ensure integrity"
+      }
+    },
+    "saas": {
+      "badge": "Coming soon",
+      "title": "Need more?",
+      "description": "Team management, advanced API, dashboards, integrations and dedicated support for enterprises.",
+      "button": "Discover Ackify Pro",
+      "note": "Available soon"
+    }
+  },
   "sign": {
     "title": "Reading Confirmation",
     "subtitle": "Certify your reading with a secure and non-repudiable confirmation",
     "loading": {
       "title": "Loading document...",
       "description": "Please wait while we prepare the document."
+    },
+    "external": {
+      "title": "External document",
+      "description": "Please read the document below before confirming your reading.",
+      "openDocument": "Open document",
+      "noUrl": "No URL available for this document"
+    },
+    "alreadySigned": {
+      "title": "Reading already confirmed",
+      "signedBy": "Confirmed by",
+      "email": "Email",
+      "signatureType": "Confirmation type",
+      "ed25519": "Ed25519 cryptographic",
+      "downloadProof": "Download proof"
+    },
+    "confirm": {
+      "title": "Confirm your reading",
+      "readRequired": "Please read the entire document before confirming.",
+      "certify": "I certify that I have read and understood the content of this document"
     },
     "noDocument": {
       "title": "No document specified",
@@ -268,6 +348,152 @@
         "pageOf": "Page {current} of {total}"
       }
     },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Configure your Ackify instance",
+      "manage": "Settings",
+      "loading": "Loading settings...",
+      "lastUpdated": "Last updated: {date}",
+      "saveSuccess": "Settings saved successfully",
+      "saveError": "Failed to save settings",
+      "testSuccess": "Connection test successful",
+      "testError": "Connection test failed",
+      "resetSuccess": "Settings reset from environment",
+      "resetError": "Failed to reset settings",
+      "sections": {
+        "general": "General",
+        "oidc": "OAuth / OIDC",
+        "magiclink": "Magic Link",
+        "smtp": "Email (SMTP)",
+        "storage": "Storage"
+      },
+      "general": {
+        "title": "General Settings",
+        "description": "Basic configuration for your Ackify instance",
+        "organisation": "Organisation name",
+        "organisationPlaceholder": "My Company",
+        "organisationHelper": "Displayed in emails and interface",
+        "onlyAdminCanCreate": "Only admins can create documents",
+        "onlyAdminCanCreateHelper": "When enabled, only administrators can create new documents"
+      },
+      "oidc": {
+        "title": "OAuth / OIDC Configuration",
+        "description": "Configure OAuth 2.0 / OpenID Connect authentication",
+        "enabled": "Enable OAuth authentication",
+        "provider": "Provider",
+        "providerPlaceholder": "Select a provider",
+        "providers": {
+          "google": "Google",
+          "github": "GitHub",
+          "gitlab": "GitLab",
+          "custom": "Custom"
+        },
+        "clientId": "Client ID",
+        "clientIdPlaceholder": "Enter your client ID",
+        "clientSecret": "Client Secret",
+        "clientSecretPlaceholder": "Enter your client secret",
+        "clientSecretHelper": "Leave empty to keep existing value",
+        "authUrl": "Authorization URL",
+        "authUrlPlaceholder": "https://provider.com/oauth/authorize",
+        "tokenUrl": "Token URL",
+        "tokenUrlPlaceholder": "https://provider.com/oauth/token",
+        "userinfoUrl": "Userinfo URL",
+        "userinfoUrlPlaceholder": "https://provider.com/userinfo",
+        "logoutUrl": "Logout URL (optional)",
+        "logoutUrlPlaceholder": "https://provider.com/logout",
+        "scopes": "Scopes",
+        "scopesPlaceholder": "openid email profile",
+        "scopesHelper": "Space-separated list of OAuth scopes",
+        "allowedDomain": "Allowed domain (optional)",
+        "allowedDomainPlaceholder": "@company.com",
+        "allowedDomainHelper": "Restrict to specific email domain",
+        "autoLogin": "Auto login",
+        "autoLoginHelper": "Automatically redirect to OAuth if session exists",
+        "testConnection": "Test Connection"
+      },
+      "magiclink": {
+        "title": "Magic Link Configuration",
+        "description": "Configure passwordless email authentication",
+        "enabled": "Enable Magic Link authentication",
+        "enabledHelper": "Requires SMTP to be configured"
+      },
+      "smtp": {
+        "title": "Email (SMTP) Configuration",
+        "description": "Configure SMTP server for sending emails",
+        "host": "SMTP Host",
+        "hostPlaceholder": "smtp.example.com",
+        "port": "Port",
+        "portPlaceholder": "587",
+        "username": "Username",
+        "usernamePlaceholder": "user@example.com",
+        "password": "Password",
+        "passwordPlaceholder": "Enter password",
+        "passwordHelper": "Leave empty to keep existing value",
+        "tls": "Use TLS",
+        "tlsHelper": "Use implicit TLS connection",
+        "starttls": "Use STARTTLS",
+        "starttlsHelper": "Upgrade connection to TLS",
+        "insecureSkipVerify": "Skip certificate verification",
+        "insecureSkipVerifyHelper": "Not recommended for production",
+        "timeout": "Timeout",
+        "timeoutPlaceholder": "10s",
+        "from": "From address",
+        "fromPlaceholder": "noreply@example.com",
+        "fromName": "From name",
+        "fromNamePlaceholder": "Ackify",
+        "subjectPrefix": "Subject prefix (optional)",
+        "subjectPrefixPlaceholder": "[Ackify]",
+        "testConnection": "Test SMTP"
+      },
+      "storage": {
+        "title": "Storage Configuration",
+        "description": "Configure document storage backend",
+        "type": "Storage type",
+        "types": {
+          "none": "Disabled",
+          "local": "Local filesystem",
+          "s3": "S3 / MinIO"
+        },
+        "maxSizeMb": "Max file size (MB)",
+        "maxSizeMbHelper": "Maximum upload file size in megabytes",
+        "localPath": "Local path",
+        "localPathPlaceholder": "/data/documents",
+        "localPathHelper": "Directory path for storing files",
+        "s3Endpoint": "S3 Endpoint",
+        "s3EndpointPlaceholder": "s3.amazonaws.com or minio.example.com",
+        "s3Bucket": "Bucket name",
+        "s3BucketPlaceholder": "ackify-documents",
+        "s3AccessKey": "Access Key",
+        "s3AccessKeyPlaceholder": "AKIAIOSFODNN7EXAMPLE",
+        "s3SecretKey": "Secret Key",
+        "s3SecretKeyPlaceholder": "Enter secret key",
+        "s3SecretKeyHelper": "Leave empty to keep existing value",
+        "s3Region": "Region",
+        "s3RegionPlaceholder": "us-east-1",
+        "s3UseSsl": "Use SSL",
+        "s3UseSslHelper": "Use HTTPS for S3 connection",
+        "testConnection": "Test S3 Connection"
+      },
+      "actions": {
+        "save": "Save",
+        "saving": "Saving...",
+        "test": "Test",
+        "testing": "Testing...",
+        "reset": "Reset from ENV",
+        "resetting": "Resetting..."
+      },
+      "resetConfirm": {
+        "title": "Reset Settings?",
+        "message": "This will reset all settings to their values from environment variables. Any configuration saved in the database will be overwritten.",
+        "confirm": "Reset",
+        "cancel": "Cancel"
+      },
+      "validation": {
+        "authRequired": "At least one authentication method (OAuth or Magic Link) must be enabled",
+        "magiclinkRequiresSmtp": "Magic Link requires SMTP to be configured",
+        "oidcCustomRequiresUrls": "Custom OIDC provider requires auth_url, token_url and userinfo_url"
+      }
+    },
     "webhooks": {
       "title": "Webhooks",
       "subtitle": "Configure notifications to third-party applications",
@@ -324,6 +550,7 @@
     },
     "documentDetail": {
       "title": "Document",
+      "subtitle": "Manage metadata and expected readers",
       "metadata": "📄 Document information",
       "metadataDescription": "Document metadata and checksum",
       "checksum": "Checksum",
@@ -521,5 +748,233 @@
     "previous": "Previous",
     "skipToContent": "Skip to main content",
     "refresh": "Refresh"
+  },
+  "documentViewer": {
+    "loading": "Loading document...",
+    "toolbar": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "download": "Download",
+      "openInNewTab": "Open in new tab",
+      "page": "Page {current} / {total}"
+    },
+    "progress": "{percent}% read",
+    "scrollToRead": "Scroll to read the document",
+    "readComplete": "Reading complete",
+    "pdfViewer": "PDF viewer",
+    "htmlViewer": "HTML content",
+    "imageAlt": "Document image",
+    "error": {
+      "title": "Unable to load document",
+      "loadFailed": "Failed to load document",
+      "retry": "Retry",
+      "openExternal": "Open link"
+    },
+    "unsupported": {
+      "title": "Unsupported format",
+      "description": "This document type cannot be displayed in the embedded viewer.",
+      "openExternal": "Open document"
+    },
+    "pdfFallback": {
+      "title": "PDF preview unavailable",
+      "description": "Your browser cannot display this PDF inline. Please download or open it in a new tab."
+    },
+    "pdfReadConfirm": {
+      "message": "Please confirm that you have fully read this document.",
+      "button": "I have read this document"
+    },
+    "checksum": {
+      "valid": "Integrity verified",
+      "invalid": "Integrity compromised",
+      "mismatchTitle": "Warning: Document has been modified",
+      "mismatchDescription": "The document checksum does not match the one recorded. The document may have been altered since its creation.",
+      "expected": "Expected",
+      "actual": "Calculated"
+    }
+  },
+  "documentCreateForm": {
+    "url": {
+      "label": "Document",
+      "placeholder": "URL, PATH or document ID",
+      "placeholderWithUpload": "Reference, URL or click the icon to upload",
+      "helper": "Accepts URLs, file paths or simple identifiers",
+      "helperWithUpload": "Accepts URLs, paths, identifiers or uploaded files (PDF, images, documents)"
+    },
+    "upload": {
+      "button": "Upload a file",
+      "submit": "Upload",
+      "uploading": "Uploading..."
+    },
+    "submit": "Create",
+    "submitting": "Creating...",
+    "title": {
+      "label": "Title",
+      "placeholder": "Auto-detected if empty"
+    },
+    "readMode": {
+      "label": "Reading mode",
+      "integrated": "Integrated viewer",
+      "external": "External link"
+    },
+    "options": {
+      "title": "Advanced options",
+      "allowDownload": "Allow download",
+      "requireFullRead": "Require full reading",
+      "verifyChecksum": "Verify checksum on each read"
+    },
+    "checksum": {
+      "label": "Checksum",
+      "placeholder": "Auto-calculated if empty"
+    },
+    "algorithm": {
+      "label": "Algorithm"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Document description..."
+    },
+    "error": {
+      "urlRequired": "Document URL is required",
+      "createFailed": "Failed to create document"
+    }
+  },
+  "myDocuments": {
+    "title": "My Documents",
+    "subtitle": "Manage documents you have created",
+    "listTitle": "Document list",
+    "results": "{count} result | {count} results",
+    "searchPlaceholder": "Search by title or URL...",
+    "signatureCount": "signature | signatures",
+    "totalCount": "{count} document in total | {count} documents in total",
+    "noResults": "No results",
+    "tryAnotherSearch": "Try another search",
+    "stats": {
+      "total": "Total",
+      "pending": "Pending",
+      "completed": "Completed",
+      "totalDocuments": "Total documents",
+      "pendingDocuments": "Pending signatures",
+      "completedDocuments": "Completed"
+    },
+    "columns": {
+      "document": "Document",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "copyLink": "Copy link",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No documents",
+      "description": "Create your first document to start tracking reading confirmations"
+    },
+    "deleteConfirm": {
+      "title": "Delete this document?",
+      "message": "This will permanently delete the document \"{title}\" and all associated data."
+    },
+    "pagination": {
+      "page": "Page {current}/{total}"
+    }
+  },
+  "documentEdit": {
+    "title": "Edit document",
+    "subtitle": "Manage metadata and expected readers",
+    "back": "Back",
+    "breadcrumb": {
+      "myDocuments": "My documents"
+    },
+    "unauthorized": {
+      "title": "Unauthorized access",
+      "description": "You do not have permission to access this document.",
+      "backToDocuments": "Back to my documents"
+    },
+    "shareLink": {
+      "title": "Share link",
+      "copy": "Copy",
+      "copied": "Copied!"
+    },
+    "stats": {
+      "expected": "Expected readers",
+      "confirmed": "Confirmed",
+      "pending": "Pending"
+    },
+    "metadata": {
+      "title": "Metadata",
+      "description": "Basic document information",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Document title",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://example.com/document.pdf",
+      "checksumLabel": "Checksum",
+      "checksumPlaceholder": "File fingerprint (optional)",
+      "algorithmLabel": "Algorithm",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Document description...",
+      "createdBy": "Created by {by} on {date}",
+      "saving": "Saving..."
+    },
+    "metadataSaved": "Metadata saved successfully",
+    "readers": {
+      "title": "Expected readers",
+      "confirmed": "confirmed",
+      "add": "Add",
+      "filterPlaceholder": "Filter by email or name...",
+      "reader": "Reader",
+      "status": "Status",
+      "confirmedOn": "Confirmed on",
+      "statusConfirmed": "Confirmed",
+      "statusPending": "Pending",
+      "noReaders": "No expected readers"
+    },
+    "signersAdded": "{count} reader(s) added",
+    "signerRemoved": "Reader {email} removed",
+    "addSigners": {
+      "title": "Add readers",
+      "emailsLabel": "Email addresses",
+      "emailsPlaceholder": "email{'@'}example.com\nFirst Last <other{'@'}example.com>",
+      "emailsHelper": "One email address per line. Format: email or Name <email>",
+      "adding": "Adding...",
+      "add": "Add"
+    },
+    "removeSigner": {
+      "title": "Remove this reader?",
+      "message": "Are you sure you want to remove {email} from the expected readers list?"
+    },
+    "reminders": {
+      "title": "Email reminders",
+      "description": "Send reminders to pending readers",
+      "sent": "Reminders sent",
+      "toRemind": "To remind",
+      "lastSent": "Last sent",
+      "emailDisabled": "The email service is not configured.",
+      "sendToAll": "Send to all pending readers ({count})",
+      "sendToSelected": "Send to selected readers ({count})",
+      "sending": "Sending...",
+      "send": "Send reminders"
+    },
+    "confirmSendReminders": "Send reminders to {count} pending reader(s)?",
+    "confirmSendRemindersSelected": "Send reminders to {count} selected reader(s)?",
+    "remindersSentSuccess": "{count} reminder(s) sent successfully",
+    "remindersSentPartial": "{sent} reminder(s) sent, {failed} failed",
+    "remindersSentGeneric": "Reminders sent",
+    "sendReminders": {
+      "title": "Confirm sending"
+    },
+    "danger": {
+      "title": "Danger zone",
+      "description": "Irreversible actions on this document",
+      "deleteDocument": "Delete document",
+      "deleteDescription": "This will permanently delete the document and all associated data."
+    },
+    "deleteConfirm": {
+      "title": "Delete this document?",
+      "warning": "Warning!",
+      "message": "This action is irreversible. All confirmations, expected readers and history will be deleted.",
+      "deleting": "Deleting...",
+      "confirm": "Delete permanently"
+    }
   }
 }

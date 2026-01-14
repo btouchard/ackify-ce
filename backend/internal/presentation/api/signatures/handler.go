@@ -91,34 +91,29 @@ type SignatureStatusResponse struct {
 func (h *Handler) HandleCreateSignature(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get user from context (set by RequireAuth middleware)
 	user, ok := shared.GetUserFromContext(ctx)
 	if !ok || user == nil {
 		shared.WriteUnauthorized(w, "Authentication required")
 		return
 	}
 
-	// Parse request body
 	var req CreateSignatureRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Invalid request body", map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	// Validate document ID
 	if req.DocID == "" {
 		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Document ID is required", nil)
 		return
 	}
 
-	// Create signature request
 	sigRequest := &models.SignatureRequest{
 		DocID:   req.DocID,
 		User:    user,
 		Referer: req.Referer,
 	}
 
-	// Create signature
 	err := h.signatureService.CreateSignature(ctx, sigRequest)
 	if err != nil {
 		if err == models.ErrSignatureAlreadyExists {
@@ -165,10 +160,8 @@ func (h *Handler) HandleCreateSignature(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Get the created signature to return it
 	signature, err := h.signatureService.GetSignatureByDocAndUser(ctx, req.DocID, user)
 	if err != nil {
-		// Signature was created but we couldn't retrieve it
 		shared.WriteJSON(w, http.StatusCreated, map[string]interface{}{
 			"message": "Signature created successfully",
 			"docId":   req.DocID,
@@ -176,7 +169,6 @@ func (h *Handler) HandleCreateSignature(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Return the created signature
 	shared.WriteJSON(w, http.StatusCreated, h.toSignatureResponse(ctx, signature))
 }
 
@@ -184,21 +176,18 @@ func (h *Handler) HandleCreateSignature(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) HandleGetUserSignatures(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get user from context
 	user, ok := shared.GetUserFromContext(ctx)
 	if !ok || user == nil {
 		shared.WriteUnauthorized(w, "Authentication required")
 		return
 	}
 
-	// Get user's signatures
 	signatures, err := h.signatureService.GetUserSignatures(ctx, user)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to fetch signatures", map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	// Convert to response format
 	response := make([]*SignatureResponse, 0, len(signatures))
 	for _, sig := range signatures {
 		response = append(response, h.toSignatureResponse(ctx, sig))
@@ -211,21 +200,18 @@ func (h *Handler) HandleGetUserSignatures(w http.ResponseWriter, r *http.Request
 func (h *Handler) HandleGetDocumentSignatures(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get document ID from URL
 	docID := chi.URLParam(r, "docId")
 	if docID == "" {
 		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Document ID is required", nil)
 		return
 	}
 
-	// Get document signatures
 	signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to fetch signatures", map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	// Convert to response format
 	response := make([]*SignatureResponse, 0, len(signatures))
 	for _, sig := range signatures {
 		response = append(response, h.toSignatureResponse(ctx, sig))
@@ -238,28 +224,24 @@ func (h *Handler) HandleGetDocumentSignatures(w http.ResponseWriter, r *http.Req
 func (h *Handler) HandleGetSignatureStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get user from context
 	user, ok := shared.GetUserFromContext(ctx)
 	if !ok || user == nil {
 		shared.WriteUnauthorized(w, "Authentication required")
 		return
 	}
 
-	// Get document ID from URL
 	docID := chi.URLParam(r, "docId")
 	if docID == "" {
 		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Document ID is required", nil)
 		return
 	}
 
-	// Get signature status
 	status, err := h.signatureService.GetSignatureStatus(ctx, docID, user)
 	if err != nil {
 		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to fetch signature status", map[string]interface{}{"error": err.Error()})
 		return
 	}
 
-	// Convert to response format
 	response := SignatureStatusResponse{
 		DocID:     status.DocID,
 		UserEmail: status.UserEmail,

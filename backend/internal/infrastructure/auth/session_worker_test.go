@@ -66,7 +66,7 @@ func TestSessionWorker_StartStop(t *testing.T) {
 		CleanupAge:      1 * time.Hour,
 	}
 
-	worker := NewSessionWorker(repo, config, nil, &mockTenantProvider{tenantID: uuid.New()})
+	worker := NewSessionWorker(repo, config, context.Background(), nil, &mockTenantProvider{tenantID: uuid.New()})
 
 	// Test starting
 	err := worker.Start()
@@ -123,7 +123,7 @@ func TestSessionWorker_CleanupSuccess(t *testing.T) {
 		CleanupAge:      24 * time.Hour,
 	}
 
-	worker := NewSessionWorker(repo, config, nil, &mockTenantProvider{tenantID: uuid.New()})
+	worker := NewSessionWorker(repo, config, context.Background(), nil, &mockTenantProvider{tenantID: uuid.New()})
 
 	err := worker.Start()
 	if err != nil {
@@ -157,7 +157,7 @@ func TestSessionWorker_CleanupError(t *testing.T) {
 		CleanupAge:      24 * time.Hour,
 	}
 
-	worker := NewSessionWorker(repo, config, nil, &mockTenantProvider{tenantID: uuid.New()})
+	worker := NewSessionWorker(repo, config, context.Background(), nil, &mockTenantProvider{tenantID: uuid.New()})
 
 	err := worker.Start()
 	if err != nil {
@@ -191,7 +191,7 @@ func TestSessionWorker_ImmediateCleanupOnStart(t *testing.T) {
 		CleanupAge:      24 * time.Hour,
 	}
 
-	worker := NewSessionWorker(repo, config, nil, &mockTenantProvider{tenantID: uuid.New()})
+	worker := NewSessionWorker(repo, config, context.Background(), nil, &mockTenantProvider{tenantID: uuid.New()})
 
 	err := worker.Start()
 	if err != nil {
@@ -238,7 +238,7 @@ func TestSessionWorker_GracefulShutdown(t *testing.T) {
 		CleanupAge:      1 * time.Hour,
 	}
 
-	worker := NewSessionWorker(repo, config, nil, &mockTenantProvider{tenantID: uuid.New()})
+	worker := NewSessionWorker(repo, config, context.Background(), nil, &mockTenantProvider{tenantID: uuid.New()})
 
 	err := worker.Start()
 	if err != nil {
@@ -305,7 +305,7 @@ func TestSessionWorker_ContextCancellation(t *testing.T) {
 		CleanupAge:      1 * time.Hour,
 	}
 
-	worker := NewSessionWorker(repo, config, nil, &mockTenantProvider{tenantID: uuid.New()})
+	worker := NewSessionWorker(repo, config, context.Background(), nil, &mockTenantProvider{tenantID: uuid.New()})
 
 	err := worker.Start()
 	if err != nil {

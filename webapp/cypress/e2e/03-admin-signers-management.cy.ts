@@ -20,15 +20,15 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     cy.contains('Administration', { timeout: 10000 }).should('be.visible')
 
     // Step 3: Create new document
-    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
-    cy.get('[data-testid="admin-create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
 
     // Step 4: Should redirect to document detail page
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
     cy.contains('Document').should('be.visible')
 
     // Step 5: Add 3 expected signers
-    cy.get('[data-testid="add-signers-btn"]').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
 
     // Modal should appear
     cy.get('[data-testid="add-signers-modal"]').should('be.visible')
@@ -37,7 +37,7 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     cy.wait(500)
 
     // Add signers (Name <email> format and plain email)
-    cy.get('[data-testid="add-signers-textarea"]').type(
+    cy.get('[data-testid="signers-textarea"]').type(
       'Alice Smith <alice@test.com>{enter}bob@test.com{enter}Charlie Brown <charlie@test.com>',
       { delay: 50 }
     )
@@ -46,10 +46,10 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     cy.wait(300)
 
     // Submit the form
-    cy.get('[data-testid="add-signers-submit"]').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Wait for modal to close
-    cy.contains('Add expected readers', { timeout: 15000 }).should('not.exist')
+    cy.get('[data-testid="add-signers-modal"]', { timeout: 15000 }).should('not.exist')
 
     // Step 6: Verify signers in table
     cy.contains('alice@test.com', { timeout: 10000 }).should('be.visible')
@@ -63,8 +63,7 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     // Step 8: Verify stats
     cy.contains('Expected').should('be.visible')
     cy.contains('3').should('be.visible') // 3 expected signers
-    cy.contains('0').should('be.visible') // 0 signed
-    cy.contains('0%').should('be.visible') // 0% completion rate (nobody signed yet)
+    cy.contains('Confirmed').parent().should('contain', '0') // 0 confirmed
   })
 
   it('should allow admin to remove expected signer', () => {
@@ -74,27 +73,27 @@ describe('Test 3: Admin - Expected Signers Management', () => {
 
     // Create document
     const removeDocId = 'test-remove-signer-' + Date.now()
-    cy.get('[data-testid="admin-new-doc-input"]').type(removeDocId)
-    cy.get('[data-testid="admin-create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(removeDocId)
+    cy.get('[data-testid="submit-button"]').click()
 
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${removeDocId}`)
 
     // Add 2 signers
-    cy.get('[data-testid="add-signers-btn"]').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
 
     // Wait for modal to be fully rendered
     cy.wait(500)
 
-    cy.get('[data-testid="add-signers-textarea"]').type('alice@test.com{enter}bob@test.com', { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type('alice@test.com{enter}bob@test.com', { delay: 50 })
 
     // Wait a bit for Vue reactivity
     cy.wait(300)
 
     // Submit the form
-    cy.get('[data-testid="add-signers-submit"]').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Wait for modal to close
-    cy.contains('Add expected readers', { timeout: 15000 }).should('not.exist')
+    cy.get('[data-testid="add-signers-modal"]', { timeout: 15000 }).should('not.exist')
 
     // Verify 2 signers
     cy.contains('alice@test.com', { timeout: 10000 }).should('be.visible')

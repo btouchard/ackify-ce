@@ -12,6 +12,7 @@ Documentation complète pour Ackify - Proof of Read avec signatures cryptographi
 - **[Signatures Cryptographiques](features/signatures.md)** - Flow de signature Ed25519
 - **[Expected Signers](features/expected-signers.md)** - Tracking et rappels email
 - **[Checksums](features/checksums.md)** - Vérification d'intégrité des documents
+- **[Stockage de Documents](features/storage.md)** - Upload et stockage (local ou S3)
 - **[Embedding](features/embedding.md)** - oEmbed, iframes, intégrations tierces
 - **[Internationalisation](features/i18n.md)** - Support multilingue (fr, en, es, de, it)
 

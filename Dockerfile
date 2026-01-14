@@ -55,6 +55,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     -ldflags="-w -s" \
     -o /app/migrate ./backend/cmd/migrate
 
+# Create storage directory with correct ownership for nonroot user (UID 65532)
+RUN mkdir -p /data/documents && chown -R 65532:65532 /data
+
 FROM gcr.io/distroless/static-debian12:nonroot
 
 ARG VERSION="dev"
@@ -75,6 +78,9 @@ COPY --from=builder /app/backend/migrations /app/migrations
 COPY --from=builder /app/backend/locales /app/locales
 COPY --from=builder /app/backend/templates /app/templates
 COPY --from=builder /app/backend/openapi.yaml /app/openapi.yaml
+
+# Copy storage directory with correct ownership (for volume initialization)
+COPY --from=builder --chown=65532:65532 /data /data
 
 ENV ACKIFY_TEMPLATES_DIR=/app/templates
 ENV ACKIFY_LOCALES_DIR=/app/locales

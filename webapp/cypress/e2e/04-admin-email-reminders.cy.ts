@@ -17,23 +17,23 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.loginAsAdmin()
     cy.visit('/admin')
 
-    cy.get('[data-testid="admin-new-doc-input"]').type(docId)
-    cy.get('[data-testid="admin-create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(docId)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 2: Add 2 expected signers
-    cy.get('[data-testid="add-signers-btn"]').click()
+    cy.get('[data-testid="open-add-signers-btn"]').click()
 
     // Wait for modal
     cy.wait(500)
 
-    cy.get('[data-testid="add-signers-textarea"]').type(`${alice}{enter}${bob}`, { delay: 50 })
+    cy.get('[data-testid="signers-textarea"]').type(`${alice}{enter}${bob}`, { delay: 50 })
 
     // Wait for Vue reactivity
     cy.wait(300)
 
     // Submit form
-    cy.get('[data-testid="add-signers-submit"]').click()
+    cy.get('[data-testid="add-signers-btn"]').click()
 
     // Verify signers added
     cy.contains(alice, { timeout: 10000 }).should('be.visible')
@@ -45,8 +45,8 @@ describe('Test 4: Admin - Email Reminders', () => {
 
     // Step 4: Alice signs the document
     cy.url({ timeout: 10000 }).should('include', `/?doc=${docId}`)
-    cy.get('[data-testid="sign-button"]', { timeout: 10000 }).should('be.visible').click()
-    cy.get('[data-testid="sign-success"]', { timeout: 10000 }).should('be.visible')
+    cy.confirmReading()
+    cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
 
     // Step 5: Logout Alice and login back as admin
     cy.logout()
@@ -57,18 +57,18 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 7: Verify stats (1 signed, 1 pending)
-    cy.contains('Signed').parent().should('contain', '1')
+    cy.contains('Confirmed').parent().should('contain', '1')
     cy.contains('Pending').parent().should('contain', '1')
 
     // Step 8: Send reminders to all pending
     cy.clearMailbox() // Clear previous emails
 
     // Click send reminders button
-    cy.get('[data-testid="send-reminders-btn"]').click()
+    cy.contains('button', 'Send reminders').click()
 
     // Confirm in modal
     cy.contains('Send reminders', { timeout: 5000 }).should('be.visible')
-    cy.contains('button', 'Confirm').click({ force: true })
+    cy.get('[data-testid="confirm-button"]').click({ force: true })
 
     // Step 9: Wait for API call to complete
     cy.wait(2000)

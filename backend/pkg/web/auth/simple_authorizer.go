@@ -44,11 +44,5 @@ func (a *SimpleAuthorizer) CanCreateDocument(ctx context.Context, userEmail stri
 	return a.IsAdmin(ctx, userEmail)
 }
 
-// OnlyAdminCanCreate returns whether only administrators can create documents.
-// This is provided for backward compatibility with existing code.
-func (a *SimpleAuthorizer) OnlyAdminCanCreate() bool {
-	return a.onlyAdminCanCreate
-}
-
 // Compile-time interface check.
 var _ web.Authorizer = (*SimpleAuthorizer)(nil)

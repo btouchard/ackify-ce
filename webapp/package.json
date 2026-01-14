@@ -19,8 +19,12 @@
     "test:e2e:open": "cypress open"
   },
   "dependencies": {
+    "@types/dompurify": "^3.0.5",
     "axios": "^1.12.2",
+    "dompurify": "^3.3.1",
     "lucide-vue-next": "^0.546.0",
+    "marked": "^17.0.1",
+    "pdfjs-dist": "^4.9.155",
     "pinia": "^3.0.3",
     "radix-vue": "^1.9.17",
     "vue": "^3.5.22",
@@ -28,7 +32,7 @@
     "vue-router": "^4.6.2"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "^3.14.7",
+    "@cypress/code-coverage": "^3.10.0",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/postcss": "^4.1.14",
     "@types/node": "^24.6.0",

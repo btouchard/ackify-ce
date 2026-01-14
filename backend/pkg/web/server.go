@@ -27,6 +27,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/handlers"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/storage"
 
 	sdk "github.com/btouchard/shm/sdk/golang"
 )
@@ -45,7 +46,6 @@ type Server struct {
 
 	// Capability providers
 	authProvider  AuthProvider
-	oauthProvider OAuthAuthProvider
 	authorizer    Authorizer
 	quotaEnforcer QuotaEnforcer
 	auditLogger   AuditLogger
@@ -66,14 +66,15 @@ type ServerBuilder struct {
 
 	// Capability providers (auth and authorizer are REQUIRED)
 	authProvider  AuthProvider
-	oauthProvider OAuthAuthProvider
 	authorizer    Authorizer
 	quotaEnforcer QuotaEnforcer
 	auditLogger   AuditLogger
 
 	// Optional infrastructure
-	i18nService *i18n.I18n
-	emailSender email.Sender
+	i18nService     *i18n.I18n
+	emailSender     email.Sender
+	emailRenderer   *email.Renderer
+	storageProvider storage.Provider
 
 	// Core services (created internally or injected)
 	magicLinkService *services.MagicLinkService
@@ -82,20 +83,15 @@ type ServerBuilder struct {
 	adminService     *services.AdminService
 	webhookService   *services.WebhookService
 	reminderService  *services.ReminderAsyncService
-
-	// Flags
-	oauthEnabled     bool
-	magicLinkEnabled bool
+	configService    *services.ConfigService
 }
 
 // NewServerBuilder creates a new server builder with the required configuration.
 func NewServerBuilder(cfg *config.Config, frontend embed.FS, version string) *ServerBuilder {
 	return &ServerBuilder{
-		cfg:              cfg,
-		frontend:         frontend,
-		version:          version,
-		oauthEnabled:     cfg.Auth.OAuthEnabled,
-		magicLinkEnabled: cfg.Auth.MagicLinkEnabled,
+		cfg:      cfg,
+		frontend: frontend,
+		version:  version,
 	}
 }
 
@@ -129,6 +125,12 @@ func (b *ServerBuilder) WithEmailSender(sender email.Sender) *ServerBuilder {
 	return b
 }
 
+// WithEmailRenderer injects an email renderer.
+func (b *ServerBuilder) WithEmailRenderer(renderer *email.Renderer) *ServerBuilder {
+	b.emailRenderer = renderer
+	return b
+}
+
 // === Capability Providers ===
 
 // WithAuthProvider injects an authentication provider (REQUIRED).
@@ -152,13 +154,6 @@ func (b *ServerBuilder) WithQuotaEnforcer(enforcer QuotaEnforcer) *ServerBuilder
 // WithAuditLogger injects an audit logger (optional, defaults to LogOnly).
 func (b *ServerBuilder) WithAuditLogger(logger AuditLogger) *ServerBuilder {
 	b.auditLogger = logger
-	return b
-}
-
-// WithOAuthProvider injects an OAuth authentication provider (optional).
-func (b *ServerBuilder) WithOAuthProvider(provider OAuthAuthProvider) *ServerBuilder {
-	b.authProvider = provider
-	b.oauthProvider = provider
 	return b
 }
 
@@ -198,59 +193,52 @@ func (b *ServerBuilder) WithReminderService(service *services.ReminderAsyncServi
 	return b
 }
 
+// WithConfigService injects a configuration service.
+func (b *ServerBuilder) WithConfigService(service *services.ConfigService) *ServerBuilder {
+	b.configService = service
+	return b
+}
+
 // Build constructs the server with all dependencies.
 func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
-	// Validate required capability providers
 	if err := b.validateProviders(); err != nil {
 		return nil, err
 	}
 
-	// Set defaults for optional providers
 	b.setDefaultProviders()
 
-	// Initialize infrastructure
 	if err := b.initializeInfrastructure(); err != nil {
 		return nil, err
 	}
 
-	// Create repositories
 	repos := b.createRepositories()
 
-	// Initialize Telemetry if is enabled
 	if err := b.initializeTelemetry(ctx); err != nil {
 		return nil, err
 	}
 
-	// Initialize workers and services
-	whPublisher, whWorker, err := b.initializeWebhookSystem(repos)
+	whPublisher, whWorker, err := b.initializeWebhookSystem(ctx, repos)
 	if err != nil {
 		return nil, err
 	}
 
-	emailWorker, err := b.initializeEmailWorker(repos, whPublisher)
+	emailWorker, err := b.initializeEmailWorker(ctx, repos, whPublisher)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize core services
 	b.initializeCoreServices(repos)
-
-	// Initialize MagicLink service and worker
-	magicLinkWorker := b.initializeMagicLinkService(ctx, repos)
-
-	// Initialize reminder service
+	b.initializeConfigService(ctx, repos)
+	magicLinkWorker := b.initializeMagicLinkCleanupWorker(ctx)
 	b.initializeReminderService(repos)
 
-	// Initialize session worker
-	sessionWorker, err := b.initializeSessionWorker(repos)
+	sessionWorker, err := b.initializeSessionWorker(ctx, repos)
 	if err != nil {
 		return nil, err
 	}
 
-	// Build router
 	router := b.buildRouter(repos, whPublisher)
 
-	// Create HTTP server
 	httpServer := &http.Server{
 		Addr:    b.cfg.Server.ListenAddr,
 		Handler: handlers.RequestLogger(handlers.SecureHeaders(router)),
@@ -267,7 +255,6 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 		magicLinkWorker: magicLinkWorker,
 		baseURL:         b.cfg.App.BaseURL,
 		authProvider:    b.authProvider,
-		oauthProvider:   b.oauthProvider,
 		authorizer:      b.authorizer,
 		quotaEnforcer:   b.quotaEnforcer,
 		auditLogger:     b.auditLogger,
@@ -295,11 +282,11 @@ func (b *ServerBuilder) setDefaultProviders() {
 	}
 }
 
-// initializeInfrastructure initializes i18n and email sender.
+// initializeInfrastructure initializes signer and storage provider.
+// i18n and emailSender are expected to be injected from main.go.
 func (b *ServerBuilder) initializeInfrastructure() error {
 	var err error
 
-	// Initialize Ed25519 signer if not provided
 	if b.signer == nil {
 		b.signer, err = crypto.NewEd25519Signer()
 		if err != nil {
@@ -307,21 +294,15 @@ func (b *ServerBuilder) initializeInfrastructure() error {
 		}
 	}
 
-	// Initialize i18n if not provided
-	if b.i18nService == nil {
-		localesDir := getLocalesDir()
-		b.i18nService, err = i18n.NewI18n(localesDir)
+	if b.storageProvider == nil && b.cfg.Storage.IsEnabled() {
+		provider, err := storage.NewProvider(b.cfg.Storage)
 		if err != nil {
-			return fmt.Errorf("failed to initialize i18n: %w", err)
+			return fmt.Errorf("failed to initialize storage provider: %w", err)
 		}
-	}
-
-	// Initialize email sender if not provided
-	if b.emailSender == nil && b.cfg.Mail.Host != "" {
-		emailTemplatesDir := getTemplatesDir()
-		renderer := email.NewRenderer(emailTemplatesDir, b.cfg.App.BaseURL, b.cfg.App.Organisation,
-			b.cfg.Mail.FromName, b.cfg.Mail.From, "fr", b.i18nService)
-		b.emailSender = email.NewSMTPSender(b.cfg.Mail, renderer)
+		b.storageProvider = provider
+		if provider != nil {
+			logger.Logger.Info("Storage provider initialized", "type", provider.Type())
+		}
 	}
 
 	return nil
@@ -336,8 +317,8 @@ type repositories struct {
 	emailQueue      *database.EmailQueueRepository
 	webhook         *database.WebhookRepository
 	webhookDelivery *database.WebhookDeliveryRepository
-	magicLink       services.MagicLinkRepository // Interface, not concrete type
 	oauthSession    *database.OAuthSessionRepository
+	config          *database.ConfigRepository
 }
 
 // createRepositories creates all repository instances.
@@ -350,8 +331,8 @@ func (b *ServerBuilder) createRepositories() *repositories {
 		emailQueue:      database.NewEmailQueueRepository(b.db, b.tenantProvider),
 		webhook:         database.NewWebhookRepository(b.db, b.tenantProvider),
 		webhookDelivery: database.NewWebhookDeliveryRepository(b.db, b.tenantProvider),
-		magicLink:       database.NewMagicLinkRepository(b.db),
 		oauthSession:    database.NewOAuthSessionRepository(b.db, b.tenantProvider),
+		config:          database.NewConfigRepository(b.db, b.tenantProvider),
 	}
 }
 
@@ -379,10 +360,10 @@ func (b *ServerBuilder) initializeTelemetry(ctx context.Context) error {
 }
 
 // initializeWebhookSystem initializes webhook publisher and worker.
-func (b *ServerBuilder) initializeWebhookSystem(repos *repositories) (*services.WebhookPublisher, *webhook.Worker, error) {
+func (b *ServerBuilder) initializeWebhookSystem(ctx context.Context, repos *repositories) (*services.WebhookPublisher, *webhook.Worker, error) {
 	whPublisher := services.NewWebhookPublisher(repos.webhook, repos.webhookDelivery)
 	whCfg := webhook.DefaultWorkerConfig()
-	whWorker := webhook.NewWorker(repos.webhookDelivery, &http.Client{}, whCfg, b.db, b.tenantProvider)
+	whWorker := webhook.NewWorker(repos.webhookDelivery, &http.Client{}, whCfg, ctx, b.db, b.tenantProvider)
 
 	if err := whWorker.Start(); err != nil {
 		return nil, nil, fmt.Errorf("failed to start webhook worker: %w", err)
@@ -392,15 +373,14 @@ func (b *ServerBuilder) initializeWebhookSystem(repos *repositories) (*services.
 }
 
 // initializeEmailWorker initializes email worker for async processing.
-func (b *ServerBuilder) initializeEmailWorker(repos *repositories, whPublisher *services.WebhookPublisher) (*email.Worker, error) {
-	if b.emailSender == nil || b.cfg.Mail.Host == "" {
+// emailRenderer is expected to be injected from main.go via WithEmailRenderer().
+func (b *ServerBuilder) initializeEmailWorker(ctx context.Context, repos *repositories, whPublisher *services.WebhookPublisher) (*email.Worker, error) {
+	if b.emailSender == nil || b.cfg.Mail.Host == "" || b.emailRenderer == nil {
 		return nil, nil
 	}
 
-	renderer := email.NewRenderer(getTemplatesDir(), b.cfg.App.BaseURL, b.cfg.App.Organisation,
-		b.cfg.Mail.FromName, b.cfg.Mail.From, "fr", b.i18nService)
 	workerConfig := email.DefaultWorkerConfig()
-	emailWorker := email.NewWorker(repos.emailQueue, b.emailSender, renderer, workerConfig, b.db, b.tenantProvider)
+	emailWorker := email.NewWorker(repos.emailQueue, b.emailSender, b.emailRenderer, workerConfig, ctx, b.db, b.tenantProvider)
 
 	if whPublisher != nil {
 		emailWorker.SetPublisher(whPublisher)
@@ -428,38 +408,19 @@ func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
 	if b.webhookService == nil {
 		b.webhookService = services.NewWebhookService(repos.webhook, repos.webhookDelivery)
 	}
-
-	// Log authentication configuration
-	if b.oauthEnabled {
-		logger.Logger.Info("OAuth authentication enabled")
-	} else {
-		logger.Logger.Info("OAuth authentication disabled")
-	}
 }
 
-// initializeMagicLinkService initializes MagicLink service and cleanup worker.
-func (b *ServerBuilder) initializeMagicLinkService(ctx context.Context, repos *repositories) *workers.MagicLinkCleanupWorker {
-	if b.magicLinkService == nil {
-		b.magicLinkService = services.NewMagicLinkService(services.MagicLinkServiceConfig{
-			Repository:        repos.magicLink,
-			EmailSender:       b.emailSender,
-			I18n:              b.i18nService,
-			BaseURL:           b.cfg.App.BaseURL,
-			AppName:           b.cfg.App.Organisation,
-			RateLimitPerEmail: b.cfg.Auth.MagicLinkRateLimitEmail,
-			RateLimitPerIP:    b.cfg.Auth.MagicLinkRateLimitIP,
-		})
-	}
+// initializeConfigService is a no-op when configService is injected from main.go.
+// Kept for API compatibility.
+func (b *ServerBuilder) initializeConfigService(_ context.Context, _ *repositories) {
+	// configService is expected to be injected and initialized from main.go
+}
 
-	var magicLinkWorker *workers.MagicLinkCleanupWorker
-	if b.magicLinkEnabled {
-		logger.Logger.Info("Magic Link authentication enabled")
-		magicLinkWorker = workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
-		go magicLinkWorker.Start(ctx)
-	} else {
-		logger.Logger.Info("Magic Link authentication disabled")
-	}
-
+// initializeMagicLinkCleanupWorker starts the cleanup worker for expired magic link tokens.
+// magicLinkService is expected to be injected from main.go.
+func (b *ServerBuilder) initializeMagicLinkCleanupWorker(ctx context.Context) *workers.MagicLinkCleanupWorker {
+	magicLinkWorker := workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
+	go magicLinkWorker.Start(ctx)
 	return magicLinkWorker
 }
 
@@ -478,13 +439,13 @@ func (b *ServerBuilder) initializeReminderService(repos *repositories) {
 }
 
 // initializeSessionWorker initializes OAuth session cleanup worker.
-func (b *ServerBuilder) initializeSessionWorker(repos *repositories) (*auth.SessionWorker, error) {
+func (b *ServerBuilder) initializeSessionWorker(ctx context.Context, repos *repositories) (*auth.SessionWorker, error) {
 	if repos.oauthSession == nil {
 		return nil, nil
 	}
 
 	workerConfig := auth.DefaultSessionWorkerConfig()
-	sessionWorker := auth.NewSessionWorker(repos.oauthSession, workerConfig, b.db, b.tenantProvider)
+	sessionWorker := auth.NewSessionWorker(repos.oauthSession, workerConfig, ctx, b.db, b.tenantProvider)
 	if err := sessionWorker.Start(); err != nil {
 		return nil, fmt.Errorf("failed to start OAuth session worker: %w", err)
 	}
@@ -498,39 +459,40 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 	router.Use(i18n.Middleware(b.i18nService))
 	router.Use(EmbedDocumentMiddleware(b.documentService, whPublisher))
 
-	// Build API router config using providers
+	// Build API router config using unified auth provider
 	apiConfig := api.RouterConfig{
 		// Database for RLS middleware
 		DB:             b.db,
 		TenantProvider: b.tenantProvider,
 
-		// Capability providers
-		AuthProvider:      b.authProvider,
-		OAuthProvider:     b.oauthProvider,
-		Authorizer:        b.authorizer,
-		MagicLinkService:  b.magicLinkService,
-		SignatureService:  b.signatureService,
-		DocumentService:   b.documentService,
-		AdminService:      b.adminService,
-		ReminderService:   b.reminderService,
-		WebhookService:    b.webhookService,
-		WebhookPublisher:  whPublisher,
-		BaseURL:           b.cfg.App.BaseURL,
-		AutoLogin:         b.cfg.OAuth.AutoLogin,
-		OAuthEnabled:      b.oauthEnabled,
-		MagicLinkEnabled:  b.magicLinkEnabled,
+		// Capability providers (AuthProvider handles OIDC + MagicLink dynamically)
+		AuthProvider:     b.authProvider,
+		Authorizer:       b.authorizer,
+		SignatureService: b.signatureService,
+		DocumentService:  b.documentService,
+		AdminService:     b.adminService,
+		ReminderService:  b.reminderService,
+		WebhookService:   b.webhookService,
+		WebhookPublisher: whPublisher,
+		StorageProvider:  b.storageProvider,
+		StorageMaxSizeMB: b.cfg.Storage.MaxSizeMB,
+		BaseURL:          b.cfg.App.BaseURL,
+
+		// Rate limiting
 		AuthRateLimit:     b.cfg.App.AuthRateLimit,
 		DocumentRateLimit: b.cfg.App.DocumentRateLimit,
 		GeneralRateLimit:  b.cfg.App.GeneralRateLimit,
 		ImportMaxSigners:  b.cfg.App.ImportMaxSigners,
+
+		// Config service for dynamic settings
+		ConfigService: b.configService,
 	}
 	apiRouter := api.NewRouter(apiConfig)
 	router.Mount("/api/v1", apiRouter)
 
 	router.Get("/oembed", handlers.HandleOEmbed(b.cfg.App.BaseURL))
 	router.NotFound(EmbedFolder(b.frontend, "web/dist", b.cfg.App.BaseURL, b.version,
-		b.oauthEnabled, b.magicLinkEnabled, b.cfg.App.SMTPEnabled,
-		b.cfg.App.OnlyAdminCanCreate, repos.signature))
+		b.configService, repos.signature))
 
 	return router
 }

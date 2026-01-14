@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import axios, { type AxiosInstance, AxiosError, type InternalAxiosRequestConfig } from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
+export const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
 
 export interface ApiResponse<T = any> {
   data: T

@@ -23,7 +23,6 @@ import {
   Users,
   CheckCircle,
   Mail,
-  Shield,
   Plus,
   Loader2,
   Copy,
@@ -36,6 +35,14 @@ import {
   FileX,
   Search,
   AlertCircle,
+  ChevronRight,
+  ExternalLink,
+  Check,
+  FileText,
+  Eye,
+  Download,
+  ScrollText,
+  ShieldCheck,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -74,12 +81,20 @@ const metadataForm = ref<Partial<{
   checksum: string
   checksumAlgorithm: string
   description: string
+  readMode: string
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
 }>>({
   title: '',
   url: '',
   checksum: '',
   checksumAlgorithm: 'SHA-256',
   description: '',
+  readMode: 'integrated',
+  allowDownload: true,
+  requireFullRead: false,
+  verifyChecksum: true,
 })
 const originalMetadata = ref<Partial<{
   title: string
@@ -87,6 +102,10 @@ const originalMetadata = ref<Partial<{
   checksum: string
   checksumAlgorithm: string
   description: string
+  readMode: string
+  allowDownload: boolean
+  requireFullRead: boolean
+  verifyChecksum: boolean
 }>>({})
 const savingMetadata = ref(false)
 
@@ -124,6 +143,11 @@ const filteredSigners = computed(() => {
 })
 const unexpectedSignatures = computed(() => documentStatus.value?.unexpectedSignatures || [])
 const documentMetadata = computed(() => documentStatus.value?.document)
+const documentTitle = computed(() => documentMetadata.value?.title || docId.value)
+const isStoredDocument = computed(() => !!documentMetadata.value?.storageKey)
+
+// Copy feedback
+const copied = ref(false)
 
 // Methods
 async function loadDocumentStatus() {
@@ -142,6 +166,10 @@ async function loadDocumentStatus() {
         checksum: doc.checksum || '',
         checksumAlgorithm: doc.checksumAlgorithm || 'SHA-256',
         description: doc.description || '',
+        readMode: doc.readMode || 'integrated',
+        allowDownload: doc.allowDownload ?? true,
+        requireFullRead: doc.requireFullRead ?? false,
+        verifyChecksum: doc.verifyChecksum ?? true,
       }
       metadataForm.value = { ...metadata }
       originalMetadata.value = { ...metadata }
@@ -159,7 +187,9 @@ function hasCriticalFieldsChanged(): boolean {
     metadataForm.value.url !== originalMetadata.value.url ||
     metadataForm.value.checksum !== originalMetadata.value.checksum ||
     metadataForm.value.checksumAlgorithm !== originalMetadata.value.checksumAlgorithm ||
-    metadataForm.value.description !== originalMetadata.value.description
+    metadataForm.value.description !== originalMetadata.value.description ||
+    metadataForm.value.readMode !== originalMetadata.value.readMode ||
+    metadataForm.value.requireFullRead !== originalMetadata.value.requireFullRead
   )
 }
 
@@ -315,10 +345,14 @@ function cancelSendReminders() {
   showSendRemindersModal.value = false
 }
 
-function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text)
-  success.value = t('admin.documentDetail.copiedToClipboard')
-  setTimeout(() => (success.value = ''), 2000)
+async function copyToClipboard() {
+  try {
+    await navigator.clipboard.writeText(shareLink.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 2000)
+  } catch (err) {
+    console.error('Failed to copy:', err)
+  }
 }
 
 function formatDate(dateString: string | undefined): string {
@@ -450,30 +484,33 @@ onMounted(() => {
 <template>
   <div class="min-h-[calc(100vh-8rem)]">
     <main class="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <div class="flex items-center space-x-3 mb-2">
-          <button
-            @click="router.push('/admin')"
-            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            :aria-label="t('admin.documentDetail.back')"
-          >
-            <ArrowLeft :size="20" class="text-slate-600 dark:text-slate-400" />
-          </button>
-          <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-            {{ t('admin.documentDetail.title') }} <span class="font-mono text-blue-600 dark:text-blue-400">{{ docId }}</span>
-          </h1>
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 text-sm mb-6">
+        <router-link to="/admin" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+          {{ t('admin.title') }}
+        </router-link>
+        <ChevronRight :size="16" class="text-slate-300 dark:text-slate-600" />
+        <span class="text-slate-900 dark:text-slate-100 font-medium truncate max-w-[200px]">{{ documentTitle }}</span>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+            <FileText class="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{{ documentTitle }}</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ t('admin.documentDetail.subtitle') }}</p>
+          </div>
         </div>
-        <div class="flex items-center gap-3 ml-11">
-          <p class="text-sm text-slate-500 dark:text-slate-400 font-mono truncate">{{ shareLink }}</p>
-          <button
-            @click="copyToClipboard(shareLink)"
-            class="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            :aria-label="t('signatureList.copy')"
-          >
-            <Copy :size="14" class="text-slate-400" />
-          </button>
-        </div>
+        <button
+          @click="router.push('/admin')"
+          class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium rounded-lg px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors min-h-[44px]"
+        >
+          <ArrowLeft :size="18" />
+          {{ t('common.back') }}
+        </button>
       </div>
 
       <!-- Alerts -->
@@ -491,60 +528,76 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Loading -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
         <Loader2 :size="48" class="animate-spin text-blue-600" />
         <p class="mt-4 text-slate-500 dark:text-slate-400">{{ t('common.loading') }}</p>
       </div>
 
-      <!-- Content -->
       <div v-else-if="documentStatus" class="space-y-6">
+        <!-- Share Link Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100 mb-4">{{ t('documentEdit.shareLink.title') }}</h2>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex-1 relative">
+              <input
+                type="text"
+                :value="shareLink"
+                readonly
+                class="w-full px-4 py-2.5 pr-10 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm font-mono"
+              />
+              <a
+                :href="shareLink"
+                target="_blank"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                <ExternalLink :size="16" />
+              </a>
+            </div>
+            <button
+              @click="copyToClipboard"
+              class="inline-flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+            >
+              <Check v-if="copied" :size="16" class="text-emerald-500" />
+              <Copy v-else :size="16" />
+              {{ copied ? t('documentEdit.shareLink.copied') : t('documentEdit.shareLink.copy') }}
+            </button>
+          </div>
+        </div>
+
         <!-- Stats Cards -->
-        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-4" data-testid="stats-cards">
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-expected">
+        <div v-if="stats && stats.expectedCount > 0" class="grid gap-4 grid-cols-2 lg:grid-cols-3">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                 <Users :size="20" class="text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.expected') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-expected-value">{{ stats.expectedCount }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('documentEdit.stats.expected') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.expectedCount }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-signed">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                 <CheckCircle :size="20" class="text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.signed') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-signed-value">{{ stats.signedCount }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('documentEdit.stats.confirmed') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.signedCount }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-pending">
+          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
                 <Clock :size="20" class="text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.pending') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-pending-value">{{ stats.pendingCount }}</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4" data-testid="stats-completion">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                <Shield :size="20" class="text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.dashboard.stats.completion') }}</p>
-                <p class="text-xl font-bold text-slate-900 dark:text-slate-100" data-testid="stats-completion-value">{{ Math.round(stats.completionRate) }}%</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('documentEdit.stats.pending') }}</p>
+                <p class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ stats.pendingCount }}</p>
               </div>
             </div>
           </div>
@@ -558,12 +611,12 @@ onMounted(() => {
           </div>
           <div class="p-6">
             <form @submit.prevent="handleSaveMetadata" class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div :class="['grid gap-4', isStoredDocument ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2']">
                 <div>
                   <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.titleLabel') }}</label>
-                  <input v-model="metadataForm.title" :placeholder="t('admin.documentDetail.titlePlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <input v-model="metadataForm.title" data-testid="document-title-input" :placeholder="t('admin.documentDetail.titlePlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
-                <div>
+                <div v-if="!isStoredDocument">
                   <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.urlLabel') }}</label>
                   <input v-model="metadataForm.url" type="url" :placeholder="t('admin.documentDetail.urlPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
                 </div>
@@ -587,6 +640,46 @@ onMounted(() => {
               <div>
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.descriptionLabel') }}</label>
                 <textarea v-model="metadataForm.description" rows="4" :placeholder="t('admin.documentDetail.descriptionPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              </div>
+
+              <!-- Reader Options -->
+              <div class="pt-4 border-t border-slate-100 dark:border-slate-700">
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">{{ t('documentCreateForm.readMode.label') }}</h3>
+
+                <!-- Read mode -->
+                <div class="flex gap-4 mb-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="metadataForm.readMode" value="integrated" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+                    <Eye class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.readMode.integrated') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" v-model="metadataForm.readMode" value="external" class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500" />
+                    <ExternalLink class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.readMode.external') }}</span>
+                  </label>
+                </div>
+
+                <!-- Integrated mode options -->
+                <div v-if="metadataForm.readMode === 'integrated'" class="pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-3 mb-4">
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="metadataForm.allowDownload" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    <Download class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.allowDownload') }}</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" v-model="metadataForm.requireFullRead" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                    <ScrollText class="w-4 h-4 text-slate-500" />
+                    <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.requireFullRead') }}</span>
+                  </label>
+                </div>
+
+                <!-- Verify checksum -->
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" v-model="metadataForm.verifyChecksum" class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500" />
+                  <ShieldCheck class="w-4 h-4 text-slate-500" />
+                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentCreateForm.options.verifyChecksum') }}</span>
+                </label>
               </div>
 
               <div v-if="documentMetadata" class="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-700">
@@ -616,7 +709,7 @@ onMounted(() => {
                   <Upload :size="16" />
                   {{ t('admin.documentDetail.importCSV') }}
                 </button>
-                <button @click="showAddSignersModal = true" data-testid="add-signers-btn" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
+                <button @click="showAddSignersModal = true" data-testid="open-add-signers-btn" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
                   <Plus :size="16" />
                   {{ t('admin.documentDetail.addButton') }}
                 </button>
@@ -625,7 +718,6 @@ onMounted(() => {
           </div>
           <div class="p-6">
             <div v-if="expectedSigners.length > 0">
-              <!-- Filter -->
               <div class="relative mb-4">
                 <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input v-model="signerFilter" :placeholder="t('admin.documentDetail.filterPlaceholder')" class="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" name="ackify-signer-filter" autocomplete="off" data-1p-ignore data-lpignore="true" />
@@ -763,7 +855,7 @@ onMounted(() => {
                   <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('admin.documentDetail.sendToSelected', { count: selectedEmails.length }) }}</span>
                 </label>
               </div>
-              <button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)" data-testid="send-reminders-btn" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
                 <Mail :size="16" />
                 {{ sendingReminders ? t('admin.documentDetail.sending') : t('admin.documentDetail.sendReminders') }}
               </button>
@@ -783,7 +875,7 @@ onMounted(() => {
                 <h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">{{ t('admin.documentDetail.deleteDocument') }}</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.deleteDocumentDescription') }}</p>
               </div>
-              <button @click="showDeleteConfirmModal = true" data-testid="delete-doc-btn" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors flex-shrink-0">
+              <button @click="showDeleteConfirmModal = true" class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors flex-shrink-0">
                 <Trash2 :size="16" />
                 {{ t('common.delete') }}
               </button>
@@ -793,8 +885,7 @@ onMounted(() => {
       </div>
     </main>
 
-    <!-- Add Signers Modal -->
-    <div v-if="showAddSignersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" data-testid="add-signers-modal" @click.self="showAddSignersModal = false">
+    <div v-if="showAddSignersModal" data-testid="add-signers-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showAddSignersModal = false">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-2xl w-full max-h-[90vh] overflow-auto">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
           <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.addSigners') }}</h2>
@@ -806,12 +897,12 @@ onMounted(() => {
           <form @submit.prevent="addSigners" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.emailsLabel') }}</label>
-              <textarea v-model="signersEmails" rows="8" data-testid="add-signers-textarea" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+              <textarea v-model="signersEmails" rows="8" data-testid="signers-textarea" :placeholder="t('admin.documentDetail.emailsPlaceholder')" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
               <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ t('admin.documentDetail.emailsHelper') }}</p>
             </div>
             <div class="flex justify-end space-x-3">
               <button type="button" @click="showAddSignersModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" data-testid="add-signers-submit" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+              <button type="submit" :disabled="addingSigners || !signersEmails.trim()" data-testid="add-signers-btn" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
                 <Loader2 v-if="addingSigners" :size="16" class="animate-spin" />
                 {{ addingSigners ? t('admin.documentDetail.adding') : t('admin.documentDetail.addButton') }}
               </button>
@@ -821,7 +912,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Import CSV Modal -->
     <div v-if="showImportCSVModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="closeImportCSVModal">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-3xl w-full max-h-[90vh] overflow-auto">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -919,7 +1009,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteConfirmModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="showDeleteConfirmModal = false">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800 max-w-md w-full">
         <div class="p-6 border-b border-red-100 dark:border-red-800/30 flex items-center justify-between">
@@ -946,7 +1035,7 @@ onMounted(() => {
 
           <div class="flex justify-end space-x-3 pt-4">
             <button type="button" @click="showDeleteConfirmModal = false" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-            <button @click="handleDeleteDocument" :disabled="deletingDocument" data-testid="delete-confirm-btn" class="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+            <button @click="handleDeleteDocument" :disabled="deletingDocument" class="bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
               <Trash2 v-if="!deletingDocument" :size="16" />
               <Loader2 v-else :size="16" class="animate-spin" />
               {{ deletingDocument ? t('admin.documentDetail.deleting') : t('admin.documentDetail.deleteConfirmButton') }}
@@ -991,7 +1080,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Remove Signer Modal -->
     <div v-if="showRemoveSignerModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="cancelRemoveSigner">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-md w-full">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -1010,7 +1098,6 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Send Reminders Modal -->
     <div v-if="showSendRemindersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="cancelSendReminders">
       <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-md w-full">
         <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -1022,8 +1109,8 @@ onMounted(() => {
         <div class="p-6 space-y-4">
           <p class="text-sm text-slate-600 dark:text-slate-400">{{ remindersMessage }}</p>
           <div class="flex justify-end space-x-3 pt-4">
-            <button type="button" @click="cancelSendReminders" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
-            <button @click="sendRemindersAction" :disabled="sendingReminders" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+            <button type="button" data-testid="cancel-button" @click="cancelSendReminders" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+            <button data-testid="confirm-button" @click="sendRemindersAction" :disabled="sendingReminders" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
               <Loader2 v-if="sendingReminders" :size="16" class="animate-spin" />
               {{ t('common.confirm') }}
             </button>

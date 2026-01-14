@@ -61,30 +61,26 @@ func DefaultOptions() ComputeOptions {
 // Returns nil if the file cannot be processed (too large, wrong type, network error, SSRF blocked)
 // The context is used for request cancellation and timeout propagation.
 func ComputeRemoteChecksum(ctx context.Context, urlStr string, opts ComputeOptions) (*Result, error) {
-	// Check if context is already cancelled
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("context cancelled before checksum computation: %w", err)
 	}
-	// Validate URL scheme (only HTTPS allowed)
+
 	if !isValidURL(urlStr) {
 		logger.Logger.Info("Checksum: URL rejected - not HTTPS", "url", urlStr)
 		return nil, nil
 	}
 
-	// Parse URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		logger.Logger.Warn("Checksum: Failed to parse URL", "url", urlStr, "error", err.Error())
 		return nil, nil
 	}
 
-	// SSRF Protection: Block internal/private IPs (unless disabled for testing)
 	if !opts.SkipSSRFCheck && isBlockedHost(parsedURL.Hostname()) {
 		logger.Logger.Warn("Checksum: SSRF protection - blocked internal/private host", "host", parsedURL.Hostname())
 		return nil, nil
 	}
 
-	// Create HTTP client with timeout and redirect limits
 	client := &http.Client{
 		Timeout: time.Duration(opts.TimeoutMs) * time.Millisecond,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -99,7 +95,6 @@ func ComputeRemoteChecksum(ctx context.Context, urlStr string, opts ComputeOptio
 		},
 	}
 
-	// For testing only: disable TLS verification
 	if opts.InsecureSkipVerify {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -122,14 +117,12 @@ func ComputeRemoteChecksum(ctx context.Context, urlStr string, opts ComputeOptio
 	}
 	defer headResp.Body.Close()
 
-	// Check Content-Type
 	contentType := headResp.Header.Get("Content-Type")
 	if contentType != "" && !isAllowedContentType(contentType, opts.AllowedContentType) {
 		logger.Logger.Info("Checksum: Content-Type not allowed", "url", urlStr, "content_type", contentType)
 		return nil, nil
 	}
 
-	// Check Content-Length
 	contentLength := headResp.ContentLength
 	if contentLength > 0 && contentLength > opts.MaxBytes {
 		logger.Logger.Info("Checksum: File too large", "url", urlStr, "size", contentLength, "max", opts.MaxBytes)
@@ -187,7 +180,6 @@ func computeWithStreamedGET(ctx context.Context, client *http.Client, urlStr str
 		return nil, nil
 	}
 
-	// Check Content-Type again
 	contentType := getResp.Header.Get("Content-Type")
 	if contentType != "" && !isAllowedContentType(contentType, opts.AllowedContentType) {
 		logger.Logger.Info("Checksum: Content-Type not allowed (fallback)", "url", urlStr, "content_type", contentType)
@@ -208,7 +200,6 @@ func computeHashWithLimit(reader io.Reader, maxBytes int64, urlStr string) (*Res
 		return nil, nil
 	}
 
-	// Check if we exceeded the limit
 	if written > maxBytes {
 		logger.Logger.Info("Checksum: File exceeded size limit during streaming", "url", urlStr, "read", written, "max", maxBytes)
 		return nil, nil
@@ -260,7 +251,6 @@ func isAllowedContentType(contentType string, allowedTypes []string) bool {
 
 // isBlockedHost checks if the hostname is a private/internal IP or localhost
 func isBlockedHost(hostname string) bool {
-	// Check for localhost variations
 	if hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1" {
 		return true
 	}
@@ -273,7 +263,6 @@ func isBlockedHost(hostname string) bool {
 		return true
 	}
 
-	// Check if any resolved IP is private/internal
 	for _, ip := range ips {
 		if isPrivateIP(ip) {
 			return true
@@ -314,9 +303,7 @@ func isPrivateIP(ip net.IP) bool {
 		}
 	}
 
-	// Check for private IPv6 ranges
 	if ip.To4() == nil {
-		// IPv6
 		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
 			return true
 		}

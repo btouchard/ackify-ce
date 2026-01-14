@@ -91,7 +91,7 @@ func DefaultWorkerConfig() WorkerConfig {
 }
 
 // NewWorker creates a new email worker
-func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, config WorkerConfig, db *sql.DB, tenants tenant.Provider) *Worker {
+func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, config WorkerConfig, parentCtx context.Context, db *sql.DB, tenants tenant.Provider) *Worker {
 	// Apply defaults
 	if config.BatchSize <= 0 {
 		config.BatchSize = 10
@@ -109,7 +109,7 @@ func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, con
 		config.MaxConcurrent = 5
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(parentCtx)
 
 	return &Worker{
 		queueRepo:       queueRepo,

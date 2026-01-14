@@ -3,7 +3,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Menu, X, ChevronDown, LogOut, Shield } from 'lucide-vue-next'
+import { Menu, X, ChevronDown, LogOut, FileText, Settings, Webhook, CheckSquare } from 'lucide-vue-next'
 import ThemeToggle from './ThemeToggle.vue'
 import LanguageSelect from './LanguageSelect.vue'
 import AppLogo from '@/components/AppLogo.vue'
@@ -21,65 +21,44 @@ const userMenuOpen = ref(false)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const user = computed(() => authStore.user)
+const canCreateDocuments = computed(() => authStore.canCreateDocuments)
 
-// Extract name parts from email (before @, split by . - _)
-function extractNamePartsFromEmail(email: string): string[] {
-  const localPart = email.split('@')[0] || ''
-  return localPart.split(/[.\-_]+/).filter(p => p.length > 0)
-}
+const getLocalPart = (email: string): string => email.split('@')[0] || email
+const isEmail = (str: string): boolean => str.includes('@')
+const splitIntoWords = (str: string): string[] => str.split(/[.\-_\s]+/).filter(p => p.length > 0)
+const capitalize = (str: string): string => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : ''
 
-// Capitalize first letter of a string
-function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-}
-
-// Display name (for menu and header)
 const displayName = computed(() => {
-  // If user has a real name that's not just the email, use it
-  if (user.value?.name && user.value.name !== user.value.email) {
-    return user.value.name
-  }
-  // Otherwise extract from email
-  if (user.value?.email) {
-    const parts = extractNamePartsFromEmail(user.value.email)
-    if (parts.length > 0) {
-      return parts.map(capitalize).join(' ')
-    }
-  }
-  return user.value?.email || ''
+  if (!user.value?.name && !user.value?.email) return ''
+  if (user.value.name && !isEmail(user.value.name)) return user.value.name
+
+  const localPart = getLocalPart(user.value.email || user.value.name || '')
+  return splitIntoWords(localPart).map(capitalize).join(' ')
 })
 
-// User initials for avatar
 const userInitials = computed(() => {
   if (!user.value?.name && !user.value?.email) return '?'
 
-  // If user has a real name, use it for initials
-  if (user.value?.name && user.value.name !== user.value.email) {
-    const nameParts = user.value.name.split(/\s+/).filter(p => p.length > 0)
-    if (nameParts.length >= 2) {
-      const first = nameParts[0] ?? ''
-      const second = nameParts[1] ?? ''
+  if (user.value.name && !isEmail(user.value.name)) {
+    const words = splitIntoWords(user.value.name)
+    const first = words[0]
+    const second = words[1]
+    if (words.length >= 2 && first && second) {
       return (first.charAt(0) + second.charAt(0)).toUpperCase()
     }
     return user.value.name.slice(0, 2).toUpperCase()
   }
 
-  // Extract from email
-  if (user.value?.email) {
-    const parts = extractNamePartsFromEmail(user.value.email)
-    if (parts.length >= 2) {
-      // nom.prenom@ or prenom.nom@ → 2 initials
-      const first = parts[0] ?? ''
-      const second = parts[1] ?? ''
-      return (first.charAt(0) + second.charAt(0)).toUpperCase()
-    }
-    if (parts.length === 1 && parts[0]) {
-      // Single word → 1 initial only
-      return parts[0].charAt(0).toUpperCase()
-    }
+  const localPart = getLocalPart(user.value.email || user.value.name || '')
+  const words = splitIntoWords(localPart)
+  const first = words[0]
+  const second = words[1]
+
+  if (words.length >= 2 && first && second) {
+    return (first.charAt(0) + second.charAt(0)).toUpperCase()
   }
 
-  return '?'
+  return localPart.charAt(0).toUpperCase()
 })
 
 const isActive = (path: string) => {
@@ -124,20 +103,10 @@ const closeUserMenu = () => {
         </div>
 
         <!-- Desktop Navigation -->
-        <div v-if="isAuthenticated" class="hidden md:flex md:items-center md:space-x-1">
+        <div class="hidden md:flex md:items-center md:space-x-1">
+          <!-- My confirmations - authenticated only -->
           <router-link
-            to="/"
-            :class="[
-              'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-              isActive('/')
-                ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            ]"
-          >
-            {{ t('nav.home') }}
-          </router-link>
-
-          <router-link
+            v-if="isAuthenticated"
             to="/signatures"
             :class="[
               'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
@@ -147,6 +116,20 @@ const closeUserMenu = () => {
             ]"
           >
             {{ t('nav.myConfirmations') }}
+          </router-link>
+
+          <!-- My documents - if can create -->
+          <router-link
+              v-if="canCreateDocuments"
+              to="/documents"
+              :class="[
+              'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+              isActive('/documents')
+                ? 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            ]"
+          >
+            {{ t('nav.myDocuments') }}
           </router-link>
         </div>
 
@@ -195,20 +178,42 @@ const closeUserMenu = () => {
                     <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ user?.email }}</p>
                   </div>
 
-                  <!-- Menu items -->
-                  <router-link
-                    v-if="isAdmin"
-                    to="/admin"
-                    @click="userMenuOpen = false"
-                    class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-                    role="menuitem"
-                  >
-                    <Shield :size="16" />
-                    <span>{{ t('nav.administration') }}</span>
-                  </router-link>
+                  <!-- Admin section - if admin -->
+                  <template v-if="isAdmin">
+                    <p class="px-3 py-1 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                      {{ t('nav.administration') }}
+                    </p>
+                    <router-link
+                      to="/admin"
+                      @click="userMenuOpen = false"
+                      class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <FileText :size="16" />
+                      <span>{{ t('nav.adminMenu.allDocuments') }}</span>
+                    </router-link>
+                    <router-link
+                      to="/admin/settings"
+                      @click="userMenuOpen = false"
+                      class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <Settings :size="16" />
+                      <span>{{ t('nav.adminMenu.settings') }}</span>
+                    </router-link>
+                    <router-link
+                      to="/admin/webhooks"
+                      @click="userMenuOpen = false"
+                      class="flex items-center space-x-2 rounded-lg px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                      role="menuitem"
+                    >
+                      <Webhook :size="16" />
+                      <span>{{ t('nav.adminMenu.webhooks') }}</span>
+                    </router-link>
+                    <div class="border-t border-slate-100 dark:border-slate-700 my-2"></div>
+                  </template>
 
-                  <div v-if="isAdmin" class="border-t border-slate-100 dark:border-slate-700 my-2"></div>
-
+                  <!-- Logout -->
                   <button
                     @click="logout"
                     class="flex w-full items-center space-x-2 rounded-lg px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -258,57 +263,97 @@ const closeUserMenu = () => {
         <div class="space-y-1 px-4 pb-4 pt-2">
           <!-- Navigation links (authenticated) -->
           <template v-if="isAuthenticated">
-            <router-link
-              to="/"
-              @click="closeMobileMenu"
-              :class="[
-                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
-                isActive('/')
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              ]"
-            >
-              {{ t('nav.home') }}
-            </router-link>
+            <!-- User info -->
+            <div class="px-3 py-2 mb-2">
+              <p class="font-medium text-slate-900 dark:text-slate-100">{{ displayName }}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ user?.email }}</p>
+            </div>
 
             <router-link
               to="/signatures"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
                 isActive('/signatures')
                   ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
-              {{ t('nav.myConfirmations') }}
+              <CheckSquare :size="18" />
+              <span>{{ t('nav.myConfirmations') }}</span>
             </router-link>
 
             <router-link
-              v-if="isAdmin"
-              to="/admin"
+              v-if="canCreateDocuments"
+              to="/documents"
               @click="closeMobileMenu"
               :class="[
-                'block rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
-                isActive('/admin') || route.path.startsWith('/admin')
+                'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                isActive('/documents') || route.path.startsWith('/documents/')
                   ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
               ]"
             >
-              {{ t('nav.administration') }}
+              <FileText :size="18" />
+              <span>{{ t('nav.myDocuments') }}</span>
             </router-link>
 
-            <!-- User section -->
-            <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
-              <div class="px-3 py-2 mb-2">
-                <p class="font-medium text-slate-900 dark:text-slate-100">{{ displayName }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ user?.email }}</p>
+            <!-- Admin section -->
+            <template v-if="isAdmin">
+              <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
+                <p class="px-3 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  {{ t('nav.administration') }}
+                </p>
+                <router-link
+                  to="/admin"
+                  @click="closeMobileMenu"
+                  :class="[
+                    'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                    isActive('/admin') && !route.path.startsWith('/admin/')
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ]"
+                >
+                  <FileText :size="18" />
+                  <span>{{ t('nav.adminMenu.allDocuments') }}</span>
+                </router-link>
+                <router-link
+                  to="/admin/settings"
+                  @click="closeMobileMenu"
+                  :class="[
+                    'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                    route.path.startsWith('/admin/settings')
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ]"
+                >
+                  <Settings :size="18" />
+                  <span>{{ t('nav.adminMenu.settings') }}</span>
+                </router-link>
+                <router-link
+                  to="/admin/webhooks"
+                  @click="closeMobileMenu"
+                  :class="[
+                    'flex items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium transition-colors',
+                    route.path.startsWith('/admin/webhooks')
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                  ]"
+                >
+                  <Webhook :size="18" />
+                  <span>{{ t('nav.adminMenu.webhooks') }}</span>
+                </router-link>
               </div>
+            </template>
+
+            <!-- Logout -->
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-3 mt-3">
               <button
                 @click="logout"
-                class="w-full text-left rounded-lg px-3 py-2.5 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                class="flex w-full items-center space-x-2 rounded-lg px-3 py-2.5 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
-                {{ t('nav.logout') }}
+                <LogOut :size="18" />
+                <span>{{ t('nav.logout') }}</span>
               </button>
             </div>
           </template>

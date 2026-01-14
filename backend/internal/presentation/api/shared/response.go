@@ -28,7 +28,6 @@ type PaginationParams struct {
 	Offset   int `json:"-"`
 }
 
-// NewPaginationParams creates pagination parameters with default values
 func NewPaginationParams(defaultPage, defaultPageSize, maxPageSize int) *PaginationParams {
 	if defaultPage < 1 {
 		defaultPage = 1
@@ -46,19 +45,15 @@ func NewPaginationParams(defaultPage, defaultPageSize, maxPageSize int) *Paginat
 	}
 }
 
-// ParsePaginationParams parses pagination parameters from HTTP request query string
-// and validates them against min/max constraints
 func ParsePaginationParams(r *http.Request, defaultPageSize, maxPageSize int) *PaginationParams {
 	params := NewPaginationParams(1, defaultPageSize, maxPageSize)
 
-	// Parse page parameter
 	if pageStr := r.URL.Query().Get("page"); pageStr != "" {
 		if page, err := strconv.Atoi(pageStr); err == nil && page > 0 {
 			params.Page = page
 		}
 	}
 
-	// Parse limit/page_size parameter (support both names)
 	pageSizeStr := r.URL.Query().Get("limit")
 	if pageSizeStr == "" {
 		pageSizeStr = r.URL.Query().Get("page_size")
@@ -69,9 +64,7 @@ func ParsePaginationParams(r *http.Request, defaultPageSize, maxPageSize int) *P
 		}
 	}
 
-	// Validate and calculate
 	params.Validate(maxPageSize)
-
 	return params
 }
 
@@ -89,7 +82,6 @@ func (p *PaginationParams) Validate(maxPageSize int) {
 	p.Offset = (p.Page - 1) * p.PageSize
 }
 
-// WriteJSON writes a JSON response
 func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -101,7 +93,6 @@ func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// WriteJSONWithMeta writes a JSON response with metadata
 func WriteJSONWithMeta(w http.ResponseWriter, statusCode int, data interface{}, meta map[string]interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -114,7 +105,6 @@ func WriteJSONWithMeta(w http.ResponseWriter, statusCode int, data interface{}, 
 	json.NewEncoder(w).Encode(response)
 }
 
-// WritePaginatedJSON writes a paginated JSON response
 func WritePaginatedJSON(w http.ResponseWriter, data interface{}, page, limit, total int) {
 	totalPages := (total + limit - 1) / limit
 	if totalPages < 1 {

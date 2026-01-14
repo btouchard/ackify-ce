@@ -34,6 +34,7 @@ Prove that collaborators have read and acknowledged important documents with **E
 - ✅ Immutable audit trail
 - ✅ Expected signers tracking with email reminders
 - ✅ Document checksum verification (SHA-256/512, MD5)
+- ✅ Optional document storage (local filesystem or S3-compatible)
 - ✅ Public embeddable widgets (Notion, Outline, etc.)
 - ✅ Admin dashboard (Vue.js 3 + dark mode)
 - ✅ Multilingual (fr, en, es, de, it)
@@ -173,6 +174,7 @@ See [docs/en/configuration.md](docs/en/configuration.md) for all options.
 - **[Signatures](docs/en/features/signatures.md)** - Ed25519 cryptographic flow
 - **[Expected Signers](docs/en/features/expected-signers.md)** - Tracking & reminders
 - **[Checksums](docs/en/features/checksums.md)** - Document integrity verification
+- **[Document Storage](docs/en/features/storage.md)** - Optional upload (local or S3)
 - **[Embedding](docs/en/features/embedding.md)** - oEmbed, iframes, integrations
 - **[i18n](docs/en/features/i18n.md)** - Internationalization (5 languages)
 

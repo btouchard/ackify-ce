@@ -53,6 +53,11 @@ services:
       ACKIFY_DOCUMENT_RATE_LIMIT: "1000"
       ACKIFY_GENERAL_RATE_LIMIT: "1000"
       ACKIFY_TELEMETRY: false
+      ACKIFY_STORAGE_TYPE: "local"
+      ACKIFY_STORAGE_LOCAL_PATH: "/data/documents"
+      ACKIFY_STORAGE_MAX_SIZE_MB: "50"
+    volumes:
+      - ackify_storage_e2e:/data/documents
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully
@@ -89,3 +94,4 @@ services:
 
 volumes:
   ackify_test:
+  ackify_storage_e2e:

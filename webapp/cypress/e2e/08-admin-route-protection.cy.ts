@@ -48,7 +48,7 @@ describe('Test 8: Admin Route Protection', () => {
 
     // Step 4: Should see admin dashboard
     cy.contains('Administration', { timeout: 10000 }).should('be.visible')
-    cy.contains('Create new document').should('be.visible')
+    cy.get('[data-testid="doc-url-input"]').should('be.visible')
   })
 
   it('should redirect unauthenticated users to auth page', () => {
@@ -72,8 +72,8 @@ describe('Test 8: Admin Route Protection', () => {
     // Create document first as admin
     cy.loginAsAdmin()
     cy.visit('/admin')
-    cy.get('[data-testid="admin-new-doc-input"]').type(targetDoc)
-    cy.get('[data-testid="admin-create-doc-btn"]').click()
+    cy.get('[data-testid="doc-url-input"]').type(targetDoc)
+    cy.get('[data-testid="submit-button"]').click()
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${targetDoc}`)
 
     // Logout

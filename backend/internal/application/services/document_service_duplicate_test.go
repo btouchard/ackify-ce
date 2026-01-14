@@ -83,6 +83,18 @@ func (m *mockDocRepo) Count(_ context.Context, _ string) (int, error) {
 	return len(m.documents), nil
 }
 
+func (m *mockDocRepo) ListByCreatedBy(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
+}
+
+func (m *mockDocRepo) SearchByCreatedBy(_ context.Context, _, _ string, _, _ int) ([]*models.Document, error) {
+	return []*models.Document{}, nil
+}
+
+func (m *mockDocRepo) CountByCreatedBy(_ context.Context, _, _ string) (int, error) {
+	return 0, nil
+}
+
 // TestFindOrCreateDocument_SameReferenceTwice tests that calling FindOrCreateDocument
 // with the same reference twice does NOT create duplicate documents
 func TestFindOrCreateDocument_SameReferenceTwice(t *testing.T) {

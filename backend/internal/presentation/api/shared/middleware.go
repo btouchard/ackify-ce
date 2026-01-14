@@ -242,15 +242,25 @@ func GetUserFromContext(ctx context.Context) (*types.User, bool) {
 // SecurityHeaders middleware adds security headers
 func SecurityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if this is a content endpoint that needs to be embeddable
+		path := r.URL.Path
+		isContentEndpoint := strings.Contains(path, "/content") || strings.Contains(path, "/proxy")
+
 		// Security headers
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
 
-		// CSP for API endpoints
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none';")
+		if isContentEndpoint {
+			// Allow same-origin framing for content endpoints (PDF viewer, etc.)
+			w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+			// No restrictive CSP for content - let handlers define their own if needed
+		} else {
+			// Strict framing policy for other endpoints
+			w.Header().Set("X-Frame-Options", "DENY")
+			w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none';")
+		}
 
 		next.ServeHTTP(w, r)
 	})

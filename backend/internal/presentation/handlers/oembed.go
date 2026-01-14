@@ -27,7 +27,6 @@ type OEmbedResponse struct {
 // Returns oEmbed JSON for embedding Ackify signature widgets in external platforms
 func HandleOEmbed(baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Get the URL parameter
 		urlParam := r.URL.Query().Get("url")
 		if urlParam == "" {
 			logger.Logger.Warn("oEmbed request missing url parameter",
@@ -36,7 +35,6 @@ func HandleOEmbed(baseURL string) http.HandlerFunc {
 			return
 		}
 
-		// Parse the URL to extract doc parameter
 		parsedURL, err := url.Parse(urlParam)
 		if err != nil {
 			logger.Logger.Warn("oEmbed request with invalid url",
@@ -57,19 +55,15 @@ func HandleOEmbed(baseURL string) http.HandlerFunc {
 			return
 		}
 
-		// Build embed URL (points to the SPA embed view)
 		embedURL := baseURL + "/embed?doc=" + url.QueryEscape(docID)
 
-		// Check if referrer is provided (for tracking which platform is embedding)
 		referrer := parsedURL.Query().Get("referrer")
 		if referrer != "" {
 			embedURL += "&referrer=" + url.QueryEscape(referrer)
 		}
 
-		// Build iframe HTML
 		iframeHTML := `<iframe src="` + embedURL + `" width="100%" height="200" frameborder="0" style="border: 1px solid #ddd; border-radius: 6px;" allowtransparency="true"></iframe>`
 
-		// Create oEmbed response
 		response := OEmbedResponse{
 			Type:         "rich",
 			Version:      "1.0",
@@ -80,11 +74,9 @@ func HandleOEmbed(baseURL string) http.HandlerFunc {
 			Height:       200,
 		}
 
-		// Set response headers
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Header().Set("Access-Control-Allow-Origin", "*") // Allow cross-origin requests for oEmbed
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-		// Encode and send response
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			logger.Logger.Error("Failed to encode oEmbed response",
 				"doc_id", docID,
@@ -107,7 +99,6 @@ func ValidateOEmbedURL(urlStr string, baseURL string) bool {
 		return false
 	}
 
-	// Check if the URL belongs to this Ackify instance
 	baseURLParsed, err := url.Parse(baseURL)
 	if err != nil {
 		return false

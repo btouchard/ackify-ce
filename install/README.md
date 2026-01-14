@@ -39,6 +39,11 @@ The script will prompt you for:
    - Configure at least one admin email address
    - Admins have access to document management and reminder features
 
+6. **Document Storage** (Optional)
+   - None (URL-only mode)
+   - Local filesystem storage
+   - S3-compatible storage (AWS, MinIO, Wasabi, etc.)
+
 The script will automatically:
 - Download the necessary configuration files (docker compose & .env.example)
 - Generate secure secrets (cookie secret, Ed25519 key, database password)
@@ -144,6 +149,66 @@ MagicLink provides passwordless authentication via email. Users receive a secure
 - Internal applications where email domain is trusted
 - Combination with OAuth for flexible authentication
 
+## Document Storage
+
+Ackify CE can optionally store uploaded documents, allowing users to upload files directly instead of providing URLs.
+
+### Storage Options
+
+**None (Default):**
+- Users must provide document URLs
+- No local storage required
+- Simplest configuration
+
+**Local Storage:**
+- Documents stored on the server filesystem
+- Uses Docker volume for persistence
+- Best for single-server deployments
+
+```env
+ACKIFY_STORAGE_TYPE=local
+ACKIFY_STORAGE_LOCAL_PATH=/data/documents
+ACKIFY_STORAGE_MAX_SIZE_MB=50
+```
+
+**S3-Compatible Storage:**
+- Works with AWS S3, MinIO, Wasabi, DigitalOcean Spaces, etc.
+- Best for scalable/distributed deployments
+- Supports any S3-compatible provider
+
+```env
+ACKIFY_STORAGE_TYPE=s3
+ACKIFY_STORAGE_MAX_SIZE_MB=50
+ACKIFY_STORAGE_S3_ENDPOINT=https://s3.amazonaws.com
+ACKIFY_STORAGE_S3_BUCKET=ackify-documents
+ACKIFY_STORAGE_S3_ACCESS_KEY=your_access_key
+ACKIFY_STORAGE_S3_SECRET_KEY=your_secret_key
+ACKIFY_STORAGE_S3_REGION=us-east-1
+ACKIFY_STORAGE_S3_USE_SSL=true
+```
+
+### Using MinIO (Self-hosted S3)
+
+MinIO is a popular open-source S3-compatible storage solution:
+
+```env
+ACKIFY_STORAGE_TYPE=s3
+ACKIFY_STORAGE_S3_ENDPOINT=http://minio:9000
+ACKIFY_STORAGE_S3_BUCKET=ackify-documents
+ACKIFY_STORAGE_S3_ACCESS_KEY=minioadmin
+ACKIFY_STORAGE_S3_SECRET_KEY=minioadmin
+ACKIFY_STORAGE_S3_REGION=us-east-1
+ACKIFY_STORAGE_S3_USE_SSL=false
+```
+
+### Supported File Types
+
+- PDF documents (.pdf)
+- Images (.png, .jpg, .jpeg, .gif, .webp)
+- Office documents (.doc, .docx)
+- Text files (.txt)
+- HTML files (.html, .htm)
+
 ## Anonymous Telemetry
 
 Ackify can collect anonymous usage metrics to help improve the project.
@@ -228,6 +293,9 @@ ADMIN_EMAILS=admin@your-domain.com
 - `AUTH_MAGICLINK_ENABLED` - Force enable/disable MagicLink
 - `ONLY_ADMIN_CAN_CREATE` - Restrict document creation to admins only (default: false)
 - `ACKIFY_TELEMETRY` - Enable anonymous usage metrics (default: false)
+- `ACKIFY_STORAGE_TYPE` - Document storage type: `local` or `s3` (default: disabled)
+- `ACKIFY_STORAGE_MAX_SIZE_MB` - Maximum upload file size in MB (default: 50)
+- `ACKIFY_STORAGE_S3_*` - S3-compatible storage configuration
 
 ## Troubleshooting
 

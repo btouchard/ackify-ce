@@ -55,7 +55,7 @@ func (m *mockSignatureRepository) GetByDoc(ctx context.Context, docID string) ([
 	return nil, nil
 }
 
-func (m *mockSignatureRepository) GetByUser(ctx context.Context, userSub string) ([]*models.Signature, error) {
+func (m *mockSignatureRepository) GetByUserEmail(ctx context.Context, userEmail string) ([]*models.Signature, error) {
 	return nil, nil
 }
 

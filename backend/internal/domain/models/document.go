@@ -16,10 +16,21 @@ type Document struct {
 	Checksum          string     `json:"checksum" db:"checksum"`
 	ChecksumAlgorithm string     `json:"checksum_algorithm" db:"checksum_algorithm"`
 	Description       string     `json:"description" db:"description"`
+	ReadMode          string     `json:"read_mode" db:"read_mode"`
+	AllowDownload     bool       `json:"allow_download" db:"allow_download"`
+	RequireFullRead   bool       `json:"require_full_read" db:"require_full_read"`
+	VerifyChecksum    bool       `json:"verify_checksum" db:"verify_checksum"`
 	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
 	CreatedBy         string     `json:"created_by" db:"created_by"`
 	DeletedAt         *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+
+	// Storage fields for uploaded files
+	StorageKey       string `json:"storage_key,omitempty" db:"storage_key"`
+	StorageProvider  string `json:"storage_provider,omitempty" db:"storage_provider"`
+	FileSize         int64  `json:"file_size,omitempty" db:"file_size"`
+	MimeType         string `json:"mime_type,omitempty" db:"mime_type"`
+	OriginalFilename string `json:"original_filename,omitempty" db:"original_filename"`
 }
 
 // DocumentInput represents the input for creating/updating document metadata
@@ -29,6 +40,22 @@ type DocumentInput struct {
 	Checksum          string `json:"checksum"`
 	ChecksumAlgorithm string `json:"checksum_algorithm"`
 	Description       string `json:"description"`
+	ReadMode          string `json:"read_mode"`
+	AllowDownload     *bool  `json:"allow_download"`
+	RequireFullRead   *bool  `json:"require_full_read"`
+	VerifyChecksum    *bool  `json:"verify_checksum"`
+
+	// Storage fields for uploaded files
+	StorageKey       string `json:"storage_key,omitempty"`
+	StorageProvider  string `json:"storage_provider,omitempty"`
+	FileSize         int64  `json:"file_size,omitempty"`
+	MimeType         string `json:"mime_type,omitempty"`
+	OriginalFilename string `json:"original_filename,omitempty"`
+}
+
+// IsStored returns true if the document has an uploaded file
+func (d *Document) IsStored() bool {
+	return d.StorageKey != "" && d.StorageProvider != ""
 }
 
 // HasChecksum returns true if the document has a checksum configured
