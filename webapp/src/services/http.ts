@@ -79,17 +79,29 @@ http.interceptors.response.use(
 
 export default http
 
-export const extractError = (error: any): string => {
+export interface ExtractedError {
+  code: string | null
+  message: string
+}
+
+export const extractErrorDetails = (error: any): ExtractedError => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiError>
-    if (axiosError.response?.data?.error?.message) {
-      return axiosError.response.data.error.message
+    if (axiosError.response?.data?.error) {
+      return {
+        code: axiosError.response.data.error.code || null,
+        message: axiosError.response.data.error.message || 'An unexpected error occurred'
+      }
     }
     if (axiosError.message) {
-      return axiosError.message
+      return { code: null, message: axiosError.message }
     }
   }
-  return 'An unexpected error occurred'
+  return { code: null, message: 'An unexpected error occurred' }
+}
+
+export const extractError = (error: any): string => {
+  return extractErrorDetails(error).message
 }
 
 export const resetCsrfToken = () => {

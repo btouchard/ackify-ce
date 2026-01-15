@@ -4,7 +4,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { documentService, type FindOrCreateDocumentResponse, type UploadProgress } from '@/services/documents'
-import { extractError } from '@/services/http'
+import { extractErrorDetails } from '@/services/http'
 import {
   ArrowRight,
   ChevronDown,
@@ -184,7 +184,15 @@ async function handleSubmit() {
       resetForm()
     }
   } catch (error) {
-    errorMessage.value = extractError(error)
+    const { code } = extractErrorDetails(error)
+    // Translate error based on code
+    if (code === 'UNAUTHORIZED') {
+      errorMessage.value = t('documentCreateForm.error.authRequired')
+    } else if (code === 'FORBIDDEN') {
+      errorMessage.value = t('documentCreateForm.error.forbidden')
+    } else {
+      errorMessage.value = t('documentCreateForm.error.createFailed')
+    }
     isUploading.value = false
   } finally {
     isSubmitting.value = false

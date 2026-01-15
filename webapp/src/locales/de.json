@@ -57,6 +57,9 @@
       },
       "error_invalid_email": "Veuillez entrer une adresse email valide",
       "error_send": "Échec de l'envoi du lien magique"
+    },
+    "error": {
+      "no_method_available": "Aucune méthode d'authentification n'est configurée. Veuillez contacter l'administrateur."
     }
   },
   "home": {
@@ -727,6 +730,7 @@
     "warning": "Avertissement"
   },
   "common": {
+    "error": "Erreur",
     "loading": "Chargement...",
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -810,7 +814,9 @@
     },
     "error": {
       "urlRequired": "L'URL du document est requise",
-      "createFailed": "Échec de la création du document"
+      "createFailed": "Échec de la création du document",
+      "authRequired": "Authentification requise pour créer un document",
+      "forbidden": "Vous n'avez pas les droits pour créer un document"
     }
   },
   "myDocuments": {

@@ -57,6 +57,9 @@
       },
       "error_invalid_email": "Please enter a valid email address",
       "error_send": "Failed to send magic link"
+    },
+    "error": {
+      "no_method_available": "No authentication method is configured. Please contact the administrator."
     }
   },
   "home": {
@@ -729,6 +732,7 @@
     "warning": "Warning"
   },
   "common": {
+    "error": "Error",
     "loading": "Loading...",
     "save": "Save",
     "cancel": "Cancel",
@@ -835,7 +839,9 @@
     },
     "error": {
       "urlRequired": "Document URL is required",
-      "createFailed": "Failed to create document"
+      "createFailed": "Failed to create document",
+      "authRequired": "Authentication required to create document",
+      "forbidden": "You don't have permission to create a document"
     }
   },
   "myDocuments": {
