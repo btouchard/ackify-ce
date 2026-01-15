@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 type userService interface {

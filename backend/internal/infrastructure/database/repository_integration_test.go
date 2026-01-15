@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 func TestRepository_Create_Integration(t *testing.T) {

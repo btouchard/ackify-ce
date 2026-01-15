@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 // OAuthSessionRepository implements the OAuth session repository

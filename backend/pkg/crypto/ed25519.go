@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 // Ed25519Signer provides cryptographic signature operations using Ed25519 elliptic curve algorithm

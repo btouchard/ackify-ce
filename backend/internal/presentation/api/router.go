@@ -14,7 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
 	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
@@ -25,6 +24,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/signatures"
 	apiStorage "github.com/btouchard/ackify-ce/backend/internal/presentation/api/storage"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/users"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/btouchard/ackify-ce/backend/pkg/storage"
 )

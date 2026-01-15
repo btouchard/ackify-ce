@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"

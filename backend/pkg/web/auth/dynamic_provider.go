@@ -14,10 +14,10 @@ import (
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	infraAuth "github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/btouchard/ackify-ce/backend/pkg/types"
 )

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 // Mock implementations for testing

@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 // QueueSender implements the Sender interface by queuing emails instead of sending them directly

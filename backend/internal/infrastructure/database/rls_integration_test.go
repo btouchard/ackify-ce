@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/google/uuid"
 )
 

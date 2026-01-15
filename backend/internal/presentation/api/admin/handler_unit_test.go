@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

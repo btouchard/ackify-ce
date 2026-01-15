@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 // Test generateDocID function

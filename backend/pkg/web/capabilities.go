@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 

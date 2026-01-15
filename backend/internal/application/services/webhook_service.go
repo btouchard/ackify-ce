@@ -4,8 +4,8 @@ package services
 import (
 	"context"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 // webhookRepository defines webhook storage operations

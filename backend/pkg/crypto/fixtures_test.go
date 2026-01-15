@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 package crypto
 
-import "github.com/btouchard/ackify-ce/backend/internal/domain/models"
+import "github.com/btouchard/ackify-ce/backend/pkg/models"
 
 var (
 	testUserAlice = &models.User{

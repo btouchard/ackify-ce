@@ -11,9 +11,9 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/shared"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 

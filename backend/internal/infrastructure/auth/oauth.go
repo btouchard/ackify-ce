@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
 
 const sessionName = "ackapp_session"

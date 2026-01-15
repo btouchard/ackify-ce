@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/domain/models"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
+	"github.com/btouchard/ackify-ce/backend/pkg/models"
 	"github.com/go-chi/chi/v5"
 )
 
