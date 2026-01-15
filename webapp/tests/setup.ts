@@ -15,18 +15,6 @@ Object.defineProperty(window, 'ACKIFY_VERSION', {
   configurable: true
 })
 
-Object.defineProperty(window, 'ACKIFY_OAUTH_ENABLED', {
-  value: true,
-  writable: true,
-  configurable: true
-})
-
-Object.defineProperty(window, 'ACKIFY_MAGICLINK_ENABLED', {
-  value: true,
-  writable: true,
-  configurable: true
-})
-
 Object.defineProperty(window, 'ACKIFY_SMTP_ENABLED', {
   value: true,
   writable: true,

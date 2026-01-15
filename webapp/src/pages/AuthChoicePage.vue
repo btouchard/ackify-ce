@@ -19,31 +19,51 @@ const email = ref('')
 const loading = ref(false)
 const magicLinkSent = ref(false)
 const errorMessage = ref('')
+const configLoading = ref(true)
 
-// Lire les flags d'authentification depuis les variables globales injectées dans index.html
-const oauthEnabled = (window as any).ACKIFY_OAUTH_ENABLED || false
-const magicLinkEnabled = (window as any).ACKIFY_MAGICLINK_ENABLED || false
+// Auth config loaded dynamically from API
+const oauthEnabled = ref(false)
+const magicLinkEnabled = ref(false)
 
 const redirectTo = computed(() => {
   return (route.query.redirect as string) || '/'
 })
 
+async function loadAuthConfig() {
+  try {
+    const response = await fetch('/api/v1/auth/config')
+    if (response.ok) {
+      const result = await response.json()
+      const config = result.data || {}
+      oauthEnabled.value = config.oauth || false
+      magicLinkEnabled.value = config.magiclink || false
+    }
+  } catch (error) {
+    console.error('Failed to load auth config:', error)
+  } finally {
+    configLoading.value = false
+  }
+}
+
 function checkAuthMethods() {
   // Si aucune méthode disponible
-  if (!oauthEnabled && !magicLinkEnabled) {
+  if (!oauthEnabled.value && !magicLinkEnabled.value) {
     errorMessage.value = t('auth.error.no_method_available')
     return
   }
 
   // Si une seule méthode disponible (OAuth), rediriger automatiquement
-  const methods = [oauthEnabled, magicLinkEnabled].filter(Boolean)
-  if (methods.length === 1 && oauthEnabled) {
+  const methods = [oauthEnabled.value, magicLinkEnabled.value].filter(Boolean)
+  if (methods.length === 1 && oauthEnabled.value) {
     loginWithOAuth()
   }
   // Si seulement MagicLink, l'utilisateur doit quand même entrer son email (pas de redirection auto)
 }
 
 onMounted(async () => {
+  // Charger la config auth depuis l'API
+  await loadAuthConfig()
+
   // Si déjà connecté, rediriger
   if (!authStore.initialized) {
     await authStore.checkAuth()
@@ -128,6 +148,11 @@ function isValidEmail(email: string): boolean {
         </p>
       </div>
 
+      <!-- Loading state while fetching auth config -->
+      <div v-if="configLoading" class="flex justify-center py-8">
+        <Loader2 class="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+      </div>
+
       <!-- Error Alert -->
       <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
         <div class="flex items-start">
@@ -156,7 +181,7 @@ function isValidEmail(email: string): boolean {
       </div>
 
       <!-- OAuth Login Card -->
-      <div v-if="oauthEnabled" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+      <div v-if="!configLoading && oauthEnabled" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
             <LogIn :size="20" class="text-blue-600 dark:text-blue-400" />
@@ -177,7 +202,7 @@ function isValidEmail(email: string): boolean {
       </div>
 
       <!-- Magic Link Login Card -->
-      <div v-if="magicLinkEnabled" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+      <div v-if="!configLoading && magicLinkEnabled" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
             <Mail :size="20" class="text-blue-600 dark:text-blue-400" />
@@ -215,7 +240,7 @@ function isValidEmail(email: string): boolean {
       </div>
 
       <!-- Privacy note -->
-      <p class="text-center text-xs text-slate-500 dark:text-slate-400">
+      <p v-if="!configLoading" class="text-center text-xs text-slate-500 dark:text-slate-400">
         {{ t('auth.choice.privacy') }}
       </p>
     </div>
