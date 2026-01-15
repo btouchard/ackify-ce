@@ -550,9 +550,9 @@ func TestSignatureService_GetUserSignatures(t *testing.T) {
 	signer := newFakeCryptoSigner()
 	service := NewSignatureService(repo, newFakeDocumentRepository(), signer)
 
-	sig1 := &models.Signature{ID: 1, DocID: "doc1", UserSub: "user1"}
-	sig2 := &models.Signature{ID: 2, DocID: "doc2", UserSub: "user1"}
-	sig3 := &models.Signature{ID: 3, DocID: "doc1", UserSub: "user2"}
+	sig1 := &models.Signature{ID: 1, DocID: "doc1", UserSub: "user1", UserEmail: "user1@example.com"}
+	sig2 := &models.Signature{ID: 2, DocID: "doc2", UserSub: "user1", UserEmail: "user1@example.com"}
+	sig3 := &models.Signature{ID: 3, DocID: "doc1", UserSub: "user2", UserEmail: "user2@example.com"}
 
 	repo.signatures["doc1_user1"] = sig1
 	repo.signatures["doc2_user1"] = sig2
