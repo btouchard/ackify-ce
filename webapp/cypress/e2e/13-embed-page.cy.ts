@@ -19,13 +19,13 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.url({ timeout: 10000 }).should('include', '/embed')
     cy.url().should('include', `doc=${sharedDocId}`)
 
-    // Step 3: Should show empty state (i18n: "No signatures for this document")
-    cy.contains('No signatures for this document', { timeout: 10000 }).should('be.visible')
+    // Step 3: Should show empty state (i18n: "No confirmations for this document")
+    cy.contains('No confirmations for this document', { timeout: 10000 }).should('be.visible')
 
-    // Step 4: Should show "Sign this document" button (i18n: "Sign this document")
-    cy.contains('a', 'Sign this document').should('be.visible')
-    cy.contains('a', 'Sign this document').should('have.attr', 'href').and('include', `doc=${sharedDocId}`)
-    cy.contains('a', 'Sign this document').should('have.attr', 'target', '_blank')
+    // Step 4: Should show "Confirm this document" button (i18n: "Confirm this document")
+    cy.contains('a', 'Confirm this document').should('be.visible')
+    cy.contains('a', 'Confirm this document').should('have.attr', 'href').and('include', `doc=${sharedDocId}`)
+    cy.contains('a', 'Confirm this document').should('have.attr', 'target', '_blank')
 
     // Step 5: Should show "Powered by Ackify" footer (i18n: "Powered by Ackify")
     cy.contains('Powered by Ackify').should('be.visible')
@@ -52,9 +52,9 @@ describe('Test 13: Embed Page Functionality', () => {
     // Step 4: Should show signature in list
     cy.contains('embed-user1@test.com').should('be.visible')
 
-    // Step 5: Should show "Sign" button (i18n: "Sign")
-    cy.contains('a', 'Sign').should('be.visible')
-    cy.contains('a', 'Sign').should('have.attr', 'target', '_blank')
+    // Step 5: Should show "Confirm" button (i18n: "Confirm")
+    cy.contains('a', 'Confirm').should('be.visible')
+    cy.contains('a', 'Confirm').should('have.attr', 'target', '_blank')
 
     // Step 6: Verify signature date is displayed
     cy.get('[data-testid="signature-date"]').should('exist')
@@ -115,8 +115,8 @@ describe('Test 13: Embed Page Functionality', () => {
     // Step 1: Visit embed page with existing signatures
     cy.visitWithLocale(`/embed?doc=${sharedDocId}`, 'en')
 
-    // Step 2: Verify sign link opens in new tab (i18n: "Sign")
-    cy.get('a').contains('Sign', { timeout: 10000 })
+    // Step 2: Verify sign link opens in new tab (i18n: "Confirm")
+    cy.get('a').contains('Confirm', { timeout: 10000 })
       .should('have.attr', 'target', '_blank')
       .should('have.attr', 'href')
       .and('include', `/?doc=${sharedDocId}`)
