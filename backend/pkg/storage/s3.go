@@ -62,12 +62,19 @@ func NewS3Provider(cfg S3Config) (*S3Provider, error) {
 
 	client := s3.NewFromConfig(awsCfg, s3Opts...)
 
-	// Verify bucket exists
+	// Check if bucket exists, create if not
 	_, err = client.HeadBucket(context.Background(), &s3.HeadBucketInput{
 		Bucket: aws.String(cfg.Bucket),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to access S3 bucket %s: %w", cfg.Bucket, err)
+		// Try to create the bucket
+		_, createErr := client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+			Bucket: aws.String(cfg.Bucket),
+		})
+		if createErr != nil {
+			return nil, fmt.Errorf("bucket %s does not exist and failed to create it: %w", cfg.Bucket, createErr)
+		}
+		logger.Logger.Info("S3 bucket created", "bucket", cfg.Bucket)
 	}
 
 	logger.Logger.Info("S3 storage provider initialized", "bucket", cfg.Bucket, "endpoint", cfg.Endpoint)
