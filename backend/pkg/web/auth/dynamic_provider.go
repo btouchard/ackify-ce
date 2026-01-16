@@ -22,34 +22,32 @@ import (
 	"github.com/btouchard/ackify-ce/backend/pkg/types"
 )
 
-// ConfigProvider provides dynamic configuration for auth.
-type ConfigProvider interface {
+type configProvider interface {
 	GetConfig() *models.MutableConfig
 }
 
-// MagicLinkService defines magic link operations.
-type MagicLinkService interface {
+type magicLinkService interface {
 	RequestMagicLink(ctx context.Context, email, redirectTo, ip, userAgent, locale string) error
 	VerifyMagicLink(ctx context.Context, token, ip, userAgent string) (*models.MagicLinkToken, error)
 	VerifyReminderAuthToken(ctx context.Context, token, ip, userAgent string) (*models.MagicLinkToken, error)
 	CreateReminderAuthToken(ctx context.Context, email, docID string) (string, error)
 }
 
-// DynamicAuthProviderConfig holds configuration for creating a DynamicAuthProvider.
-type DynamicAuthProviderConfig struct {
-	ConfigProvider   ConfigProvider
+// ProviderConfig holds a configuration for creating a Provider.
+type ProviderConfig struct {
+	ConfigProvider   configProvider
 	SessionService   *infraAuth.SessionService
-	MagicLinkService MagicLinkService
+	MagicLinkService magicLinkService
 	BaseURL          string
 }
 
-// DynamicAuthProvider implements providers.AuthProvider with dynamic config.
-// It reads OIDC/MagicLink configuration from ConfigProvider on each call,
+// Provider implements providers.AuthProvider with dynamic config.
+// It reads OIDC/MagicLink configuration from configProvider on each call,
 // supporting hot-reload of authentication settings.
-type DynamicAuthProvider struct {
-	configProvider   ConfigProvider
+type Provider struct {
+	configProvider   configProvider
 	sessionService   *infraAuth.SessionService
-	magicLinkService MagicLinkService
+	magicLinkService magicLinkService
 	baseURL          string
 
 	// Cache for oauth2.Config to avoid recreating on every request
@@ -59,9 +57,9 @@ type DynamicAuthProvider struct {
 	cachedOIDCCfg  models.OIDCConfig
 }
 
-// NewDynamicAuthProvider creates a new dynamic auth provider.
-func NewDynamicAuthProvider(cfg DynamicAuthProviderConfig) *DynamicAuthProvider {
-	return &DynamicAuthProvider{
+// NewAuthProvider creates a new dynamic auth provider.
+func NewAuthProvider(cfg ProviderConfig) *Provider {
+	return &Provider{
 		configProvider:   cfg.ConfigProvider,
 		sessionService:   cfg.SessionService,
 		magicLinkService: cfg.MagicLinkService,
@@ -71,30 +69,30 @@ func NewDynamicAuthProvider(cfg DynamicAuthProviderConfig) *DynamicAuthProvider 
 
 // === Session Management ===
 
-func (p *DynamicAuthProvider) GetCurrentUser(r *http.Request) (*types.User, error) {
+func (p *Provider) GetCurrentUser(r *http.Request) (*types.User, error) {
 	return p.sessionService.GetUser(r)
 }
 
-func (p *DynamicAuthProvider) SetCurrentUser(w http.ResponseWriter, r *http.Request, user *types.User) error {
+func (p *Provider) SetCurrentUser(w http.ResponseWriter, r *http.Request, user *types.User) error {
 	return p.sessionService.SetUser(w, r, user)
 }
 
-func (p *DynamicAuthProvider) Logout(w http.ResponseWriter, r *http.Request) {
+func (p *Provider) Logout(w http.ResponseWriter, r *http.Request) {
 	p.sessionService.Logout(w, r)
 }
 
-func (p *DynamicAuthProvider) IsConfigured() bool {
+func (p *Provider) IsConfigured() bool {
 	return p.IsOIDCEnabled() || p.IsMagicLinkEnabled()
 }
 
 // === OIDC Authentication ===
 
-func (p *DynamicAuthProvider) IsOIDCEnabled() bool {
+func (p *Provider) IsOIDCEnabled() bool {
 	cfg := p.configProvider.GetConfig()
 	return cfg.OIDC.Enabled && cfg.OIDC.ClientID != "" && cfg.OIDC.ClientSecret != ""
 }
 
-func (p *DynamicAuthProvider) StartOIDC(w http.ResponseWriter, r *http.Request, nextURL string) string {
+func (p *Provider) StartOIDC(w http.ResponseWriter, r *http.Request, nextURL string) string {
 	if !p.IsOIDCEnabled() {
 		logger.Logger.Error("StartOIDC called but OIDC is not enabled")
 		return ""
@@ -144,7 +142,7 @@ func (p *DynamicAuthProvider) StartOIDC(w http.ResponseWriter, r *http.Request, 
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"))
 }
 
-func (p *DynamicAuthProvider) startOIDCWithoutPKCE(w http.ResponseWriter, r *http.Request, nextURL string, oauthConfig *oauth2.Config) string {
+func (p *Provider) startOIDCWithoutPKCE(w http.ResponseWriter, r *http.Request, nextURL string, oauthConfig *oauth2.Config) string {
 	randPart := securecookie.GenerateRandomKey(20)
 	token := base64.RawURLEncoding.EncodeToString(randPart)
 	state := token + ":" + base64.RawURLEncoding.EncodeToString([]byte(nextURL))
@@ -165,7 +163,7 @@ func (p *DynamicAuthProvider) startOIDCWithoutPKCE(w http.ResponseWriter, r *htt
 	return oauthConfig.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", promptParam))
 }
 
-func (p *DynamicAuthProvider) VerifyOIDCState(w http.ResponseWriter, r *http.Request, stateToken string) bool {
+func (p *Provider) VerifyOIDCState(w http.ResponseWriter, r *http.Request, stateToken string) bool {
 	session, _ := p.sessionService.GetSession(r)
 	stored, _ := session.Values["oauth_state"].(string)
 
@@ -182,7 +180,7 @@ func (p *DynamicAuthProvider) VerifyOIDCState(w http.ResponseWriter, r *http.Req
 	return false
 }
 
-func (p *DynamicAuthProvider) HandleOIDCCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, code, state string) (*types.User, string, error) {
+func (p *Provider) HandleOIDCCallback(ctx context.Context, w http.ResponseWriter, r *http.Request, code, state string) (*types.User, string, error) {
 	if !p.IsOIDCEnabled() {
 		return nil, "/", fmt.Errorf("OIDC is not enabled")
 	}
@@ -252,7 +250,7 @@ func (p *DynamicAuthProvider) HandleOIDCCallback(ctx context.Context, w http.Res
 	return user, nextURL, nil
 }
 
-func (p *DynamicAuthProvider) GetOIDCLogoutURL() string {
+func (p *Provider) GetOIDCLogoutURL() string {
 	cfg := p.configProvider.GetConfig()
 	if cfg.OIDC.LogoutURL == "" {
 		return ""
@@ -260,7 +258,7 @@ func (p *DynamicAuthProvider) GetOIDCLogoutURL() string {
 	return cfg.OIDC.LogoutURL + "?continue=" + p.baseURL
 }
 
-func (p *DynamicAuthProvider) IsAllowedDomain(email string) bool {
+func (p *Provider) IsAllowedDomain(email string) bool {
 	cfg := p.configProvider.GetConfig()
 	if cfg.OIDC.AllowedDomain == "" {
 		return true
@@ -276,12 +274,12 @@ func (p *DynamicAuthProvider) IsAllowedDomain(email string) bool {
 
 // === MagicLink Authentication ===
 
-func (p *DynamicAuthProvider) IsMagicLinkEnabled() bool {
+func (p *Provider) IsMagicLinkEnabled() bool {
 	cfg := p.configProvider.GetConfig()
 	return cfg.MagicLink.Enabled && cfg.SMTP.Host != ""
 }
 
-func (p *DynamicAuthProvider) RequestMagicLink(ctx context.Context, email, redirectTo, ip, userAgent, locale string) error {
+func (p *Provider) RequestMagicLink(ctx context.Context, email, redirectTo, ip, userAgent, locale string) error {
 	if !p.IsMagicLinkEnabled() {
 		return fmt.Errorf("MagicLink is not enabled")
 	}
@@ -291,7 +289,7 @@ func (p *DynamicAuthProvider) RequestMagicLink(ctx context.Context, email, redir
 	return p.magicLinkService.RequestMagicLink(ctx, email, redirectTo, ip, userAgent, locale)
 }
 
-func (p *DynamicAuthProvider) VerifyMagicLink(ctx context.Context, token, ip, userAgent string) (*providers.MagicLinkResult, error) {
+func (p *Provider) VerifyMagicLink(ctx context.Context, token, ip, userAgent string) (*providers.MagicLinkResult, error) {
 	if p.magicLinkService == nil {
 		return nil, fmt.Errorf("MagicLink service not configured")
 	}
@@ -308,7 +306,7 @@ func (p *DynamicAuthProvider) VerifyMagicLink(ctx context.Context, token, ip, us
 	}, nil
 }
 
-func (p *DynamicAuthProvider) VerifyReminderAuthToken(ctx context.Context, token, ip, userAgent string) (*providers.MagicLinkResult, error) {
+func (p *Provider) VerifyReminderAuthToken(ctx context.Context, token, ip, userAgent string) (*providers.MagicLinkResult, error) {
 	if p.magicLinkService == nil {
 		return nil, fmt.Errorf("MagicLink service not configured")
 	}
@@ -325,7 +323,7 @@ func (p *DynamicAuthProvider) VerifyReminderAuthToken(ctx context.Context, token
 	}, nil
 }
 
-func (p *DynamicAuthProvider) CreateReminderAuthToken(ctx context.Context, email, docID string) (string, error) {
+func (p *Provider) CreateReminderAuthToken(ctx context.Context, email, docID string) (string, error) {
 	if p.magicLinkService == nil {
 		return "", fmt.Errorf("MagicLink service not configured")
 	}
@@ -334,7 +332,7 @@ func (p *DynamicAuthProvider) CreateReminderAuthToken(ctx context.Context, email
 
 // === Internal helpers ===
 
-func (p *DynamicAuthProvider) getOAuthConfig() *oauth2.Config {
+func (p *Provider) getOAuthConfig() *oauth2.Config {
 	cfg := p.configProvider.GetConfig()
 
 	p.mu.RLock()
@@ -372,14 +370,14 @@ func (p *DynamicAuthProvider) getOAuthConfig() *oauth2.Config {
 	return p.cachedOAuthCfg
 }
 
-func (p *DynamicAuthProvider) configMatches(cfg models.OIDCConfig) bool {
+func (p *Provider) configMatches(cfg models.OIDCConfig) bool {
 	return p.cachedOIDCCfg.ClientID == cfg.ClientID &&
 		p.cachedOIDCCfg.ClientSecret == cfg.ClientSecret &&
 		p.cachedOIDCCfg.AuthURL == cfg.AuthURL &&
 		p.cachedOIDCCfg.TokenURL == cfg.TokenURL
 }
 
-func (p *DynamicAuthProvider) parseUserInfo(resp *http.Response) (*types.User, error) {
+func (p *Provider) parseUserInfo(resp *http.Response) (*types.User, error) {
 	var rawUser map[string]interface{}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -436,4 +434,4 @@ func subtleConstantTimeCompare(a, b string) bool {
 }
 
 // Compile-time interface check
-var _ providers.AuthProvider = (*DynamicAuthProvider)(nil)
+var _ providers.AuthProvider = (*Provider)(nil)

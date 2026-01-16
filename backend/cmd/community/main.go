@@ -8,20 +8,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
-	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/auth"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/email"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/i18n"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/config"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/web"
-	webauth "github.com/btouchard/ackify-ce/backend/pkg/web/auth"
 )
 
 // Build-time variables set via ldflags
@@ -59,78 +53,12 @@ func main() {
 		log.Fatalf("failed to initialize tenant provider: %v", err)
 	}
 
-	// Create repositories needed for auth
-	oauthSessionRepo := database.NewOAuthSessionRepository(db, tenantProvider)
-	configRepo := database.NewConfigRepository(db, tenantProvider)
-	magicLinkRepo := database.NewMagicLinkRepository(db)
-
-	// Create ConfigService (needed for dynamic auth config)
-	encryptionKey := cfg.OAuth.CookieSecret
-	configService := services.NewConfigService(configRepo, cfg, encryptionKey)
-
-	// Initialize config from DB or ENV
-	err = tenant.WithTenantContextFromProvider(ctx, db, tenantProvider, func(txCtx context.Context) error {
-		return configService.Initialize(txCtx)
-	})
-	if err != nil {
-		logger.Logger.Warn("Failed to initialize config service, using ENV config", "error", err)
-	}
-
-	// Create i18n service
-	i18nService, err := i18n.NewI18n(getLocalesDir())
-	if err != nil {
-		log.Fatalf("Failed to initialize i18n: %v", err)
-	}
-
-	// Create email renderer and sender if SMTP is configured
-	var emailSender email.Sender
-	var emailRenderer *email.Renderer
-	if cfg.Mail.Host != "" {
-		emailRenderer = email.NewRenderer(getTemplatesDir(), cfg.App.BaseURL, cfg.App.Organisation,
-			cfg.Mail.FromName, cfg.Mail.From, cfg.Mail.DefaultLocale, i18nService)
-		emailSender = email.NewSMTPSender(cfg.Mail, emailRenderer)
-	}
-
-	// Create MagicLinkService
-	magicLinkService := services.NewMagicLinkService(services.MagicLinkServiceConfig{
-		Repository:        magicLinkRepo,
-		EmailSender:       emailSender,
-		I18n:              i18nService,
-		BaseURL:           cfg.App.BaseURL,
-		AppName:           cfg.App.Organisation,
-		RateLimitPerEmail: cfg.Auth.MagicLinkRateLimitEmail,
-		RateLimitPerIP:    cfg.Auth.MagicLinkRateLimitIP,
-	})
-
-	// Create a SessionService (always needed for session management)
-	sessionService := auth.NewSessionService(auth.SessionServiceConfig{
-		CookieSecret:  cfg.OAuth.CookieSecret,
-		SecureCookies: cfg.App.SecureCookies,
-		SessionRepo:   oauthSessionRepo,
-	})
-
-	// Create DynamicAuthProvider (unified auth for OIDC + MagicLink)
-	authProvider := webauth.NewDynamicAuthProvider(webauth.DynamicAuthProviderConfig{
-		ConfigProvider:   configService,
-		SessionService:   sessionService,
-		MagicLinkService: magicLinkService,
-		BaseURL:          cfg.App.BaseURL,
-	})
-
-	// Create authorizer
-	authorizer := webauth.NewSimpleAuthorizer(cfg.App.AdminEmails, cfg.App.OnlyAdminCanCreate)
-
 	// === Build Server ===
+	// All services (I18n, Email, MagicLink, Config, Session) and
+	// default providers (DynamicAuthProvider, SimpleAuthorizer) are created internally.
 	server, err := web.NewServerBuilder(cfg, frontend, Version).
 		WithDB(db).
 		WithTenantProvider(tenantProvider).
-		WithAuthProvider(authProvider).
-		WithAuthorizer(authorizer).
-		WithConfigService(configService).
-		WithI18nService(i18nService).
-		WithEmailSender(emailSender).
-		WithEmailRenderer(emailRenderer).
-		WithMagicLinkService(magicLinkService).
 		Build(ctx)
 	if err != nil {
 		log.Fatalf("Failed to create server: %v", err)
@@ -157,50 +85,4 @@ func main() {
 	}
 
 	log.Println("Community Edition server exited")
-}
-
-func getTemplatesDir() string {
-	if envDir := os.Getenv("ACKIFY_TEMPLATES_DIR"); envDir != "" {
-		return envDir
-	}
-
-	if execPath, err := os.Executable(); err == nil {
-		execDir := filepath.Dir(execPath)
-		defaultDir := filepath.Join(execDir, "templates")
-		if _, err := os.Stat(defaultDir); err == nil {
-			return defaultDir
-		}
-	}
-
-	possiblePaths := []string{"templates", "./templates"}
-	for _, path := range possiblePaths {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-
-	return "templates"
-}
-
-func getLocalesDir() string {
-	if envDir := os.Getenv("ACKIFY_LOCALES_DIR"); envDir != "" {
-		return envDir
-	}
-
-	if execPath, err := os.Executable(); err == nil {
-		execDir := filepath.Dir(execPath)
-		defaultDir := filepath.Join(execDir, "locales")
-		if _, err := os.Stat(defaultDir); err == nil {
-			return defaultDir
-		}
-	}
-
-	possiblePaths := []string{"locales", "./locales"}
-	for _, path := range possiblePaths {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-
-	return "locales"
 }

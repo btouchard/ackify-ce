@@ -34,7 +34,6 @@ var (
 	ErrInvalidCategory    = errors.New("invalid configuration category")
 )
 
-// configRepository defines the interface for config storage
 type configRepository interface {
 	GetByCategory(ctx context.Context, category models.ConfigCategory) (*models.TenantConfig, error)
 	GetAll(ctx context.Context) ([]*models.TenantConfig, error)

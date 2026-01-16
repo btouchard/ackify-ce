@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/btouchard/ackify-ce/backend/pkg/web"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // SimpleAuthorizer is an authorization implementation based on a list of admin emails.
@@ -30,13 +30,13 @@ func NewSimpleAuthorizer(adminEmails []string, onlyAdminCanCreate bool) *SimpleA
 	}
 }
 
-// IsAdmin implements web.Authorizer.
+// IsAdmin implements providers.Authorizer.
 func (a *SimpleAuthorizer) IsAdmin(_ context.Context, userEmail string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(userEmail))
 	return a.adminEmails[normalized]
 }
 
-// CanCreateDocument implements web.Authorizer.
+// CanCreateDocument implements providers.Authorizer.
 func (a *SimpleAuthorizer) CanCreateDocument(ctx context.Context, userEmail string) bool {
 	if !a.onlyAdminCanCreate {
 		return true
@@ -45,4 +45,4 @@ func (a *SimpleAuthorizer) CanCreateDocument(ctx context.Context, userEmail stri
 }
 
 // Compile-time interface check.
-var _ web.Authorizer = (*SimpleAuthorizer)(nil)
+var _ providers.Authorizer = (*SimpleAuthorizer)(nil)

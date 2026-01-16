@@ -28,6 +28,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/pkg/crypto"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/storage"
+	webauth "github.com/btouchard/ackify-ce/backend/pkg/web/auth"
 
 	sdk "github.com/btouchard/shm/sdk/golang"
 )
@@ -52,8 +53,10 @@ type Server struct {
 }
 
 // ServerBuilder allows dependency injection for extensibility.
-// AuthProvider and Authorizer are REQUIRED and must be provided.
-// QuotaEnforcer and AuditLogger have sensible defaults for CE.
+// DB and TenantProvider are REQUIRED.
+// AuthProvider and Authorizer have sensible CE defaults (AuthProvider, SimpleAuthorizer).
+// QuotaEnforcer and AuditLogger have sensible CE defaults (NoLimit, LogOnly).
+// All technical services (I18n, Email, MagicLink, Reminder, Config) are created internally.
 type ServerBuilder struct {
 	cfg      *config.Config
 	frontend embed.FS
@@ -62,21 +65,22 @@ type ServerBuilder struct {
 	// Core infrastructure (required)
 	db             *sql.DB
 	tenantProvider tenant.Provider
-	signer         *crypto.Ed25519Signer
 
-	// Capability providers (auth and authorizer are REQUIRED)
+	// Capability providers (all have CE defaults)
 	authProvider  AuthProvider
 	authorizer    Authorizer
 	quotaEnforcer QuotaEnforcer
 	auditLogger   AuditLogger
 
-	// Optional infrastructure
+	// Internal infrastructure (created by Build)
+	signer          *crypto.Ed25519Signer
 	i18nService     *i18n.I18n
 	emailSender     email.Sender
 	emailRenderer   *email.Renderer
 	storageProvider storage.Provider
+	sessionService  *auth.SessionService
 
-	// Core services (created internally or injected)
+	// Internal services (created by Build)
 	magicLinkService *services.MagicLinkService
 	signatureService *services.SignatureService
 	documentService  *services.DocumentService
@@ -95,43 +99,17 @@ func NewServerBuilder(cfg *config.Config, frontend embed.FS, version string) *Se
 	}
 }
 
-// WithDB injects a database connection.
+// WithDB injects a database connection (REQUIRED).
 func (b *ServerBuilder) WithDB(db *sql.DB) *ServerBuilder {
 	b.db = db
 	return b
 }
 
-// WithTenantProvider injects a tenant provider.
+// WithTenantProvider injects a tenant provider (REQUIRED).
 func (b *ServerBuilder) WithTenantProvider(tp tenant.Provider) *ServerBuilder {
 	b.tenantProvider = tp
 	return b
 }
-
-// WithSigner injects a cryptographic signer.
-func (b *ServerBuilder) WithSigner(signer *crypto.Ed25519Signer) *ServerBuilder {
-	b.signer = signer
-	return b
-}
-
-// WithI18nService injects an i18n service.
-func (b *ServerBuilder) WithI18nService(i18n *i18n.I18n) *ServerBuilder {
-	b.i18nService = i18n
-	return b
-}
-
-// WithEmailSender injects an email sender.
-func (b *ServerBuilder) WithEmailSender(sender email.Sender) *ServerBuilder {
-	b.emailSender = sender
-	return b
-}
-
-// WithEmailRenderer injects an email renderer.
-func (b *ServerBuilder) WithEmailRenderer(renderer *email.Renderer) *ServerBuilder {
-	b.emailRenderer = renderer
-	return b
-}
-
-// === Capability Providers ===
 
 // WithAuthProvider injects an authentication provider (REQUIRED).
 func (b *ServerBuilder) WithAuthProvider(provider AuthProvider) *ServerBuilder {
@@ -157,61 +135,30 @@ func (b *ServerBuilder) WithAuditLogger(logger AuditLogger) *ServerBuilder {
 	return b
 }
 
-// WithMagicLinkService injects a magic link service.
-func (b *ServerBuilder) WithMagicLinkService(service *services.MagicLinkService) *ServerBuilder {
-	b.magicLinkService = service
-	return b
-}
-
-// WithSignatureService injects a signature service.
-func (b *ServerBuilder) WithSignatureService(service *services.SignatureService) *ServerBuilder {
-	b.signatureService = service
-	return b
-}
-
-// WithDocumentService injects a document service.
-func (b *ServerBuilder) WithDocumentService(service *services.DocumentService) *ServerBuilder {
-	b.documentService = service
-	return b
-}
-
-// WithAdminService injects an admin service.
-func (b *ServerBuilder) WithAdminService(service *services.AdminService) *ServerBuilder {
-	b.adminService = service
-	return b
-}
-
-// WithWebhookService injects a webhook service.
-func (b *ServerBuilder) WithWebhookService(service *services.WebhookService) *ServerBuilder {
-	b.webhookService = service
-	return b
-}
-
-// WithReminderService injects a reminder service.
-func (b *ServerBuilder) WithReminderService(service *services.ReminderAsyncService) *ServerBuilder {
-	b.reminderService = service
-	return b
-}
-
-// WithConfigService injects a configuration service.
-func (b *ServerBuilder) WithConfigService(service *services.ConfigService) *ServerBuilder {
-	b.configService = service
-	return b
-}
-
 // Build constructs the server with all dependencies.
 func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 	if err := b.validateProviders(); err != nil {
 		return nil, err
 	}
 
-	b.setDefaultProviders()
-
 	if err := b.initializeInfrastructure(); err != nil {
 		return nil, err
 	}
 
 	repos := b.createRepositories()
+
+	// Initialize services that depend on repos
+	if err := b.initializeConfigService(ctx, repos); err != nil {
+		return nil, err
+	}
+	b.initializeMagicLinkService(repos)
+	b.initializeSessionService(repos)
+
+	// Now we can set default providers (they depend on services above)
+	b.setDefaultProviders()
+
+	b.initializeCoreServices(repos)
+	b.initializeReminderService(repos)
 
 	if err := b.initializeTelemetry(ctx); err != nil {
 		return nil, err
@@ -227,10 +174,7 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	b.initializeCoreServices(repos)
-	b.initializeConfigService(ctx, repos)
 	magicLinkWorker := b.initializeMagicLinkCleanupWorker(ctx)
-	b.initializeReminderService(repos)
 
 	sessionWorker, err := b.initializeSessionWorker(ctx, repos)
 	if err != nil {
@@ -263,17 +207,29 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 
 // validateProviders checks that required providers are set.
 func (b *ServerBuilder) validateProviders() error {
-	if b.authProvider == nil {
-		return errors.New("authProvider is required: use WithAuthProvider()")
+	if b.db == nil {
+		return errors.New("database is required: use WithDB()")
 	}
-	if b.authorizer == nil {
-		return errors.New("authorizer is required: use WithAuthorizer()")
+	if b.tenantProvider == nil {
+		return errors.New("tenantProvider is required: use WithTenantProvider()")
 	}
 	return nil
 }
 
 // setDefaultProviders sets default implementations for optional providers.
+// Must be called AFTER initializeConfigService, initializeMagicLinkService, and initializeSessionService.
 func (b *ServerBuilder) setDefaultProviders() {
+	if b.authProvider == nil {
+		b.authProvider = webauth.NewAuthProvider(webauth.ProviderConfig{
+			ConfigProvider:   b.configService,
+			SessionService:   b.sessionService,
+			MagicLinkService: b.magicLinkService,
+			BaseURL:          b.cfg.App.BaseURL,
+		})
+	}
+	if b.authorizer == nil {
+		b.authorizer = webauth.NewSimpleAuthorizer(b.cfg.App.AdminEmails, b.cfg.App.OnlyAdminCanCreate)
+	}
 	if b.quotaEnforcer == nil {
 		b.quotaEnforcer = NewNoLimitQuotaEnforcer()
 	}
@@ -282,19 +238,38 @@ func (b *ServerBuilder) setDefaultProviders() {
 	}
 }
 
-// initializeInfrastructure initializes signer and storage provider.
-// i18n and emailSender are expected to be injected from main.go.
+// initializeInfrastructure initializes signer, i18n, email and storage.
 func (b *ServerBuilder) initializeInfrastructure() error {
 	var err error
 
-	if b.signer == nil {
-		b.signer, err = crypto.NewEd25519Signer()
-		if err != nil {
-			return fmt.Errorf("failed to initialize signer: %w", err)
-		}
+	// Signer
+	b.signer, err = crypto.NewEd25519Signer()
+	if err != nil {
+		return fmt.Errorf("failed to initialize signer: %w", err)
 	}
 
-	if b.storageProvider == nil && b.cfg.Storage.IsEnabled() {
+	// I18n
+	b.i18nService, err = i18n.NewI18n(getLocalesDir())
+	if err != nil {
+		return fmt.Errorf("failed to initialize i18n: %w", err)
+	}
+
+	// Email (only if SMTP is configured)
+	if b.cfg.Mail.Host != "" {
+		b.emailRenderer = email.NewRenderer(
+			getTemplatesDir(),
+			b.cfg.App.BaseURL,
+			b.cfg.App.Organisation,
+			b.cfg.Mail.FromName,
+			b.cfg.Mail.From,
+			b.cfg.Mail.DefaultLocale,
+			b.i18nService,
+		)
+		b.emailSender = email.NewSMTPSender(b.cfg.Mail, b.emailRenderer)
+	}
+
+	// Storage
+	if b.cfg.Storage.IsEnabled() {
 		provider, err := storage.NewProvider(b.cfg.Storage)
 		if err != nil {
 			return fmt.Errorf("failed to initialize storage provider: %w", err)
@@ -319,6 +294,7 @@ type repositories struct {
 	webhookDelivery *database.WebhookDeliveryRepository
 	oauthSession    *database.OAuthSessionRepository
 	config          *database.ConfigRepository
+	magicLink       services.MagicLinkRepository
 }
 
 // createRepositories creates all repository instances.
@@ -333,6 +309,7 @@ func (b *ServerBuilder) createRepositories() *repositories {
 		webhookDelivery: database.NewWebhookDeliveryRepository(b.db, b.tenantProvider),
 		oauthSession:    database.NewOAuthSessionRepository(b.db, b.tenantProvider),
 		config:          database.NewConfigRepository(b.db, b.tenantProvider),
+		magicLink:       database.NewMagicLinkRepository(b.db),
 	}
 }
 
@@ -395,29 +372,51 @@ func (b *ServerBuilder) initializeEmailWorker(ctx context.Context, repos *reposi
 
 // initializeCoreServices initializes signature, document, admin, and webhook services.
 func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
-	if b.signatureService == nil {
-		b.signatureService = services.NewSignatureService(repos.signature, repos.document, b.signer)
-		b.signatureService.SetChecksumConfig(&b.cfg.Checksum)
-	}
-	if b.documentService == nil {
-		b.documentService = services.NewDocumentService(repos.document, repos.expectedSigner, &b.cfg.Checksum)
-	}
-	if b.adminService == nil {
-		b.adminService = services.NewAdminService(repos.document, repos.expectedSigner)
-	}
-	if b.webhookService == nil {
-		b.webhookService = services.NewWebhookService(repos.webhook, repos.webhookDelivery)
-	}
+	b.signatureService = services.NewSignatureService(repos.signature, repos.document, b.signer)
+	b.signatureService.SetChecksumConfig(&b.cfg.Checksum)
+	b.documentService = services.NewDocumentService(repos.document, repos.expectedSigner, &b.cfg.Checksum)
+	b.adminService = services.NewAdminService(repos.document, repos.expectedSigner)
+	b.webhookService = services.NewWebhookService(repos.webhook, repos.webhookDelivery)
 }
 
-// initializeConfigService is a no-op when configService is injected from main.go.
-// Kept for API compatibility.
-func (b *ServerBuilder) initializeConfigService(_ context.Context, _ *repositories) {
-	// configService is expected to be injected and initialized from main.go
+// initializeConfigService creates and initializes the configuration service.
+func (b *ServerBuilder) initializeConfigService(ctx context.Context, repos *repositories) error {
+	encryptionKey := b.cfg.OAuth.CookieSecret
+	b.configService = services.NewConfigService(repos.config, b.cfg, encryptionKey)
+
+	// Initialize config from DB or ENV
+	err := tenant.WithTenantContextFromProvider(ctx, b.db, b.tenantProvider, func(txCtx context.Context) error {
+		return b.configService.Initialize(txCtx)
+	})
+	if err != nil {
+		logger.Logger.Warn("Failed to initialize config service, using ENV config", "error", err)
+	}
+	return nil
+}
+
+// initializeMagicLinkService creates the magic link service.
+func (b *ServerBuilder) initializeMagicLinkService(repos *repositories) {
+	b.magicLinkService = services.NewMagicLinkService(services.MagicLinkServiceConfig{
+		Repository:        repos.magicLink,
+		EmailSender:       b.emailSender,
+		I18n:              b.i18nService,
+		BaseURL:           b.cfg.App.BaseURL,
+		AppName:           b.cfg.App.Organisation,
+		RateLimitPerEmail: b.cfg.Auth.MagicLinkRateLimitEmail,
+		RateLimitPerIP:    b.cfg.Auth.MagicLinkRateLimitIP,
+	})
+}
+
+// initializeSessionService creates the session service for auth.
+func (b *ServerBuilder) initializeSessionService(repos *repositories) {
+	b.sessionService = auth.NewSessionService(auth.SessionServiceConfig{
+		CookieSecret:  b.cfg.OAuth.CookieSecret,
+		SecureCookies: b.cfg.App.SecureCookies,
+		SessionRepo:   repos.oauthSession,
+	})
 }
 
 // initializeMagicLinkCleanupWorker starts the cleanup worker for expired magic link tokens.
-// magicLinkService is expected to be injected from main.go.
 func (b *ServerBuilder) initializeMagicLinkCleanupWorker(ctx context.Context) *workers.MagicLinkCleanupWorker {
 	magicLinkWorker := workers.NewMagicLinkCleanupWorker(b.magicLinkService, 1*time.Hour, b.db, b.tenantProvider)
 	go magicLinkWorker.Start(ctx)
@@ -426,16 +425,14 @@ func (b *ServerBuilder) initializeMagicLinkCleanupWorker(ctx context.Context) *w
 
 // initializeReminderService initializes reminder service.
 func (b *ServerBuilder) initializeReminderService(repos *repositories) {
-	if b.reminderService == nil {
-		b.reminderService = services.NewReminderAsyncService(
-			repos.expectedSigner,
-			repos.reminder,
-			repos.emailQueue,
-			b.magicLinkService,
-			b.i18nService,
-			b.cfg.App.BaseURL,
-		)
-	}
+	b.reminderService = services.NewReminderAsyncService(
+		repos.expectedSigner,
+		repos.reminder,
+		repos.emailQueue,
+		b.magicLinkService,
+		b.i18nService,
+		b.cfg.App.BaseURL,
+	)
 }
 
 // initializeSessionWorker initializes OAuth session cleanup worker.
@@ -465,7 +462,7 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 		DB:             b.db,
 		TenantProvider: b.tenantProvider,
 
-		// Capability providers (AuthProvider handles OIDC + MagicLink dynamically)
+		// Capability providers (Provider handles OIDC + MagicLink dynamically)
 		AuthProvider:     b.authProvider,
 		Authorizer:       b.authorizer,
 		SignatureService: b.signatureService,
