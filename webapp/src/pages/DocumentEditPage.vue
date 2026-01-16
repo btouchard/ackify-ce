@@ -15,6 +15,7 @@ import {
   type DocumentStatus,
 } from '@/services/admin'
 import { extractError } from '@/services/http'
+import { useConfigStore } from '@/stores/config'
 import {
   ArrowLeft,
   Users,
@@ -41,6 +42,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const configStore = useConfigStore()
 const { t, locale } = useI18n()
 
 // Data
@@ -108,7 +110,7 @@ const shareLink = computed(() => {
 
 const stats = computed(() => documentStatus.value?.stats)
 const reminderStats = computed(() => documentStatus.value?.reminderStats)
-const smtpEnabled = computed(() => (window as any).ACKIFY_SMTP_ENABLED || false)
+const smtpEnabled = computed(() => configStore.smtpEnabled)
 const expectedSigners = computed(() => documentStatus.value?.expectedSigners || [])
 const filteredSigners = computed(() => {
   const filter = signerFilter.value.toLowerCase().trim()

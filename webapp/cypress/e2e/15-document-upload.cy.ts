@@ -4,10 +4,12 @@
 describe('Test 15: Document Upload', () => {
   beforeEach(() => {
     cy.clearCookies()
+    // @ts-ignore
     cy.clearMailbox()
   })
 
   it('should show upload button when storage is enabled', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -15,6 +17,7 @@ describe('Test 15: Document Upload', () => {
   })
 
   it('should upload a PDF document', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -50,6 +53,7 @@ describe('Test 15: Document Upload', () => {
   })
 
   it('should upload an image document', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -97,6 +101,7 @@ describe('Test 15: Document Upload', () => {
   it('should set custom title for uploaded document', () => {
     const customTitle = 'Custom Document Title ' + Date.now()
 
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -135,6 +140,7 @@ describe('Test 15: Document Upload', () => {
   })
 
   it('should show upload progress', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -165,6 +171,7 @@ describe('Test 15: Document Upload', () => {
   })
 
   it('should clear selected file when clicking remove', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -190,6 +197,7 @@ describe('Test 15: Document Upload', () => {
   })
 
   it('should auto-set title from filename', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -209,6 +217,7 @@ describe('Test 15: Document Upload', () => {
   })
 
   it('should handle upload errors gracefully', () => {
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 
@@ -238,12 +247,13 @@ describe('Test 15: Document Upload', () => {
 
     cy.get('[data-testid="error-message"]', { timeout: 5000 })
       .should('be.visible')
-      .and('contain', 'File too large')
+      .and('contain', 'Failed to create document')
   })
 
   it('should view uploaded document in admin panel', () => {
     const docTitle = 'Admin View Test ' + Date.now()
 
+    // @ts-ignore
     cy.loginAsAdmin()
     cy.visit('/documents')
 

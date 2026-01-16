@@ -17,6 +17,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
 	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
+	apiConfig "github.com/btouchard/ackify-ce/backend/internal/presentation/api/config"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/documents"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/health"
 	"github.com/btouchard/ackify-ce/backend/internal/presentation/api/proxy"
@@ -185,6 +186,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 	// Initialize handlers
 	healthHandler := health.NewHandler()
+	configHandler := apiConfig.NewHandler(cfg.ConfigService)
 	authHandler := apiAuth.NewHandler(cfg.AuthProvider, apiMiddleware, cfg.BaseURL)
 	usersHandler := users.NewHandler(cfg.Authorizer)
 	documentsHandler := documents.NewHandler(
@@ -208,6 +210,9 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		// Health check
 		r.Get("/health", healthHandler.HandleHealth)
 
+		// Public configuration (smtpEnabled, storageEnabled, auth methods)
+		r.Get("/config", configHandler.HandleGetConfig)
+
 		// CSRF token
 		r.Get("/csrf", authHandler.HandleGetCSRFToken)
 
@@ -216,10 +221,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 
 		// Auth endpoints - all routes defined, handlers check if method is enabled
 		r.Route("/auth", func(r chi.Router) {
-			// Public endpoint to expose available authentication methods
-			r.Get("/config", authHandler.HandleGetAuthConfig)
-
-			// Apply rate limiting to auth endpoints (except /config which should be fast)
+			// Apply rate limiting to auth endpoints
 			r.Group(func(r chi.Router) {
 				r.Use(authRateLimit.Middleware)
 

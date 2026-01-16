@@ -24,9 +24,8 @@ type SignatureRepository interface {
 
 // EmbedFolder returns an http.HandlerFunc that serves an embedded filesystem
 // with SPA fallback support (serves index.html for non-existent routes).
-// Configuration values are fetched dynamically from ConfigProvider on each request
-// to support hot-reload.
-func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, configProvider ConfigProvider, signatureRepo SignatureRepository) http.HandlerFunc {
+// Only BASE_URL and VERSION are injected - other config is loaded via /api/v1/config.
+func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version string, signatureRepo SignatureRepository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fsys, err := fs.Sub(fsEmbed, targetPath)
 		if err != nil {
@@ -65,15 +64,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 		defer file.Close()
 
 		if shouldServeIndex || strings.HasSuffix(cleanPath, "index.html") {
-			// Get dynamic config values from ConfigProvider
-			cfg := configProvider.GetConfig()
-			oauthEnabled := cfg.OIDC.Enabled
-			magicLinkEnabled := cfg.MagicLink.Enabled
-			smtpEnabled := cfg.SMTP.Host != ""
-			onlyAdminCanCreate := cfg.General.OnlyAdminCanCreate
-			storageEnabled := cfg.Storage.Type != ""
-
-			serveIndexTemplate(w, r, file, baseURL, version, oauthEnabled, magicLinkEnabled, smtpEnabled, onlyAdminCanCreate, storageEnabled, signatureRepo)
+			serveIndexTemplate(w, r, file, baseURL, version, signatureRepo)
 			return
 		}
 
@@ -82,7 +73,7 @@ func EmbedFolder(fsEmbed embed.FS, targetPath string, baseURL string, version st
 	}
 }
 
-func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, oauthEnabled bool, magicLinkEnabled bool, smtpEnabled bool, onlyAdminCanCreate bool, storageEnabled bool, signatureRepo SignatureRepository) {
+func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, baseURL string, version string, signatureRepo SignatureRepository) {
 	content, err := io.ReadAll(file)
 	if err != nil {
 		logger.Logger.Error("Failed to read index.html", "error", err.Error())
@@ -92,33 +83,6 @@ func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, ba
 
 	processedContent := strings.ReplaceAll(string(content), "__ACKIFY_BASE_URL__", baseURL)
 	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_VERSION__", version)
-
-	oauthEnabledStr := "false"
-	if oauthEnabled {
-		oauthEnabledStr = "true"
-	}
-	magicLinkEnabledStr := "false"
-	if magicLinkEnabled {
-		magicLinkEnabledStr = "true"
-	}
-	smtpEnabledStr := "false"
-	if smtpEnabled {
-		smtpEnabledStr = "true"
-	}
-	onlyAdminCanCreateStr := "false"
-	if onlyAdminCanCreate {
-		onlyAdminCanCreateStr = "true"
-	}
-	storageEnabledStr := "false"
-	if storageEnabled {
-		storageEnabledStr = "true"
-	}
-
-	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_OAUTH_ENABLED__", oauthEnabledStr)
-	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_MAGICLINK_ENABLED__", magicLinkEnabledStr)
-	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_SMTP_ENABLED__", smtpEnabledStr)
-	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_ONLY_ADMIN_CAN_CREATE__", onlyAdminCanCreateStr)
-	processedContent = strings.ReplaceAll(processedContent, "__ACKIFY_STORAGE_ENABLED__", storageEnabledStr)
 
 	metaTags := generateMetaTags(r, baseURL, signatureRepo)
 	processedContent = strings.ReplaceAll(processedContent, "__META_TAGS__", metaTags)

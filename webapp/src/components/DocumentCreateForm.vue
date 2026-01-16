@@ -23,6 +23,7 @@ import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Label from '@/components/ui/Label.vue'
 import Textarea from '@/components/ui/Textarea.vue'
+import { useConfigStore } from '@/stores/config'
 
 export interface DocumentCreateFormProps {
   mode?: 'compact' | 'full' | 'hero'
@@ -44,8 +45,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const router = useRouter()
+const configStore = useConfigStore()
 
-const storageEnabled = (window as any).ACKIFY_STORAGE_ENABLED || false
+const storageEnabled = computed(() => configStore.storageEnabled)
 
 // Form state
 const url = ref('')

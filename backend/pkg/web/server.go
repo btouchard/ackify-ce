@@ -491,8 +491,7 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 	router.Mount("/api/v1", apiRouter)
 
 	router.Get("/oembed", handlers.HandleOEmbed(b.cfg.App.BaseURL))
-	router.NotFound(EmbedFolder(b.frontend, "web/dist", b.cfg.App.BaseURL, b.version,
-		b.configService, repos.signature))
+	router.NotFound(EmbedFolder(b.frontend, "web/dist", b.cfg.App.BaseURL, b.version, repos.signature))
 
 	return router
 }

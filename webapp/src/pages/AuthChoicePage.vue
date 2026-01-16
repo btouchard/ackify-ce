@@ -1,8 +1,9 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useConfigStore } from '@/stores/config'
 import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { Mail, LogIn, Loader2, AlertCircle, CheckCircle2 } from 'lucide-vue-next'
@@ -14,55 +15,42 @@ usePageTitle('auth.choice.title')
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
+const configStore = useConfigStore()
 
 const email = ref('')
 const loading = ref(false)
 const magicLinkSent = ref(false)
 const errorMessage = ref('')
-const configLoading = ref(true)
 
-// Auth config loaded dynamically from API
-const oauthEnabled = ref(false)
-const magicLinkEnabled = ref(false)
+// Auth config from store
+const configLoading = computed(() => configStore.loading || !configStore.initialized)
+const oauthEnabled = computed(() => configStore.oauthEnabled)
+const magicLinkEnabled = computed(() => configStore.magicLinkEnabled)
 
 const redirectTo = computed(() => {
   return (route.query.redirect as string) || '/'
 })
 
-async function loadAuthConfig() {
-  try {
-    const response = await fetch('/api/v1/auth/config')
-    if (response.ok) {
-      const result = await response.json()
-      const config = result.data || {}
-      oauthEnabled.value = config.oauth || false
-      magicLinkEnabled.value = config.magiclink || false
-    }
-  } catch (error) {
-    console.error('Failed to load auth config:', error)
-  } finally {
-    configLoading.value = false
+// Watch for config initialization to check auth methods
+watch(() => configStore.initialized, (initialized) => {
+  if (initialized) {
+    checkAuthMethods()
   }
-}
+})
 
 function checkAuthMethods() {
   // Si aucune méthode disponible
   if (!oauthEnabled.value && !magicLinkEnabled.value) {
     errorMessage.value = t('auth.error.no_method_available')
-    return
   }
-
-  // Si une seule méthode disponible (OAuth), rediriger automatiquement
-  const methods = [oauthEnabled.value, magicLinkEnabled.value].filter(Boolean)
-  if (methods.length === 1 && oauthEnabled.value) {
-    loginWithOAuth()
-  }
-  // Si seulement MagicLink, l'utilisateur doit quand même entrer son email (pas de redirection auto)
+  // Ne PAS rediriger automatiquement - toujours afficher la page d'auth
 }
 
 onMounted(async () => {
-  // Charger la config auth depuis l'API
-  await loadAuthConfig()
+  // Charger la config si pas encore fait
+  if (!configStore.initialized) {
+    await configStore.loadConfig()
+  }
 
   // Si déjà connecté, rediriger
   if (!authStore.initialized) {
@@ -74,7 +62,9 @@ onMounted(async () => {
   }
 
   // Vérifier les méthodes d'authentification disponibles
-  checkAuthMethods()
+  if (configStore.initialized) {
+    checkAuthMethods()
+  }
 })
 
 async function loginWithOAuth() {

@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { usePageTitle } from '@/composables/usePageTitle'
 import { useAuthStore } from '@/stores/auth'
+import { useConfigStore } from '@/stores/config'
 import { documentService, type MyDocument, type FindOrCreateDocumentResponse } from '@/services/documents'
 import { extractError } from '@/services/http'
 import DocumentCreateForm from '@/components/DocumentCreateForm.vue'
@@ -27,6 +28,7 @@ import {
 const router = useRouter()
 const { t, locale } = useI18n()
 const authStore = useAuthStore()
+const configStore = useConfigStore()
 usePageTitle('myDocuments.title')
 
 const documents = ref<MyDocument[]>([])
@@ -65,9 +67,7 @@ const completedDocuments = computed(() =>
 const canAccess = computed(() => {
   if (!authStore.isAuthenticated) return false
   if (authStore.isAdmin) return true
-  // Check ACKIFY_ONLY_ADMIN_CAN_CREATE window variable
-  const onlyAdminCanCreate = (window as any).ACKIFY_ONLY_ADMIN_CAN_CREATE || false
-  return !onlyAdminCanCreate
+  return !configStore.onlyAdminCanCreate
 })
 
 // Base URL for share links

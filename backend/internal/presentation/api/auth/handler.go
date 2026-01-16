@@ -60,15 +60,6 @@ func (h *Handler) HandleGetCSRFToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// HandleGetAuthConfig handles GET /api/v1/auth/config
-// Returns available authentication methods (dynamically from config)
-func (h *Handler) HandleGetAuthConfig(w http.ResponseWriter, r *http.Request) {
-	shared.WriteJSON(w, http.StatusOK, map[string]bool{
-		"oauth":     h.authProvider.IsOIDCEnabled(),
-		"magiclink": h.authProvider.IsMagicLinkEnabled(),
-	})
-}
-
 // HandleStartOIDC handles POST /api/v1/auth/start
 func (h *Handler) HandleStartOIDC(w http.ResponseWriter, r *http.Request) {
 	if !h.authProvider.IsOIDCEnabled() {

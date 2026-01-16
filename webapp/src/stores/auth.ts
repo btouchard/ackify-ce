@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import http, { resetCsrfToken } from '@/services/http'
+import { useConfigStore } from '@/stores/config'
 
 export interface User {
   id: string
@@ -14,13 +15,13 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(false)
   const initialized = ref(false)
+  const configStore = useConfigStore()
 
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.isAdmin ?? false)
 
   // Check if user can create documents: admin OR only_admin_can_create is false
-  const onlyAdminCanCreate = computed(() => (window as any).ACKIFY_ONLY_ADMIN_CAN_CREATE || false)
-  const canCreateDocuments = computed(() => isAdmin.value || !onlyAdminCanCreate.value)
+  const canCreateDocuments = computed(() => isAdmin.value || !configStore.onlyAdminCanCreate)
 
   async function checkAuth() {
     if (initialized.value) return

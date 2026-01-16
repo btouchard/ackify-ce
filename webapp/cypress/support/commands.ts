@@ -63,7 +63,7 @@ Cypress.Commands.add('visitWithLocale', (url: string, locale: string = 'en', opt
 })
 
 Cypress.Commands.add('loginViaMagicLink', (email: string, redirectTo?: string) => {
-  // Clear mailbox first
+  // @ts-ignore
   cy.clearMailbox()
 
   // Request magic link
@@ -78,7 +78,9 @@ Cypress.Commands.add('loginViaMagicLink', (email: string, redirectTo?: string) =
 
   // Get magic link from email (subject from backend i18n: email.magic_link.subject)
   const emailSubject = 'Your login link' // en.json: email.magic_link.subject
+  // @ts-ignore
   cy.waitForEmail(email, emailSubject, 30000).then((message) => {
+    // @ts-ignore
     cy.extractMagicLink(message).then((magicLink) => {
       // Visit magic link
       cy.visit(magicLink)
