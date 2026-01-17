@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 )
@@ -90,30 +89,4 @@ func HandleOEmbed(baseURL string) http.HandlerFunc {
 			"url", urlParam,
 			"remote_addr", r.RemoteAddr)
 	}
-}
-
-// ValidateOEmbedURL checks if the provided URL is a valid Ackify document URL
-func ValidateOEmbedURL(urlStr string, baseURL string) bool {
-	parsedURL, err := url.Parse(urlStr)
-	if err != nil {
-		return false
-	}
-
-	baseURLParsed, err := url.Parse(baseURL)
-	if err != nil {
-		return false
-	}
-
-	// Normalize hosts for comparison (remove ports if present)
-	urlHost := strings.Split(parsedURL.Host, ":")[0]
-	baseHost := strings.Split(baseURLParsed.Host, ":")[0]
-
-	// Allow localhost variations
-	if urlHost == "localhost" || urlHost == "127.0.0.1" {
-		if baseHost == "localhost" || baseHost == "127.0.0.1" {
-			return true
-		}
-	}
-
-	return urlHost == baseHost
 }

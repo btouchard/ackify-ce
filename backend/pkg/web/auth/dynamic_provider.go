@@ -419,6 +419,15 @@ func (p *Provider) parseUserInfo(resp *http.Response) (*types.User, error) {
 		user.Name = preferredName
 	}
 
+	// Extract avatar URL (picture for Google/OIDC, avatar_url for GitHub/GitLab)
+	if picture, ok := rawUser["picture"].(string); ok && picture != "" {
+		user.Picture = picture
+	} else if avatarURL, ok := rawUser["avatar_url"].(string); ok && avatarURL != "" {
+		user.Picture = avatarURL
+	} else if photo, ok := rawUser["photo"].(string); ok && photo != "" {
+		user.Picture = photo
+	}
+
 	return user, nil
 }
 

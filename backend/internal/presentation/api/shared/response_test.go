@@ -222,19 +222,3 @@ func TestWritePaginatedJSON(t *testing.T) {
 		})
 	}
 }
-
-func TestWriteNoContent(t *testing.T) {
-	t.Parallel()
-
-	w := httptest.NewRecorder()
-
-	WriteNoContent(w)
-
-	if w.Code != http.StatusNoContent {
-		t.Errorf("Expected status code %d, got %d", http.StatusNoContent, w.Code)
-	}
-
-	if w.Body.Len() != 0 {
-		t.Errorf("Expected empty body, got %d bytes", w.Body.Len())
-	}
-}

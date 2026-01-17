@@ -33,7 +33,6 @@ import (
 	sdk "github.com/btouchard/shm/sdk/golang"
 )
 
-// Server represents the HTTP server with all its dependencies.
 type Server struct {
 	httpServer      *http.Server
 	db              *sql.DB
@@ -90,7 +89,6 @@ type ServerBuilder struct {
 	configService    *services.ConfigService
 }
 
-// NewServerBuilder creates a new server builder with the required configuration.
 func NewServerBuilder(cfg *config.Config, frontend embed.FS, version string) *ServerBuilder {
 	return &ServerBuilder{
 		cfg:      cfg,
@@ -205,7 +203,6 @@ func (b *ServerBuilder) Build(ctx context.Context) (*Server, error) {
 	}, nil
 }
 
-// validateProviders checks that required providers are set.
 func (b *ServerBuilder) validateProviders() error {
 	if b.db == nil {
 		return errors.New("database is required: use WithDB()")
@@ -238,7 +235,6 @@ func (b *ServerBuilder) setDefaultProviders() {
 	}
 }
 
-// initializeInfrastructure initializes signer, i18n, email and storage.
 func (b *ServerBuilder) initializeInfrastructure() error {
 	var err error
 
@@ -297,7 +293,6 @@ type repositories struct {
 	magicLink       services.MagicLinkRepository
 }
 
-// createRepositories creates all repository instances.
 func (b *ServerBuilder) createRepositories() *repositories {
 	return &repositories{
 		signature:       database.NewSignatureRepository(b.db, b.tenantProvider),
@@ -336,7 +331,6 @@ func (b *ServerBuilder) initializeTelemetry(ctx context.Context) error {
 	return nil
 }
 
-// initializeWebhookSystem initializes webhook publisher and worker.
 func (b *ServerBuilder) initializeWebhookSystem(ctx context.Context, repos *repositories) (*services.WebhookPublisher, *webhook.Worker, error) {
 	whPublisher := services.NewWebhookPublisher(repos.webhook, repos.webhookDelivery)
 	whCfg := webhook.DefaultWorkerConfig()
@@ -349,7 +343,6 @@ func (b *ServerBuilder) initializeWebhookSystem(ctx context.Context, repos *repo
 	return whPublisher, whWorker, nil
 }
 
-// initializeEmailWorker initializes email worker for async processing.
 // emailRenderer is expected to be injected from main.go via WithEmailRenderer().
 func (b *ServerBuilder) initializeEmailWorker(ctx context.Context, repos *repositories, whPublisher *services.WebhookPublisher) (*email.Worker, error) {
 	if b.emailSender == nil || b.cfg.Mail.Host == "" || b.emailRenderer == nil {
@@ -370,7 +363,6 @@ func (b *ServerBuilder) initializeEmailWorker(ctx context.Context, repos *reposi
 	return emailWorker, nil
 }
 
-// initializeCoreServices initializes signature, document, admin, and webhook services.
 func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
 	b.signatureService = services.NewSignatureService(repos.signature, repos.document, b.signer)
 	b.signatureService.SetChecksumConfig(&b.cfg.Checksum)
@@ -379,7 +371,6 @@ func (b *ServerBuilder) initializeCoreServices(repos *repositories) {
 	b.webhookService = services.NewWebhookService(repos.webhook, repos.webhookDelivery)
 }
 
-// initializeConfigService creates and initializes the configuration service.
 func (b *ServerBuilder) initializeConfigService(ctx context.Context, repos *repositories) error {
 	encryptionKey := b.cfg.OAuth.CookieSecret
 	b.configService = services.NewConfigService(repos.config, b.cfg, encryptionKey)
@@ -423,7 +414,6 @@ func (b *ServerBuilder) initializeMagicLinkCleanupWorker(ctx context.Context) *w
 	return magicLinkWorker
 }
 
-// initializeReminderService initializes reminder service.
 func (b *ServerBuilder) initializeReminderService(repos *repositories) {
 	b.reminderService = services.NewReminderAsyncService(
 		repos.expectedSigner,
@@ -435,7 +425,6 @@ func (b *ServerBuilder) initializeReminderService(repos *repositories) {
 	)
 }
 
-// initializeSessionWorker initializes OAuth session cleanup worker.
 func (b *ServerBuilder) initializeSessionWorker(ctx context.Context, repos *repositories) (*auth.SessionWorker, error) {
 	if repos.oauthSession == nil {
 		return nil, nil
@@ -450,7 +439,6 @@ func (b *ServerBuilder) initializeSessionWorker(ctx context.Context, repos *repo
 	return sessionWorker, nil
 }
 
-// buildRouter creates and configures the main router.
 func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.WebhookPublisher) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(i18n.Middleware(b.i18nService))
@@ -554,22 +542,18 @@ func (s *Server) GetDB() *sql.DB {
 	return s.db
 }
 
-// GetAuthProvider returns the auth provider.
 func (s *Server) GetAuthProvider() AuthProvider {
 	return s.authProvider
 }
 
-// GetAuthorizer returns the authorizer.
 func (s *Server) GetAuthorizer() Authorizer {
 	return s.authorizer
 }
 
-// GetQuotaEnforcer returns the quota enforcer.
 func (s *Server) GetQuotaEnforcer() QuotaEnforcer {
 	return s.quotaEnforcer
 }
 
-// GetAuditLogger returns the audit logger.
 func (s *Server) GetAuditLogger() AuditLogger {
 	return s.auditLogger
 }

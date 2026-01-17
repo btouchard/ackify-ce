@@ -25,6 +25,7 @@ type UserDTO struct {
 	ID      string `json:"id"`
 	Email   string `json:"email"`
 	Name    string `json:"name"`
+	Picture string `json:"picture,omitempty"`
 	IsAdmin bool   `json:"isAdmin"`
 }
 
@@ -40,6 +41,7 @@ func (h *Handler) HandleGetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		ID:      user.Sub,
 		Email:   user.Email,
 		Name:    user.Name,
+		Picture: user.Picture,
 		IsAdmin: h.authorizer.IsAdmin(r.Context(), user.Email),
 	}
 

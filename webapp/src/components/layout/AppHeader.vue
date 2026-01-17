@@ -146,8 +146,18 @@ const closeUserMenu = () => {
               aria-haspopup="true"
               :aria-expanded="userMenuOpen"
             >
-              <!-- User avatar with initials -->
-              <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <!-- User avatar (picture or initials fallback) -->
+              <img
+                v-if="user?.picture"
+                :src="user.picture"
+                :alt="displayName"
+                class="w-8 h-8 rounded-lg object-cover"
+                referrerpolicy="no-referrer"
+              />
+              <div
+                v-else
+                class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300"
+              >
                 {{ userInitials }}
               </div>
               <span class="text-slate-700 dark:text-slate-200 hidden lg:inline">{{ displayName }}</span>

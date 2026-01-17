@@ -7,9 +7,10 @@ import "strings"
 // This is the canonical user representation used by auth providers, domain models,
 // and API handlers.
 type User struct {
-	Sub   string `json:"sub"`   // Unique identifier (OAuth sub claim or email for MagicLink)
-	Email string `json:"email"` // User's email address
-	Name  string `json:"name"`  // Display name (optional)
+	Sub     string `json:"sub"`               // Unique identifier (OAuth sub claim or email for MagicLink)
+	Email   string `json:"email"`             // User's email address
+	Name    string `json:"name"`              // Display name (optional)
+	Picture string `json:"picture,omitempty"` // Avatar URL from OAuth provider (optional)
 }
 
 // IsValid returns true if the user has required fields populated.

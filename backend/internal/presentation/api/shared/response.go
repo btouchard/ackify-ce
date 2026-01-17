@@ -120,8 +120,3 @@ func WritePaginatedJSON(w http.ResponseWriter, data interface{}, page, limit, to
 
 	WriteJSONWithMeta(w, http.StatusOK, data, meta)
 }
-
-// WriteNoContent writes a 204 No Content response
-func WriteNoContent(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNoContent)
-}

@@ -315,3 +315,12 @@ func (s *ReminderAsyncService) CountSent(ctx context.Context) int {
 	}
 	return c
 }
+
+func containsEmail(emails []string, target string) bool {
+	for _, e := range emails {
+		if e == target {
+			return true
+		}
+	}
+	return false
+}

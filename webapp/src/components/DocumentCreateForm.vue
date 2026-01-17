@@ -234,7 +234,7 @@ watch(readMode, (newMode) => {
     <div class="space-y-4">
       <!-- URL input + Upload button + Submit button -->
       <div class="flex gap-3" :class="mode === 'full' ? 'flex-col sm:flex-row' : ''">
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <Label v-if="mode === 'full'" for="doc-url" class="mb-1.5">
             {{ t('documentCreateForm.url.label') }}
           </Label>
@@ -242,13 +242,13 @@ watch(readMode, (newMode) => {
           <!-- Show selected file or URL input -->
           <div v-if="selectedFile" class="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30" :class="mode === 'full' ? 'h-11' : 'h-12'">
             <FileText class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            <span data-testid="selected-file-name" class="flex-1 text-sm text-blue-800 dark:text-blue-200 truncate">{{ selectedFile.name }}</span>
-            <span class="text-xs text-blue-600 dark:text-blue-400">{{ formatFileSize(selectedFile.size) }}</span>
+            <span data-testid="selected-file-name" class="flex-1 min-w-0 text-sm text-blue-800 dark:text-blue-200 truncate">{{ selectedFile.name }}</span>
+            <span class="text-xs text-blue-600 dark:text-blue-400 flex-shrink-0 whitespace-nowrap">{{ formatFileSize(selectedFile.size) }}</span>
             <button
               type="button"
               data-testid="clear-file-button"
               @click="clearSelectedFile"
-              class="p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400"
+              class="p-1 rounded hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 flex-shrink-0"
               :disabled="isSubmitting"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -172,6 +172,64 @@ func (f *fakeCryptoSigner) CreateSignature(ctx context.Context, docID string, us
 	return payloadHash, signature, nil
 }
 
+type fakeDocumentRepository struct {
+	documents map[string]*models.Document
+}
+
+func newFakeDocumentRepository() *fakeDocumentRepository {
+	return &fakeDocumentRepository{
+		documents: make(map[string]*models.Document),
+	}
+}
+
+func (f *fakeDocumentRepository) Create(_ context.Context, docID string, input models.DocumentInput, createdBy string) (*models.Document, error) {
+	doc := &models.Document{
+		DocID:             docID,
+		Title:             input.Title,
+		URL:               input.URL,
+		Checksum:          input.Checksum,
+		ChecksumAlgorithm: input.ChecksumAlgorithm,
+		CreatedBy:         createdBy,
+	}
+	f.documents[docID] = doc
+	return doc, nil
+}
+
+func (f *fakeDocumentRepository) GetByDocID(_ context.Context, docID string) (*models.Document, error) {
+	if doc, ok := f.documents[docID]; ok {
+		return doc, nil
+	}
+	return nil, nil
+}
+
+func (f *fakeDocumentRepository) FindByReference(_ context.Context, _ string, _ string) (*models.Document, error) {
+	return nil, nil
+}
+
+func (f *fakeDocumentRepository) List(_ context.Context, _, _ int) ([]*models.Document, error) {
+	return nil, nil
+}
+
+func (f *fakeDocumentRepository) Search(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return nil, nil
+}
+
+func (f *fakeDocumentRepository) Count(_ context.Context, _ string) (int, error) {
+	return 0, nil
+}
+
+func (f *fakeDocumentRepository) ListByCreatedBy(_ context.Context, _ string, _, _ int) ([]*models.Document, error) {
+	return nil, nil
+}
+
+func (f *fakeDocumentRepository) SearchByCreatedBy(_ context.Context, _, _ string, _, _ int) ([]*models.Document, error) {
+	return nil, nil
+}
+
+func (f *fakeDocumentRepository) CountByCreatedBy(_ context.Context, _, _ string) (int, error) {
+	return 0, nil
+}
+
 func TestNewSignatureService(t *testing.T) {
 	repo := newFakeRepository()
 	docRepo := newFakeDocumentRepository()

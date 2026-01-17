@@ -4,8 +4,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -208,36 +206,6 @@ func TestHandleOEmbed_MissingDocParam(t *testing.T) {
 	}
 }
 
-func TestValidateOEmbedURL(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		urlStr   string
-		baseURL  string
-		expected bool
-	}{
-		{"valid same host", "https://example.com/?doc=123", "https://example.com", true},
-		{"valid with port", "https://example.com:443/?doc=123", "https://example.com", true},
-		{"different host", "https://other.com/?doc=123", "https://example.com", false},
-		{"localhost variations", "http://localhost:8080/?doc=123", "http://127.0.0.1:8080", true},
-		{"localhost to 127.0.0.1", "http://127.0.0.1/?doc=123", "http://localhost", true},
-		{"invalid URL", ":::invalid", "https://example.com", false},
-		{"invalid base URL", "https://example.com/?doc=123", ":::invalid", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := ValidateOEmbedURL(tt.urlStr, tt.baseURL)
-			if result != tt.expected {
-				t.Errorf("Expected %v, got %v", tt.expected, result)
-			}
-		})
-	}
-}
-
 // ============================================================================
 // BENCHMARKS
 // ============================================================================
@@ -251,16 +219,6 @@ func BenchmarkHandleOEmbed(b *testing.B) {
 		req := httptest.NewRequest(http.MethodGet, "/oembed?url="+reqURL, nil)
 		rec := httptest.NewRecorder()
 		handler(rec, req)
-	}
-}
-
-func BenchmarkValidateOEmbedURL(b *testing.B) {
-	urlStr := "https://example.com/?doc=test123"
-	baseURL := "https://example.com"
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_ = ValidateOEmbedURL(urlStr, baseURL)
 	}
 }
 
@@ -424,126 +382,6 @@ func TestRequestLogger_DifferentMethods(t *testing.T) {
 }
 
 // ============================================================================
-// TESTS - HandleError
-// ============================================================================
-
-func TestHandleError_Unauthorized(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrUnauthorized)
-
-	assert.Equal(t, http.StatusUnauthorized, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Unauthorized")
-}
-
-func TestHandleError_SignatureNotFound(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrSignatureNotFound)
-
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Signature not found")
-}
-
-func TestHandleError_SignatureAlreadyExists(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrSignatureAlreadyExists)
-
-	assert.Equal(t, http.StatusConflict, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Signature already exists")
-}
-
-func TestHandleError_InvalidUser(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrInvalidUser)
-
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Invalid user")
-}
-
-func TestHandleError_InvalidDocument(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrInvalidDocument)
-
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Invalid document ID")
-}
-
-func TestHandleError_DomainNotAllowed(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrDomainNotAllowed)
-
-	assert.Equal(t, http.StatusForbidden, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Domain not allowed")
-}
-
-func TestHandleError_DatabaseConnection(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, models.ErrDatabaseConnection)
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Database error")
-}
-
-func TestHandleError_UnknownError(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	HandleError(rec, errors.New("unknown error"))
-
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "Internal server error")
-}
-
-func TestHandleError_WrappedErrors(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name           string
-		err            error
-		expectedStatus int
-		expectedMsg    string
-	}{
-		{
-			"wrapped unauthorized",
-			fmt.Errorf("auth failed: %w", models.ErrUnauthorized),
-			http.StatusUnauthorized,
-			"Unauthorized",
-		},
-		{
-			"wrapped domain error",
-			fmt.Errorf("validation failed: %w", models.ErrDomainNotAllowed),
-			http.StatusForbidden,
-			"Domain not allowed",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			rec := httptest.NewRecorder()
-			HandleError(rec, tt.err)
-
-			assert.Equal(t, tt.expectedStatus, rec.Code)
-			assert.Contains(t, rec.Body.String(), tt.expectedMsg)
-		})
-	}
-}
-
-// ============================================================================
 // TESTS - statusRecorder
 // ============================================================================
 
@@ -614,15 +452,5 @@ func BenchmarkRequestLogger(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
-	}
-}
-
-func BenchmarkHandleError(b *testing.B) {
-	err := models.ErrUnauthorized
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		rec := httptest.NewRecorder()
-		HandleError(rec, err)
 	}
 }
