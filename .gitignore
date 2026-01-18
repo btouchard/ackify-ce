@@ -26,3 +26,5 @@ client_secret*.json
 /samples/
 /docs/reports/
 /prompts/
+/demo-videos/
+/run-demo.sh
