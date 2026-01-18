@@ -1,0 +1,87 @@
+# Render Blueprint
+# Deploy: https://render.com/deploy?repo=https://github.com/btouchard/ackify-ce
+#
+# After deployment:
+# 1. Configure OAuth2 credentials OR SMTP for MagicLink authentication
+# 2. Set ACKIFY_BASE_URL to your Render URL (e.g., https://ackify-ce.onrender.com)
+
+services:
+  - type: web
+    name: ackify-ce
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    autoDeploy: false
+    healthCheckPath: /api/v1/health
+    envVars:
+      # Application
+      - key: ACKIFY_BASE_URL
+        sync: false
+      - key: ACKIFY_ORGANISATION
+        value: "My Organization"
+      - key: ACKIFY_LOG_LEVEL
+        value: info
+      - key: ACKIFY_LISTEN_ADDR
+        value: ":8080"
+
+      # Database (auto-generated from PostgreSQL service)
+      - key: ACKIFY_DB_DSN
+        fromDatabase:
+          name: ackify-db
+          property: connectionString
+
+      # Security secrets (must be configured manually)
+      - key: ACKIFY_OAUTH_COOKIE_SECRET
+        generateValue: true
+      - key: ACKIFY_ED25519_PRIVATE_KEY
+        sync: false
+
+      # OAuth2 Configuration (optional - configure for OAuth auth)
+      - key: ACKIFY_OAUTH_PROVIDER
+        sync: false
+      - key: ACKIFY_OAUTH_CLIENT_ID
+        sync: false
+      - key: ACKIFY_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: ACKIFY_OAUTH_ALLOWED_DOMAIN
+        sync: false
+
+      # Admin Configuration (optional)
+      - key: ACKIFY_ADMIN_EMAILS
+        sync: false
+
+      # Email/SMTP Configuration (optional - configure for MagicLink auth)
+      - key: ACKIFY_MAIL_HOST
+        sync: false
+      - key: ACKIFY_MAIL_PORT
+        sync: false
+      - key: ACKIFY_MAIL_USERNAME
+        sync: false
+      - key: ACKIFY_MAIL_PASSWORD
+        sync: false
+      - key: ACKIFY_MAIL_FROM
+        sync: false
+      - key: ACKIFY_MAIL_TLS
+        value: "true"
+
+      # Storage Configuration (optional)
+      - key: ACKIFY_STORAGE_TYPE
+        sync: false
+      - key: ACKIFY_STORAGE_S3_ENDPOINT
+        sync: false
+      - key: ACKIFY_STORAGE_S3_BUCKET
+        sync: false
+      - key: ACKIFY_STORAGE_S3_ACCESS_KEY
+        sync: false
+      - key: ACKIFY_STORAGE_S3_SECRET_KEY
+        sync: false
+      - key: ACKIFY_STORAGE_S3_REGION
+        sync: false
+
+databases:
+  - name: ackify-db
+    plan: free
+    databaseName: ackify
+    user: ackify
+    ipAllowList: []

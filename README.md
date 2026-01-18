@@ -143,6 +143,26 @@ See [docs/en/configuration.md](docs/en/configuration.md) for all options.
 
 ---
 
+## ☁️ One-Click Deploy
+
+Deploy Ackify CE in one click on your preferred cloud platform:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/btouchard/ackify-ce)
+
+[![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/btouchard/ackify-ce)
+
+[![Deploy on Elestio](https://elest.io/images/logos/deploy-to-elestio-btn.png)](https://dash.elest.io/deploy?source=cicd&social=Github&url=https://github.com/btouchard/ackify-ce)
+
+| Platform | PostgreSQL | Notes |
+|----------|------------|-------|
+| **Render** | ✅ Included | Free tier 90 days |
+| **DigitalOcean** | ✅ Dev DB | App Platform PaaS |
+| **Elestio** | ✅ Included | Managed hosting EU |
+
+> **Post-deployment**: Configure OAuth2 or SMTP (MagicLink) via the platform's environment variables.
+
+---
+
 ## 📸 Screenshots
 
 <table>

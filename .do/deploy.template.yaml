@@ -1,0 +1,114 @@
+# DigitalOcean App Platform Deployment Template
+# Deploy: https://cloud.digitalocean.com/apps/new?repo=https://github.com/btouchard/ackify-ce
+#
+# After deployment:
+# 1. Configure OAuth2 credentials OR SMTP for MagicLink authentication
+# 2. Set ACKIFY_BASE_URL to your DigitalOcean app URL
+
+spec:
+  name: ackify-ce
+  region: fra
+  features:
+    - buildpack-stack=ubuntu-22
+
+  services:
+    - name: ackify-ce
+      dockerfile_path: Dockerfile
+      github:
+        repo: btouchard/ackify-ce
+        branch: main
+        deploy_on_push: false
+      health_check:
+        http_path: /api/v1/health
+        initial_delay_seconds: 30
+        period_seconds: 10
+        timeout_seconds: 5
+        success_threshold: 1
+        failure_threshold: 3
+      http_port: 8080
+      instance_count: 1
+      instance_size_slug: basic-xxs
+      envs:
+        # Application
+        - key: ACKIFY_BASE_URL
+          scope: RUN_TIME
+          value: ${APP_URL}
+        - key: ACKIFY_ORGANISATION
+          scope: RUN_TIME
+          value: "My Organization"
+        - key: ACKIFY_LOG_LEVEL
+          scope: RUN_TIME
+          value: info
+        - key: ACKIFY_LISTEN_ADDR
+          scope: RUN_TIME
+          value: ":8080"
+
+        # Database connection (auto-generated from dev database)
+        - key: ACKIFY_DB_DSN
+          scope: RUN_TIME
+          value: ${db.DATABASE_URL}
+
+        # Security secrets
+        - key: ACKIFY_OAUTH_COOKIE_SECRET
+          scope: RUN_TIME
+          type: SECRET
+          value: CHANGE_ME_GENERATE_WITH_OPENSSL_RAND_BASE64_32
+        - key: ACKIFY_ED25519_PRIVATE_KEY
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+
+        # OAuth2 Configuration (optional - configure for OAuth auth)
+        - key: ACKIFY_OAUTH_PROVIDER
+          scope: RUN_TIME
+          value: ""
+        - key: ACKIFY_OAUTH_CLIENT_ID
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: ACKIFY_OAUTH_CLIENT_SECRET
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: ACKIFY_OAUTH_ALLOWED_DOMAIN
+          scope: RUN_TIME
+          value: ""
+
+        # Admin Configuration (optional)
+        - key: ACKIFY_ADMIN_EMAILS
+          scope: RUN_TIME
+          value: ""
+
+        # Email/SMTP Configuration (optional - configure for MagicLink auth)
+        - key: ACKIFY_MAIL_HOST
+          scope: RUN_TIME
+          value: ""
+        - key: ACKIFY_MAIL_PORT
+          scope: RUN_TIME
+          value: "587"
+        - key: ACKIFY_MAIL_USERNAME
+          scope: RUN_TIME
+          value: ""
+        - key: ACKIFY_MAIL_PASSWORD
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: ACKIFY_MAIL_FROM
+          scope: RUN_TIME
+          value: ""
+        - key: ACKIFY_MAIL_TLS
+          scope: RUN_TIME
+          value: "true"
+
+        # Storage Configuration (optional)
+        - key: ACKIFY_STORAGE_TYPE
+          scope: RUN_TIME
+          value: ""
+
+  databases:
+    - name: db
+      engine: PG
+      production: false
+      cluster_name: ackify-db
+      db_name: ackify
+      db_user: ackify

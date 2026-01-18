@@ -1,0 +1,82 @@
+# Elestio Deployment Configuration
+# Deploy: https://dash.elest.io/deploy?source=cicd&social=Github&url=https://github.com/btouchard/ackify-ce
+#
+# After deployment:
+# 1. Configure OAuth2 credentials OR SMTP for MagicLink authentication
+# 2. Access your instance at the provided Elestio URL
+
+config:
+  runTime: dockerCompose
+  version: "1"
+
+ports:
+  - protocol: HTTPS
+    targetProtocol: HTTP
+    listeningPort: "443"
+    targetPort: "8080"
+    targetIP: 172.17.0.1
+    public: true
+    path: /
+    isAuth: false
+
+environments:
+  # Application
+  - key: ACKIFY_BASE_URL
+    value: https://[CI_CD_DOMAIN]
+  - key: ACKIFY_ORGANISATION
+    value: "[ORGANISATION_NAME]"
+  - key: ACKIFY_LOG_LEVEL
+    value: info
+
+  # Database
+  - key: POSTGRES_PASSWORD
+    value: "[ADMIN_PASSWORD]"
+  - key: ACKIFY_APP_PASSWORD
+    value: random_password
+
+  # Security
+  - key: ACKIFY_OAUTH_COOKIE_SECRET
+    value: random_password
+  - key: ACKIFY_ED25519_PRIVATE_KEY
+    value: ""
+
+  # Admin (optional - uses Elestio admin email)
+  - key: ACKIFY_ADMIN_EMAILS
+    value: "[ADMIN_EMAIL]"
+
+  # OAuth2 Configuration (optional - configure for OAuth auth)
+  - key: ACKIFY_OAUTH_PROVIDER
+    value: ""
+  - key: ACKIFY_OAUTH_CLIENT_ID
+    value: ""
+  - key: ACKIFY_OAUTH_CLIENT_SECRET
+    value: ""
+  - key: ACKIFY_OAUTH_ALLOWED_DOMAIN
+    value: ""
+
+  # Email/SMTP Configuration (optional - configure for MagicLink auth)
+  - key: ACKIFY_MAIL_HOST
+    value: ""
+  - key: ACKIFY_MAIL_PORT
+    value: "587"
+  - key: ACKIFY_MAIL_USERNAME
+    value: ""
+  - key: ACKIFY_MAIL_PASSWORD
+    value: ""
+  - key: ACKIFY_MAIL_FROM
+    value: ""
+  - key: ACKIFY_MAIL_TLS
+    value: "true"
+
+  # Storage Configuration (optional)
+  - key: ACKIFY_STORAGE_TYPE
+    value: local
+  - key: ACKIFY_STORAGE_LOCAL_PATH
+    value: /data/documents
+
+lifeCycle:
+  postInstallCommand: |
+    # Wait for database to be ready
+    sleep 10
+    echo "Ackify CE deployed successfully!"
+    echo "Configure OAuth2 or SMTP in the environment variables to enable authentication."
