@@ -58,6 +58,7 @@ const calculatingChecksum = ref(false)
 // New state for integrated viewer
 const readComplete = ref(false)
 const certifyChecked = ref(false)
+const documentLoadFailed = ref(false)
 
 // Check if current user has signed this document
 const userHasSigned = computed(() => {
@@ -112,6 +113,7 @@ async function handleDocumentReference(ref: string) {
     needsAuth.value = false
     readComplete.value = false
     certifyChecked.value = false
+    documentLoadFailed.value = false
 
     console.log('Loading document for reference:', ref)
 
@@ -193,6 +195,11 @@ async function calculateAndUpdateChecksum(docId: string, url: string) {
 
 function handleReadComplete() {
   readComplete.value = true
+}
+
+function handleDocumentLoadError(error: string) {
+  console.log('Document load failed:', error)
+  documentLoadFailed.value = true
 }
 
 async function handleSigned() {
@@ -541,7 +548,7 @@ onMounted(async () => {
           <!-- Left: Document Zone (2/3) -->
           <div class="lg:col-span-2 space-y-6">
             <!-- Integrated Viewer -->
-            <div v-if="isIntegratedMode && (currentDocument.url || currentDocument.storageKey)">
+            <div v-if="isIntegratedMode && (currentDocument.url || currentDocument.storageKey) && !documentLoadFailed">
               <DocumentViewer
                 :document-id="docId"
                 :url="currentDocument.url || ''"
@@ -554,10 +561,11 @@ onMounted(async () => {
                 :stored-checksum="currentDocument.checksum"
                 :checksum-algorithm="currentDocument.checksumAlgorithm"
                 @read-complete="handleReadComplete"
+                @load-error="handleDocumentLoadError"
               />
             </div>
 
-            <!-- External Mode -->
+            <!-- External Mode / Load Failed -->
             <div v-else class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center">
               <div class="w-16 h-16 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-4">
                 <ExternalLink :size="32" class="text-blue-600 dark:text-blue-400" />
@@ -566,18 +574,30 @@ onMounted(async () => {
                 {{ t('sign.external.title') }}
               </h3>
               <p class="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
-                {{ t('sign.external.description') }}
+                {{ currentDocument.url ? t('sign.external.descriptionWithUrl') : t('sign.external.description') }}
               </p>
-              <a
-                v-if="currentDocument.url"
-                :href="currentDocument.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 trust-gradient text-white font-medium rounded-lg px-6 py-3 text-sm hover:opacity-90 transition-opacity"
-              >
-                <ExternalLink :size="18" />
-                {{ t('sign.external.openDocument') }}
-              </a>
+              <div v-if="currentDocument.url" class="space-y-4">
+                <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 max-w-lg mx-auto">
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-1">{{ t('sign.external.documentUrl') }}</p>
+                  <a
+                    :href="currentDocument.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-sm text-blue-600 dark:text-blue-400 hover:underline break-all"
+                  >
+                    {{ currentDocument.url }}
+                  </a>
+                </div>
+                <a
+                  :href="currentDocument.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 trust-gradient text-white font-medium rounded-lg px-6 py-3 text-sm hover:opacity-90 transition-opacity"
+                >
+                  <ExternalLink :size="18" />
+                  {{ t('sign.external.openDocument') }}
+                </a>
+              </div>
               <p v-else class="text-sm text-slate-400 dark:text-slate-500 italic">
                 {{ t('sign.external.noUrl') }}
               </p>

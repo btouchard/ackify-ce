@@ -99,7 +99,7 @@ func (m *mockAuthorizer) CanCreateDocument(_ context.Context, userEmail string) 
 // Mock document service
 type mockDocumentService struct {
 	createDocFunc       func(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
-	findOrCreateDocFunc func(ctx context.Context, ref string) (*models.Document, bool, error)
+	findOrCreateDocFunc func(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error)
 	findByReferenceFunc func(ctx context.Context, ref string, refType string) (*models.Document, error)
 }
 
@@ -110,9 +110,9 @@ func (m *mockDocumentService) CreateDocument(ctx context.Context, req services.C
 	return testDoc, nil
 }
 
-func (m *mockDocumentService) FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error) {
+func (m *mockDocumentService) FindOrCreateDocument(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error) {
 	if m.findOrCreateDocFunc != nil {
-		return m.findOrCreateDocFunc(ctx, ref)
+		return m.findOrCreateDocFunc(ctx, ref, createdBy)
 	}
 	return testDoc, true, nil
 }
@@ -524,7 +524,7 @@ func TestHandler_HandleFindOrCreateDocument_CreateNew(t *testing.T) {
 			// Document not found - return nil, nil (not an error)
 			return nil, nil
 		},
-		findOrCreateDocFunc: func(ctx context.Context, ref string) (*models.Document, bool, error) {
+		findOrCreateDocFunc: func(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error) {
 			assert.Equal(t, "https://example.com/new-doc.pdf", ref)
 			return testDoc, true, nil
 		},

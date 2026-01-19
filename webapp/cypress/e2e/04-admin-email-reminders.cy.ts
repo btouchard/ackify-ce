@@ -2,7 +2,6 @@
 /// <reference types="cypress" />
 
 describe('Test 4: Admin - Email Reminders', () => {
-  const adminEmail = 'admin@test.com'
   const docId = 'test-reminders-' + Date.now()
   const alice = 'alice@test.com'
   const bob = 'bob@test.com'
@@ -57,8 +56,8 @@ describe('Test 4: Admin - Email Reminders', () => {
     cy.url({ timeout: 10000 }).should('include', `/admin/docs/${docId}`)
 
     // Step 7: Verify stats (1 signed, 1 pending)
-    cy.contains('Confirmed').parent().should('contain', '1')
-    cy.contains('Pending').parent().should('contain', '1')
+    cy.contains('Confirmed').parent().parent().should('contain', '1')
+    cy.contains('Pending').parent().parent().should('contain', '1')
 
     // Step 8: Send reminders to all pending
     cy.clearMailbox() // Clear previous emails

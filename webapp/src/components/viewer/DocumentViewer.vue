@@ -44,6 +44,7 @@ const emit = defineEmits<{
   readComplete: []
   checksumMismatch: [expected: string, actual: string]
   checksumVerified: []
+  loadError: [error: string]
 }>()
 
 const { t } = useI18n()
@@ -304,6 +305,14 @@ watch(proxyUrl, (newUrl) => {
     verifyDocumentChecksum()
   }
 }, { immediate: true })
+
+// Watch for errors and emit loadError event
+watch([error, contentError], ([newError, newContentError]) => {
+  const errorMsg = newError || newContentError
+  if (errorMsg) {
+    emit('loadError', errorMsg)
+  }
+})
 
 onMounted(() => {
   setTimeout(checkContentFits, 500)

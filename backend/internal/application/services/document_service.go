@@ -409,8 +409,8 @@ func (s *DocumentService) FindByReference(ctx context.Context, ref string, refTy
 }
 
 // FindOrCreateDocument performs smart lookup by URL/path/reference or creates new document if not found
-func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error) {
-	logger.Logger.Info("Find or create document", "reference", ref)
+func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error) {
+	logger.Logger.Info("Find or create document", "reference", ref, "created_by", createdBy)
 
 	refType := detectReferenceType(ref)
 	logger.Logger.Debug("Reference type detected", "type", refType, "reference", ref)
@@ -426,7 +426,7 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 		return doc, false, nil
 	}
 
-	logger.Logger.Info("Document not found, creating new one", "reference", ref)
+	logger.Logger.Info("Document not found, creating new one", "reference", ref, "created_by", createdBy)
 
 	var title string
 	switch refType {
@@ -441,6 +441,7 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 	createReq := CreateDocumentRequest{
 		Reference: ref,
 		Title:     title,
+		CreatedBy: createdBy,
 	}
 
 	if refType == ReferenceTypeReference {
@@ -449,7 +450,7 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 			URL:   "",
 		}
 
-		doc, err := s.repo.Create(ctx, ref, input, "")
+		doc, err := s.repo.Create(ctx, ref, input, createdBy)
 		if err != nil {
 			logger.Logger.Error("Failed to create document with custom doc_id",
 				"doc_id", ref,
@@ -459,7 +460,8 @@ func (s *DocumentService) FindOrCreateDocument(ctx context.Context, ref string) 
 
 		logger.Logger.Info("Document created with custom doc_id",
 			"doc_id", ref,
-			"title", title)
+			"title", title,
+			"created_by", createdBy)
 
 		return doc, true, nil
 	}

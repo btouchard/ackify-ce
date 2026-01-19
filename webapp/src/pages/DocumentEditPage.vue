@@ -12,31 +12,37 @@ import {
   removeExpectedSigner,
   sendReminders,
   deleteDocument,
+  previewCSVSigners,
+  importSigners,
   type DocumentStatus,
+  type CSVPreviewResult,
+  type CSVSignerEntry,
 } from '@/services/admin'
 import { extractError } from '@/services/http'
 import { useConfigStore } from '@/stores/config'
+import SignersSection from '@/components/SignersSection.vue'
+import RemindersSection from '@/components/RemindersSection.vue'
 import {
   ArrowLeft,
-  Users,
   CheckCircle,
-  Mail,
-  Plus,
   Loader2,
   Copy,
-  Clock,
   X,
   Trash2,
-  Search,
   AlertCircle,
+  AlertTriangle,
   ChevronRight,
   ExternalLink,
   Check,
   FileText,
+  FileCheck,
+  FileX,
   Eye,
   Download,
   ScrollText,
   ShieldCheck,
+  Users,
+  Clock,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -59,8 +65,16 @@ const showAddSignersModal = ref(false)
 const showDeleteConfirmModal = ref(false)
 const showRemoveSignerModal = ref(false)
 const showSendRemindersModal = ref(false)
+const showImportCSVModal = ref(false)
 const signerToRemove = ref('')
 const remindersMessage = ref('')
+
+// CSV Import
+const csvFile = ref<File | null>(null)
+const csvPreview = ref<CSVPreviewResult | null>(null)
+const analyzingCSV = ref(false)
+const importingCSV = ref(false)
+const csvError = ref('')
 
 // Metadata form
 const metadataForm = ref<Partial<{
@@ -89,7 +103,6 @@ const savingMetadata = ref(false)
 // Expected signers form
 const signersEmails = ref('')
 const addingSigners = ref(false)
-const signerFilter = ref('')
 
 // Reminders
 const sendMode = ref<'all' | 'selected'>('all')
@@ -108,22 +121,15 @@ const shareLink = computed(() => {
   return documentStatus.value.shareLink
 })
 
-const stats = computed(() => documentStatus.value?.stats)
+const stats = computed(() => documentStatus.value?.stats ?? null)
 const reminderStats = computed(() => documentStatus.value?.reminderStats)
 const smtpEnabled = computed(() => configStore.smtpEnabled)
 const expectedSigners = computed(() => documentStatus.value?.expectedSigners || [])
-const filteredSigners = computed(() => {
-  const filter = signerFilter.value.toLowerCase().trim()
-  if (!filter) return expectedSigners.value
-  return expectedSigners.value.filter(signer =>
-    signer.email.toLowerCase().includes(filter) ||
-    (signer.name && signer.name.toLowerCase().includes(filter)) ||
-    (signer.userName && signer.userName.toLowerCase().includes(filter))
-  )
-})
 const documentMetadata = computed(() => documentStatus.value?.document)
 const documentTitle = computed(() => documentMetadata.value?.title || docId.value)
 const isStoredDocument = computed(() => !!documentMetadata.value?.storageKey)
+const unexpectedSignatures = computed(() => documentStatus.value?.unexpectedSignatures || [])
+const isAdmin = computed(() => authStore.isAdmin)
 
 // Methods
 async function loadDocumentStatus() {
@@ -246,9 +252,10 @@ async function removeSigner() {
   }
 }
 
-function confirmSendReminders() {
+function handleReminderSend(mode: 'all' | 'selected') {
+  sendMode.value = mode
   remindersMessage.value =
-    sendMode.value === 'all'
+    mode === 'all'
       ? t('documentEdit.confirmSendReminders', { count: reminderStats.value?.pendingCount || 0 })
       : t('documentEdit.confirmSendRemindersSelected', { count: selectedEmails.value.length })
   showSendRemindersModal.value = true
@@ -315,15 +322,6 @@ function formatDate(dateString: string | undefined): string {
   })
 }
 
-function toggleEmailSelection(email: string) {
-  const index = selectedEmails.value.indexOf(email)
-  if (index > -1) {
-    selectedEmails.value.splice(index, 1)
-  } else {
-    selectedEmails.value.push(email)
-  }
-}
-
 async function handleDeleteDocument() {
   try {
     deletingDocument.value = true
@@ -338,6 +336,90 @@ async function handleDeleteDocument() {
   } finally {
     deletingDocument.value = false
   }
+}
+
+// CSV Import functions (admin only)
+function openImportCSVModal() {
+  csvFile.value = null
+  csvPreview.value = null
+  csvError.value = ''
+  showImportCSVModal.value = true
+}
+
+function handleCSVFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    csvFile.value = target.files[0]
+    csvPreview.value = null
+    csvError.value = ''
+  }
+}
+
+async function analyzeCSV() {
+  if (!csvFile.value) return
+
+  try {
+    analyzingCSV.value = true
+    csvError.value = ''
+    const response = await previewCSVSigners(docId.value, csvFile.value)
+    csvPreview.value = response.data
+  } catch (err) {
+    csvError.value = extractError(err)
+    console.error('Failed to analyze CSV:', err)
+  } finally {
+    analyzingCSV.value = false
+  }
+}
+
+function getSignerStatus(signer: CSVSignerEntry): 'valid' | 'exists' {
+  if (!csvPreview.value) return 'valid'
+  return csvPreview.value.existingEmails.includes(signer.email) ? 'exists' : 'valid'
+}
+
+const signersToImport = computed(() => {
+  if (!csvPreview.value) return []
+  return csvPreview.value.signers.filter(
+    s => !csvPreview.value!.existingEmails.includes(s.email)
+  )
+})
+
+async function confirmImportCSV() {
+  if (!csvPreview.value || signersToImport.value.length === 0) return
+
+  try {
+    importingCSV.value = true
+    csvError.value = ''
+
+    const signersData = signersToImport.value.map(s => ({
+      email: s.email,
+      name: s.name
+    }))
+
+    const response = await importSigners(docId.value, signersData)
+
+    showImportCSVModal.value = false
+    csvFile.value = null
+    csvPreview.value = null
+
+    success.value = t('admin.documentDetail.csvImportSuccess', {
+      imported: response.data.imported,
+      skipped: response.data.skipped
+    })
+    await loadDocumentStatus()
+    setTimeout(() => (success.value = ''), 3000)
+  } catch (err) {
+    csvError.value = extractError(err)
+    console.error('Failed to import signers:', err)
+  } finally {
+    importingCSV.value = false
+  }
+}
+
+function closeImportCSVModal() {
+  showImportCSVModal.value = false
+  csvFile.value = null
+  csvPreview.value = null
+  csvError.value = ''
 }
 
 onMounted(async () => {
@@ -582,146 +664,27 @@ onMounted(async () => {
         </div>
 
         <!-- Expected Readers -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('documentEdit.readers.title') }}</h2>
-                <p v-if="stats" class="text-sm text-slate-500 dark:text-slate-400">{{ stats.signedCount }} / {{ stats.expectedCount }} {{ t('documentEdit.readers.confirmed') }}</p>
-              </div>
-              <button @click="showAddSignersModal = true" class="trust-gradient text-white font-medium rounded-lg px-3 py-2 text-sm hover:opacity-90 transition-opacity inline-flex items-center gap-2">
-                <Plus :size="16" />
-                {{ t('documentEdit.readers.add') }}
-              </button>
-            </div>
-          </div>
-          <div class="p-6">
-            <div v-if="expectedSigners.length > 0">
-              <div class="relative mb-4">
-                <Search :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input v-model="signerFilter" :placeholder="t('documentEdit.readers.filterPlaceholder')" class="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
-              </div>
-
-              <!-- Table Desktop -->
-              <div class="hidden md:block overflow-x-auto">
-                <table class="w-full">
-                  <thead>
-                    <tr class="border-b border-slate-100 dark:border-slate-700">
-                      <th class="px-4 py-3 w-10">
-                        <input type="checkbox" class="rounded border-slate-300 dark:border-slate-600" @change="(e: any) => selectedEmails = e.target.checked ? expectedSigners.filter(s => !s.hasSigned).map(s => s.email) : []" />
-                      </th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('documentEdit.readers.reader') }}</th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('documentEdit.readers.status') }}</th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('documentEdit.readers.confirmedOn') }}</th>
-                      <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{{ t('common.actions') }}</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                    <tr v-for="signer in filteredSigners" :key="signer.email" class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                      <td class="px-4 py-3">
-                        <input v-if="!signer.hasSigned" type="checkbox" class="rounded border-slate-300 dark:border-slate-600" :checked="selectedEmails.includes(signer.email)" @change="toggleEmailSelection(signer.email)" />
-                      </td>
-                      <td class="px-4 py-3">
-                        <div>
-                          <p class="font-medium text-slate-900 dark:text-slate-100">{{ signer.userName || signer.name || signer.email }}</p>
-                          <p class="text-xs text-slate-500 dark:text-slate-400">{{ signer.email }}</p>
-                        </div>
-                      </td>
-                      <td class="px-4 py-3">
-                        <span :class="['inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full', signer.hasSigned ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400']">
-                          {{ signer.hasSigned ? t('documentEdit.readers.statusConfirmed') : t('documentEdit.readers.statusPending') }}
-                        </span>
-                      </td>
-                      <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-                        {{ signer.signedAt ? formatDate(signer.signedAt) : '-' }}
-                      </td>
-                      <td class="px-4 py-3">
-                        <button v-if="!signer.hasSigned" @click="confirmRemoveSigner(signer.email)" class="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                          <Trash2 :size="16" class="text-red-600 dark:text-red-400" />
-                        </button>
-                        <span v-else class="text-xs text-slate-400">-</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <!-- Cards Mobile -->
-              <div class="md:hidden space-y-3">
-                <div v-for="signer in filteredSigners" :key="signer.email" class="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4">
-                  <div class="flex items-start justify-between mb-2">
-                    <div class="flex items-start gap-3">
-                      <input v-if="!signer.hasSigned" type="checkbox" class="mt-1 rounded border-slate-300 dark:border-slate-600" :checked="selectedEmails.includes(signer.email)" @change="toggleEmailSelection(signer.email)" />
-                      <div>
-                        <p class="font-medium text-slate-900 dark:text-slate-100">{{ signer.userName || signer.name || signer.email }}</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">{{ signer.email }}</p>
-                      </div>
-                    </div>
-                    <span :class="['inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full', signer.hasSigned ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400']">
-                      {{ signer.hasSigned ? t('documentEdit.readers.statusConfirmed') : t('documentEdit.readers.statusPending') }}
-                    </span>
-                  </div>
-                  <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>{{ signer.signedAt ? formatDate(signer.signedAt) : '-' }}</span>
-                    <button v-if="!signer.hasSigned" @click="confirmRemoveSigner(signer.email)" class="p-1 text-red-600 dark:text-red-400">
-                      <Trash2 :size="14" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="text-center py-8">
-              <Users :size="48" class="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-              <p class="text-slate-500 dark:text-slate-400">{{ t('documentEdit.readers.noReaders') }}</p>
-            </div>
-          </div>
-        </div>
+        <SignersSection
+          :expected-signers="expectedSigners"
+          :unexpected-signatures="unexpectedSignatures"
+          :stats="stats"
+          :show-import-c-s-v="isAdmin"
+          :selected-emails="selectedEmails"
+          @add-signer="showAddSignersModal = true"
+          @remove-signer="confirmRemoveSigner"
+          @import-csv="openImportCSVModal"
+          @selection-change="(emails) => selectedEmails = emails"
+        />
 
         <!-- Email Reminders -->
-        <div v-if="reminderStats && stats && stats.expectedCount > 0 && (smtpEnabled || reminderStats.totalSent > 0)" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <div class="p-6 border-b border-slate-100 dark:border-slate-700">
-            <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('documentEdit.reminders.title') }}</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('documentEdit.reminders.description') }}</p>
-          </div>
-          <div class="p-6 space-y-6">
-            <div class="grid gap-4 grid-cols-1 sm:grid-cols-3">
-              <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('documentEdit.reminders.sent') }}</p>
-                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ reminderStats.totalSent }}</p>
-              </div>
-              <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('documentEdit.reminders.toRemind') }}</p>
-                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ reminderStats.pendingCount }}</p>
-              </div>
-              <div v-if="reminderStats.lastSentAt" class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
-                <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('documentEdit.reminders.lastSent') }}</p>
-                <p class="text-sm font-bold text-slate-900 dark:text-slate-100">{{ formatDate(reminderStats.lastSentAt) }}</p>
-              </div>
-            </div>
-
-            <div v-if="!smtpEnabled" class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-              <p class="text-sm text-amber-800 dark:text-amber-200">{{ t('documentEdit.reminders.emailDisabled') }}</p>
-            </div>
-
-            <div v-if="smtpEnabled" class="space-y-4">
-              <div class="space-y-2">
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="radio" v-model="sendMode" value="all" class="text-blue-600 focus:ring-blue-500" />
-                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentEdit.reminders.sendToAll', { count: reminderStats.pendingCount }) }}</span>
-                </label>
-                <label class="flex items-center space-x-2 cursor-pointer">
-                  <input type="radio" v-model="sendMode" value="selected" class="text-blue-600 focus:ring-blue-500" />
-                  <span class="text-sm text-slate-700 dark:text-slate-300">{{ t('documentEdit.reminders.sendToSelected', { count: selectedEmails.length }) }}</span>
-                </label>
-              </div>
-              <button @click="confirmSendReminders" :disabled="sendingReminders || (sendMode === 'selected' && selectedEmails.length === 0)" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
-                <Mail :size="16" />
-                {{ sendingReminders ? t('documentEdit.reminders.sending') : t('documentEdit.reminders.send') }}
-              </button>
-            </div>
-          </div>
-        </div>
+        <RemindersSection
+          v-if="reminderStats && stats && stats.expectedCount > 0 && (smtpEnabled || reminderStats.totalSent > 0)"
+          :reminder-stats="reminderStats"
+          :smtp-enabled="smtpEnabled"
+          :selected-emails-count="selectedEmails.length"
+          :sending="sendingReminders"
+          @send="handleReminderSend"
+        />
 
         <!-- Danger Zone -->
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-800/50">
@@ -836,6 +799,104 @@ onMounted(async () => {
               <Loader2 v-if="sendingReminders" :size="16" class="animate-spin" />
               {{ t('common.confirm') }}
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import CSV Modal (Admin only) -->
+    <div v-if="isAdmin && showImportCSVModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" @click.self="closeImportCSVModal">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 max-w-3xl w-full max-h-[90vh] overflow-auto">
+        <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('admin.documentDetail.importCSVTitle') }}</h2>
+          <button @click="closeImportCSVModal" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X :size="20" class="text-slate-400" />
+          </button>
+        </div>
+        <div class="p-6">
+          <div v-if="csvError" class="mb-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <p class="text-sm text-red-700 dark:text-red-300">{{ csvError }}</p>
+          </div>
+
+          <div v-if="!csvPreview" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.documentDetail.selectFile') }}</label>
+              <input type="file" accept=".csv" @change="handleCSVFileChange" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 cursor-pointer" />
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ t('admin.documentDetail.csvFormatHelp') }}</p>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button type="button" @click="closeImportCSVModal" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+              <button @click="analyzeCSV" :disabled="!csvFile || analyzingCSV" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <Loader2 v-if="analyzingCSV" :size="16" class="animate-spin" />
+                {{ analyzingCSV ? t('admin.documentDetail.analyzing') : t('admin.documentDetail.analyze') }}
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="space-y-4">
+            <div class="grid gap-3 grid-cols-1 sm:grid-cols-3">
+              <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 flex items-center gap-3">
+                <FileCheck :size="24" class="text-emerald-600 dark:text-emerald-400" />
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.validEntries') }}</p>
+                  <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ signersToImport.length }}</p>
+                </div>
+              </div>
+              <div v-if="csvPreview.existingEmails.length > 0" class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 flex items-center gap-3">
+                <AlertTriangle :size="24" class="text-amber-600 dark:text-amber-400" />
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.existingEntries') }}</p>
+                  <p class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ csvPreview.existingEmails.length }}</p>
+                </div>
+              </div>
+              <div v-if="csvPreview.invalidCount > 0" class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 flex items-center gap-3">
+                <FileX :size="24" class="text-red-600 dark:text-red-400" />
+                <div>
+                  <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('admin.documentDetail.invalidEntries') }}</p>
+                  <p class="text-xl font-bold text-red-600 dark:text-red-400">{{ csvPreview.invalidCount }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+              <div class="max-h-64 overflow-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-slate-50 dark:bg-slate-700/50">
+                    <tr>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.lineNumber') }}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.email') }}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.name') }}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">{{ t('admin.documentDetail.status') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    <tr v-for="signer in csvPreview.signers" :key="signer.lineNumber" :class="getSignerStatus(signer) === 'exists' ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''">
+                      <td class="px-4 py-2 text-slate-500 dark:text-slate-400">{{ signer.lineNumber }}</td>
+                      <td class="px-4 py-2 text-slate-900 dark:text-slate-100">{{ signer.email }}</td>
+                      <td class="px-4 py-2 text-slate-500 dark:text-slate-400">{{ signer.name || '-' }}</td>
+                      <td class="px-4 py-2">
+                        <span :class="['inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full', getSignerStatus(signer) === 'exists' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400']">
+                          {{ getSignerStatus(signer) === 'exists' ? t('admin.documentDetail.statusExists') : t('admin.documentDetail.statusValid') }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-4">
+              <button type="button" @click="csvPreview = null; csvFile = null" class="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                {{ t('admin.documentDetail.backToFileSelection') }}
+              </button>
+              <div class="flex gap-3">
+                <button type="button" @click="closeImportCSVModal" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium rounded-lg px-4 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">{{ t('common.cancel') }}</button>
+                <button @click="confirmImportCSV" :disabled="importingCSV || signersToImport.length === 0" class="trust-gradient text-white font-medium rounded-lg px-4 py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                  <Loader2 v-if="importingCSV" :size="16" class="animate-spin" />
+                  {{ importingCSV ? t('admin.documentDetail.importing') : t('admin.documentDetail.importButton', { count: signersToImport.length }) }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

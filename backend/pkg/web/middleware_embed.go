@@ -13,7 +13,7 @@ import (
 )
 
 type docService interface {
-	FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error)
+	FindOrCreateDocument(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error)
 }
 
 // webhookPublisher defines minimal publish capability
@@ -60,7 +60,7 @@ func EmbedDocumentMiddleware(
 
 			// Try to create document if it doesn't exist
 			ctx := r.Context()
-			doc, isNew, err := docService.FindOrCreateDocument(ctx, docID)
+			doc, isNew, err := docService.FindOrCreateDocument(ctx, docID, "")
 			if err != nil {
 				logger.Logger.Error("Failed to find/create document for embed",
 					"doc_id", docID,

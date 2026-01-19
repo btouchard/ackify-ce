@@ -691,7 +691,7 @@ func TestDocumentService_FindOrCreateDocument_Found(t *testing.T) {
 	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
-	doc, created, err := service.FindOrCreateDocument(ctx, "https://example.com/existing.pdf")
+	doc, created, err := service.FindOrCreateDocument(ctx, "https://example.com/existing.pdf", "")
 
 	if err != nil {
 		t.Fatalf("FindOrCreateDocument failed: %v", err)
@@ -723,7 +723,7 @@ func TestDocumentService_FindOrCreateDocument_CreateWithURL(t *testing.T) {
 	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
-	doc, created, err := service.FindOrCreateDocument(ctx, "https://example.com/new-doc.pdf")
+	doc, created, err := service.FindOrCreateDocument(ctx, "https://example.com/new-doc.pdf", "")
 
 	if err != nil {
 		t.Fatalf("FindOrCreateDocument failed: %v", err)
@@ -759,7 +759,7 @@ func TestDocumentService_FindOrCreateDocument_CreateWithPath(t *testing.T) {
 	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
-	doc, created, err := service.FindOrCreateDocument(ctx, "/home/user/important-file.pdf")
+	doc, created, err := service.FindOrCreateDocument(ctx, "/home/user/important-file.pdf", "")
 
 	if err != nil {
 		t.Fatalf("FindOrCreateDocument failed: %v", err)
@@ -805,7 +805,7 @@ func TestDocumentService_FindOrCreateDocument_CreateWithReference(t *testing.T) 
 	service := NewDocumentService(mockRepo, &mockDocExpectedSignerRepoTest{}, nil)
 	ctx := context.Background()
 
-	doc, created, err := service.FindOrCreateDocument(ctx, "company-policy-2024")
+	doc, created, err := service.FindOrCreateDocument(ctx, "company-policy-2024", "")
 
 	if err != nil {
 		t.Fatalf("FindOrCreateDocument failed: %v", err)

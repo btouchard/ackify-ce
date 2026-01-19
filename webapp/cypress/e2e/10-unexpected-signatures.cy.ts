@@ -2,7 +2,6 @@
 /// <reference types="cypress" />
 
 describe('Test 10: Unexpected Signatures Tracking', () => {
-  const adminEmail = 'admin@test.com'
   const alice = 'alice@test.com'
   const bob = 'bob@test.com'
   const charlie = 'charlie-unexpected@test.com' // Not in expected list
@@ -34,8 +33,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.contains(bob).should('be.visible')
 
     // Verify initial stats
-    cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('Confirmed').parent().should('contain', '0')
+    cy.contains('Expected readers').parent().parent().should('contain', '2')
+    cy.contains('Confirmed').parent().parent().should('contain', '0')
 
     // ===== STEP 2: Charlie (not expected) accesses and signs the document =====
     cy.log('STEP 2: Unexpected user (Charlie) signs the document')
@@ -60,8 +59,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.contains(bob).should('be.visible')
 
     // Stats should show: 0/2 expected signed, but there's an unexpected signature
-    cy.contains('Expected').parent().should('contain', '2')
-    cy.contains('Confirmed').parent().should('contain', '0') // 0 expected signed
+    cy.contains('Expected readers').parent().parent().should('contain', '2')
+    cy.contains('Confirmed').parent().parent().should('contain', '0') // 0 expected signed
 
     // Unexpected signatures section should exist
     cy.contains(/Unexpected|Additional.*confirmations/, { timeout: 10000 }).should('be.visible')
@@ -90,8 +89,8 @@ describe('Test 10: Unexpected Signatures Tracking', () => {
     cy.visit(`/admin/docs/${docId}`)
 
     // Expected stats: 1/2 signed
-    cy.contains('Confirmed', { timeout: 10000 }).parent().should('contain', '1')
-    cy.contains('Expected').parent().should('contain', '2')
+    cy.contains('Confirmed', { timeout: 10000 }).parent().parent().should('contain', '1')
+    cy.contains('Expected readers').parent().parent().should('contain', '2')
 
     // Alice should show "Confirmed" in expected section
     cy.contains('tr', alice).should('contain', 'Confirmed')

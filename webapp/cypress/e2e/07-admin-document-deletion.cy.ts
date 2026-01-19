@@ -2,7 +2,6 @@
 /// <reference types="cypress" />
 
 describe('Test 7: Admin - Document Deletion', () => {
-  const adminEmail = 'admin@test.com'
   const testUser = 'deletetest@example.com'
   const docId = 'doc-to-delete-' + Date.now()
 

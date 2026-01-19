@@ -2,7 +2,6 @@
 /// <reference types="cypress" />
 
 describe('Test 3: Admin - Expected Signers Management', () => {
-  const adminEmail = 'admin@test.com'
   const docId = 'test-admin-doc-' + Date.now()
 
   beforeEach(() => {
@@ -61,9 +60,9 @@ describe('Test 3: Admin - Expected Signers Management', () => {
     cy.contains('Pending').should('be.visible')
 
     // Step 8: Verify stats
-    cy.contains('Expected').should('be.visible')
+    cy.contains('Expected readers').should('be.visible')
     cy.contains('3').should('be.visible') // 3 expected signers
-    cy.contains('Confirmed').parent().should('contain', '0') // 0 confirmed
+    cy.contains('Confirmed').parent().parent().should('contain', '0') // 0 confirmed
   })
 
   it('should allow admin to remove expected signer', () => {

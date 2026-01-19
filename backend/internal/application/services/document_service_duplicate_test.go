@@ -105,7 +105,7 @@ func TestFindOrCreateDocument_SameReferenceTwice(t *testing.T) {
 	reference := "doc-123"
 
 	// First call - should create document
-	doc1, isNew1, err := service.FindOrCreateDocument(ctx, reference)
+	doc1, isNew1, err := service.FindOrCreateDocument(ctx, reference, "")
 	if err != nil {
 		t.Fatalf("First FindOrCreateDocument failed: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestFindOrCreateDocument_SameReferenceTwice(t *testing.T) {
 	}
 
 	// Second call with SAME reference - should find existing document
-	doc2, isNew2, err := service.FindOrCreateDocument(ctx, reference)
+	doc2, isNew2, err := service.FindOrCreateDocument(ctx, reference, "")
 	if err != nil {
 		t.Fatalf("Second FindOrCreateDocument failed: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestFindOrCreateDocument_URLReference(t *testing.T) {
 	urlRef := "https://example.com/policy.pdf"
 
 	// First call - should create document
-	doc1, isNew1, err := service.FindOrCreateDocument(ctx, urlRef)
+	doc1, isNew1, err := service.FindOrCreateDocument(ctx, urlRef, "")
 	if err != nil {
 		t.Fatalf("First FindOrCreateDocument failed: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestFindOrCreateDocument_URLReference(t *testing.T) {
 	firstDocID := doc1.DocID
 
 	// Second call with SAME URL - should find existing document
-	doc2, isNew2, err := service.FindOrCreateDocument(ctx, urlRef)
+	doc2, isNew2, err := service.FindOrCreateDocument(ctx, urlRef, "")
 	if err != nil {
 		t.Fatalf("Second FindOrCreateDocument failed: %v", err)
 	}

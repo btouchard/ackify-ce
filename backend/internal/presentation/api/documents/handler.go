@@ -20,7 +20,7 @@ import (
 // documentService defines the interface for document operations
 type documentService interface {
 	CreateDocument(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
-	FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error)
+	FindOrCreateDocument(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error)
 	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
 	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
@@ -483,7 +483,7 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 	}
 
 	// User is authenticated, create the document
-	doc, isNew, err := h.documentService.FindOrCreateDocument(ctx, ref)
+	doc, isNew, err := h.documentService.FindOrCreateDocument(ctx, ref, user.Email)
 	if err != nil {
 		logger.Logger.Error("Failed to create document",
 			"reference", ref,
@@ -605,11 +605,9 @@ func (h *Handler) HandleListMyDocuments(w http.ResponseWriter, r *http.Request) 
 			UpdatedAt:   doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 
-		if sigs, err := h.signatureService.GetDocumentSignatures(ctx, doc.DocID); err == nil {
-			dto.SignatureCount = len(sigs)
-		}
-
+		// Get stats which correctly calculates SignedCount as expected signers who signed
 		if stats, err := h.documentService.GetExpectedSignerStats(ctx, doc.DocID); err == nil {
+			dto.SignatureCount = stats.SignedCount
 			dto.ExpectedSignerCount = stats.ExpectedCount
 		}
 

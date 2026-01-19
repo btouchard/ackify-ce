@@ -2,7 +2,6 @@
 /// <reference types="cypress" />
 
 describe('Test 9: Complete End-to-End Workflow', () => {
-  const adminEmail = 'admin@test.com'
   const alice = 'alice@test.com'
   const bob = 'bob@test.com'
   const charlie = 'charlie@test.com'
@@ -36,8 +35,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.contains(charlie).should('be.visible')
 
     // Verify stats: 0/3 signed (0%)
-    cy.contains('Confirmed').parent().should('contain', '0')
-    cy.contains('Expected').parent().should('contain', '3')
+    cy.contains('Confirmed').parent().parent().should('contain', '0')
+    cy.contains('Expected readers').parent().parent().should('contain', '3')
 
     // ===== STEP 3: Admin sends reminders → 3 emails sent =====
     cy.log('STEP 3: Admin sends reminders to all signers')
@@ -69,8 +68,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginAsAdmin()
     cy.visit(`/admin/docs/${docId}`)
 
-    cy.contains('Confirmed', { timeout: 10000 }).parent().should('contain', '1')
-    cy.contains('Pending').parent().should('contain', '2')
+    cy.contains('Confirmed', { timeout: 10000 }).parent().parent().should('contain', '1')
+    cy.contains('Pending').parent().parent().should('contain', '2')
 
     // ===== STEP 6: Bob logs in and signs =====
     cy.log('STEP 6: Bob signs the document')
@@ -87,8 +86,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginAsAdmin()
     cy.visit(`/admin/docs/${docId}`)
 
-    cy.contains('Confirmed', { timeout: 10000 }).parent().should('contain', '2')
-    cy.contains('Pending').parent().should('contain', '1')
+    cy.contains('Confirmed', { timeout: 10000 }).parent().parent().should('contain', '2')
+    cy.contains('Pending').parent().parent().should('contain', '1')
 
     // ===== STEP 8: Admin sends new reminder → 1 email (charlie only) =====
     cy.log('STEP 8: Admin sends reminder to remaining signer')
@@ -137,8 +136,8 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.loginAsAdmin()
     cy.visit(`/admin/docs/${docId}`)
 
-    cy.contains('Confirmed', { timeout: 10000 }).parent().should('contain', '3')
-    cy.contains('Expected').parent().should('contain', '3')
+    cy.contains('Confirmed', { timeout: 10000 }).parent().parent().should('contain', '3')
+    cy.contains('Expected readers').parent().parent().should('contain', '3')
 
     // All signers should show "Confirmed" status
     cy.contains('tr', alice).should('contain', 'Confirmed')
@@ -146,6 +145,6 @@ describe('Test 9: Complete End-to-End Workflow', () => {
     cy.contains('tr', charlie).should('contain', 'Confirmed')
 
     // No pending signers
-    cy.contains('Pending').parent().should('contain', '0')
+    cy.contains('Pending').parent().parent().should('contain', '0')
   })
 })

@@ -21,7 +21,6 @@ const PAUSE_LONG = 2500    // Pause for important moments
 const PAUSE_XLONG = 3500   // Extra long for key features
 
 describe('Ackify Demo Video', () => {
-  const adminEmail = 'admin@test.com'
   const alice = 'alice@demo.com'
   const bob = 'bob@demo.com'
   let docId: string

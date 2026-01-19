@@ -49,7 +49,7 @@ type signatureService interface {
 // documentService defines document operations
 type documentService interface {
 	CreateDocument(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)
-	FindOrCreateDocument(ctx context.Context, ref string) (*models.Document, bool, error)
+	FindOrCreateDocument(ctx context.Context, ref string, createdBy string) (*models.Document, bool, error)
 	FindByReference(ctx context.Context, ref string, refType string) (*models.Document, error)
 	List(ctx context.Context, limit, offset int) ([]*models.Document, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]*models.Document, error)
