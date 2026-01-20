@@ -19,248 +19,248 @@
     "mainNavigation": "Navegación principal"
   },
   "theme": {
-    "toggle": "Changer de thème"
+    "toggle": "Cambiar tema"
   },
   "language": {
-    "select": "Sélectionner la langue",
-    "fr": "Français",
-    "en": "Anglais",
-    "es": "Espagnol",
-    "de": "Allemand",
-    "it": "Italien"
+    "select": "Seleccionar idioma",
+    "fr": "Francés",
+    "en": "Inglés",
+    "es": "Español",
+    "de": "Alemán",
+    "it": "Italiano"
   },
   "auth": {
     "user": {
-      "connectedAs": "Connecté en tant que"
+      "connectedAs": "Conectado como"
     },
     "choice": {
-      "title": "Connexion à Ackify",
-      "subtitle": "Choisissez votre méthode d'authentification préférée",
-      "privacy": "Votre authentification est sécurisée et chiffrée"
+      "title": "Iniciar sesión en Ackify",
+      "subtitle": "Elige tu método de autenticación preferido",
+      "privacy": "Tu autenticación es segura y está cifrada"
     },
     "oauth": {
-      "title": "Connexion avec OAuth",
-      "description": "Utilisez votre compte entreprise",
-      "button": "Continuer avec OAuth",
-      "error": "Échec de la connexion OAuth"
+      "title": "Iniciar sesión con OAuth",
+      "description": "Usa tu cuenta corporativa",
+      "button": "Continuar con OAuth",
+      "error": "Error en el inicio de sesión OAuth"
     },
     "magiclink": {
-      "title": "Connexion par Email",
-      "description": "Nous vous enverrons un lien magique",
-      "email_label": "Adresse email",
-      "email_placeholder": "vous{'@'}exemple.com",
-      "button": "Envoyer le lien magique",
+      "title": "Iniciar sesión por Email",
+      "description": "Te enviaremos un enlace mágico",
+      "email_label": "Dirección de email",
+      "email_placeholder": "tu{'@'}ejemplo.com",
+      "button": "Enviar enlace mágico",
       "sent": {
-        "title": "Consultez vos emails",
-        "message": "Nous vous avons envoyé un lien magique. Cliquez dessus pour vous connecter.",
-        "expire": "Le lien expire dans 15 minutes."
+        "title": "Revisa tu email",
+        "message": "Te hemos enviado un enlace mágico. Haz clic en él para iniciar sesión.",
+        "expire": "El enlace expira en 15 minutos."
       },
-      "error_invalid_email": "Veuillez entrer une adresse email valide",
-      "error_send": "Échec de l'envoi du lien magique"
+      "error_invalid_email": "Por favor, introduce una dirección de email válida",
+      "error_send": "Error al enviar el enlace mágico"
     },
     "error": {
-      "no_method_available": "Aucune méthode d'authentification n'est configurée. Veuillez contacter l'administrateur."
+      "no_method_available": "No hay ningún método de autenticación configurado. Por favor, contacta al administrador."
     }
   },
   "home": {
     "hero": {
-      "title": "Confirmation de Lecture",
-      "subtitle": "Certifiez cryptographiquement que vos documents ont été lus et compris",
-      "createError": "Impossible de créer le document",
+      "title": "Confirmación de Lectura",
+      "subtitle": "Certifica criptográficamente que tus documentos han sido leídos y comprendidos",
+      "createError": "No se pudo crear el documento",
       "restricted": {
-        "title": "Création restreinte",
-        "description": "La création de documents est réservée aux administrateurs. Contactez votre administrateur pour obtenir un lien de document."
+        "title": "Creación restringida",
+        "description": "La creación de documentos está restringida a los administradores. Contacta a tu administrador para obtener un enlace al documento."
       },
       "form": {
-        "label": "URL du document",
-        "placeholder": "URL, chemin ou référence du document",
-        "hint": "Accepte les URLs, chemins de fichiers ou identifiants simples",
-        "submit": "Créer",
-        "submitLogin": "Se connecter"
+        "label": "URL del documento",
+        "placeholder": "URL, ruta o referencia del documento",
+        "hint": "Acepta URLs, rutas de archivos o identificadores simples",
+        "submit": "Crear",
+        "submitLogin": "Iniciar sesión"
       }
     },
     "howItWorks": {
-      "title": "Comment ça fonctionne ?",
-      "subtitle": "Ackify vous permet de prouver cryptographiquement que vos documents ont été lus",
+      "title": "¿Cómo funciona?",
+      "subtitle": "Ackify te permite probar criptográficamente que tus documentos han sido leídos",
       "step1": {
-        "title": "1. Accédez au document",
-        "description": "Entrez l'URL ou la référence du document à confirmer"
+        "title": "1. Accede al documento",
+        "description": "Introduce la URL o referencia del documento a confirmar"
       },
       "step2": {
-        "title": "2. Lisez le contenu",
-        "description": "Consultez le document dans le lecteur intégré ou via le lien externe"
+        "title": "2. Lee el contenido",
+        "description": "Consulta el documento en el visor integrado o a través del enlace externo"
       },
       "step3": {
-        "title": "3. Confirmez",
-        "description": "Votre confirmation est enregistrée avec une signature cryptographique Ed25519"
+        "title": "3. Confirma",
+        "description": "Tu confirmación se registra con una firma criptográfica Ed25519"
       }
     },
     "features": {
       "crypto": {
-        "title": "Sécurité cryptographique",
-        "description": "Signatures Ed25519 non répudiables garantissant l'authenticité"
+        "title": "Seguridad criptográfica",
+        "description": "Firmas Ed25519 irrefutables que garantizan la autenticidad"
       },
       "instant": {
-        "title": "Instantané",
-        "description": "Confirmation en deux clics avec vérification cryptographique immédiate"
+        "title": "Instantáneo",
+        "description": "Confirmación en dos clics con verificación criptográfica inmediata"
       },
       "timestamp": {
-        "title": "Horodatage précis",
-        "description": "Chaque confirmation est horodatée et chaînée pour garantir l'intégrité"
+        "title": "Marca de tiempo precisa",
+        "description": "Cada confirmación tiene marca de tiempo y está encadenada para garantizar la integridad"
       }
     },
     "saas": {
-      "badge": "Bientôt disponible",
-      "title": "Besoin de plus ?",
-      "description": "Gestion d'équipes, API avancée, tableaux de bord, intégrations et support dédié pour les entreprises.",
-      "button": "Découvrir Ackify Pro",
-      "note": "Disponible prochainement"
+      "badge": "Próximamente",
+      "title": "¿Necesitas más?",
+      "description": "Gestión de equipos, API avanzada, dashboards, integraciones y soporte dedicado para empresas.",
+      "button": "Descubre Ackify Pro",
+      "note": "Disponible próximamente"
     }
   },
   "sign": {
-    "title": "Confirmation de Lecture",
-    "subtitle": "Certifiez votre lecture avec une confirmation cryptographique Ed25519",
+    "title": "Confirmación de Lectura",
+    "subtitle": "Certifica tu lectura con una confirmación segura e irrefutable",
     "loading": {
-      "title": "Chargement du document...",
-      "description": "Veuillez patienter pendant que nous préparons le document pour la signature."
+      "title": "Cargando documento...",
+      "description": "Por favor, espera mientras preparamos el documento."
     },
     "external": {
       "title": "Documento externo",
-      "description": "Por favor, lea el documento antes de confirmar su lectura.",
-      "descriptionWithUrl": "Este documento no es accesible directamente. Ábralo a través del enlace de abajo, léalo y luego regrese para confirmar su lectura.",
+      "description": "Por favor, lee el documento antes de confirmar tu lectura.",
+      "descriptionWithUrl": "Este documento no es accesible directamente. Ábrelo a través del enlace de abajo, léelo y luego regresa para confirmar tu lectura.",
       "documentUrl": "URL del documento",
       "openDocument": "Abrir documento",
       "noUrl": "No hay URL disponible para este documento"
     },
     "alreadySigned": {
-      "title": "Lecture déjà confirmée",
-      "signedBy": "Confirmé par",
+      "title": "Lectura ya confirmada",
+      "signedBy": "Confirmado por",
       "email": "Email",
-      "signatureType": "Type de confirmation",
-      "ed25519": "Ed25519 cryptographique",
-      "downloadProof": "Télécharger la preuve"
+      "signatureType": "Tipo de confirmación",
+      "ed25519": "Ed25519 criptográfico",
+      "downloadProof": "Descargar prueba"
     },
     "confirm": {
-      "title": "Confirmer votre lecture",
-      "readRequired": "Veuillez lire l'intégralité du document avant de confirmer.",
-      "certify": "Je certifie avoir lu et compris le contenu de ce document"
+      "title": "Confirma tu lectura",
+      "readRequired": "Por favor, lee todo el documento antes de confirmar.",
+      "certify": "Certifico haber leído y comprendido el contenido de este documento"
     },
     "noDocument": {
       "title": "Ningún documento especificado",
-      "description": "Para firmar un documento, añada el parámetro {code} a la URL",
+      "description": "Para confirmar la lectura de un documento, añade el parámetro {code} a la URL",
       "examples": "Ejemplos:",
-      "orEnterReference": "O introduzca su referencia de documento a continuación"
+      "orEnterReference": "O introduce tu referencia de documento abajo"
     },
     "success": {
-      "title": "Lecture confirmée avec succès !",
-      "description": "Votre confirmation a été enregistrée de manière cryptographique et sécurisée."
+      "title": "¡Lectura confirmada con éxito!",
+      "description": "Tu confirmación ha sido registrada de manera criptográfica y segura."
     },
     "error": {
-      "title": "Une erreur est survenue",
-      "authRequired": "Vous devez être connecté pour créer un document.",
-      "loadFailed": "Échec du chargement du document",
-      "loginButton": "Se connecter"
+      "title": "Se ha producido un error",
+      "authRequired": "Debes estar conectado para crear un documento.",
+      "loadFailed": "Error al cargar el documento",
+      "loginButton": "Iniciar sesión"
     },
     "documentCreation": {
-      "restrictedToAdmins": "Seuls les administrateurs peuvent créer des documents."
+      "restrictedToAdmins": "Solo los administradores pueden crear documentos."
     },
     "document": {
-      "title": "Document à confirmer",
+      "title": "Documento a confirmar",
       "id": "ID"
     },
     "info": {
-      "description": "En confirmant la lecture de ce document, vous certifiez avoir pris connaissance de son contenu et acceptez de le valider de manière cryptographique et non répudiable.",
-      "recorded": "Votre confirmation sera enregistrée avec les informations suivantes :",
-      "email": "Votre adresse email",
-      "timestamp": "Horodatage précis de la confirmation",
-      "signature": "Confirmation cryptographique Ed25519",
-      "hash": "Hash SHA-256 du contenu"
+      "description": "Al confirmar la lectura de este documento, certificas haber tomado conocimiento de su contenido y aceptas validarlo de manera criptográfica e irrefutable.",
+      "recorded": "Tu confirmación se registrará con la siguiente información:",
+      "email": "Tu dirección de email",
+      "timestamp": "Marca de tiempo precisa de la confirmación",
+      "signature": "Huella criptográfica segura",
+      "hash": "Hash SHA-256 del contenido"
     },
     "confirmations": {
-      "title": "Confirmations existantes",
-      "count": "{count} confirmation | {count} confirmations",
-      "recorded": "enregistrée | enregistrées"
+      "title": "Confirmaciones existentes",
+      "count": "{count} confirmación | {count} confirmaciones",
+      "recorded": "registrada | registradas"
     },
     "empty": {
-      "title": "Aucune confirmation pour le moment",
-      "description": "Soyez le premier à confirmer votre lecture de ce document"
+      "title": "Sin confirmaciones por el momento",
+      "description": "Sé el primero en confirmar la lectura de este documento"
     },
     "howItWorks": {
-      "title": "Comment ça fonctionne ?",
-      "subtitle": "Ackify vous permet de prouver cryptographiquement que vous avez lu un document",
+      "title": "¿Cómo funciona?",
+      "subtitle": "Ackify te permite atestiguar oficialmente que has leído un documento",
       "step1": {
-        "title": "1. Accédez au document",
-        "description": "Ajoutez {code} à l'adresse de cette page"
+        "title": "1. Accede al documento",
+        "description": "Añade {code} a la dirección de esta página"
       },
       "step2": {
-        "title": "2. Authentifiez-vous",
-        "description": "Connectez-vous via OAuth2 pour confirmer votre identité"
+        "title": "2. Autentícate",
+        "description": "Inicia sesión a través de OAuth2 para confirmar tu identidad"
       },
       "step3": {
-        "title": "3. Confirmez la lecture",
-        "description": "Votre confirmation est enregistrée avec une signature Ed25519"
+        "title": "3. Confirma la lectura",
+        "description": "Tu confirmación se registra de manera segura y verificable"
       },
       "features": {
         "crypto": {
-          "title": "Sécurité cryptographique",
-          "description": "Signatures Ed25519 non répudiables garantissant l'authenticité"
+          "title": "Seguridad criptográfica",
+          "description": "Confirmaciones irrefutables que garantizan la autenticidad"
         },
         "instant": {
-          "title": "Instantané",
-          "description": "Confirmation en deux clics avec vérification cryptographique immédiate"
+          "title": "Instantáneo",
+          "description": "Confirmación en dos clics con verificación criptográfica inmediata"
         },
         "timestamp": {
-          "title": "Horodatage précis",
-          "description": "Chaque confirmation est horodatée et chaînée pour garantir l'intégrité"
+          "title": "Marca de tiempo precisa",
+          "description": "Cada confirmación tiene marca de tiempo y está encadenada para garantizar la integridad"
         }
       }
     }
   },
   "signButton": {
-    "confirm": "Confirmer ma lecture",
-    "confirmAction": "Confirmer la lecture",
-    "alreadySigned": "Déjà confirmé",
-    "confirmed": "Lecture confirmée",
-    "mustLogin": "Se connecter pour confirmer",
-    "signing": "Confirmation en cours...",
-    "verified": "Vérifié",
-    "on": "Le",
+    "confirm": "Confirmar mi lectura",
+    "confirmAction": "Confirmar lectura",
+    "alreadySigned": "Ya confirmado",
+    "confirmed": "Lectura confirmada",
+    "mustLogin": "Iniciar sesión para confirmar",
+    "signing": "Confirmación en curso...",
+    "verified": "Verificado",
+    "on": "El",
     "error": {
-      "title": "Échec de la confirmation",
-      "notAuthenticated": "Vous devez être connecté pour confirmer un document.",
-      "alreadySigned": "Vous avez déjà confirmé ce document.",
-      "generic": "Une erreur est survenue lors de la confirmation. Veuillez réessayer.",
-      "missingDocId": "Document ID manquant",
-      "authFailed": "Impossible de démarrer l'authentification"
+      "title": "Confirmación fallida",
+      "notAuthenticated": "Debes estar conectado para confirmar un documento.",
+      "alreadySigned": "Ya has confirmado este documento.",
+      "generic": "Se ha producido un error durante la confirmación. Por favor, inténtalo de nuevo.",
+      "missingDocId": "ID de documento faltante",
+      "authFailed": "No se pudo iniciar la autenticación"
     }
   },
   "signatureList": {
-    "loading": "Chargement des confirmations...",
+    "loading": "Cargando confirmaciones...",
     "email": "Email",
-    "date": "Date",
-    "signature": "Signature",
-    "confirmation": "Confirmation:",
+    "date": "Fecha",
+    "signature": "Firma",
+    "confirmation": "Confirmación:",
     "hash": "Hash",
     "nonce": "Nonce",
-    "verificationStatus": "Statut de vérification",
-    "verified": "Vérifié",
-    "confirmed": "Confirmé",
-    "notVerified": "Non vérifié",
-    "showDetails": "Afficher les détails",
-    "hideDetails": "Masquer les détails",
-    "viewDetails": "Voir détails",
-    "verificationDetails": "Détails de vérification",
-    "copy": "Copier",
-    "copied": "Copié !",
-    "previousHash": "Hash précédent:",
-    "empty": "Aucune confirmation trouvée",
-    "documentDeleted": "Document supprimé",
+    "verificationStatus": "Estado de verificación",
+    "verified": "Verificado",
+    "confirmed": "Confirmado",
+    "notVerified": "No verificado",
+    "showDetails": "Mostrar detalles",
+    "hideDetails": "Ocultar detalles",
+    "viewDetails": "Ver detalles",
+    "verificationDetails": "Detalles de verificación",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "previousHash": "Hash anterior:",
+    "empty": "No se encontraron confirmaciones",
+    "documentDeleted": "Documento eliminado",
     "fields": {
       "id": "ID:",
-      "document": "Document:",
-      "reader": "Lecteur:",
-      "date": "Date:",
-      "source": "Origine:",
+      "document": "Documento:",
+      "reader": "Lector:",
+      "date": "Fecha:",
+      "source": "Origen:",
       "nonce": "Nonce:",
       "hash": "Hash:"
     }
@@ -268,18 +268,18 @@
   "signatures": {
     "title": "Mis confirmaciones de lectura",
     "subtitle": "Lista de todos los documentos cuya lectura has confirmado criptográficamente",
-    "loading": "Chargement de vos confirmations...",
+    "loading": "Cargando tus confirmaciones...",
     "empty": {
-      "title": "Aucune confirmation pour le moment",
-      "description": "Vous n'avez pas encore confirmé de document. Commencez par confirmer un document pour le voir apparaître ici.",
-      "alternative": "Vous n'avez pas encore confirmé la lecture de documents"
+      "title": "Sin confirmaciones por el momento",
+      "description": "Aún no has confirmado ningún documento. Empieza confirmando un documento para verlo aparecer aquí.",
+      "alternative": "Aún no has confirmado la lectura de documentos"
     },
-    "count": "{count} confirmation | {count} confirmations",
-    "results": "{count} résultat | {count} résultats",
+    "count": "{count} confirmación | {count} confirmaciones",
+    "results": "{count} resultado | {count} resultados",
     "document": "Documento",
     "signedAt": "Confirmado el",
-    "viewDetails": "Voir les détails",
-    "deletedDocuments": "Documents supprimés",
+    "viewDetails": "Ver detalles",
+    "deletedDocuments": "Documentos eliminados",
     "stats": {
       "total": "Total",
       "totalConfirmations": "Total confirmaciones",
@@ -292,24 +292,24 @@
     "allConfirmations": "Todas mis confirmaciones",
     "about": {
       "title": "Acerca de las confirmaciones",
-      "description": "Cada confirmación se registra criptográficamente con Ed25519 y se encadena para garantizar la integridad. Las confirmaciones son irrefutables y tienen una marca de tiempo precisa."
+      "description": "Cada confirmación se registra criptográficamente y se encadena para garantizar la integridad. Las confirmaciones son irrefutables y tienen una marca de tiempo precisa."
     },
     "search": "Buscar...",
     "error": {
-      "title": "Erreur de chargement des confirmations",
-      "description": "Impossible de charger vos confirmations. Veuillez réessayer."
+      "title": "Error al cargar las confirmaciones",
+      "description": "No se pudieron cargar tus confirmaciones. Por favor, inténtalo de nuevo."
     }
   },
   "admin": {
-    "title": "Administration",
+    "title": "Administración",
     "subtitle": "Gestionar documentos y lectores esperados",
     "loading": "Cargando datos...",
     "dashboard": {
-      "title": "Tableau de bord",
-      "totalDocuments": "Documents totaux",
-      "totalSignatures": "Confirmations totales",
-      "recentActivity": "Activité récente",
-      "backToDashboard": "Retour au tableau de bord",
+      "title": "Panel de control",
+      "totalDocuments": "Documentos totales",
+      "totalSignatures": "Confirmaciones totales",
+      "recentActivity": "Actividad reciente",
+      "backToDashboard": "Volver al panel",
       "stats": {
         "documents": "Documentos",
         "readers": "Lectores",
@@ -328,34 +328,34 @@
       "searchPlaceholder": "Buscar por ID, título o URL...",
       "id": "ID del documento",
       "idLabel": "Documento",
-      "idHelper": "Accepte les URLs, les chemins de fichiers ou les identifiants simples",
-      "idHelperShort": "Accepte les URLs, chemins ou identifiants",
-      "idPlaceholder": "URL, PATH ou ID du document",
-      "signatures": "Confirmations",
-      "created": "Créé",
+      "idHelper": "Acepta URLs, rutas de archivos o identificadores simples",
+      "idHelperShort": "Acepta URLs, rutas o identificadores",
+      "idPlaceholder": "URL, ruta o ID del documento",
+      "signatures": "Confirmaciones",
+      "created": "Creado",
       "createdOn": "Creado el",
       "by": "Por",
       "url": "URL",
       "document": "Documento",
-      "actions": "Actions",
-      "view": "Voir",
+      "actions": "Acciones",
+      "view": "Ver",
       "manage": "Gestionar",
-      "edit": "Modifier",
-      "delete": "Supprimer",
-      "empty": "Aucun document trouvé",
-      "noResults": "Aucun résultat",
-      "noDocuments": "Aucun document",
-      "tryAnotherSearch": "Essayez une autre recherche",
-      "willAppear": "Les documents apparaîtront ici une fois créés",
-      "totalCount": "{count} document au total | {count} documents au total",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "empty": "No se encontraron documentos",
+      "noResults": "Sin resultados",
+      "noDocuments": "Sin documentos",
+      "tryAnotherSearch": "Prueba otra búsqueda",
+      "willAppear": "Los documentos aparecerán aquí una vez creados",
+      "totalCount": "{count} documento en total | {count} documentos en total",
       "pagination": {
-        "page": "Page {current}/{total}",
-        "pageOf": "Page {current} sur {total}"
+        "page": "Página {current}/{total}",
+        "pageOf": "Página {current} de {total}"
       }
     },
     "settings": {
       "title": "Configuración",
-      "subtitle": "Configure su instancia de Ackify",
+      "subtitle": "Configura tu instancia de Ackify",
       "manage": "Configuración",
       "loading": "Cargando configuración...",
       "lastUpdated": "Última actualización: {date}",
@@ -374,7 +374,7 @@
       },
       "general": {
         "title": "Configuración general",
-        "description": "Configuración básica de su instancia Ackify",
+        "description": "Configuración básica de tu instancia Ackify",
         "organisation": "Nombre de la organización",
         "organisationPlaceholder": "Mi Empresa",
         "organisationHelper": "Se muestra en emails e interfaz",
@@ -394,9 +394,9 @@
           "custom": "Personalizado"
         },
         "clientId": "Client ID",
-        "clientIdPlaceholder": "Ingrese su client ID",
+        "clientIdPlaceholder": "Ingresa tu client ID",
         "clientSecret": "Client Secret",
-        "clientSecretPlaceholder": "Ingrese su client secret",
+        "clientSecretPlaceholder": "Ingresa tu client secret",
         "clientSecretHelper": "Dejar vacío para mantener el valor existente",
         "authUrl": "URL de autorización",
         "authUrlPlaceholder": "https://provider.com/oauth/authorize",
@@ -432,7 +432,7 @@
         "username": "Usuario",
         "usernamePlaceholder": "user@ejemplo.com",
         "password": "Contraseña",
-        "passwordPlaceholder": "Ingrese contraseña",
+        "passwordPlaceholder": "Ingresa contraseña",
         "passwordHelper": "Dejar vacío para mantener el valor existente",
         "tls": "Usar TLS",
         "tlsHelper": "Usar conexión TLS implícita",
@@ -471,7 +471,7 @@
         "s3AccessKey": "Clave de acceso",
         "s3AccessKeyPlaceholder": "AKIAIOSFODNN7EXAMPLE",
         "s3SecretKey": "Clave secreta",
-        "s3SecretKeyPlaceholder": "Ingrese clave secreta",
+        "s3SecretKeyPlaceholder": "Ingresa clave secreta",
         "s3SecretKeyHelper": "Dejar vacío para mantener el valor existente",
         "s3Region": "Región",
         "s3RegionPlaceholder": "us-east-1",
@@ -501,56 +501,56 @@
     },
     "webhooks": {
       "title": "Webhooks",
-      "subtitle": "Configurer les notifications vers des applications tierces",
-      "manage": "Gérer les webhooks",
-      "new": "Nouveau webhook",
-      "edit": "Éditer",
-      "delete": "Supprimer",
-      "enable": "Activer",
-      "disable": "Désactiver",
+      "subtitle": "Configurar notificaciones a aplicaciones de terceros",
+      "manage": "Gestionar webhooks",
+      "new": "Nuevo webhook",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "enable": "Activar",
+      "disable": "Desactivar",
       "status": {
-        "enabled": "Actif",
-        "disabled": "Inactif"
+        "enabled": "Activo",
+        "disabled": "Inactivo"
       },
-      "confirmDelete": "Supprimer ce webhook ?",
-      "empty": "Aucun webhook",
-      "listTitle": "Liste des webhooks",
-      "listSubtitle": "Un webhook peut écouter plusieurs événements",
+      "confirmDelete": "¿Eliminar este webhook?",
+      "empty": "Sin webhooks",
+      "listTitle": "Lista de webhooks",
+      "listSubtitle": "Un webhook puede escuchar múltiples eventos",
       "columns": {
         "title": "Nombre",
         "url": "URL",
-        "events": "Événements",
+        "events": "Eventos",
         "status": "Estado",
-        "actions": "Actions"
+        "actions": "Acciones"
       },
       "form": {
-        "title": "Paramètres du webhook",
-        "subtitle": "Renseignez l'URL, le secret et les événements",
-        "nameLabel": "Nom du webhook",
+        "title": "Configuración del webhook",
+        "subtitle": "Ingresa URL, secreto y eventos",
+        "nameLabel": "Nombre del webhook",
         "namePlaceholder": "Webhook CRM",
-        "urlLabel": "URL de destination",
-        "secretLabel": "Secret HMAC",
-        "secretPlaceholder": "Saisissez un secret (requis)",
-        "secretKeep": "Laisser vide pour conserver",
-        "eventsLabel": "Événements à écouter",
-        "descriptionLabel": "Description (optionnel)",
-        "descriptionPlaceholder": "Note interne…",
-        "validation": "Veuillez compléter le nom, l'URL, le secret et au moins un événement."
+        "urlLabel": "URL de destino",
+        "secretLabel": "Secreto HMAC",
+        "secretPlaceholder": "Ingresa un secreto (requerido)",
+        "secretKeep": "Dejar vacío para mantener",
+        "eventsLabel": "Eventos a escuchar",
+        "descriptionLabel": "Descripción (opcional)",
+        "descriptionPlaceholder": "Nota interna…",
+        "validation": "Por favor, completa nombre, URL, secreto y al menos un evento."
       },
-      "editTitle": "Éditer le webhook",
+      "editTitle": "Editar webhook",
       "events": {
-        "documentCreated": "Document créé",
-        "signatureCreated": "Signature créée",
-        "documentCompleted": "Document complété",
-        "reminderSent": "Rappel envoyé",
-        "reminderFailed": "Rappel échoué"
+        "documentCreated": "Documento creado",
+        "signatureCreated": "Firma creada",
+        "documentCompleted": "Documento completado",
+        "reminderSent": "Recordatorio enviado",
+        "reminderFailed": "Recordatorio fallido"
       },
       "eventsMap": {
-        "document.created": "Document créé",
-        "signature.created": "Signature créée",
-        "document.completed": "Document complété",
-        "reminder.sent": "Rappel envoyé",
-        "reminder.failed": "Rappel échoué"
+        "document.created": "Documento creado",
+        "signature.created": "Firma creada",
+        "document.completed": "Documento completado",
+        "reminder.sent": "Recordatorio enviado",
+        "reminder.failed": "Recordatorio fallido"
       }
     },
     "documentDetail": {
@@ -559,26 +559,26 @@
       "metadata": "📄 Información del documento",
       "metadataDescription": "Metadatos y checksum del documento",
       "checksum": "Checksum",
-      "algorithm": "Algorithme",
+      "algorithm": "Algoritmo",
       "titleLabel": "Título",
       "titlePlaceholder": "Política de seguridad 2025",
       "urlLabel": "URL",
       "urlPlaceholder": "https://example.com/doc.pdf",
       "checksumLabel": "Checksum",
       "checksumPlaceholder": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "algorithmLabel": "Algorithme",
+      "algorithmLabel": "Algoritmo",
       "descriptionLabel": "Descripción",
       "descriptionPlaceholder": "Descripción del documento...",
-      "signatures": "Confirmations",
-      "back": "Retour",
+      "signatures": "Confirmaciones",
+      "back": "Volver",
       "expectedSigners": "Firmantes esperados",
       "addExpectedSigner": "Añadir firmante esperado",
       "addSigners": "Añadir lectores esperados",
-      "addButton": "Ajouter",
-      "adding": "Ajout...",
+      "addButton": "Añadir",
+      "adding": "Añadiendo...",
       "emailsLabel": "Emails (uno por línea)",
-      "emailsPlaceholder": "Marie Dupont <marie.dupont{'@'}example.com>\njean.martin{'@'}example.com\nSophie Bernard <sophie{'@'}example.com>",
-      "emailsHelper": "Formats acceptés : \"Nom Prénom <email{'@'}example.com>\" ou \"email{'@'}example.com\"",
+      "emailsPlaceholder": "María García <maria.garcia{'@'}example.com>\njuan.perez{'@'}example.com\nAna López <ana{'@'}example.com>",
+      "emailsHelper": "Formatos aceptados: \"Nombre Apellido <email{'@'}example.com>\" o \"email{'@'}example.com\"",
       "emailLabel": "Email *",
       "emailPlaceholder": "email{'@'}example.com",
       "nameLabel": "Nombre",
@@ -593,167 +593,167 @@
       "noExpectedSigners": "Ningún lector esperado",
       "noSignatures": "Ninguna confirmación",
       "reminders": "Recordatorios por email",
-      "remindersDescription": "Envoyer des rappels aux lecteurs en attente de confirmation",
+      "remindersDescription": "Enviar recordatorios a los lectores pendientes de confirmación",
       "remindersSent": "Recordatorios enviados",
       "toRemind": "Para recordar",
       "lastReminder": "Último recordatorio",
       "sendReminder": "Enviar recordatorio",
-      "sending": "Envoi...",
-      "sendReminders": "Envoyer les relances",
-      "sendToAll": "Envoyer à tous les lecteurs en attente ({count})",
-      "sendToSelected": "Envoyer uniquement aux sélectionnés ({count})",
-      "allContacted": "Todos los lectores esperados han sido contactados o confirmados",
+      "sending": "Enviando...",
+      "sendReminders": "Enviar recordatorios",
+      "sendToAll": "Enviar a todos los lectores pendientes ({count})",
+      "sendToSelected": "Enviar solo a los seleccionados ({count})",
+      "allContacted": "Todos los lectores esperados han sido contactados o han confirmado",
       "emailServiceDisabled": "El servicio de email está desactivado. El historial de recordatorios permanece visible, pero el envío de nuevos recordatorios no está disponible.",
       "unexpectedSignatures": "Confirmaciones de lectura adicionales",
-      "unexpectedDescription": "Utilisateurs ayant confirmé mais non présents dans la liste des lecteurs attendus",
-      "createdBy": "Créé par {by} le {date}",
-      "saving": "Enregistrement...",
-      "deleting": "Suppression...",
-      "copiedToClipboard": "Copié dans le presse-papiers",
-      "metadataSaved": "Métadonnées enregistrées avec succès",
-      "signersAdded": "{count} lecteur(s) ajouté(s) avec succès",
-      "signerRemoved": "{email} retiré avec succès",
-      "remindersSentSuccess": "{count} relance(s) envoyée(s) avec succès",
-      "remindersSentPartial": "{sent} relance(s) envoyée(s), {failed} échec(s)",
-      "remindersSentGeneric": "Relances envoyées avec succès",
-      "confirmSendReminders": "Envoyer des relances à {count} lecteur(s) en attente de confirmation ?",
-      "confirmSendRemindersSelected": "Envoyer des relances à {count} lecteur(s) sélectionné(s) ?",
+      "unexpectedDescription": "Usuarios que han confirmado pero no están en la lista de lectores esperados",
+      "createdBy": "Creado por {by} el {date}",
+      "saving": "Guardando...",
+      "deleting": "Eliminando...",
+      "copiedToClipboard": "Copiado al portapapeles",
+      "metadataSaved": "Metadatos guardados correctamente",
+      "signersAdded": "{count} lector(es) añadido(s) correctamente",
+      "signerRemoved": "{email} eliminado correctamente",
+      "remindersSentSuccess": "{count} recordatorio(s) enviado(s) correctamente",
+      "remindersSentPartial": "{sent} recordatorio(s) enviado(s), {failed} fallido(s)",
+      "remindersSentGeneric": "Recordatorios enviados correctamente",
+      "confirmSendReminders": "¿Enviar recordatorios a {count} lector(es) pendiente(s) de confirmación?",
+      "confirmSendRemindersSelected": "¿Enviar recordatorios a {count} lector(es) seleccionado(s)?",
       "confirmSendRemindersTitle": "Enviar recordatorios",
       "removeSignerTitle": "Eliminar lector esperado",
-      "removeSignerMessage": "Retirer {email} de la liste des lecteurs attendus ?",
+      "removeSignerMessage": "¿Eliminar {email} de la lista de lectores esperados?",
       "metadataWarning": {
         "title": "Atención: Invalidación de firmas",
-        "description": "Vous êtes sur le point de modifier des informations critiques du document (URL, checksum, algorithme ou description).",
-        "warning": "Cette modification entraînera l'invalidation de toutes les signatures existantes, car elles sont liées cryptographiquement au contenu actuel du document.",
-        "currentSignatures": "Signatures actuelles qui seront invalidées :",
-        "confirm": "Je comprends, continuer",
-        "cancel": "Annuler"
+        "description": "Estás a punto de modificar información crítica del documento (URL, checksum, algoritmo o descripción).",
+        "warning": "Esta modificación invalidará todas las firmas existentes, ya que están vinculadas criptográficamente al contenido actual del documento.",
+        "currentSignatures": "Firmas actuales que serán invalidadas:",
+        "confirm": "Entiendo, continuar",
+        "cancel": "Cancelar"
       },
       "dangerZone": "Zona de peligro",
       "dangerZoneDescription": "Acciones irreversibles sobre este documento",
       "deleteDocument": "Eliminar este documento",
-      "deleteDocumentDescription": "Cette action supprimera définitivement le document, ses métadonnées, les lecteurs attendus et toutes les confirmations associées.\nCette action est irréversible.",
+      "deleteDocumentDescription": "Esta acción eliminará definitivamente el documento, sus metadatos, los lectores esperados y todas las confirmaciones asociadas.\nEsta acción es irreversible.",
       "deleteWarning": "¡Esta acción es irreversible!",
-      "deleteWillRemove": "La suppression de ce document entraînera la perte définitive de :",
+      "deleteWillRemove": "La eliminación de este documento conllevará la pérdida definitiva de:",
       "deleteItem1": "Todos los metadatos del documento",
       "deleteItem2": "La lista de lectores esperados",
       "deleteItem3": "Todas las confirmaciones criptográficas",
       "deleteItem4": "El historial de recordatorios",
       "deleteConfirmTitle": "Confirmar eliminación",
-      "deleteConfirmButton": "Supprimer définitivement",
-      "documentId": "Document ID:",
-      "importCSV": "Import CSV",
-      "importCSVTitle": "Importer des lecteurs depuis un fichier CSV",
-      "selectFile": "Sélectionner un fichier CSV",
-      "csvFormatHelp": "Format accepté : colonnes 'email' et 'name' (ordre libre), séparateur virgule ou point-virgule",
-      "analyze": "Analyser",
-      "analyzing": "Analyse...",
-      "validEntries": "Valides",
-      "existingEntries": "Déjà présents",
-      "invalidEntries": "Invalides",
-      "lineNumber": "Ligne",
+      "deleteConfirmButton": "Eliminar definitivamente",
+      "documentId": "ID del Documento:",
+      "importCSV": "Importar CSV",
+      "importCSVTitle": "Importar lectores desde un archivo CSV",
+      "selectFile": "Seleccionar un archivo CSV",
+      "csvFormatHelp": "Formato aceptado: columnas 'email' y 'name' (orden libre), separador coma o punto y coma",
+      "analyze": "Analizar",
+      "analyzing": "Analizando...",
+      "validEntries": "Válidos",
+      "existingEntries": "Ya presentes",
+      "invalidEntries": "Inválidos",
+      "lineNumber": "Línea",
       "email": "Email",
       "name": "Nombre",
-      "statusValid": "Valide",
-      "statusExists": "Existant",
-      "parseErrors": "Erreurs de parsing",
-      "content": "Contenu",
-      "errorReason": "Erreur",
-      "backToFileSelection": "Retour",
-      "importing": "Import...",
-      "importButton": "Importer {count} lecteur(s)",
-      "csvImportSuccess": "{imported} lecteur(s) importé(s), {skipped} ignoré(s)",
-      "filterPlaceholder": "Filtrer par nom ou email...",
+      "statusValid": "Válido",
+      "statusExists": "Existente",
+      "parseErrors": "Errores de parsing",
+      "content": "Contenido",
+      "errorReason": "Error",
+      "backToFileSelection": "Volver",
+      "importing": "Importando...",
+      "importButton": "Importar {count} lector(es)",
+      "csvImportSuccess": "{imported} lector(es) importado(s), {skipped} omitido(s)",
+      "filterPlaceholder": "Filtrar por nombre o email...",
       "csvError": {
-        "email_required": "Email requis",
-        "invalid_email_format": "Format email invalide",
-        "max_signers_exceeded": "Limite dépassée"
+        "email_required": "Email requerido",
+        "invalid_email_format": "Formato de email inválido",
+        "max_signers_exceeded": "Límite superado"
       }
     },
     "documentForm": {
-      "title": "Référence du document",
-      "label": "Référence (URL, chemin ou ID)",
-      "placeholder": "URL, PATH ou RÉFÉRENCE du document à lire (optionnel)",
-      "submit": "Commencer",
-      "submitting": "Chargement...",
-      "creating": "Création en cours..."
+      "title": "Referencia del documento",
+      "label": "Referencia (URL, ruta o ID)",
+      "placeholder": "URL, ruta o referencia del documento a leer (opcional)",
+      "submit": "Comenzar",
+      "submitting": "Cargando...",
+      "creating": "Creando..."
     }
   },
   "embed": {
-    "loading": "Chargement des informations de signature...",
-    "title": "Signature pour",
-    "document": "Document:",
-    "signedBy": "Signé par",
-    "on": "le",
-    "verified": "Vérifié",
-    "viewAll": "Voir toutes les confirmations",
-    "error": "Impossible de charger les informations de signature",
-    "sign": "Signer",
-    "signDocument": "Signer ce document",
-    "noSignatures": "Aucune signature pour ce document",
-    "confirmationsCount": "{count} confirmation(s)",
+    "loading": "Cargando información de confirmación...",
+    "title": "Confirmación para",
+    "document": "Documento:",
+    "signedBy": "Confirmado por",
+    "on": "el",
+    "verified": "Verificado",
+    "viewAll": "Ver todas las confirmaciones",
+    "error": "No se pudo cargar la información de confirmación",
+    "sign": "Confirmar",
+    "signDocument": "Confirmar este documento",
+    "noSignatures": "Sin confirmaciones para este documento",
+    "confirmationsCount": "{count} confirmación(es)",
     "poweredBy": "Powered by Ackify",
-    "missingDocId": "ID de document manquant"
+    "missingDocId": "ID de documento faltante"
   },
   "notFound": {
-    "title": "Page non trouvée",
-    "description": "La page que vous recherchez n'existe pas ou a été déplacée.",
-    "home": "Retour à l'accueil"
+    "title": "Página no encontrada",
+    "description": "La página que buscas no existe o ha sido movida.",
+    "home": "Volver al inicio"
   },
   "footer": {
-    "description": "Solution open-source de confirmation cryptographique de lecture de documents avec signatures Ed25519 non répudiables.",
+    "description": "Solución open-source para confirmación criptográfica de lectura de documentos con atestaciones irrefutables.",
     "navigation": {
-      "title": "Navigation"
+      "title": "Navegación"
     },
     "resources": {
-      "title": "Ressources",
-      "documentation": "Documentation",
-      "apiReference": "Référence API",
-      "support": "Support"
+      "title": "Recursos",
+      "documentation": "Documentación",
+      "apiReference": "Referencia API",
+      "support": "Soporte"
     },
     "legal": {
-      "title": "Légal",
-      "terms": "Conditions d'utilisation",
-      "privacy": "Politique de confidentialité",
-      "contact": "Contact"
+      "title": "Legal",
+      "terms": "Términos de uso",
+      "privacy": "Política de privacidad",
+      "contact": "Contacto"
     },
-    "copyright": "Tous droits réservés.",
-    "license": "Licence AGPL-3.0-or-later",
-    "madeWith": "Fait avec",
-    "by": "par",
+    "copyright": "Todos los derechos reservados.",
+    "license": "Licencia AGPL-3.0-or-later",
+    "madeWith": "Hecho con",
+    "by": "por",
     "links": {
-      "privacy": "Confidentialité",
-      "terms": "Conditions",
-      "contact": "Contact"
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "contact": "Contacto"
     }
   },
   "toast": {
-    "success": "Succès",
-    "error": "Erreur",
-    "info": "Information",
-    "warning": "Avertissement"
+    "success": "Éxito",
+    "error": "Error",
+    "info": "Información",
+    "warning": "Advertencia"
   },
   "common": {
-    "error": "Erreur",
-    "loading": "Chargement...",
-    "save": "Enregistrer",
-    "cancel": "Annuler",
-    "delete": "Supprimer",
-    "edit": "Modifier",
-    "close": "Fermer",
-    "confirm": "Confirmer",
-    "yes": "Oui",
-    "no": "Non",
-    "search": "Rechercher",
-    "filter": "Filtrer",
-    "sort": "Trier",
-    "actions": "Actions",
-    "details": "Détails",
-    "back": "Retour",
-    "next": "Suivant",
-    "previous": "Précédent",
-    "skipToContent": "Aller au contenu principal",
-    "refresh": "Actualiser"
+    "error": "Error",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "actions": "Acciones",
+    "details": "Detalles",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "skipToContent": "Ir al contenido principal",
+    "refresh": "Actualizar"
   },
   "documentViewer": {
     "loading": "Cargando documento...",
@@ -765,7 +765,7 @@
       "page": "Página {current} / {total}"
     },
     "progress": "{percent}% leído",
-    "scrollToRead": "Desplácese para leer el documento",
+    "scrollToRead": "Desplázate para leer el documento",
     "readComplete": "Lectura completa",
     "pdfViewer": "Visor PDF",
     "htmlViewer": "Contenido HTML",
@@ -774,16 +774,16 @@
       "valid": "Integridad verificada",
       "invalid": "Integridad comprometida",
       "mismatchTitle": "Advertencia: El documento ha sido modificado",
-      "mismatchDescription": "La suma de verificación del documento no coincide con la registrada. El documento puede haber sido alterado desde su creación.",
+      "mismatchDescription": "El checksum del documento no coincide con el registrado. El documento puede haber sido alterado desde su creación.",
       "expected": "Esperado",
       "actual": "Calculado"
     },
     "pdfFallback": {
       "title": "Vista previa de PDF no disponible",
-      "description": "Su navegador no puede mostrar este PDF en línea. Por favor, descárguelo o ábralo en una nueva pestaña."
+      "description": "Tu navegador no puede mostrar este PDF en línea. Por favor, descárgalo o ábrelo en una nueva pestaña."
     },
     "pdfReadConfirm": {
-      "message": "Por favor, confirme que ha leído este documento completamente.",
+      "message": "Por favor, confirma que has leído este documento completamente.",
       "button": "He leído este documento"
     },
     "error": {
@@ -803,88 +803,88 @@
       "label": "Documento",
       "placeholder": "URL, ruta o ID del documento",
       "helper": "Acepta URLs, rutas de archivos o identificadores simples",
-      "helperWithUpload": "Acepta URLs, rutas, identificadores o archivos cargados (PDF, imágenes, documentos)",
-      "placeholderWithUpload": "Referencia, URL o haga clic en el icono para cargar"
+      "helperWithUpload": "Acepta URLs, rutas, identificadores o archivos subidos (PDF, imágenes, documentos)",
+      "placeholderWithUpload": "Referencia, URL o haz clic en el icono para subir"
     },
     "upload": {
-      "button": "Cargar un archivo",
-      "submit": "Cargar",
-      "uploading": "Cargando..."
+      "button": "Subir un archivo",
+      "submit": "Subir",
+      "uploading": "Subiendo..."
     },
-    "submit": "Créer",
-    "submitting": "Création...",
+    "submit": "Crear",
+    "submitting": "Creando...",
     "title": {
       "label": "Título",
-      "placeholder": "Auto-détecté si vide"
+      "placeholder": "Auto-detectado si está vacío"
     },
     "readMode": {
-      "label": "Mode de lecture",
-      "integrated": "Lecteur intégré",
-      "external": "Lien externe"
+      "label": "Modo de lectura",
+      "integrated": "Visor integrado",
+      "external": "Enlace externo"
     },
     "options": {
-      "title": "Options avancées",
-      "allowDownload": "Autoriser le téléchargement",
-      "requireFullRead": "Exiger la lecture complète",
-      "verifyChecksum": "Vérifier le checksum à chaque lecture"
+      "title": "Opciones avanzadas",
+      "allowDownload": "Permitir descarga",
+      "requireFullRead": "Requerir lectura completa",
+      "verifyChecksum": "Verificar checksum en cada lectura"
     },
     "checksum": {
       "label": "Checksum",
-      "placeholder": "Auto-calculé si vide"
+      "placeholder": "Auto-calculado si está vacío"
     },
     "algorithm": {
-      "label": "Algorithme"
+      "label": "Algoritmo"
     },
     "description": {
       "label": "Descripción",
       "placeholder": "Descripción del documento..."
     },
     "error": {
-      "urlRequired": "L'URL du document est requise",
-      "createFailed": "Échec de la création du document",
-      "authRequired": "Authentification requise pour créer un document",
-      "forbidden": "Vous n'avez pas les droits pour créer un document"
+      "urlRequired": "La URL del documento es requerida",
+      "createFailed": "Error al crear el documento",
+      "authRequired": "Autenticación requerida para crear un documento",
+      "forbidden": "No tienes permisos para crear un documento"
     }
   },
   "myDocuments": {
-    "title": "Mes documents",
-    "subtitle": "Gérer les documents que vous avez créés",
-    "listTitle": "Liste des documents",
-    "results": "{count} résultat | {count} résultats",
-    "searchPlaceholder": "Rechercher par titre ou URL...",
-    "signatureCount": "signature | signatures",
-    "totalCount": "{count} document au total | {count} documents au total",
-    "noResults": "Aucun résultat",
-    "tryAnotherSearch": "Essayez une autre recherche",
+    "title": "Mis documentos",
+    "subtitle": "Gestiona los documentos que has creado",
+    "listTitle": "Lista de documentos",
+    "results": "{count} resultado | {count} resultados",
+    "searchPlaceholder": "Buscar por título o URL...",
+    "signatureCount": "firma | firmas",
+    "totalCount": "{count} documento en total | {count} documentos en total",
+    "noResults": "Sin resultados",
+    "tryAnotherSearch": "Prueba otra búsqueda",
     "stats": {
       "total": "Total",
       "pending": "Pendientes",
-      "completed": "Complétés",
-      "totalDocuments": "Documents totaux",
-      "pendingDocuments": "En attente de signatures",
-      "completedDocuments": "Complétés"
+      "completed": "Completados",
+      "totalDocuments": "Documentos totales",
+      "pendingConfirmations": "Confirmaciones pendientes",
+      "completedDocuments": "Completados"
     },
     "columns": {
       "document": "Documento",
       "status": "Estado",
       "createdAt": "Creado el",
-      "actions": "Actions"
+      "actions": "Acciones"
     },
     "actions": {
-      "view": "Voir",
-      "copyLink": "Copier le lien",
-      "delete": "Supprimer"
+      "view": "Ver",
+      "copyLink": "Copiar enlace",
+      "delete": "Eliminar"
     },
     "empty": {
-      "title": "Aucun document",
-      "description": "Créez votre premier document pour commencer à suivre les confirmations de lecture"
+      "title": "Sin documentos",
+      "description": "Crea tu primer documento para empezar a seguir las confirmaciones de lectura"
     },
     "deleteConfirm": {
-      "title": "Supprimer ce document ?",
-      "message": "Cette action supprimera définitivement le document \"{title}\" et toutes les données associées."
+      "title": "¿Eliminar este documento?",
+      "message": "Esta acción eliminará definitivamente el documento \"{title}\" y todos los datos asociados."
     },
     "pagination": {
-      "page": "Page {current}/{total}"
+      "page": "Página {current}/{total}"
     }
   },
   "documentEdit": {
@@ -892,97 +892,97 @@
     "subtitle": "Gestionar metadatos y lectores esperados",
     "back": "Volver",
     "breadcrumb": {
-      "myDocuments": "Mes documents"
+      "myDocuments": "Mis documentos"
     },
     "unauthorized": {
-      "title": "Accès non autorisé",
-      "description": "Vous n'avez pas les droits pour accéder à ce document.",
-      "backToDocuments": "Retour à mes documents"
+      "title": "Acceso no autorizado",
+      "description": "No tienes permisos para acceder a este documento.",
+      "backToDocuments": "Volver a mis documentos"
     },
     "shareLink": {
-      "title": "Lien de partage",
-      "copy": "Copier",
-      "copied": "Copié !"
+      "title": "Enlace de compartir",
+      "copy": "Copiar",
+      "copied": "¡Copiado!"
     },
     "stats": {
-      "expected": "Lecteurs attendus",
-      "confirmed": "Confirmés",
+      "expected": "Lectores esperados",
+      "confirmed": "Confirmados",
       "pending": "Pendientes"
     },
     "metadata": {
-      "title": "Métadonnées",
-      "description": "Informations de base du document",
+      "title": "Metadatos",
+      "description": "Información básica del documento",
       "titleLabel": "Título",
-      "titlePlaceholder": "Titre du document",
+      "titlePlaceholder": "Título del documento",
       "urlLabel": "URL",
-      "urlPlaceholder": "https://exemple.com/document.pdf",
+      "urlPlaceholder": "https://ejemplo.com/documento.pdf",
       "checksumLabel": "Checksum",
-      "checksumPlaceholder": "Empreinte du fichier (optionnel)",
-      "algorithmLabel": "Algorithme",
+      "checksumPlaceholder": "Huella del archivo (opcional)",
+      "algorithmLabel": "Algoritmo",
       "descriptionLabel": "Descripción",
       "descriptionPlaceholder": "Descripción del documento...",
-      "createdBy": "Créé par {by} le {date}",
-      "saving": "Enregistrement..."
+      "createdBy": "Creado por {by} el {date}",
+      "saving": "Guardando..."
     },
-    "metadataSaved": "Métadonnées enregistrées avec succès",
+    "metadataSaved": "Metadatos guardados correctamente",
     "readers": {
-      "title": "Lecteurs attendus",
-      "confirmed": "confirmés",
-      "add": "Ajouter",
-      "filterPlaceholder": "Filtrer par email ou nom...",
+      "title": "Lectores esperados",
+      "confirmed": "confirmados",
+      "add": "Añadir",
+      "filterPlaceholder": "Filtrar por email o nombre...",
       "reader": "Lector",
       "status": "Estado",
       "confirmedOn": "Confirmado el",
-      "statusConfirmed": "Confirmé",
-      "statusPending": "Pendientes",
+      "statusConfirmed": "Confirmado",
+      "statusPending": "Pendiente",
       "noReaders": "Ningún lector esperado"
     },
-    "signersAdded": "{count} lecteur(s) ajouté(s)",
-    "signerRemoved": "Lecteur {email} retiré",
+    "signersAdded": "{count} lector(es) añadido(s)",
+    "signerRemoved": "Lector {email} eliminado",
     "addSigners": {
-      "title": "Ajouter des lecteurs",
-      "emailsLabel": "Adresses email",
-      "emailsPlaceholder": "email{'@'}exemple.com\nNom Prénom <autre{'@'}exemple.com>",
-      "emailsHelper": "Une adresse email par ligne. Format: email ou Nom <email>",
-      "adding": "Ajout en cours...",
-      "add": "Ajouter"
+      "title": "Añadir lectores",
+      "emailsLabel": "Direcciones de email",
+      "emailsPlaceholder": "email{'@'}ejemplo.com\nNombre Apellido <otro{'@'}ejemplo.com>",
+      "emailsHelper": "Una dirección de email por línea. Formato: email o Nombre <email>",
+      "adding": "Añadiendo...",
+      "add": "Añadir"
     },
     "removeSigner": {
-      "title": "Retirer ce lecteur ?",
-      "message": "Êtes-vous sûr de vouloir retirer {email} de la liste des lecteurs attendus ?"
+      "title": "¿Eliminar este lector?",
+      "message": "¿Estás seguro de que quieres eliminar {email} de la lista de lectores esperados?"
     },
     "reminders": {
-      "title": "Relances par email",
-      "description": "Envoyez des rappels aux lecteurs en attente",
-      "sent": "Rappels envoyés",
+      "title": "Recordatorios por email",
+      "description": "Envía recordatorios a los lectores pendientes",
+      "sent": "Recordatorios enviados",
       "toRemind": "Para recordar",
-      "lastSent": "Dernier envoi",
-      "emailDisabled": "Le service d'envoi d'email n'est pas configuré.",
-      "sendToAll": "Envoyer à tous les lecteurs en attente ({count})",
-      "sendToSelected": "Envoyer aux lecteurs sélectionnés ({count})",
-      "sending": "Envoi en cours...",
-      "send": "Envoyer les rappels"
+      "lastSent": "Último envío",
+      "emailDisabled": "El servicio de envío de email no está configurado.",
+      "sendToAll": "Enviar a todos los lectores pendientes ({count})",
+      "sendToSelected": "Enviar a los lectores seleccionados ({count})",
+      "sending": "Enviando...",
+      "send": "Enviar recordatorios"
     },
-    "confirmSendReminders": "Envoyer des rappels à {count} lecteur(s) en attente ?",
-    "confirmSendRemindersSelected": "Envoyer des rappels à {count} lecteur(s) sélectionné(s) ?",
-    "remindersSentSuccess": "{count} rappel(s) envoyé(s) avec succès",
-    "remindersSentPartial": "{sent} rappel(s) envoyé(s), {failed} échec(s)",
-    "remindersSentGeneric": "Rappels envoyés",
+    "confirmSendReminders": "¿Enviar recordatorios a {count} lector(es) pendiente(s)?",
+    "confirmSendRemindersSelected": "¿Enviar recordatorios a {count} lector(es) seleccionado(s)?",
+    "remindersSentSuccess": "{count} recordatorio(s) enviado(s) correctamente",
+    "remindersSentPartial": "{sent} recordatorio(s) enviado(s), {failed} fallido(s)",
+    "remindersSentGeneric": "Recordatorios enviados",
     "sendReminders": {
-      "title": "Confirmer l'envoi"
+      "title": "Confirmar envío"
     },
     "danger": {
       "title": "Zona de peligro",
       "description": "Acciones irreversibles sobre este documento",
-      "deleteDocument": "Supprimer le document",
-      "deleteDescription": "Cette action supprimera définitivement le document et toutes les données associées."
+      "deleteDocument": "Eliminar documento",
+      "deleteDescription": "Esta acción eliminará definitivamente el documento y todos los datos asociados."
     },
     "deleteConfirm": {
-      "title": "Supprimer ce document ?",
-      "warning": "Attention !",
-      "message": "Cette action est irréversible. Toutes les confirmations, lecteurs attendus et l'historique seront supprimés.",
-      "deleting": "Suppression...",
-      "confirm": "Supprimer définitivement"
+      "title": "¿Eliminar este documento?",
+      "warning": "¡Atención!",
+      "message": "Esta acción es irreversible. Todas las confirmaciones, lectores esperados y el historial serán eliminados.",
+      "deleting": "Eliminando...",
+      "confirm": "Eliminar definitivamente"
     }
   }
 }

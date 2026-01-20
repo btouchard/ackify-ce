@@ -81,6 +81,7 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm64
         push: ${{ inputs.push }}
+        provenance: false
         tags: |
           ${{ steps.meta.outputs.tags }}
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
