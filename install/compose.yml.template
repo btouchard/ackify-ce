@@ -69,6 +69,7 @@ services:
       ACKIFY_CHECKSUM_ALLOWED_TYPES: "${ACKIFY_CHECKSUM_ALLOWED_TYPES:-}"
       ACKIFY_IMPORT_MAX_SIGNERS: "${ACKIFY_IMPORT_MAX_SIGNERS:-500}"
       ACKIFY_TELEMETRY: "${ACKIFY_TELEMETRY:-false}"
+      ACKIFY_TELEMETRY_DATA_DIR: "${ACKIFY_TELEMETRY_DATA_DIR:-/data/telemetry}"
       ACKIFY_STORAGE_TYPE: "${ACKIFY_STORAGE_TYPE:-}"
       ACKIFY_STORAGE_LOCAL_PATH: "${ACKIFY_STORAGE_LOCAL_PATH:-/data/documents}"
       ACKIFY_STORAGE_MAX_SIZE_MB: "${ACKIFY_STORAGE_MAX_SIZE_MB:-50}"
@@ -80,6 +81,7 @@ services:
       ACKIFY_STORAGE_S3_USE_SSL: "${ACKIFY_STORAGE_S3_USE_SSL:-true}"
     volumes:
       - ackify_storage:/data/documents
+      - ./telemetry:/data/telemetry
     depends_on:
       ackify-migrate:
         condition: service_completed_successfully

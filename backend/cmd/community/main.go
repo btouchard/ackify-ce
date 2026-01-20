@@ -41,7 +41,7 @@ func main() {
 		"version", Version,
 		"commit", Commit,
 		"build_date", BuildDate,
-		"telemetry", cfg.Telemetry)
+		"telemetry", cfg.Telemetry.Enabled)
 
 	db, err := database.InitDB(ctx, database.Config{DSN: cfg.Database.DSN})
 	if err != nil {

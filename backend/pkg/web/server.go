@@ -314,7 +314,8 @@ func (b *ServerBuilder) initializeTelemetry(ctx context.Context) error {
 		AppName:     "Ackify",
 		AppVersion:  b.version,
 		Environment: "production",
-		Enabled:     b.cfg.Telemetry,
+		Enabled:     b.cfg.Telemetry.Enabled,
+		DataDir:     b.cfg.Telemetry.DataDir,
 	})
 	if err != nil {
 		return err

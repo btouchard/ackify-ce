@@ -21,7 +21,12 @@ type Config struct {
 	Mail      MailConfig
 	Storage   StorageConfig
 	Logger    LoggerConfig
-	Telemetry bool
+	Telemetry TelemetryConfig
+}
+
+type TelemetryConfig struct {
+	Enabled bool
+	DataDir string // Directory to store identity file (must be persisted on host)
 }
 
 type StorageConfig struct {
@@ -302,7 +307,8 @@ func Load() (*Config, error) {
 	}
 
 	// Telemetry configuration
-	config.Telemetry = getEnv("ACKIFY_TELEMETRY", "false") != "false" && getEnv("DO_NOT_TRACK", "") != "1"
+	config.Telemetry.Enabled = getEnv("ACKIFY_TELEMETRY", "false") != "false" && getEnv("DO_NOT_TRACK", "") != "1"
+	config.Telemetry.DataDir = getEnv("ACKIFY_TELEMETRY_DATA_DIR", "/data/telemetry")
 
 	// Validation: At least one authentication method must be enabled
 	if !config.Auth.OAuthEnabled && !config.Auth.MagicLinkEnabled {

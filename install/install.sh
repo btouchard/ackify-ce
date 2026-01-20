@@ -1043,8 +1043,17 @@ cat >> .env <<EOF
 # ==========================================
 # Anonymous usage metrics (GDPR compliant, no personal data)
 ACKIFY_TELEMETRY=${ENABLE_TELEMETRY}
-
 EOF
+
+# Add data dir and create host directory if telemetry is enabled
+if [ "$ENABLE_TELEMETRY" = true ]; then
+    echo "# Data directory for identity file (bind mount from host to persist across container recreations)" >> .env
+    echo "ACKIFY_TELEMETRY_DATA_DIR=/data/telemetry" >> .env
+    # Create the telemetry directory on host
+    mkdir -p telemetry
+    print_success "Created telemetry directory for identity persistence"
+fi
+echo "" >> .env
 
 print_success ".env file created successfully"
 echo ""
@@ -1111,6 +1120,7 @@ echo ""
 
 if [ "$ENABLE_TELEMETRY" = true ]; then
     print_success "Telemetry: Enabled (thank you!)"
+    print_info "  Identity persisted in ./telemetry/ (host bind mount)"
 else
     print_info "Telemetry: Disabled"
 fi
