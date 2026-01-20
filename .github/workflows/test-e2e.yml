@@ -108,6 +108,7 @@ jobs:
           ACKIFY_STORAGE_TYPE: "local"
           ACKIFY_STORAGE_LOCAL_PATH: "/tmp/ackify-storage"
           ACKIFY_STORAGE_MAX_SIZE_MB: "50"
+          ACKIFY_TELEMETRY: "false"
         run: |
           mkdir -p /tmp/ackify-storage
           go build -o ackify ./backend/cmd/community
