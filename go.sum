@@ -40,8 +40,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.41.6 h1:5fFjR/ToSOzB2OQ/XqWpZBmNvmP/
 github.com/aws/aws-sdk-go-v2/service/sts v1.41.6/go.mod h1:qgFDZQSD/Kys7nJnVqYlWKnh0SSdMjAi0uSwON4wgYQ=
 github.com/aws/smithy-go v1.24.0 h1:LpilSUItNPFr1eY85RYgTIg5eIEPtvFbskaFcmmIUnk=
 github.com/aws/smithy-go v1.24.0/go.mod h1:LEj2LM3rBRQJxPZTB4KuzZkaZYnZPnvgIhb4pu07mx0=
-github.com/btouchard/shm v1.2.2 h1:2TXEWqVf80C6/WGMdOdAheGNKhIlphIQskcpRpNr8Yc=
-github.com/btouchard/shm v1.2.2/go.mod h1:9+E/t1eveTZwmXGnsTqBn7HeckuQfp7OyCHLE64uS/A=
+github.com/btouchard/shm v1.2.3 h1:4SOYHESTbhBYZkMk4DerT9UOrBWoeXX/xM/rXcvyzcY=
+github.com/btouchard/shm v1.2.3/go.mod h1:9+E/t1eveTZwmXGnsTqBn7HeckuQfp7OyCHLE64uS/A=
 github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG8PI=
 github.com/containerd/errdefs v1.0.0/go.mod h1:+YBYIdtsnF4Iw6nWZhJcqGSg/dwvV7tyJ/kCkyJ2k+M=
 github.com/containerd/errdefs/pkg v0.3.0 h1:9IKJ06FvyNlexW690DXuQNx2KA2cUJXx151Xdx3ZPPE=

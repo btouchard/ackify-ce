@@ -309,12 +309,16 @@ func (b *ServerBuilder) createRepositories() *repositories {
 }
 
 func (b *ServerBuilder) initializeTelemetry(ctx context.Context) error {
+	if !b.cfg.Telemetry.Enabled {
+		return nil
+	}
+
 	telemetry, err := sdk.New(sdk.Config{
 		ServerURL:   "https://metrics.kolapsis.com",
 		AppName:     "Ackify",
 		AppVersion:  b.version,
 		Environment: "production",
-		Enabled:     b.cfg.Telemetry.Enabled,
+		Enabled:     true,
 		DataDir:     b.cfg.Telemetry.DataDir,
 	})
 	if err != nil {
