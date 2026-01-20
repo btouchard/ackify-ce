@@ -105,7 +105,11 @@ jobs:
           ACKIFY_AUTH_RATE_LIMIT: "1000"
           ACKIFY_DOCUMENT_RATE_LIMIT: "1000"
           ACKIFY_GENERAL_RATE_LIMIT: "1000"
+          ACKIFY_STORAGE_TYPE: "local"
+          ACKIFY_STORAGE_LOCAL_PATH: "/tmp/ackify-storage"
+          ACKIFY_STORAGE_MAX_SIZE_MB: "50"
         run: |
+          mkdir -p /tmp/ackify-storage
           go build -o ackify ./backend/cmd/community
           ./ackify > /tmp/ackify.log 2>&1 &
           echo $! > /tmp/ackify.pid
