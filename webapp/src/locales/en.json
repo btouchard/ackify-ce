@@ -861,7 +861,7 @@
       "pending": "Pending",
       "completed": "Completed",
       "totalDocuments": "Total documents",
-      "pendingDocuments": "Pending signatures",
+      "pendingConfirmations": "Pending confirmations",
       "completedDocuments": "Completed"
     },
     "columns": {

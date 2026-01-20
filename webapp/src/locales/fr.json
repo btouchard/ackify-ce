@@ -858,7 +858,7 @@
       "pending": "En attente",
       "completed": "Complétés",
       "totalDocuments": "Documents totaux",
-      "pendingDocuments": "En attente de signatures",
+      "pendingConfirmations": "Confirmations en attente",
       "completedDocuments": "Complétés"
     },
     "columns": {

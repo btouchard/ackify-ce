@@ -148,15 +148,15 @@ See [docs/en/configuration.md](docs/en/configuration.md) for all options.
 <table>
 <tr>
 <td align="center"><strong>Home</strong><br><a href="screenshots/1-home.png"><img src="screenshots/1-home.png" width="200"></a></td>
-<td align="center"><strong>Signing</strong><br><a href="screenshots/3-signing-request.png"><img src="screenshots/3-signing-request.png" width="200"></a></td>
-<td align="center"><strong>Confirmed</strong><br><a href="screenshots/4-signing-ok.png"><img src="screenshots/4-signing-ok.png" width="200"></a></td>
-<td align="center"><strong>Confirmations</strong><br><a href="screenshots/5-my-confirm-list.png"><img src="screenshots/5-my-confirm-list.png" width="200"></a></td>
+<td align="center"><strong>Document Upload</strong><br><a href="screenshots/2-new-doc-upload.png"><img src="screenshots/2-new-doc-upload.png" width="200"></a></td>
+<td align="center"><strong>Add Readers</strong><br><a href="screenshots/3-add-confirm-request.png"><img src="screenshots/3-add-confirm-request.png" width="200"></a></td>
+<td align="center"><strong>Integrated Reader</strong><br><a href="screenshots/4-internal-reader.png"><img src="screenshots/4-internal-reader.png" width="200"></a></td>
 </tr>
 <tr>
-<td align="center"><strong>Admin dashboard</strong><br><a href="screenshots/6-admin.png"><img src="screenshots/6-admin.png" width="200"></a></td>
-<td align="center"><strong>Admin document</strong><br><a href="screenshots/7-admin-doc.png"><img src="screenshots/7-admin-doc.png" width="200"></a></td>
-<td align="center"><strong>Outline</strong><br><a href="screenshots/8-outline.png"><img src="screenshots/8-outline.png" width="200"></a></td>
-<td align="center"></td>
+<td align="center"><strong>Reading Confirmed</strong><br><a href="screenshots/5-read-confirmed.png"><img src="screenshots/5-read-confirmed.png" width="200"></a></td>
+<td align="center"><strong>My Confirmations</strong><br><a href="screenshots/6-all-my-confirmations.png"><img src="screenshots/6-all-my-confirmations.png" width="200"></a></td>
+<td align="center"><strong>My Documents</strong><br><a href="screenshots/7-manage-my-docs.png"><img src="screenshots/7-manage-my-docs.png" width="200"></a></td>
+<td align="center"><strong>Admin Settings</strong><br><a href="screenshots/8-admin-settings.png"><img src="screenshots/8-admin-settings.png" width="200"></a></td>
 </tr>
 </table>
 
