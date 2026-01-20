@@ -355,3 +355,57 @@ func TestI18n_T_Concurrent(t *testing.T) {
 		<-done
 	}
 }
+
+// ============================================================================
+// TESTS - Translation Consistency
+// ============================================================================
+
+func TestI18n_AllLocalesHaveConsistentKeys(t *testing.T) {
+	t.Parallel()
+
+	i18n, err := NewI18n(testLocalesDir)
+	require.NoError(t, err)
+
+	// Get all keys from English (reference)
+	referenceKeys := getKeys(i18n.translations["en"])
+
+	// Check each locale has the same keys
+	for locale, translations := range i18n.translations {
+		if locale == "en" {
+			continue
+		}
+
+		localeKeys := getKeys(translations)
+
+		// Check for missing keys
+		missingKeys := []string{}
+		for key := range referenceKeys {
+			if _, exists := localeKeys[key]; !exists {
+				missingKeys = append(missingKeys, key)
+			}
+		}
+
+		// Check for extra keys
+		extraKeys := []string{}
+		for key := range localeKeys {
+			if _, exists := referenceKeys[key]; !exists {
+				extraKeys = append(extraKeys, key)
+			}
+		}
+
+		if len(missingKeys) > 0 {
+			t.Errorf("[%s] Missing %d keys from English reference: %v", locale, len(missingKeys), missingKeys)
+		}
+		if len(extraKeys) > 0 {
+			t.Errorf("[%s] Has %d extra keys not in English reference: %v", locale, len(extraKeys), extraKeys)
+		}
+	}
+}
+
+func getKeys(translations map[string]string) map[string]struct{} {
+	keys := make(map[string]struct{})
+	for key := range translations {
+		keys[key] = struct{}{}
+	}
+	return keys
+}

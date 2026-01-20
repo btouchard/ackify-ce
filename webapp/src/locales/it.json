@@ -146,9 +146,10 @@
       "certify": "Je certifie avoir lu et compris le contenu de ce document"
     },
     "noDocument": {
-      "title": "Aucun document spécifié",
-      "description": "Pour signer un document, ajoutez le paramètre {code} à l'URL",
-      "examples": "Exemples :"
+      "title": "Nessun documento specificato",
+      "description": "Per firmare un documento, aggiungi il parametro {code} all'URL",
+      "examples": "Esempi:",
+      "orEnterReference": "Oppure inserisci il riferimento del documento qui sotto"
     },
     "success": {
       "title": "Lecture confirmée avec succès !",
@@ -554,7 +555,8 @@
     },
     "documentDetail": {
       "title": "Documento",
-      "metadata": "📄 Informations sur le document",
+      "subtitle": "Gestire metadati e lettori previsti",
+      "metadata": "📄 Informazioni sul documento",
       "metadataDescription": "Metadati e checksum del documento",
       "checksum": "Checksum",
       "algorithm": "Algorithme",
@@ -754,37 +756,60 @@
     "refresh": "Actualiser"
   },
   "documentViewer": {
-    "loading": "Chargement du document...",
+    "loading": "Caricamento documento...",
     "toolbar": {
-      "zoomIn": "Zoom avant",
-      "zoomOut": "Zoom arrière",
-      "download": "Télécharger",
-      "openInNewTab": "Ouvrir dans un nouvel onglet",
-      "page": "Page {current} / {total}"
+      "zoomIn": "Ingrandisci",
+      "zoomOut": "Riduci",
+      "download": "Scarica",
+      "openInNewTab": "Apri in nuova scheda",
+      "page": "Pagina {current} / {total}"
     },
-    "progress": "{percent}% lu",
-    "scrollToRead": "Faites défiler pour lire le document",
-    "readComplete": "Lecture complète",
-    "pdfViewer": "Lecteur PDF",
-    "htmlViewer": "Contenu HTML",
-    "imageAlt": "Document image",
+    "progress": "{percent}% letto",
+    "scrollToRead": "Scorri per leggere il documento",
+    "readComplete": "Lettura completata",
+    "pdfViewer": "Visualizzatore PDF",
+    "htmlViewer": "Contenuto HTML",
+    "imageAlt": "Immagine del documento",
+    "checksum": {
+      "valid": "Integrità verificata",
+      "invalid": "Integrità compromessa",
+      "mismatchTitle": "Attenzione: Il documento è stato modificato",
+      "mismatchDescription": "Il checksum del documento non corrisponde a quello registrato. Il documento potrebbe essere stato alterato dalla sua creazione.",
+      "expected": "Previsto",
+      "actual": "Calcolato"
+    },
+    "pdfFallback": {
+      "title": "Anteprima PDF non disponibile",
+      "description": "Il tuo browser non può visualizzare questo PDF inline. Scaricalo o aprilo in una nuova scheda."
+    },
+    "pdfReadConfirm": {
+      "message": "Per favore conferma di aver letto completamente questo documento.",
+      "button": "Ho letto questo documento"
+    },
     "error": {
-      "title": "Impossible de charger le document",
-      "loadFailed": "Le chargement du document a échoué",
-      "retry": "Réessayer",
-      "openExternal": "Ouvrir le lien"
+      "title": "Impossibile caricare il documento",
+      "loadFailed": "Il caricamento del documento è fallito",
+      "retry": "Riprova",
+      "openExternal": "Apri link"
     },
     "unsupported": {
-      "title": "Format non supporté",
-      "description": "Ce type de document ne peut pas être affiché dans le lecteur intégré.",
-      "openExternal": "Ouvrir le document"
+      "title": "Formato non supportato",
+      "description": "Questo tipo di documento non può essere visualizzato nel visualizzatore integrato.",
+      "openExternal": "Apri documento"
     }
   },
   "documentCreateForm": {
     "url": {
       "label": "Documento",
-      "placeholder": "URL, PATH ou ID du document",
-      "helper": "Accepte les URLs, les chemins de fichiers ou les identifiants simples"
+      "placeholder": "URL, percorso o ID del documento",
+      "helper": "Accetta URL, percorsi di file o identificatori semplici",
+      "helperWithUpload": "Accetta URL, percorsi, identificatori o file caricati (PDF, immagini, documenti)",
+      "placeholderWithUpload": "Riferimento, URL o clicca sull'icona per caricare"
+    },
+    "upload": {
+      "button": "Carica un file",
+      "submit": "Carica",
+      "uploading": "Caricamento..."
     },
     "submit": "Créer",
     "submitting": "Création...",
@@ -863,8 +888,9 @@
     }
   },
   "documentEdit": {
-    "title": "Édition du document",
-    "back": "Retour",
+    "title": "Modifica documento",
+    "subtitle": "Gestire metadati e lettori previsti",
+    "back": "Indietro",
     "breadcrumb": {
       "myDocuments": "Mes documents"
     },

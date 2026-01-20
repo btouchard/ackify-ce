@@ -61,10 +61,38 @@ trap cleanup_integration EXIT
 mkdir -p "$COVERAGE_DIR"
 
 # ==============================================================================
+# Phase 0: Translation Consistency Checks
+# ==============================================================================
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${CYAN}  Phase 0: Translation Consistency Checks${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+cd "$PROJECT_ROOT"
+
+echo -e "${YELLOW}🌐 Checking frontend translations...${NC}"
+if node "$WEBAPP_DIR/scripts/check-translations.mjs"; then
+    echo -e "${GREEN}✓ Frontend translations OK${NC}"
+else
+    echo -e "${RED}❌ Frontend translation check failed${NC}"
+    FAILED=$((FAILED + 1))
+fi
+echo ""
+
+echo -e "${YELLOW}🌐 Checking backend translations (via test)...${NC}"
+if go test -v ./backend/internal/infrastructure/i18n/... -run TestI18n_AllLocalesHaveConsistentKeys; then
+    echo -e "${GREEN}✓ Backend translations OK${NC}"
+else
+    echo -e "${RED}❌ Backend translation check failed${NC}"
+    FAILED=$((FAILED + 1))
+fi
+echo ""
+
+# ==============================================================================
 # Phase 1: Backend Tests
 # ==============================================================================
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}  Phase 1/3: Backend Tests (Go)${NC}"
+echo -e "${CYAN}  Phase 1/4: Backend Tests (Go)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -199,7 +227,7 @@ INTEGRATION_STARTED=0
 # Phase 2: Frontend Unit Tests
 # ==============================================================================
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}  Phase 2/3: Frontend Unit Tests (Vitest)${NC}"
+echo -e "${CYAN}  Phase 2/4: Frontend Unit Tests (Vitest)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
@@ -253,7 +281,7 @@ echo ""
 # Phase 3: E2E Tests (Cypress)
 # ==============================================================================
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}  Phase 3/3: E2E Tests (Cypress)${NC}"
+echo -e "${CYAN}  Phase 3/4: E2E Tests (Cypress)${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 

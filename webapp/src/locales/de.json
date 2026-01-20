@@ -146,9 +146,10 @@
       "certify": "Je certifie avoir lu et compris le contenu de ce document"
     },
     "noDocument": {
-      "title": "Aucun document spécifié",
-      "description": "Pour signer un document, ajoutez le paramètre {code} à l'URL",
-      "examples": "Exemples :"
+      "title": "Kein Dokument angegeben",
+      "description": "Um ein Dokument zu signieren, fügen Sie den Parameter {code} zur URL hinzu",
+      "examples": "Beispiele:",
+      "orEnterReference": "Oder geben Sie unten Ihre Dokumentreferenz ein"
     },
     "success": {
       "title": "Lecture confirmée avec succès !",
@@ -300,7 +301,7 @@
     }
   },
   "admin": {
-    "title": "Administration",
+    "title": "Verwaltung",
     "subtitle": "Dokumente und erwartete Leser verwalten",
     "loading": "Daten werden geladen...",
     "dashboard": {
@@ -554,7 +555,8 @@
     },
     "documentDetail": {
       "title": "Dokument",
-      "metadata": "📄 Informations sur le document",
+      "subtitle": "Metadaten und erwartete Leser verwalten",
+      "metadata": "📄 Dokumentinformationen",
       "metadataDescription": "Dokumentmetadaten und Prüfsumme",
       "checksum": "Checksum",
       "algorithm": "Algorithme",
@@ -754,37 +756,60 @@
     "refresh": "Actualiser"
   },
   "documentViewer": {
-    "loading": "Chargement du document...",
+    "loading": "Dokument wird geladen...",
     "toolbar": {
-      "zoomIn": "Zoom avant",
-      "zoomOut": "Zoom arrière",
-      "download": "Télécharger",
-      "openInNewTab": "Ouvrir dans un nouvel onglet",
-      "page": "Page {current} / {total}"
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "download": "Herunterladen",
+      "openInNewTab": "In neuem Tab öffnen",
+      "page": "Seite {current} / {total}"
     },
-    "progress": "{percent}% lu",
-    "scrollToRead": "Faites défiler pour lire le document",
-    "readComplete": "Lecture complète",
-    "pdfViewer": "Lecteur PDF",
-    "htmlViewer": "Contenu HTML",
-    "imageAlt": "Document image",
+    "progress": "{percent}% gelesen",
+    "scrollToRead": "Scrollen Sie, um das Dokument zu lesen",
+    "readComplete": "Vollständig gelesen",
+    "pdfViewer": "PDF-Viewer",
+    "htmlViewer": "HTML-Inhalt",
+    "imageAlt": "Dokumentbild",
+    "checksum": {
+      "valid": "Integrität verifiziert",
+      "invalid": "Integrität beeinträchtigt",
+      "mismatchTitle": "Warnung: Dokument wurde geändert",
+      "mismatchDescription": "Die Prüfsumme des Dokuments stimmt nicht mit der aufgezeichneten überein. Das Dokument wurde möglicherweise seit seiner Erstellung verändert.",
+      "expected": "Erwartet",
+      "actual": "Berechnet"
+    },
+    "pdfFallback": {
+      "title": "PDF-Vorschau nicht verfügbar",
+      "description": "Ihr Browser kann dieses PDF nicht inline anzeigen. Bitte laden Sie es herunter oder öffnen Sie es in einem neuen Tab."
+    },
+    "pdfReadConfirm": {
+      "message": "Bitte bestätigen Sie, dass Sie dieses Dokument vollständig gelesen haben.",
+      "button": "Ich habe dieses Dokument gelesen"
+    },
     "error": {
-      "title": "Impossible de charger le document",
-      "loadFailed": "Le chargement du document a échoué",
-      "retry": "Réessayer",
-      "openExternal": "Ouvrir le lien"
+      "title": "Dokument konnte nicht geladen werden",
+      "loadFailed": "Das Laden des Dokuments ist fehlgeschlagen",
+      "retry": "Erneut versuchen",
+      "openExternal": "Link öffnen"
     },
     "unsupported": {
-      "title": "Format non supporté",
-      "description": "Ce type de document ne peut pas être affiché dans le lecteur intégré.",
-      "openExternal": "Ouvrir le document"
+      "title": "Format nicht unterstützt",
+      "description": "Dieser Dokumenttyp kann nicht im integrierten Viewer angezeigt werden.",
+      "openExternal": "Dokument öffnen"
     }
   },
   "documentCreateForm": {
     "url": {
       "label": "Dokument",
-      "placeholder": "URL, PATH ou ID du document",
-      "helper": "Accepte les URLs, les chemins de fichiers ou les identifiants simples"
+      "placeholder": "URL, Pfad oder ID des Dokuments",
+      "helper": "Akzeptiert URLs, Dateipfade oder einfache Kennungen",
+      "helperWithUpload": "Akzeptiert URLs, Pfade, Kennungen oder hochgeladene Dateien (PDF, Bilder, Dokumente)",
+      "placeholderWithUpload": "Referenz, URL oder klicken Sie auf das Symbol zum Hochladen"
+    },
+    "upload": {
+      "button": "Datei hochladen",
+      "submit": "Hochladen",
+      "uploading": "Wird hochgeladen..."
     },
     "submit": "Créer",
     "submitting": "Création...",
@@ -863,8 +888,9 @@
     }
   },
   "documentEdit": {
-    "title": "Édition du document",
-    "back": "Retour",
+    "title": "Dokument bearbeiten",
+    "subtitle": "Metadaten und erwartete Leser verwalten",
+    "back": "Zurück",
     "breadcrumb": {
       "myDocuments": "Mes documents"
     },
