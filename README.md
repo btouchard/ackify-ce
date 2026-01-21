@@ -56,7 +56,7 @@ Prove that collaborators have read and acknowledged important documents with **E
 
 ```bash
 # Download and run installation script
-curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/install.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/install.sh)
 
 # Navigate to installation directory
 cd ackify-ce

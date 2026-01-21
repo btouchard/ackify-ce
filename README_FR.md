@@ -56,7 +56,7 @@ Prouvez que vos collaborateurs ont lu et pris connaissance de documents importan
 
 ```bash
 # Télécharger et exécuter le script d'installation
-curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/install.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/btouchard/ackify-ce/main/install/install.sh)
 
 # Naviguer vers le répertoire d'installation
 cd ackify-ce
