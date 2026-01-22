@@ -160,6 +160,15 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		title = header.Filename
 	}
 
+	// Get reader options from form
+	readMode := r.FormValue("readMode")
+	if readMode == "" {
+		readMode = "integrated"
+	}
+	allowDownload := r.FormValue("allowDownload") == "true"
+	requireFullRead := r.FormValue("requireFullRead") == "true"
+	verifyChecksum := r.FormValue("verifyChecksum") != "false" // default true
+
 	// Detect content type from file content
 	buffer := make([]byte, 512)
 	n, err := file.Read(buffer)
@@ -207,6 +216,10 @@ func (h *Handler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		Reference:         storageKey,
 		Title:             title,
 		CreatedBy:         user.Email,
+		ReadMode:          readMode,
+		AllowDownload:     &allowDownload,
+		RequireFullRead:   &requireFullRead,
+		VerifyChecksum:    &verifyChecksum,
 		StorageKey:        storageKey,
 		StorageProvider:   h.provider.Type(),
 		FileSize:          header.Size,

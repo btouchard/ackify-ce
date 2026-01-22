@@ -55,6 +55,12 @@ type CreateDocumentRequest struct {
 	Title     string `json:"title"`
 	CreatedBy string `json:"created_by,omitempty"`
 
+	// Reader options
+	ReadMode        string `json:"read_mode,omitempty"`
+	AllowDownload   *bool  `json:"allow_download,omitempty"`
+	RequireFullRead *bool  `json:"require_full_read,omitempty"`
+	VerifyChecksum  *bool  `json:"verify_checksum,omitempty"`
+
 	// Storage fields for uploaded files
 	StorageKey        string `json:"storage_key,omitempty"`
 	StorageProvider   string `json:"storage_provider,omitempty"`
@@ -106,8 +112,12 @@ func (s *DocumentService) CreateDocument(ctx context.Context, req CreateDocument
 	}
 
 	input := models.DocumentInput{
-		Title: title,
-		URL:   url,
+		Title:           title,
+		URL:             url,
+		ReadMode:        req.ReadMode,
+		AllowDownload:   req.AllowDownload,
+		RequireFullRead: req.RequireFullRead,
+		VerifyChecksum:  req.VerifyChecksum,
 	}
 
 	// Handle storage fields if provided (for uploaded files)

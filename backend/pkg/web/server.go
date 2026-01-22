@@ -225,7 +225,7 @@ func (b *ServerBuilder) setDefaultProviders() {
 		})
 	}
 	if b.authorizer == nil {
-		b.authorizer = webauth.NewSimpleAuthorizer(b.cfg.App.AdminEmails, b.cfg.App.OnlyAdminCanCreate)
+		b.authorizer = webauth.NewSimpleAuthorizer(b.cfg.App.AdminEmails, b.configService)
 	}
 	if b.quotaEnforcer == nil {
 		b.quotaEnforcer = NewNoLimitQuotaEnforcer()

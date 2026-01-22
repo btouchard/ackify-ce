@@ -159,7 +159,13 @@ async function handleSubmit() {
       isUploading.value = true
       const uploadResponse = await documentService.uploadDocument(
         selectedFile.value,
-        title.value || undefined,
+        {
+          title: title.value || undefined,
+          readMode: readMode.value,
+          allowDownload: allowDownload.value,
+          requireFullRead: requireFullRead.value,
+          verifyChecksum: verifyChecksum.value,
+        },
         (progress) => {
           uploadProgress.value = progress
         }

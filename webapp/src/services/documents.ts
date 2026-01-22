@@ -26,6 +26,14 @@ export interface UploadProgress {
   percent: number
 }
 
+export interface UploadDocumentOptions {
+  title?: string
+  readMode?: 'integrated' | 'external'
+  allowDownload?: boolean
+  requireFullRead?: boolean
+  verifyChecksum?: boolean
+}
+
 export interface CreateDocumentResponse {
   docId: string
   url?: string
@@ -139,13 +147,13 @@ export const documentService = {
   /**
    * Upload a file and create a document
    * @param file File to upload
-   * @param title Optional title for the document
+   * @param options Upload options including title and reader settings
    * @param onProgress Optional callback for upload progress
    * @returns Upload response with document info
    */
   async uploadDocument(
     file: File,
-    title?: string,
+    options?: UploadDocumentOptions,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<UploadDocumentResponse> {
     // Get CSRF token first
@@ -154,8 +162,20 @@ export const documentService = {
 
     const formData = new FormData()
     formData.append('file', file)
-    if (title) {
-      formData.append('title', title)
+    if (options?.title) {
+      formData.append('title', options.title)
+    }
+    if (options?.readMode) {
+      formData.append('readMode', options.readMode)
+    }
+    if (options?.allowDownload !== undefined) {
+      formData.append('allowDownload', String(options.allowDownload))
+    }
+    if (options?.requireFullRead !== undefined) {
+      formData.append('requireFullRead', String(options.requireFullRead))
+    }
+    if (options?.verifyChecksum !== undefined) {
+      formData.append('verifyChecksum', String(options.verifyChecksum))
     }
 
     const response = await axios.post<ApiResponse<UploadDocumentResponse>>(
