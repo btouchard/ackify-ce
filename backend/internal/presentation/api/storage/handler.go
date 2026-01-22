@@ -39,6 +39,13 @@ var extensionMIMETypes = map[string]string{
 	".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 	".odt":  "application/vnd.oasis.opendocument.text",
 	".ods":  "application/vnd.oasis.opendocument.spreadsheet",
+
+	// Image formats (fallback for small/malformed files detected as application/octet-stream)
+	".png":  "image/png",
+	".jpg":  "image/jpeg",
+	".jpeg": "image/jpeg",
+	".gif":  "image/gif",
+	".webp": "image/webp",
 }
 
 // ambiguousDetectedTypes lists MIME types from http.DetectContentType that
