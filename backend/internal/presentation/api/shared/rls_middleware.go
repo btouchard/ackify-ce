@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // RLSMiddleware provides Row Level Security context for database queries.
@@ -15,11 +15,11 @@ import (
 // RLS is always active - this is a security feature that cannot be disabled.
 type RLSMiddleware struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewRLSMiddleware creates a new RLS middleware.
-func NewRLSMiddleware(db *sql.DB, tenants tenant.Provider) *RLSMiddleware {
+func NewRLSMiddleware(db *sql.DB, tenants providers.TenantProvider) *RLSMiddleware {
 	return &RLSMiddleware{
 		db:      db,
 		tenants: tenants,

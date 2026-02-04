@@ -69,6 +69,13 @@ func (m *mockAuthorizer) CanCreateDocument(_ context.Context, userEmail string) 
 	return m.adminEmails[strings.ToLower(userEmail)]
 }
 
+func (m *mockAuthorizer) CanManageDocument(ctx context.Context, userEmail, docCreatedBy string) bool {
+	if m.IsAdmin(ctx, userEmail) {
+		return true
+	}
+	return strings.ToLower(userEmail) == strings.ToLower(docCreatedBy)
+}
+
 // mockAuthProvider is a unified test implementation of providers.AuthProvider
 type mockAuthProvider struct {
 	mu               sync.RWMutex

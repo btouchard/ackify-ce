@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -43,12 +44,25 @@ type signatureService interface {
 	GetDocumentSignatures(ctx context.Context, docID string) ([]*models.Signature, error)
 }
 
+// adminService defines admin-level operations needed for document management
+type adminService interface {
+	GetDocument(ctx context.Context, docID string) (*models.Document, error)
+	UpdateDocumentMetadata(ctx context.Context, docID string, input models.DocumentInput, updatedBy string) (*models.Document, error)
+	DeleteDocument(ctx context.Context, docID string) error
+	ListExpectedSignersWithStatus(ctx context.Context, docID string) ([]*models.ExpectedSignerWithStatus, error)
+	GetSignerStats(ctx context.Context, docID string) (*models.DocCompletionStats, error)
+	AddExpectedSigners(ctx context.Context, docID string, contacts []models.ContactInfo, addedBy string) error
+	RemoveExpectedSigner(ctx context.Context, docID, email string) error
+}
+
 // Handler handles document API requests
 type Handler struct {
 	signatureService signatureService
 	documentService  documentService
+	adminService     adminService
 	webhookPublisher webhookPublisher
 	authorizer       providers.Authorizer
+	baseURL          string
 }
 
 // NewHandler creates a handler with all dependencies for full functionality
@@ -64,6 +78,13 @@ func NewHandler(
 		webhookPublisher: publisher,
 		authorizer:       authorizer,
 	}
+}
+
+// WithAdminService sets the admin service for owner-based document management.
+func (h *Handler) WithAdminService(adminService adminService, baseURL string) *Handler {
+	h.adminService = adminService
+	h.baseURL = baseURL
+	return h
 }
 
 // DocumentDTO represents a document data transfer object
@@ -555,6 +576,11 @@ func (h *Handler) HandleListMyDocuments(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if !h.authorizer.CanCreateDocument(ctx, user.Email) {
+		shared.WriteForbidden(w, "You don't have permission to manage documents")
+		return
+	}
+
 	pagination := shared.ParsePaginationParams(r, 20, 100)
 	searchQuery := r.URL.Query().Get("search")
 
@@ -615,4 +641,382 @@ func (h *Handler) HandleListMyDocuments(w http.ResponseWriter, r *http.Request) 
 	}
 
 	shared.WritePaginatedJSON(w, documents, pagination.Page, pagination.PageSize, totalCount)
+}
+
+// checkDocumentOwnership verifies the user can manage the document (admin or owner).
+// Returns the document and user if access is granted, nil otherwise (error already written to response).
+func (h *Handler) checkDocumentOwnership(w http.ResponseWriter, r *http.Request) (*models.Document, *models.User) {
+	ctx := r.Context()
+	docID := chi.URLParam(r, "docId")
+
+	if docID == "" {
+		shared.WriteValidationError(w, "Document ID is required", nil)
+		return nil, nil
+	}
+
+	user, authenticated := shared.GetUserFromContext(ctx)
+	if !authenticated || user == nil {
+		shared.WriteError(w, http.StatusUnauthorized, shared.ErrCodeUnauthorized, "Authentication required", nil)
+		return nil, nil
+	}
+
+	if !h.authorizer.CanCreateDocument(ctx, user.Email) {
+		shared.WriteForbidden(w, "You don't have permission to manage documents")
+		return nil, nil
+	}
+
+	doc, err := h.adminService.GetDocument(ctx, docID)
+	if err != nil || doc == nil {
+		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
+		return nil, nil
+	}
+
+	if !h.authorizer.CanManageDocument(ctx, user.Email, doc.CreatedBy) {
+		shared.WriteForbidden(w, "You don't have permission to manage this document")
+		return nil, nil
+	}
+
+	return doc, user
+}
+
+// HandleGetMyDocumentStatus handles GET /api/v1/users/me/documents/{docId}/status
+func (h *Handler) HandleGetMyDocumentStatus(w http.ResponseWriter, r *http.Request) {
+	doc, _ := h.checkDocumentOwnership(w, r)
+	if doc == nil {
+		return
+	}
+
+	ctx := r.Context()
+	docID := doc.DocID
+
+	type ExpectedSignerResponse struct {
+		ID                    int64   `json:"id"`
+		DocID                 string  `json:"docId"`
+		Email                 string  `json:"email"`
+		Name                  string  `json:"name"`
+		AddedAt               string  `json:"addedAt"`
+		AddedBy               string  `json:"addedBy"`
+		Notes                 *string `json:"notes,omitempty"`
+		HasSigned             bool    `json:"hasSigned"`
+		SignedAt              *string `json:"signedAt,omitempty"`
+		UserName              *string `json:"userName,omitempty"`
+		LastReminderSent      *string `json:"lastReminderSent,omitempty"`
+		ReminderCount         int     `json:"reminderCount"`
+		DaysSinceAdded        int     `json:"daysSinceAdded"`
+		DaysSinceLastReminder *int    `json:"daysSinceLastReminder,omitempty"`
+	}
+
+	type UnexpectedSignatureResponse struct {
+		UserEmail   string  `json:"userEmail"`
+		UserName    *string `json:"userName,omitempty"`
+		SignedAtUTC string  `json:"signedAtUTC"`
+	}
+
+	type DocumentStatsResponse struct {
+		DocID          string  `json:"docId"`
+		ExpectedCount  int     `json:"expectedCount"`
+		SignedCount    int     `json:"signedCount"`
+		PendingCount   int     `json:"pendingCount"`
+		CompletionRate float64 `json:"completionRate"`
+	}
+
+	type DocumentResponse struct {
+		DocID             string `json:"docId"`
+		Title             string `json:"title"`
+		URL               string `json:"url"`
+		Checksum          string `json:"checksum,omitempty"`
+		ChecksumAlgorithm string `json:"checksumAlgorithm,omitempty"`
+		Description       string `json:"description"`
+		ReadMode          string `json:"readMode"`
+		AllowDownload     bool   `json:"allowDownload"`
+		RequireFullRead   bool   `json:"requireFullRead"`
+		VerifyChecksum    bool   `json:"verifyChecksum"`
+		CreatedAt         string `json:"createdAt"`
+		UpdatedAt         string `json:"updatedAt"`
+		CreatedBy         string `json:"createdBy"`
+		StorageKey        string `json:"storageKey,omitempty"`
+		StorageProvider   string `json:"storageProvider,omitempty"`
+		FileSize          int64  `json:"fileSize,omitempty"`
+		MimeType          string `json:"mimeType,omitempty"`
+	}
+
+	type StatusResponse struct {
+		DocID                string                         `json:"docId"`
+		Document             *DocumentResponse              `json:"document,omitempty"`
+		ExpectedSigners      []*ExpectedSignerResponse      `json:"expectedSigners"`
+		UnexpectedSignatures []*UnexpectedSignatureResponse `json:"unexpectedSignatures"`
+		Stats                *DocumentStatsResponse         `json:"stats"`
+		ShareLink            string                         `json:"shareLink"`
+	}
+
+	response := &StatusResponse{
+		DocID:                docID,
+		ExpectedSigners:      []*ExpectedSignerResponse{},
+		UnexpectedSignatures: []*UnexpectedSignatureResponse{},
+		ShareLink:            h.baseURL + "/?doc=" + docID,
+		Document: &DocumentResponse{
+			DocID:             doc.DocID,
+			Title:             doc.Title,
+			URL:               doc.URL,
+			Checksum:          doc.Checksum,
+			ChecksumAlgorithm: doc.ChecksumAlgorithm,
+			Description:       doc.Description,
+			ReadMode:          doc.ReadMode,
+			AllowDownload:     doc.AllowDownload,
+			RequireFullRead:   doc.RequireFullRead,
+			VerifyChecksum:    doc.VerifyChecksum,
+			CreatedAt:         doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:         doc.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			CreatedBy:         doc.CreatedBy,
+			StorageKey:        doc.StorageKey,
+			StorageProvider:   doc.StorageProvider,
+			FileSize:          doc.FileSize,
+			MimeType:          doc.MimeType,
+		},
+	}
+
+	// Get expected signers with status
+	expectedEmails := make(map[string]bool)
+	if signers, err := h.adminService.ListExpectedSignersWithStatus(ctx, docID); err == nil {
+		for _, signer := range signers {
+			resp := &ExpectedSignerResponse{
+				ID:                    signer.ID,
+				DocID:                 signer.DocID,
+				Email:                 signer.Email,
+				Name:                  signer.Name,
+				AddedAt:               signer.AddedAt.Format("2006-01-02T15:04:05Z07:00"),
+				AddedBy:               signer.AddedBy,
+				Notes:                 signer.Notes,
+				HasSigned:             signer.HasSigned,
+				UserName:              signer.UserName,
+				ReminderCount:         signer.ReminderCount,
+				DaysSinceAdded:        signer.DaysSinceAdded,
+				DaysSinceLastReminder: signer.DaysSinceLastReminder,
+			}
+			if signer.SignedAt != nil {
+				signedAt := signer.SignedAt.Format("2006-01-02T15:04:05Z07:00")
+				resp.SignedAt = &signedAt
+			}
+			if signer.LastReminderSent != nil {
+				lastReminder := signer.LastReminderSent.Format("2006-01-02T15:04:05Z07:00")
+				resp.LastReminderSent = &lastReminder
+			}
+			response.ExpectedSigners = append(response.ExpectedSigners, resp)
+			expectedEmails[signer.Email] = true
+		}
+	}
+
+	// Get all signatures and find unexpected ones
+	if signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID); err == nil {
+		for _, sig := range signatures {
+			if !expectedEmails[sig.UserEmail] {
+				userName := sig.UserName
+				response.UnexpectedSignatures = append(response.UnexpectedSignatures, &UnexpectedSignatureResponse{
+					UserEmail:   sig.UserEmail,
+					UserName:    &userName,
+					SignedAtUTC: sig.SignedAtUTC.Format("2006-01-02T15:04:05Z07:00"),
+				})
+			}
+		}
+	}
+
+	// Get completion stats
+	if stats, err := h.adminService.GetSignerStats(ctx, docID); err == nil {
+		response.Stats = &DocumentStatsResponse{
+			DocID:          stats.DocID,
+			ExpectedCount:  stats.ExpectedCount,
+			SignedCount:    stats.SignedCount,
+			PendingCount:   stats.PendingCount,
+			CompletionRate: stats.CompletionRate,
+		}
+	} else {
+		response.Stats = &DocumentStatsResponse{
+			DocID: docID,
+		}
+	}
+
+	shared.WriteJSON(w, http.StatusOK, response)
+}
+
+// HandleUpdateMyDocumentMetadata handles PUT /api/v1/users/me/documents/{docId}/metadata
+func (h *Handler) HandleUpdateMyDocumentMetadata(w http.ResponseWriter, r *http.Request) {
+	doc, user := h.checkDocumentOwnership(w, r)
+	if doc == nil {
+		return
+	}
+
+	ctx := r.Context()
+
+	var req struct {
+		Title             *string `json:"title,omitempty"`
+		URL               *string `json:"url,omitempty"`
+		Checksum          *string `json:"checksum,omitempty"`
+		ChecksumAlgorithm *string `json:"checksumAlgorithm,omitempty"`
+		Description       *string `json:"description,omitempty"`
+		ReadMode          *string `json:"readMode,omitempty"`
+		AllowDownload     *bool   `json:"allowDownload,omitempty"`
+		RequireFullRead   *bool   `json:"requireFullRead,omitempty"`
+		VerifyChecksum    *bool   `json:"verifyChecksum,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Invalid request body", nil)
+		return
+	}
+
+	if req.Title != nil {
+		doc.Title = *req.Title
+	}
+	if req.URL != nil {
+		doc.URL = *req.URL
+	}
+	if req.Checksum != nil {
+		doc.Checksum = *req.Checksum
+	}
+	if req.ChecksumAlgorithm != nil {
+		doc.ChecksumAlgorithm = *req.ChecksumAlgorithm
+	}
+	if req.Description != nil {
+		doc.Description = *req.Description
+	}
+	if req.ReadMode != nil {
+		doc.ReadMode = *req.ReadMode
+	}
+	if req.AllowDownload != nil {
+		doc.AllowDownload = *req.AllowDownload
+	}
+	if req.RequireFullRead != nil {
+		doc.RequireFullRead = *req.RequireFullRead
+	}
+	if req.VerifyChecksum != nil {
+		doc.VerifyChecksum = *req.VerifyChecksum
+	}
+
+	input := models.DocumentInput{
+		Title:             doc.Title,
+		URL:               doc.URL,
+		Checksum:          doc.Checksum,
+		ChecksumAlgorithm: doc.ChecksumAlgorithm,
+		Description:       doc.Description,
+		ReadMode:          doc.ReadMode,
+		AllowDownload:     &doc.AllowDownload,
+		RequireFullRead:   &doc.RequireFullRead,
+		VerifyChecksum:    &doc.VerifyChecksum,
+		StorageKey:        doc.StorageKey,
+		StorageProvider:   doc.StorageProvider,
+		FileSize:          doc.FileSize,
+		MimeType:          doc.MimeType,
+		OriginalFilename:  doc.OriginalFilename,
+	}
+
+	updated, err := h.adminService.UpdateDocumentMetadata(ctx, doc.DocID, input, user.Email)
+	if err != nil {
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to update document metadata", nil)
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Document metadata updated successfully",
+		"document": map[string]interface{}{
+			"docId":             updated.DocID,
+			"title":             updated.Title,
+			"url":               updated.URL,
+			"checksum":          updated.Checksum,
+			"checksumAlgorithm": updated.ChecksumAlgorithm,
+			"description":       updated.Description,
+			"readMode":          updated.ReadMode,
+			"allowDownload":     updated.AllowDownload,
+			"requireFullRead":   updated.RequireFullRead,
+			"verifyChecksum":    updated.VerifyChecksum,
+			"createdAt":         updated.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"updatedAt":         updated.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"createdBy":         updated.CreatedBy,
+		},
+	})
+}
+
+// HandleDeleteMyDocument handles DELETE /api/v1/users/me/documents/{docId}
+func (h *Handler) HandleDeleteMyDocument(w http.ResponseWriter, r *http.Request) {
+	doc, _ := h.checkDocumentOwnership(w, r)
+	if doc == nil {
+		return
+	}
+
+	ctx := r.Context()
+
+	if err := h.adminService.DeleteDocument(ctx, doc.DocID); err != nil {
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to delete document", nil)
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Document deleted successfully",
+	})
+}
+
+// HandleAddMyExpectedSigner handles POST /api/v1/users/me/documents/{docId}/signers
+func (h *Handler) HandleAddMyExpectedSigner(w http.ResponseWriter, r *http.Request) {
+	doc, user := h.checkDocumentOwnership(w, r)
+	if doc == nil {
+		return
+	}
+
+	ctx := r.Context()
+
+	var req struct {
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Invalid request body", nil)
+		return
+	}
+
+	if req.Email == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Email is required", nil)
+		return
+	}
+
+	contacts := []models.ContactInfo{{Email: req.Email, Name: req.Name}}
+	if err := h.adminService.AddExpectedSigners(ctx, doc.DocID, contacts, user.Email); err != nil {
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to add expected signer", nil)
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusCreated, map[string]interface{}{
+		"message": "Expected signer added successfully",
+		"email":   req.Email,
+	})
+}
+
+// HandleRemoveMyExpectedSigner handles DELETE /api/v1/users/me/documents/{docId}/signers/{email}
+func (h *Handler) HandleRemoveMyExpectedSigner(w http.ResponseWriter, r *http.Request) {
+	doc, _ := h.checkDocumentOwnership(w, r)
+	if doc == nil {
+		return
+	}
+
+	ctx := r.Context()
+	emailEncoded := chi.URLParam(r, "email")
+
+	email, err := url.QueryUnescape(emailEncoded)
+	if err != nil {
+		logger.Logger.Error("failed to decode email from URL", "error", err, "email_encoded", emailEncoded)
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Invalid email format", nil)
+		return
+	}
+
+	if email == "" {
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "Email is required", nil)
+		return
+	}
+
+	if err := h.adminService.RemoveExpectedSigner(ctx, doc.DocID, email); err != nil {
+		logger.Logger.Error("failed to remove expected signer", "error", err, "doc_id", doc.DocID, "email", email)
+		shared.WriteError(w, http.StatusInternalServerError, shared.ErrCodeInternal, "Failed to remove expected signer", nil)
+		return
+	}
+
+	shared.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Expected signer removed successfully",
+	})
 }

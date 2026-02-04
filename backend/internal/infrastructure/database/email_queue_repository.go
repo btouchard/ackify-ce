@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/lib/pq"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
 )
@@ -19,11 +19,11 @@ import (
 // EmailQueueRepository handles database operations for the email queue
 type EmailQueueRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewEmailQueueRepository creates a new email queue repository
-func NewEmailQueueRepository(db *sql.DB, tenants tenant.Provider) *EmailQueueRepository {
+func NewEmailQueueRepository(db *sql.DB, tenants providers.TenantProvider) *EmailQueueRepository {
 	return &EmailQueueRepository{db: db, tenants: tenants}
 }
 

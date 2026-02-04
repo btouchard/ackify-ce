@@ -100,8 +100,11 @@ export async function getDocument(docId: string): Promise<ApiResponse<Document>>
 }
 
 // Get complete document status (main endpoint used by AdminDocumentDetail)
-export async function getDocumentStatus(docId: string): Promise<ApiResponse<DocumentStatus>> {
-  const response = await http.get(`/admin/documents/${docId}/status`)
+export async function getDocumentStatus(docId: string, useOwnerEndpoint = false): Promise<ApiResponse<DocumentStatus>> {
+  const path = useOwnerEndpoint
+    ? `/users/me/documents/${docId}/status`
+    : `/admin/documents/${docId}/status`
+  const response = await http.get(path)
   return response.data
 }
 
@@ -118,15 +121,22 @@ export async function updateDocumentMetadata(
     allowDownload: boolean
     requireFullRead: boolean
     verifyChecksum: boolean
-  }>
+  }>,
+  useOwnerEndpoint = false
 ): Promise<ApiResponse<{ message: string; document: Document }>> {
-  const response = await http.put(`/admin/documents/${docId}/metadata`, metadata)
+  const path = useOwnerEndpoint
+    ? `/users/me/documents/${docId}/metadata`
+    : `/admin/documents/${docId}/metadata`
+  const response = await http.put(path, metadata)
   return response.data
 }
 
 // Delete document
-export async function deleteDocument(docId: string): Promise<ApiResponse<{ message: string }>> {
-  const response = await http.delete(`/admin/documents/${docId}`)
+export async function deleteDocument(docId: string, useOwnerEndpoint = false): Promise<ApiResponse<{ message: string }>> {
+  const path = useOwnerEndpoint
+    ? `/users/me/documents/${docId}`
+    : `/admin/documents/${docId}`
+  const response = await http.delete(path)
   return response.data
 }
 
@@ -137,18 +147,26 @@ export async function deleteDocument(docId: string): Promise<ApiResponse<{ messa
 // Add expected signer (single)
 export async function addExpectedSigner(
   docId: string,
-  request: { email: string; name: string; notes?: string }
+  request: { email: string; name: string; notes?: string },
+  useOwnerEndpoint = false
 ): Promise<ApiResponse<{ message: string; email: string }>> {
-  const response = await http.post(`/admin/documents/${docId}/signers`, request)
+  const path = useOwnerEndpoint
+    ? `/users/me/documents/${docId}/signers`
+    : `/admin/documents/${docId}/signers`
+  const response = await http.post(path, request)
   return response.data
 }
 
 // Remove expected signer
 export async function removeExpectedSigner(
   docId: string,
-  email: string
+  email: string,
+  useOwnerEndpoint = false
 ): Promise<ApiResponse<{ message: string }>> {
-  const response = await http.delete(`/admin/documents/${docId}/signers/${encodeURIComponent(email)}`)
+  const path = useOwnerEndpoint
+    ? `/users/me/documents/${docId}/signers/${encodeURIComponent(email)}`
+    : `/admin/documents/${docId}/signers/${encodeURIComponent(email)}`
+  const response = await http.delete(path)
   return response.data
 }
 

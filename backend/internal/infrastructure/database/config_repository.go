@@ -9,17 +9,17 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/google/uuid"
 )
 
 type ConfigRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
-func NewConfigRepository(db *sql.DB, tenants tenant.Provider) *ConfigRepository {
+func NewConfigRepository(db *sql.DB, tenants providers.TenantProvider) *ConfigRepository {
 	return &ConfigRepository{db: db, tenants: tenants}
 }
 

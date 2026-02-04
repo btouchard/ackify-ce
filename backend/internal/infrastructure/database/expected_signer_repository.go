@@ -8,19 +8,19 @@ import (
 	"strings"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // ExpectedSignerRepository handles database operations for expected signers
 type ExpectedSignerRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewExpectedSignerRepository creates a new expected signer repository
-func NewExpectedSignerRepository(db *sql.DB, tenants tenant.Provider) *ExpectedSignerRepository {
+func NewExpectedSignerRepository(db *sql.DB, tenants providers.TenantProvider) *ExpectedSignerRepository {
 	return &ExpectedSignerRepository{db: db, tenants: tenants}
 }
 

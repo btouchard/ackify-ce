@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/pkg/config"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
@@ -63,7 +64,7 @@ type ServerBuilder struct {
 
 	// Core infrastructure (required)
 	db             *sql.DB
-	tenantProvider tenant.Provider
+	tenantProvider providers.TenantProvider
 
 	// Capability providers (all have CE defaults)
 	authProvider  AuthProvider
@@ -104,7 +105,7 @@ func (b *ServerBuilder) WithDB(db *sql.DB) *ServerBuilder {
 }
 
 // WithTenantProvider injects a tenant provider (REQUIRED).
-func (b *ServerBuilder) WithTenantProvider(tp tenant.Provider) *ServerBuilder {
+func (b *ServerBuilder) WithTenantProvider(tp providers.TenantProvider) *ServerBuilder {
 	b.tenantProvider = tp
 	return b
 }
@@ -455,7 +456,7 @@ func (b *ServerBuilder) buildRouter(repos *repositories, whPublisher *services.W
 		DB:             b.db,
 		TenantProvider: b.tenantProvider,
 
-		// Capability providers (Provider handles OIDC + MagicLink dynamically)
+		// Capability providers (TenantProvider handles OIDC + MagicLink dynamically)
 		AuthProvider:     b.authProvider,
 		Authorizer:       b.authorizer,
 		SignatureService: b.signatureService,

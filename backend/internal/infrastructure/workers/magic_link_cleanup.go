@@ -9,6 +9,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // MagicLinkCleanupWorker nettoie périodiquement les tokens expirés
@@ -19,10 +20,10 @@ type MagicLinkCleanupWorker struct {
 
 	// RLS support
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
-func NewMagicLinkCleanupWorker(service *services.MagicLinkService, interval time.Duration, db *sql.DB, tenants tenant.Provider) *MagicLinkCleanupWorker {
+func NewMagicLinkCleanupWorker(service *services.MagicLinkService, interval time.Duration, db *sql.DB, tenants providers.TenantProvider) *MagicLinkCleanupWorker {
 	if interval == 0 {
 		interval = 1 * time.Hour // Défaut: toutes les heures
 	}

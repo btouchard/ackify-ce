@@ -137,7 +137,8 @@ async function loadDocumentStatus() {
     loading.value = true
     error.value = ''
     unauthorized.value = false
-    const response = await getDocumentStatus(docId.value)
+    const useOwnerEndpoint = !authStore.isAdmin
+    const response = await getDocumentStatus(docId.value, useOwnerEndpoint)
     documentStatus.value = response.data
 
     // Check authorization
@@ -178,7 +179,8 @@ async function saveMetadata() {
     savingMetadata.value = true
     error.value = ''
     success.value = ''
-    await updateDocumentMetadata(docId.value, metadataForm.value)
+    const useOwnerEndpoint = !authStore.isAdmin
+    await updateDocumentMetadata(docId.value, metadataForm.value, useOwnerEndpoint)
     success.value = t('documentEdit.metadataSaved')
     await loadDocumentStatus()
     setTimeout(() => (success.value = ''), 3000)
@@ -208,7 +210,8 @@ async function addSigners() {
       const name = match && match[1] ? match[1].trim() : ''
 
       try {
-        await addExpectedSigner(docId.value, { email, name })
+        const useOwnerEndpoint = !authStore.isAdmin
+        await addExpectedSigner(docId.value, { email, name }, useOwnerEndpoint)
         addedCount++
       } catch (err) {
         console.error(`Failed to add ${email}:`, err)
@@ -240,7 +243,8 @@ async function removeSigner() {
   try {
     error.value = ''
     success.value = ''
-    await removeExpectedSigner(docId.value, email)
+    const useOwnerEndpoint = !authStore.isAdmin
+    await removeExpectedSigner(docId.value, email, useOwnerEndpoint)
     success.value = t('documentEdit.signerRemoved', { email })
     showRemoveSignerModal.value = false
     signerToRemove.value = ''
@@ -326,7 +330,8 @@ async function handleDeleteDocument() {
   try {
     deletingDocument.value = true
     error.value = ''
-    await deleteDocument(docId.value)
+    const useOwnerEndpoint = !authStore.isAdmin
+    await deleteDocument(docId.value, useOwnerEndpoint)
     showDeleteConfirmModal.value = false
     router.push('/documents')
   } catch (err) {

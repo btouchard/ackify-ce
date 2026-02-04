@@ -51,5 +51,15 @@ func (a *SimpleAuthorizer) CanCreateDocument(ctx context.Context, userEmail stri
 	return a.IsAdmin(ctx, userEmail)
 }
 
+// CanManageDocument implements providers.Authorizer.
+func (a *SimpleAuthorizer) CanManageDocument(ctx context.Context, userEmail, docCreatedBy string) bool {
+	if a.IsAdmin(ctx, userEmail) {
+		return true
+	}
+	normalized := strings.ToLower(strings.TrimSpace(userEmail))
+	normalizedCreator := strings.ToLower(strings.TrimSpace(docCreatedBy))
+	return normalized != "" && normalized == normalizedCreator
+}
+
 // Compile-time interface check.
 var _ providers.Authorizer = (*SimpleAuthorizer)(nil)

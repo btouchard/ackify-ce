@@ -8,18 +8,18 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // SignatureRepository handles PostgreSQL persistence for cryptographic signatures
 type SignatureRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewSignatureRepository initializes a signature repository with the given database connection
-func NewSignatureRepository(db *sql.DB, tenants tenant.Provider) *SignatureRepository {
+func NewSignatureRepository(db *sql.DB, tenants providers.TenantProvider) *SignatureRepository {
 	return &SignatureRepository{db: db, tenants: tenants}
 }
 

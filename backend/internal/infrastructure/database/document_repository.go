@@ -7,19 +7,19 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // DocumentRepository handles document metadata persistence
 type DocumentRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewDocumentRepository creates a new DocumentRepository
-func NewDocumentRepository(db *sql.DB, tenants tenant.Provider) *DocumentRepository {
+func NewDocumentRepository(db *sql.DB, tenants providers.TenantProvider) *DocumentRepository {
 	return &DocumentRepository{db: db, tenants: tenants}
 }
 

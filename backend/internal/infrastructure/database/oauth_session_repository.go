@@ -8,19 +8,19 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // OAuthSessionRepository implements the OAuth session repository
 type OAuthSessionRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewOAuthSessionRepository creates a new OAuth session repository
-func NewOAuthSessionRepository(db *sql.DB, tenants tenant.Provider) *OAuthSessionRepository {
+func NewOAuthSessionRepository(db *sql.DB, tenants providers.TenantProvider) *OAuthSessionRepository {
 	return &OAuthSessionRepository{db: db, tenants: tenants}
 }
 

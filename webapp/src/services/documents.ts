@@ -137,11 +137,11 @@ export const documentService = {
   },
 
   /**
-   * Delete a document by ID
+   * Delete a document by ID (uses owner endpoint, works for both admin and owner)
    * @param docId Document ID to delete
    */
   async deleteDocument(docId: string): Promise<void> {
-    await http.delete(`/admin/documents/${docId}`)
+    await http.delete(`/users/me/documents/${docId}`)
   },
 
   /**

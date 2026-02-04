@@ -14,7 +14,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/btouchard/ackify-ce/backend/internal/application/services"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	apiAdmin "github.com/btouchard/ackify-ce/backend/internal/presentation/api/admin"
 	apiAuth "github.com/btouchard/ackify-ce/backend/internal/presentation/api/auth"
 	apiConfig "github.com/btouchard/ackify-ce/backend/internal/presentation/api/config"
@@ -113,8 +112,8 @@ type configService interface {
 // RouterConfig holds configuration for the API router
 type RouterConfig struct {
 	// Database for RLS middleware
-	DB             *sql.DB         // Required for RLS transaction management
-	TenantProvider tenant.Provider // Required for tenant context
+	DB             *sql.DB                  // Required for RLS transaction management
+	TenantProvider providers.TenantProvider // Required for tenant context
 
 	// Capability providers
 	// AuthProvider handles all auth methods (sessions, OIDC, MagicLink) dynamically
@@ -194,7 +193,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		cfg.DocumentService,
 		cfg.WebhookPublisher,
 		cfg.Authorizer,
-	)
+	).WithAdminService(cfg.AdminService, cfg.BaseURL)
 	signaturesHandler := signatures.NewHandler(cfg.SignatureService, cfg.AdminService, cfg.WebhookPublisher)
 	proxyHandler := proxy.NewHandler(cfg.DocumentService)
 
@@ -275,6 +274,15 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/me", usersHandler.HandleGetCurrentUser)
 			r.Get("/me/documents", documentsHandler.HandleListMyDocuments)
+
+			// Owner-based document management (user can manage docs they created)
+			r.Get("/me/documents/{docId}/status", documentsHandler.HandleGetMyDocumentStatus)
+			r.Put("/me/documents/{docId}/metadata", documentsHandler.HandleUpdateMyDocumentMetadata)
+			r.Delete("/me/documents/{docId}", documentsHandler.HandleDeleteMyDocument)
+
+			// Expected signers management (owner can manage signers for their documents)
+			r.Post("/me/documents/{docId}/signers", documentsHandler.HandleAddMyExpectedSigner)
+			r.Delete("/me/documents/{docId}/signers/{email}", documentsHandler.HandleRemoveMyExpectedSigner)
 		})
 
 		// Signature endpoints

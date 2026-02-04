@@ -17,6 +17,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -27,7 +28,7 @@ type TestDB struct {
 	DB             *sql.DB
 	DSN            string
 	dbName         string
-	TenantProvider tenant.Provider
+	TenantProvider providers.TenantProvider
 }
 
 func SetupTestDB(t *testing.T) *TestDB {
@@ -75,7 +76,7 @@ func SetupTestDB(t *testing.T) *TestDB {
 	defer mainDB.Close()
 
 	// Create unique test database
-	_, err = mainDB.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+	_, err = mainDB.Exec(fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(dbName)))
 	if err != nil {
 		t.Fatalf("Failed to create test database %s: %v", dbName, err)
 	}
@@ -116,14 +117,14 @@ func SetupTestDB(t *testing.T) *TestDB {
 		if err == nil {
 			defer mainDB.Close()
 			// Force close any remaining connections
-			_, _ = mainDB.Exec(fmt.Sprintf(`
+			_, _ = mainDB.Exec(`
 				SELECT pg_terminate_backend(pg_stat_activity.pid)
 				FROM pg_stat_activity
-				WHERE pg_stat_activity.datname = '%s'
+				WHERE pg_stat_activity.datname = $1
 				AND pid <> pg_backend_pid()
-			`, dbName))
+			`, dbName)
 			// Drop the database
-			_, _ = mainDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName))
+			_, _ = mainDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", quoteIdentifier(dbName)))
 		}
 	})
 
@@ -363,6 +364,10 @@ func NewSignatureFactory() *SignatureFactory {
 	return &SignatureFactory{}
 }
 
+func quoteIdentifier(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
 // ensureAppRole creates the ackify_app role if it doesn't exist.
 // This mirrors cmd/migrate/main.go ensureAppRole() behavior for tests.
 // The role is created with NOLOGIN (no password) - sufficient for running migrations.
@@ -400,7 +405,7 @@ func (tdb *TestDB) ensureAppRole() error {
 		return fmt.Errorf("failed to get current database name: %w", err)
 	}
 
-	_, err = tdb.DB.Exec(fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO ackify_app", dbName))
+	_, err = tdb.DB.Exec(fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO ackify_app", quoteIdentifier(dbName)))
 	if err != nil {
 		return fmt.Errorf("failed to grant CONNECT to ackify_app: %w", err)
 	}

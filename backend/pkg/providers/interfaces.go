@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/btouchard/ackify-ce/backend/pkg/types"
+	"github.com/google/uuid"
 )
 
 // Common errors for capability providers.
@@ -91,6 +92,10 @@ type Authorizer interface {
 
 	// CanCreateDocument returns true if the user can create documents.
 	CanCreateDocument(ctx context.Context, userEmail string) bool
+
+	// CanManageDocument returns true if the user can manage (edit/delete) a document.
+	// Returns true if user is admin or is the document creator.
+	CanManageDocument(ctx context.Context, userEmail, docCreatedBy string) bool
 }
 
 // === Legacy interfaces for backward compatibility ===
@@ -99,4 +104,9 @@ type Authorizer interface {
 // OAuthAuthProvider is deprecated. Use AuthProvider instead.
 type OAuthAuthProvider interface {
 	AuthProvider
+}
+
+// TenantProvider defines the interface for obtaining the current tenant ID.
+type TenantProvider interface {
+	CurrentTenant(ctx context.Context) (uuid.UUID, error)
 }

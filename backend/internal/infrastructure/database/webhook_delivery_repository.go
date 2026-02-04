@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // Joined view of a delivery with webhook send data
@@ -32,10 +32,10 @@ type WebhookDeliveryItem struct {
 
 type WebhookDeliveryRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
-func NewWebhookDeliveryRepository(db *sql.DB, tenants tenant.Provider) *WebhookDeliveryRepository {
+func NewWebhookDeliveryRepository(db *sql.DB, tenants providers.TenantProvider) *WebhookDeliveryRepository {
 	return &WebhookDeliveryRepository{db: db, tenants: tenants}
 }
 

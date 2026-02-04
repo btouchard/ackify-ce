@@ -195,7 +195,7 @@ func ensureAppRole(db *sql.DB) error {
 		return fmt.Errorf("failed to get current database name: %w", err)
 	}
 
-	_, err = db.Exec(fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO ackify_app", dbName))
+	_, err = db.Exec(fmt.Sprintf("GRANT CONNECT ON DATABASE %s TO ackify_app", quoteIdentifier(dbName)))
 	if err != nil {
 		return fmt.Errorf("failed to grant CONNECT to ackify_app: %w", err)
 	}
@@ -212,4 +212,10 @@ func ensureAppRole(db *sql.DB) error {
 // escapePassword escapes single quotes in password for SQL
 func escapePassword(password string) string {
 	return strings.ReplaceAll(password, "'", "''")
+}
+
+// quoteIdentifier quotes a PostgreSQL identifier (table name, database name, etc.)
+// to safely handle names containing special characters like hyphens.
+func quoteIdentifier(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }

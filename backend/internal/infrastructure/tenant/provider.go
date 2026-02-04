@@ -10,12 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Provider defines the interface for obtaining the current tenant ID.
-type Provider interface {
-	CurrentTenant(ctx context.Context) (uuid.UUID, error)
-}
-
-// SingleTenantProvider implements Provider for single-tenant.
+// SingleTenantProvider implements TenantProvider for single-tenant.
 // It caches the tenant ID from instance_metadata at startup.
 type SingleTenantProvider struct {
 	id uuid.UUID

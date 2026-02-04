@@ -63,6 +63,13 @@ func (m *mockAuthorizer) CanCreateDocument(_ context.Context, email string) bool
 	return m.adminEmails[strings.ToLower(email)]
 }
 
+func (m *mockAuthorizer) CanManageDocument(ctx context.Context, userEmail, docCreatedBy string) bool {
+	if m.IsAdmin(ctx, userEmail) {
+		return true
+	}
+	return strings.ToLower(userEmail) == strings.ToLower(docCreatedBy)
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================

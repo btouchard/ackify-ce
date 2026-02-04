@@ -13,6 +13,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // EmailErrorType represents the category of an email sending error
@@ -52,7 +53,7 @@ type Worker struct {
 
 	// RLS support
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 
 	// Worker configuration
 	batchSize       int
@@ -91,7 +92,7 @@ func DefaultWorkerConfig() WorkerConfig {
 }
 
 // NewWorker creates a new email worker
-func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, config WorkerConfig, parentCtx context.Context, db *sql.DB, tenants tenant.Provider) *Worker {
+func NewWorker(queueRepo QueueRepository, sender Sender, renderer *Renderer, config WorkerConfig, parentCtx context.Context, db *sql.DB, tenants providers.TenantProvider) *Worker {
 	// Apply defaults
 	if config.BatchSize <= 0 {
 		config.BatchSize = 10

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/google/uuid"
 )
 
@@ -67,8 +68,8 @@ func WithTenantContext(ctx context.Context, db *sql.DB, tenantID uuid.UUID, fn f
 }
 
 // WithTenantContextFromProvider is like WithTenantContext but obtains the tenant ID
-// from a Provider. This is useful when the tenant ID is not known upfront.
-func WithTenantContextFromProvider(ctx context.Context, db *sql.DB, provider Provider, fn func(ctx context.Context) error) error {
+// from a TenantProvider. This is useful when the tenant ID is not known upfront.
+func WithTenantContextFromProvider(ctx context.Context, db *sql.DB, provider providers.TenantProvider, fn func(ctx context.Context) error) error {
 	tenantID, err := provider.CurrentTenant(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get tenant ID: %w", err)

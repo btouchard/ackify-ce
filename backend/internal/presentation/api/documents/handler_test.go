@@ -96,6 +96,13 @@ func (m *mockAuthorizer) CanCreateDocument(_ context.Context, userEmail string) 
 	return m.adminEmails[strings.ToLower(strings.TrimSpace(userEmail))]
 }
 
+func (m *mockAuthorizer) CanManageDocument(ctx context.Context, userEmail, docCreatedBy string) bool {
+	if m.IsAdmin(ctx, userEmail) {
+		return true
+	}
+	return strings.ToLower(strings.TrimSpace(userEmail)) == strings.ToLower(strings.TrimSpace(docCreatedBy))
+}
+
 // Mock document service
 type mockDocumentService struct {
 	createDocFunc       func(ctx context.Context, req services.CreateDocumentRequest) (*models.Document, error)

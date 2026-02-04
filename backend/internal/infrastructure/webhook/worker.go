@@ -18,6 +18,7 @@ import (
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/database"
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // DeliveryRepository is the minimal interface used by the worker
@@ -56,7 +57,7 @@ type Worker struct {
 
 	// RLS support
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -66,7 +67,7 @@ type Worker struct {
 	started  bool
 }
 
-func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig, parentCtx context.Context, db *sql.DB, tenants tenant.Provider) *Worker {
+func NewWorker(repo DeliveryRepository, httpClient HTTPDoer, cfg WorkerConfig, parentCtx context.Context, db *sql.DB, tenants providers.TenantProvider) *Worker {
 	if cfg.BatchSize <= 0 {
 		cfg.BatchSize = 10
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // SessionWorker handles background cleanup of expired OAuth sessions
@@ -20,7 +21,7 @@ type SessionWorker struct {
 
 	// RLS support
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -45,7 +46,7 @@ func DefaultSessionWorkerConfig() SessionWorkerConfig {
 }
 
 // NewSessionWorker creates a new OAuth session cleanup worker
-func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig, parentCtx context.Context, db *sql.DB, tenants tenant.Provider) *SessionWorker {
+func NewSessionWorker(sessionRepo SessionRepository, config SessionWorkerConfig, parentCtx context.Context, db *sql.DB, tenants providers.TenantProvider) *SessionWorker {
 	// Apply defaults
 	if config.CleanupInterval <= 0 {
 		config.CleanupInterval = 24 * time.Hour

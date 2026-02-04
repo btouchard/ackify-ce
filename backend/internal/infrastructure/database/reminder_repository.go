@@ -7,19 +7,19 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/logger"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 )
 
 // ReminderRepository handles database operations for reminder logs
 type ReminderRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
 // NewReminderRepository creates a new reminder repository
-func NewReminderRepository(db *sql.DB, tenants tenant.Provider) *ReminderRepository {
+func NewReminderRepository(db *sql.DB, tenants providers.TenantProvider) *ReminderRepository {
 	return &ReminderRepository{db: db, tenants: tenants}
 }
 

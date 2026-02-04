@@ -140,6 +140,13 @@ func (m *mockAuthorizer) CanCreateDocument(_ context.Context, email string) bool
 	return true
 }
 
+func (m *mockAuthorizer) CanManageDocument(ctx context.Context, userEmail, docCreatedBy string) bool {
+	if m.IsAdmin(ctx, userEmail) {
+		return true
+	}
+	return strings.ToLower(userEmail) == strings.ToLower(docCreatedBy)
+}
+
 func createTestMiddleware(adminEmails []string) (*Middleware, *mockAuthProvider) {
 	authProvider := newMockAuthProvider()
 	authorizer := newMockAuthorizer(adminEmails, false)

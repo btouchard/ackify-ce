@@ -8,17 +8,17 @@ import (
 	"fmt"
 
 	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/dbctx"
-	"github.com/btouchard/ackify-ce/backend/internal/infrastructure/tenant"
 	"github.com/btouchard/ackify-ce/backend/pkg/models"
+	"github.com/btouchard/ackify-ce/backend/pkg/providers"
 	"github.com/lib/pq"
 )
 
 type WebhookRepository struct {
 	db      *sql.DB
-	tenants tenant.Provider
+	tenants providers.TenantProvider
 }
 
-func NewWebhookRepository(db *sql.DB, tenants tenant.Provider) *WebhookRepository {
+func NewWebhookRepository(db *sql.DB, tenants providers.TenantProvider) *WebhookRepository {
 	return &WebhookRepository{db: db, tenants: tenants}
 }
 
