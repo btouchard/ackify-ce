@@ -492,8 +492,11 @@ type FindOrCreateDocumentResponse struct {
 func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get reference from query parameter (renamed from "ref" to "doc" to avoid ClearURLs blocking)
+	// "doc" is the primary parameter; "ref" is accepted as fallback for backward compatibility
 	ref := r.URL.Query().Get("doc")
+	if ref == "" {
+		ref = r.URL.Query().Get("ref")
+	}
 	if ref == "" {
 		logger.Logger.Warn("Find or create request missing doc parameter",
 			"remote_addr", r.RemoteAddr)

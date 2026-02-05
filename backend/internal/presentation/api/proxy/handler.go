@@ -85,8 +85,11 @@ func (h *Handler) HandleProxy(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	requestID := getRequestID(r.Context())
 
-	// Extract parameters
+	// "doc" is the primary parameter; "ref" is accepted as fallback for backward compatibility
 	docID := r.URL.Query().Get("doc")
+	if docID == "" {
+		docID = r.URL.Query().Get("ref")
+	}
 	rawURL := r.URL.Query().Get("url")
 
 	// Validate required parameters

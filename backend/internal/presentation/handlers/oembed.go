@@ -44,8 +44,11 @@ func HandleOEmbed(baseURL string) http.HandlerFunc {
 			return
 		}
 
-		// Extract doc ID from query parameters
+		// "doc" is the primary parameter; "ref" is accepted as fallback for backward compatibility
 		docID := parsedURL.Query().Get("doc")
+		if docID == "" {
+			docID = parsedURL.Query().Get("ref")
+		}
 		if docID == "" {
 			logger.Logger.Warn("oEmbed request missing doc parameter in url",
 				"url", urlParam,

@@ -98,6 +98,9 @@ func serveIndexTemplate(w http.ResponseWriter, r *http.Request, file fs.File, ba
 func generateMetaTags(r *http.Request, baseURL string, signatureRepo SignatureRepository) string {
 	docID := r.URL.Query().Get("doc")
 	if docID == "" {
+		docID = r.URL.Query().Get("ref")
+	}
+	if docID == "" {
 		return ""
 	}
 

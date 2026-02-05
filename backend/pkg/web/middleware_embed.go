@@ -50,10 +50,12 @@ func EmbedDocumentMiddleware(
 				return
 			}
 
-			// Get doc ID from query parameter
+			// "doc" is the primary parameter; "ref" is accepted as fallback for backward compatibility
 			docID := r.URL.Query().Get("doc")
 			if docID == "" {
-				// No doc parameter, let SPA handle it
+				docID = r.URL.Query().Get("ref")
+			}
+			if docID == "" {
 				next.ServeHTTP(w, r)
 				return
 			}
