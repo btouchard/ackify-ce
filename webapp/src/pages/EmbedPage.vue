@@ -25,8 +25,8 @@
 
     <!-- Document info and signatures -->
     <div v-else-if="documentData" class="max-w-2xl mx-auto">
-      <!-- Document header with signatures (only shown if user has access to view signatures) -->
-      <div v-if="documentData.signatures && documentData.signatures.length > 0">
+      <!-- Document header with signatures (shown if there are confirmations) -->
+      <div v-if="signatureCount > 0">
         <!-- Header Card -->
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 mb-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -39,7 +39,7 @@
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                   </svg>
-                  {{ t('embed.confirmationsCount', { count: documentData.signatures.length }) }}
+                  {{ t('embed.confirmationsCount', { count: signatureCount }) }}
                 </span>
               </div>
             </div>
@@ -57,8 +57,8 @@
           </div>
         </div>
 
-        <!-- Signatures list -->
-        <div class="space-y-2" data-testid="signatures-list">
+        <!-- Signatures list (only shown if user has access to view signatures) -->
+        <div v-if="documentData.signatures && documentData.signatures.length > 0" class="space-y-2" data-testid="signatures-list">
           <div
             v-for="signature in documentData.signatures"
             :key="signature.id"
@@ -133,6 +133,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const documentData = ref<any>(null)
 const resolvedDocId = ref<string | null>(null)
+const signatureCount = ref<number>(0)
 
 // Computed
 const docRef = computed(() => route.query.doc as string)
@@ -166,6 +167,7 @@ async function loadDocument() {
     // First, find or create the document to get the docID
     const doc = await documentService.findOrCreateDocument(docRef.value)
     resolvedDocId.value = doc.docId
+    signatureCount.value = doc.signatureCount || 0
 
     // If the docRef is not the same as the docID, redirect to clean URL
     if (docRef.value !== doc.docId) {
@@ -176,7 +178,7 @@ async function loadDocument() {
       return // Router will trigger watch and reload
     }
 
-    // Then fetch signatures using the resolved docID
+    // Then fetch signatures using the resolved docID (may return empty list for non-owner)
     const response = await http.get(`/documents/${doc.docId}/signatures`)
 
     // Build document data from signatures response

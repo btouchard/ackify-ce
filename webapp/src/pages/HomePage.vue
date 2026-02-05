@@ -209,6 +209,11 @@ async function handleSigned() {
 
   await loadDocumentSignatures()
 
+  // Update signature count to reflect the new signature
+  if (currentDocument.value) {
+    currentDocument.value.signatureCount = documentSignatures.value.length
+  }
+
   setTimeout(() => {
     showSuccessMessage.value = false
   }, 5000)

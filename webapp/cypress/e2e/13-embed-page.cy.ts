@@ -42,14 +42,14 @@ describe('Test 13: Embed Page Functionality', () => {
     // Wait for success message
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
-    // Step 2: Logout and visit embed page (force English locale)
-    cy.clearCookies()
+    // Step 2: Visit embed page while still logged in (as document creator/signer)
+    // Note: Non-authenticated users only see count, not email details
     cy.visitWithLocale(`/embed?doc=${sharedDocId}`, 'en')
 
     // Step 3: Should show document header with signature count (i18n: "confirmation")
     cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
 
-    // Step 4: Should show signature in list
+    // Step 4: Should show own signature in list (authenticated users see their own signature)
     cy.contains('embed-user1@test.com').should('be.visible')
 
     // Step 5: Should show "Confirm" button (i18n: "Confirm")
@@ -60,7 +60,7 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.get('[data-testid="signature-date"]').should('exist')
   })
 
-  it('should display multiple signatures', () => {
+  it('should display multiple signatures count', () => {
     // Step 1: Add multiple signatures
     const users = ['embed-user2@test.com', 'embed-user3@test.com', 'embed-user4@test.com']
 
@@ -72,20 +72,21 @@ describe('Test 13: Embed Page Functionality', () => {
       cy.clearCookies()
     })
 
-    // Step 2: Visit embed page (force English locale)
+    // Step 2: Login as admin to see all signatures
+    cy.loginViaMagicLink('admin@test.com')
     cy.visitWithLocale(`/embed?doc=${sharedDocId}`, 'en')
 
     // Step 3: Should show correct signature count (1 from previous test + 3 new = 4)
-    cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
+    cy.contains('4 confirmation', { timeout: 10000 }).should('be.visible')
 
-    // Step 4: Should show all 4 signatures
+    // Step 4: Admin can see all signatures
     cy.contains('embed-user1@test.com').should('be.visible')
     cy.contains('embed-user2@test.com').should('be.visible')
     cy.contains('embed-user3@test.com').should('be.visible')
     cy.contains('embed-user4@test.com').should('be.visible')
 
-    // Step 5: All signatures should have checkmark icons
-    cy.get('svg').filter(':visible').should('have.length.at.least', 4)
+    // Step 5: All signatures should have checkmark icons (visible SVGs)
+    cy.get('[data-testid="signature-item"]').should('have.length', 4)
   })
 
   it('should handle document with URL reference', () => {
@@ -98,8 +99,7 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
-    // Step 2: Visit embed page with URL
-    cy.clearCookies()
+    // Step 2: Visit embed page with URL (stay logged in to see own signature)
     cy.visitWithLocale(`/embed?doc=${encodeURIComponent(embedDocUrl)}`, 'en')
 
     // Step 3: Should redirect to canonical docId
@@ -107,7 +107,8 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.url().should('include', 'doc=')
     cy.url().should('not.include', encodeURIComponent(embedDocUrl))
 
-    // Step 4: Should show signature (verify unique email is displayed)
+    // Step 4: Should show signature count and own signature
+    cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
     cy.contains(uniqueEmail, { timeout: 10000 }).should('be.visible')
   })
 
@@ -147,13 +148,16 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
-    // Step 3: Visit embed page for doc1
+    // Step 3: Login as admin to see all signatures
     cy.clearCookies()
+    cy.loginViaMagicLink('admin@test.com')
+
+    // Step 4: Visit embed page for doc1
     cy.visitWithLocale(`/embed?doc=${doc1}`, 'en')
     cy.contains('embed-nav-user1@test.com', { timeout: 10000 }).should('be.visible')
     cy.contains('embed-nav-user2@test.com').should('not.exist')
 
-    // Step 4: Navigate to doc2 via URL change
+    // Step 5: Navigate to doc2 via URL change
     cy.visitWithLocale(`/embed?doc=${doc2}`, 'en')
     cy.contains('embed-nav-user2@test.com', { timeout: 10000 }).should('be.visible')
     cy.contains('embed-nav-user1@test.com').should('not.exist')
@@ -193,11 +197,12 @@ describe('Test 13: Embed Page Functionality', () => {
       }
     })
 
-    // Step 2: Visit embed page
+    // Step 2: Login as admin to see all signatures
+    cy.loginViaMagicLink('admin@test.com')
     cy.visitWithLocale(`/embed?doc=${chronoDocId}`, 'en')
 
     // Step 3: Verify all signatures are displayed (should contain "confirmation" text)
-    cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
+    cy.contains('3 confirmation', { timeout: 10000 }).should('be.visible')
 
     // Step 4: Verify signatures appear in the list
     cy.get('[data-testid="signature-item"]').should('have.length', 3)
@@ -218,14 +223,16 @@ describe('Test 13: Embed Page Functionality', () => {
     cy.confirmReading()
     cy.contains('successfully', { timeout: 10000 }).should('be.visible')
 
-    // Step 2: Visit embed page
-    cy.clearCookies()
+    // Step 2: Visit embed page (stay logged in to see own signature)
     cy.visitWithLocale(`/embed?doc=${longEmailDocId}`, 'en')
 
-    // Step 3: Verify long email is displayed (may be truncated)
+    // Step 3: Verify signature count is displayed
+    cy.contains('confirmation', { timeout: 10000 }).should('be.visible')
+
+    // Step 4: Verify long email is displayed (may be truncated)
     cy.contains(longEmail.substring(0, 20), { timeout: 10000 }).should('be.visible')
 
-    // Step 4: Verify layout is not broken (check for truncate class)
+    // Step 5: Verify layout is not broken (check for truncate class)
     cy.get('.truncate').should('exist')
   })
 })

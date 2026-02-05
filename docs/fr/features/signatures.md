@@ -110,10 +110,49 @@ Le frontend affiche :
 GET /api/v1/documents/policy_2025/signatures
 ```
 
-Retourne toutes les signatures avec :
-- Email signataire
-- Horodatage
-- Hash + signature
+### Contrôle d'Accès
+
+L'endpoint de liste des signatures a des **restrictions d'accès** pour protéger la vie privée des utilisateurs :
+
+| Type d'utilisateur | Ce qu'il voit |
+|-------------------|---------------|
+| **Propriétaire du document** (created_by) | Toutes les signatures avec emails |
+| **Admin** (dans ACKIFY_ADMIN_EMAILS) | Toutes les signatures avec emails |
+| **Utilisateur authentifié** (non propriétaire) | Uniquement sa propre signature (s'il a signé) |
+| **Non authentifié** | Liste vide |
+
+> **Note** : Le **compteur de signatures** est toujours visible par tous via le champ `signatureCount` dans les réponses document. Seule la **liste détaillée** (avec les adresses email) est restreinte.
+
+**Exemples de réponses** :
+
+En tant que propriétaire/admin :
+```json
+{
+  "data": [
+    {"userEmail": "alice@example.com", "signedAt": "..."},
+    {"userEmail": "bob@example.com", "signedAt": "..."},
+    {"userEmail": "charlie@example.com", "signedAt": "..."}
+  ]
+}
+```
+
+En tant qu'utilisateur authentifié non-propriétaire (qui a signé) :
+```json
+{
+  "data": [
+    {"userEmail": "bob@example.com", "signedAt": "..."}
+  ]
+}
+```
+
+En tant que non-authentifié :
+```json
+{
+  "data": []
+}
+```
+
+Le même contrôle d'accès s'applique à l'endpoint des signataires attendus (`/expected-signers`).
 
 ### Programmation (Go)
 

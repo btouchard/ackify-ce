@@ -23,9 +23,9 @@ describe('Test 2: Signature Uniqueness Verification', () => {
     cy.contains('Reading confirmed', { timeout: 10000 }).should('be.visible')
     cy.contains('Confirmed').should('be.visible')
 
-    // Step 4: Verify signature in list
+    // Step 4: Verify signature in list (user can see their own signature)
     cy.contains('Existing confirmations').should('be.visible')
-    cy.contains(testEmail).should('be.visible')
+    cy.contains(testEmail).should('be.visible') // User sees their own signature
 
     // Step 5: Reload the page
     cy.reload()

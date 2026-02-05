@@ -85,6 +85,60 @@ server {
 }
 ```
 
+## Docker Healthcheck
+
+L'image Docker Ackify inclut une commande de healthcheck intégrée pour l'orchestration de conteneurs.
+
+### Fonctionnement
+
+L'image inclut une directive `HEALTHCHECK` qui exécute :
+```
+/app/ackify health
+```
+
+Cette commande :
+- Vérifie la connectivité HTTP vers le serveur API
+- Vérifie la connexion à la base de données via `/api/v1/health`
+- Retourne le code de sortie 0 (healthy) ou 1 (unhealthy)
+
+### Configuration par Défaut
+
+```yaml
+healthcheck:
+  test: ["CMD", "/app/ackify", "health"]
+  interval: 30s      # Vérification toutes les 30 secondes
+  timeout: 5s        # Timeout après 5 secondes
+  start_period: 10s  # Attendre 10s avant la première vérification
+  retries: 3         # Marquer unhealthy après 3 échecs
+```
+
+### Surveiller la Santé du Conteneur
+
+```bash
+# Vérifier le statut de santé du conteneur
+docker compose ps
+
+# Voir les logs de healthcheck
+docker inspect --format='{{json .State.Health}}' ackify-ce | jq
+
+# Vérification manuelle
+docker compose exec ackify-ce /app/ackify health
+```
+
+### Intégration avec les Orchestrateurs
+
+**Kubernetes** : Utilisez l'endpoint health pour les probes liveness/readiness :
+```yaml
+livenessProbe:
+  httpGet:
+    path: /api/v1/health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 30
+```
+
+**Docker Swarm** : Le healthcheck intégré fonctionne automatiquement.
+
 ## Checklist Sécurité
 
 - ✅ HTTPS avec certificat valide
@@ -94,6 +148,7 @@ server {
 - ✅ Logs en mode info
 - ✅ Backup automatique
 - ✅ Monitoring actif
+- ✅ Healthcheck configuré
 
 ## Backup
 

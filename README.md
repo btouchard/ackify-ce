@@ -136,7 +136,8 @@ ACKIFY_OAUTH_CLIENT_SECRET=your_client_secret
 
 **Auto-detection**:
 - OAuth is enabled automatically if `ACKIFY_OAUTH_CLIENT_ID` and `ACKIFY_OAUTH_CLIENT_SECRET` are set
-- MagicLink is enabled automatically if `ACKIFY_MAIL_HOST` is configured
+- MagicLink requires explicit activation: `ACKIFY_AUTH_MAGICLINK_ENABLED=true` + SMTP configuration
+- SMTP/Email service (for reminders) is enabled automatically when `ACKIFY_MAIL_HOST` is configured
 - You can use **both methods simultaneously** for maximum flexibility
 
 See [docs/en/configuration.md](docs/en/configuration.md) for all options.

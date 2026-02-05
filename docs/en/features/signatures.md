@@ -110,10 +110,49 @@ The frontend displays:
 GET /api/v1/documents/policy_2025/signatures
 ```
 
-Returns all signatures with:
-- Signer email
-- Timestamp
-- Hash + signature
+### Access Control
+
+The signature list endpoint has **access restrictions** to protect user privacy:
+
+| User Type | What They See |
+|-----------|---------------|
+| **Document owner** (created_by) | All signatures with emails |
+| **Admin** (in ACKIFY_ADMIN_EMAILS) | All signatures with emails |
+| **Authenticated user** (not owner) | Only their own signature (if they signed) |
+| **Non-authenticated** | Empty list |
+
+> **Note**: The **signature count** is always visible to everyone via the `signatureCount` field in document responses. Only the **detailed list** (with email addresses) is restricted.
+
+**Example responses**:
+
+As document owner/admin:
+```json
+{
+  "data": [
+    {"userEmail": "alice@example.com", "signedAt": "..."},
+    {"userEmail": "bob@example.com", "signedAt": "..."},
+    {"userEmail": "charlie@example.com", "signedAt": "..."}
+  ]
+}
+```
+
+As authenticated non-owner (who has signed):
+```json
+{
+  "data": [
+    {"userEmail": "bob@example.com", "signedAt": "..."}
+  ]
+}
+```
+
+As non-authenticated:
+```json
+{
+  "data": []
+}
+```
+
+The same access control applies to the expected signers endpoint (`/expected-signers`).
 
 ### Programmatic (Go)
 
