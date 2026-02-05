@@ -604,8 +604,9 @@ onMounted(async () => {
             </div>
 
             <!-- Existing Confirmations (Below document on mobile, here on desktop) -->
-            <div v-if="documentSignatures.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-              <div class="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-700">
+            <!-- Show section if there are signatures (count from document, even if user can't see details) -->
+            <div v-if="currentDocument.signatureCount > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+              <div class="p-4 sm:p-6" :class="{ 'border-b border-slate-100 dark:border-slate-700': documentSignatures.length > 0 }">
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
                     <Users :size="20" class="text-blue-600 dark:text-blue-400" />
@@ -613,12 +614,13 @@ onMounted(async () => {
                   <div>
                     <h3 class="font-semibold text-slate-900 dark:text-slate-100">{{ t('sign.confirmations.title') }}</h3>
                     <p class="text-sm text-slate-500 dark:text-slate-400">
-                      {{ t('sign.confirmations.count', { count: documentSignatures.length }, documentSignatures.length) }}
+                      {{ t('sign.confirmations.count', { count: currentDocument.signatureCount }, currentDocument.signatureCount) }}
                     </p>
                   </div>
                 </div>
               </div>
-              <div class="p-4 sm:p-6">
+              <!-- Only show detailed list if user has access (owner/admin) -->
+              <div v-if="documentSignatures.length > 0" class="p-4 sm:p-6">
                 <SignatureList
                   :signatures="documentSignatures"
                   :loading="loadingSignatures"

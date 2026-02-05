@@ -501,9 +501,16 @@ func TestHandler_HandleFindOrCreateDocument_FindExisting(t *testing.T) {
 		},
 	}
 
+	mockSigService := &mockSignatureService{
+		getDocumentSignaturesFunc: func(ctx context.Context, docID string) ([]*models.Signature, error) {
+			return []*models.Signature{testSignature}, nil
+		},
+	}
+
 	handler := &Handler{
-		documentService: mockDocService,
-		authorizer:      newMockAuthorizer([]string{}, false),
+		documentService:  mockDocService,
+		signatureService: mockSigService,
+		authorizer:       newMockAuthorizer([]string{}, false),
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/doc.pdf", nil)
@@ -521,6 +528,7 @@ func TestHandler_HandleFindOrCreateDocument_FindExisting(t *testing.T) {
 
 	assert.Equal(t, testDoc.DocID, wrapper.Data.DocID)
 	assert.False(t, wrapper.Data.IsNew, "Should not be new since document was found")
+	assert.Equal(t, 1, wrapper.Data.SignatureCount, "Should have 1 signature")
 }
 
 func TestHandler_HandleFindOrCreateDocument_CreateNew(t *testing.T) {

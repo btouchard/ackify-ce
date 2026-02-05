@@ -54,6 +54,7 @@ export interface FindOrCreateDocumentResponse {
   verifyChecksum: boolean
   createdAt: string
   isNew: boolean // true if created, false if found
+  signatureCount: number
   // Storage fields for uploaded documents
   storageKey?: string
   mimeType?: string

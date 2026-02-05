@@ -324,6 +324,9 @@ func (h *Handler) HandleGetDocument(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleGetDocumentSignatures handles GET /api/v1/documents/{docId}/signatures
+// Returns the detailed signature list only for document owner or admin.
+// For authenticated users who are not owner/admin, returns only their own signature (if they signed).
+// Non-authenticated users receive an empty list (the count remains available via DocumentDTO).
 func (h *Handler) HandleGetDocumentSignatures(w http.ResponseWriter, r *http.Request) {
 	docID := chi.URLParam(r, "docId")
 	if docID == "" {
@@ -332,6 +335,24 @@ func (h *Handler) HandleGetDocumentSignatures(w http.ResponseWriter, r *http.Req
 	}
 
 	ctx := r.Context()
+
+	// Check if user can view the detailed list
+	user, authenticated := shared.GetUserFromContext(ctx)
+
+	// Retrieve document to get CreatedBy
+	doc, err := h.documentService.GetByDocID(ctx, docID)
+	if err != nil {
+		logger.Logger.Error("Failed to get document", "doc_id", docID, "error", err.Error())
+		shared.WriteInternalError(w)
+		return
+	}
+	if doc == nil {
+		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
+		return
+	}
+
+	// Owner/Admin can see all signatures
+	canViewAll := authenticated && user != nil && h.authorizer.CanManageDocument(ctx, user.Email, doc.CreatedBy)
 
 	signatures, err := h.signatureService.GetDocumentSignatures(ctx, docID)
 	if err != nil {
@@ -342,13 +363,28 @@ func (h *Handler) HandleGetDocumentSignatures(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Convert to DTOs
-	dtos := make([]SignatureDTO, len(signatures))
-	for i := range signatures {
-		dtos[i] = signatureToDTO(signatures[i])
+	// If owner/admin, return all signatures
+	if canViewAll {
+		dtos := make([]SignatureDTO, len(signatures))
+		for i := range signatures {
+			dtos[i] = signatureToDTO(signatures[i])
+		}
+		shared.WriteJSON(w, http.StatusOK, dtos)
+		return
 	}
 
-	shared.WriteJSON(w, http.StatusOK, dtos)
+	// For authenticated users (not owner/admin), return only their own signature if they signed
+	if authenticated && user != nil {
+		for _, sig := range signatures {
+			if sig.UserEmail == user.Email {
+				shared.WriteJSON(w, http.StatusOK, []SignatureDTO{signatureToDTO(sig)})
+				return
+			}
+		}
+	}
+
+	// Non-authenticated or user hasn't signed → return empty list
+	shared.WriteJSON(w, http.StatusOK, []SignatureDTO{})
 }
 
 // PublicExpectedSigner represents an expected signer in public API (minimal info)
@@ -358,12 +394,37 @@ type PublicExpectedSigner struct {
 }
 
 // HandleGetExpectedSigners handles GET /api/v1/documents/{docId}/expected-signers
+// Returns the expected signers list only for document owner or admin.
+// Non-authorized users receive an empty list.
 func (h *Handler) HandleGetExpectedSigners(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	docID := chi.URLParam(r, "docId")
 
 	if docID == "" {
 		shared.WriteValidationError(w, "Document ID is required", nil)
+		return
+	}
+
+	// Check if user can view the detailed list
+	user, authenticated := shared.GetUserFromContext(ctx)
+
+	// Retrieve document to get CreatedBy
+	doc, err := h.documentService.GetByDocID(ctx, docID)
+	if err != nil {
+		logger.Logger.Error("Failed to get document", "doc_id", docID, "error", err.Error())
+		shared.WriteInternalError(w)
+		return
+	}
+	if doc == nil {
+		shared.WriteError(w, http.StatusNotFound, shared.ErrCodeNotFound, "Document not found", nil)
+		return
+	}
+
+	// If not authenticated or not authorized → return empty list
+	canViewDetails := authenticated && user != nil && h.authorizer.CanManageDocument(ctx, user.Email, doc.CreatedBy)
+
+	if !canViewDetails {
+		shared.WriteJSON(w, http.StatusOK, []PublicExpectedSigner{})
 		return
 	}
 
@@ -421,6 +482,7 @@ type FindOrCreateDocumentResponse struct {
 	VerifyChecksum    bool   `json:"verifyChecksum"`
 	CreatedAt         string `json:"createdAt"`
 	IsNew             bool   `json:"isNew"`
+	SignatureCount    int    `json:"signatureCount"`
 	// Storage fields for uploaded documents
 	StorageKey string `json:"storageKey,omitempty"`
 	MimeType   string `json:"mimeType,omitempty"`
@@ -463,6 +525,12 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 			"doc_id", existingDoc.DocID,
 			"reference", ref)
 
+		// Get signature count
+		signatureCount := 0
+		if sigs, err := h.signatureService.GetDocumentSignatures(ctx, existingDoc.DocID); err == nil {
+			signatureCount = len(sigs)
+		}
+
 		response := FindOrCreateDocumentResponse{
 			DocID:             existingDoc.DocID,
 			URL:               existingDoc.URL,
@@ -476,6 +544,7 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 			VerifyChecksum:    existingDoc.VerifyChecksum,
 			CreatedAt:         existingDoc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 			IsNew:             false,
+			SignatureCount:    signatureCount,
 			StorageKey:        existingDoc.StorageKey,
 			MimeType:          existingDoc.MimeType,
 		}
@@ -518,7 +587,7 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		"reference", ref,
 		"user_email", user.Email)
 
-	// Build response
+	// Build response (new document has 0 signatures)
 	response := FindOrCreateDocumentResponse{
 		DocID:             doc.DocID,
 		URL:               doc.URL,
@@ -532,6 +601,7 @@ func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Requ
 		VerifyChecksum:    doc.VerifyChecksum,
 		CreatedAt:         doc.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		IsNew:             isNew,
+		SignatureCount:    0,
 		StorageKey:        doc.StorageKey,
 		MimeType:          doc.MimeType,
 	}

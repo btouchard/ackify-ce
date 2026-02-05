@@ -25,8 +25,8 @@
 
     <!-- Document info and signatures -->
     <div v-else-if="documentData" class="max-w-2xl mx-auto">
-      <!-- Document header with signatures -->
-      <div v-if="documentData.signatures.length > 0">
+      <!-- Document header with signatures (only shown if user has access to view signatures) -->
+      <div v-if="documentData.signatures && documentData.signatures.length > 0">
         <!-- Header Card -->
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 mb-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -251,8 +251,13 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 			// Read-only document endpoints
 			r.Get("/", documentsHandler.HandleListDocuments)
 			r.Get("/{docId}", documentsHandler.HandleGetDocument)
-			r.Get("/{docId}/signatures", documentsHandler.HandleGetDocumentSignatures)
-			r.Get("/{docId}/expected-signers", documentsHandler.HandleGetExpectedSigners)
+
+			// Signatures and expected-signers: detailed list restricted to owner/admin
+			r.Group(func(r chi.Router) {
+				r.Use(apiMiddleware.OptionalAuth)
+				r.Get("/{docId}/signatures", documentsHandler.HandleGetDocumentSignatures)
+				r.Get("/{docId}/expected-signers", documentsHandler.HandleGetExpectedSigners)
+			})
 
 			// Find or create document by reference (public for embed support, but with optional auth)
 			r.Group(func(r chi.Router) {
