@@ -513,7 +513,7 @@ func TestHandler_HandleFindOrCreateDocument_FindExisting(t *testing.T) {
 		authorizer:       newMockAuthorizer([]string{}, false),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/doc.pdf", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?doc=https://example.com/doc.pdf", nil)
 	rec := httptest.NewRecorder()
 
 	handler.HandleFindOrCreateDocument(rec, req)
@@ -550,7 +550,7 @@ func TestHandler_HandleFindOrCreateDocument_CreateNew(t *testing.T) {
 		authorizer:      newMockAuthorizer([]string{}, false),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/new-doc.pdf", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?doc=https://example.com/new-doc.pdf", nil)
 
 	// Add authenticated user to context
 	ctx := addUserToContext(req.Context(), testUser)
@@ -587,7 +587,7 @@ func TestHandler_HandleFindOrCreateDocument_UnauthenticatedCreate(t *testing.T) 
 		authorizer:      newMockAuthorizer([]string{}, false),
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?ref=https://example.com/new-doc.pdf", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/documents/find-or-create?doc=https://example.com/new-doc.pdf", nil)
 	// No user in context
 	rec := httptest.NewRecorder()
 

@@ -111,7 +111,7 @@ GET /api/v1/users/me
 #### Trouver ou Créer un Document
 
 ```http
-GET /api/v1/documents/find-or-create?ref=policy_2025
+GET /api/v1/documents/find-or-create?doc=policy_2025
 ```
 
 **Réponse** (200 OK) :

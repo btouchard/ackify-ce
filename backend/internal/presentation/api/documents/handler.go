@@ -488,16 +488,16 @@ type FindOrCreateDocumentResponse struct {
 	MimeType   string `json:"mimeType,omitempty"`
 }
 
-// HandleFindOrCreateDocument handles GET /api/v1/documents/find-or-create?ref={reference}
+// HandleFindOrCreateDocument handles GET /api/v1/documents/find-or-create?doc={reference}
 func (h *Handler) HandleFindOrCreateDocument(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Get reference from query parameter
-	ref := r.URL.Query().Get("ref")
+	// Get reference from query parameter (renamed from "ref" to "doc" to avoid ClearURLs blocking)
+	ref := r.URL.Query().Get("doc")
 	if ref == "" {
-		logger.Logger.Warn("Find or create request missing ref parameter",
+		logger.Logger.Warn("Find or create request missing doc parameter",
 			"remote_addr", r.RemoteAddr)
-		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "ref parameter is required", nil)
+		shared.WriteError(w, http.StatusBadRequest, shared.ErrCodeBadRequest, "doc parameter is required", nil)
 		return
 	}
 

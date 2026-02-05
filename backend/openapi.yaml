@@ -342,7 +342,7 @@ paths:
       tags:
         - Documents
       parameters:
-        - name: ref
+        - name: doc
           in: query
           required: true
           schema:

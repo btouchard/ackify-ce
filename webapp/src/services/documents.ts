@@ -103,7 +103,7 @@ export const documentService = {
   async findOrCreateDocument(reference: string): Promise<FindOrCreateDocumentResponse> {
     const response = await http.get<ApiResponse<FindOrCreateDocumentResponse>>(
       '/documents/find-or-create',
-      { params: { ref: reference } }
+      { params: { doc: reference } }
     )
     return response.data.data
   },
