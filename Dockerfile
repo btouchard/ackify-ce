@@ -87,4 +87,7 @@ ENV ACKIFY_LOCALES_DIR=/app/locales
 
 EXPOSE 8080
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["/app/ackify", "health"]
+
 ENTRYPOINT ["/app/ackify"]

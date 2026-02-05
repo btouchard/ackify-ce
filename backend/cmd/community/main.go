@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -29,6 +30,11 @@ var (
 var frontend embed.FS
 
 func main() {
+	// Handle health check subcommand for Docker HEALTHCHECK
+	if len(os.Args) > 1 && os.Args[1] == "health" {
+		os.Exit(runHealthCheck())
+	}
+
 	ctx := context.Background()
 
 	cfg, err := config.Load()
@@ -85,4 +91,43 @@ func main() {
 	}
 
 	log.Println("Community Edition server exited")
+}
+
+// runHealthCheck performs a health check against the local server.
+// Returns 0 on success, 1 on failure.
+func runHealthCheck() int {
+	addr := os.Getenv("ACKIFY_LISTEN_ADDR")
+	if addr == "" {
+		addr = ":8080"
+	}
+
+	// Build health URL (handle both ":8080" and "0.0.0.0:8080" formats)
+	host := "localhost"
+	port := addr
+	if addr[0] != ':' {
+		// Format is "host:port", extract port
+		for i := len(addr) - 1; i >= 0; i-- {
+			if addr[i] == ':' {
+				port = addr[i:]
+				break
+			}
+		}
+	}
+
+	url := fmt.Sprintf("http://%s%s/api/v1/health", host, port)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Health check failed: %v\n", err)
+		return 1
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Fprintf(os.Stderr, "Health check failed: status %d\n", resp.StatusCode)
+		return 1
+	}
+
+	return 0
 }

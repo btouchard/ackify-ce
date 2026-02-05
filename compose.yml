@@ -68,6 +68,12 @@ services:
       - internal
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "/app/ackify", "health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
 
   ackify-db:
     image: postgres:16-alpine

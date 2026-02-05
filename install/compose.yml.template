@@ -1,4 +1,4 @@
-## SPDX-License-Identifier: AGPL-3.0-or-later
+    ## SPDX-License-Identifier: AGPL-3.0-or-later
 name: ackify-ce
 
 services:
@@ -104,6 +104,12 @@ services:
     ports:
       - "8080:8080"
     #END:ports
+    healthcheck:
+      test: ["CMD", "/app/ackify", "health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
 
   ackify-db:
     image: postgres:16-alpine
